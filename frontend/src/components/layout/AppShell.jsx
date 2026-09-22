@@ -2,7 +2,7 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, User, Briefcase, Search, MessageSquare,
-  LogOut, Circle, Building2, Handshake,
+  LogOut, Circle, Building2, Handshake, FileText,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import NotificationBell from "./NotificationBell";
@@ -15,6 +15,8 @@ const navByRole = {
     { to: "/resource-requests", label: "Mes demandes", icon: Search },
     { to: "/resource-offers", label: "Mes offres de ressources", icon: Handshake },
     { to: "/resource-offers/browse", label: "Ressources disponibles", icon: Search },
+    { to: "/proposals", label: "Propositions", icon: FileText },
+    { to: "/missions", label: "Missions", icon: Briefcase },
     { to: "/job-offers", label: "Mes offres d'emploi", icon: Briefcase },
     { to: "/messages", label: "Messagerie", icon: MessageSquare },
   ],
@@ -22,12 +24,18 @@ const navByRole = {
     { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
     { to: "/profile", label: "Mon profil", icon: User },
     { to: "/opportunites", label: "Opportunités", icon: Search },
+    { to: "/browse-requests", label: "Demandes des entreprises", icon: FileText },
+    { to: "/proposals", label: "Mes propositions", icon: Handshake },
+    { to: "/missions", label: "Mes missions", icon: Briefcase },
     { to: "/messages", label: "Messagerie", icon: MessageSquare },
   ],
   student: [
     { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
     { to: "/profile", label: "Mon profil", icon: User },
     { to: "/job-offers", label: "Offres & stages", icon: Briefcase },
+    { to: "/browse-requests", label: "Demandes des entreprises", icon: FileText },
+    { to: "/proposals", label: "Mes propositions", icon: Handshake },
+    { to: "/missions", label: "Mes missions", icon: Briefcase },
     { to: "/messages", label: "Messagerie", icon: MessageSquare },
   ],
   university: [
@@ -46,12 +54,12 @@ export default function AppShell({ children }) {
   const nav = navByRole[user?.role] || navByRole.employee;
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-navy">
+    <div className="min-h-screen bg-[#0A1229] font-sans text-white">
       <div className="flex">
         {/* Sidebar */}
-        <aside className="hidden w-64 shrink-0 flex-col border-r border-slate-200 bg-white p-5 md:flex">
-          <Link to="/" className="mb-8 flex items-center gap-2 font-bold">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full border border-mint/40 bg-mint/10 text-mint">
+        <aside className="hidden w-64 shrink-0 flex-col border-r border-white/5 bg-[#0A1229] p-5 md:flex">
+          <Link to="/" className="mb-8 flex items-center gap-2 font-bold text-white">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
               <Circle size={14} strokeWidth={3} />
             </span>
             TalentShare
@@ -59,13 +67,15 @@ export default function AppShell({ children }) {
 
           <nav className="flex-1 space-y-1">
             {nav.map(({ to, label, icon: Icon }) => {
-              const active = location.pathname === to;
+              const active = location.pathname === to || location.pathname.startsWith(to + "/");
               return (
                 <Link
                   key={to}
                   to={to}
-                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                    active ? "bg-navy text-white" : "text-slate-600 hover:bg-slate-100"
+                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+                    active
+                      ? "bg-emerald-500 text-[#0A1229] shadow-lg shadow-emerald-500/20"
+                      : "text-slate-400 hover:bg-white/5 hover:text-white"
                   }`}
                 >
                   <Icon size={18} />
@@ -74,26 +84,38 @@ export default function AppShell({ children }) {
               );
             })}
           </nav>
+
+          {/* Footer sidebar */}
+          <div className="mt-4 rounded-xl border border-white/5 bg-white/5 p-3">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+              Version Beta
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
+              Vos données sont protégées.
+            </p>
+          </div>
         </aside>
 
         {/* Main */}
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           {/* Topbar */}
-          <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
+          <header className="flex items-center justify-between border-b border-white/5 bg-[#0A1229]/80 backdrop-blur-xl px-6 py-4 sticky top-0 z-30">
             <div>
-              <p className="text-sm text-slate-400">Bienvenue</p>
-              <p className="font-semibold">{user?.name}</p>
+              <p className="text-xs text-slate-500">Bienvenue</p>
+              <p className="font-semibold text-white">{user?.name}</p>
             </div>
             <div className="flex items-center gap-4">
               <NotificationBell />
-              <span className="rounded-full bg-mint/15 px-3 py-1 text-xs font-semibold text-navy">
+              <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300">
                 {roleLabel(user?.role)}
               </span>
               <DropdownMenu />
             </div>
           </header>
 
-          <main className="p-6">{children}</main>
+          <main className="p-6">
+            {children}
+          </main>
         </div>
       </div>
     </div>

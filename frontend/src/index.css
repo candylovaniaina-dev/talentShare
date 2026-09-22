@@ -1,3 +1,42 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ✅ Fond global */
+html, body, #root {
+  min-height: 100vh;
+}
+
+/* ✅ Scroll smooth pour les ancres */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 100px;
+}
+
+/* ✅ Scrollbar custom (dark) */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0A1229;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(110, 231, 200, 0.2);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(110, 231, 200, 0.4);
+}
+
+/* ✅ Pour le scroll clair (Landing) */
+.scrollbar-light::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.scrollbar-light::-webkit-scrollbar-thumb {
+  background: rgba(11, 22, 51, 0.2);
+}

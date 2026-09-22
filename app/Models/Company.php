@@ -62,5 +62,13 @@ public function users()
                 ->withPivot('position', 'status')
                 ->withTimestamps();
 }
+public function sentProposals()
+{
+    return $this->hasMany(Proposal::class, 'proposed_by_company_id');
+}
 
+public function receivedProposals()
+{
+    return $this->hasMany(Proposal::class, 'to_company_id');
+}
 }

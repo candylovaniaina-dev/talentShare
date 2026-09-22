@@ -14,8 +14,11 @@ import AccountSettings from "./pages/dashboard/AccountSettings";
 import CompanyProfile from "./pages/CompanyProfile";
 import Opportunities from "./pages/Opportunities";
 import ResourceRequests from "./pages/ResourceRequests";
+import ResourceRequestDetail from "./pages/ResourceRequestDetail";
+import ResourceRequestCandidates from "./pages/ResourceRequestCandidates";
+import BrowseResourceRequests from "./pages/BrowseResourceRequests";
 import Missions from "./pages/Missions";
-import MissionDetail from "./pages/MissionDetail"; // ✅ NOUVEAU
+import MissionDetail from "./pages/MissionDetail";
 import JobOffers from "./pages/JobOffers";
 import Messages from "./pages/Messages";
 import AdminVerifications from "./pages/AdminVerifications";
@@ -31,6 +34,9 @@ import ResourceOffers from "./pages/ResourceOffers";
 import CreateResourceOffer from "./pages/CreateResourceOffer";
 import BrowseResourceOffers from "./pages/BrowseResourceOffers";
 import ResourceOfferDetail from "./pages/ResourceOfferDetail";
+import Proposals from "./pages/Proposals";
+import CreateProposal from "./pages/CreateProposal";
+import ProposalDetail from "./pages/ProposalDetail";
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -54,9 +60,12 @@ function App() {
           <Route path="/talents/:id" element={<TalentProfile />} />
           <Route path="/portfolio/:slug" element={<PublicPortfolio />} />
 
-          {/* ✅ RESOURCE OFFERS (publics) — /browse AVANT /:id */}
+          {/* RESOURCE OFFERS (publics) — /browse AVANT /:id */}
           <Route path="/resource-offers/browse" element={<BrowseResourceOffers />} />
           <Route path="/resource-offers/:id" element={<ResourceOfferDetail />} />
+
+          {/* Browse public des demandes de ressources */}
+          <Route path="/browse-requests" element={<BrowseResourceRequests />} />
 
           {/* ============ ROUTES PROTÉGÉES ============ */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -72,13 +81,25 @@ function App() {
           {/* Opportunités */}
           <Route path="/opportunites" element={<ProtectedRoute><Opportunities /></ProtectedRoute>} />
 
-          {/* Resource Requests */}
+          {/* =============================================
+              ✅ P0-9 : RESOURCE REQUESTS
+              ============================================= */}
           <Route path="/resource-requests" element={<ProtectedRoute><ResourceRequests /></ProtectedRoute>} />
           <Route path="/resource-requests/new" element={<ProtectedRoute><CreateResourceRequest /></ProtectedRoute>} />
+          <Route path="/resource-requests/:id/candidates" element={<ProtectedRoute><ResourceRequestCandidates /></ProtectedRoute>} />
+          <Route path="/resource-requests/:id/edit" element={<ProtectedRoute><CreateResourceRequest /></ProtectedRoute>} />
+          <Route path="/resource-requests/:id" element={<ProtectedRoute><ResourceRequestDetail /></ProtectedRoute>} />
+
+          {/* =============================================
+              ✅ P0-11 : PROPOSITIONS
+              ⚠️ ORDRE CRITIQUE : /new AVANT /:id
+              ============================================= */}
+          <Route path="/proposals" element={<ProtectedRoute><Proposals /></ProtectedRoute>} />
+          <Route path="/proposals/new" element={<ProtectedRoute><CreateProposal /></ProtectedRoute>} />
+          <Route path="/proposals/:id" element={<ProtectedRoute><ProposalDetail /></ProtectedRoute>} />
 
           {/* Missions */}
           <Route path="/missions" element={<ProtectedRoute><Missions /></ProtectedRoute>} />
-          {/* ✅ NOUVEAU : détail d'une mission */}
           <Route path="/missions/:id" element={<ProtectedRoute><MissionDetail /></ProtectedRoute>} />
 
           {/* Job Offers / Messages */}

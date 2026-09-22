@@ -27,6 +27,7 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\ProfileSectionController;
 use App\Http\Controllers\Api\SavedSearchController;
 use App\Http\Controllers\Api\MatchInteractionController;
+use App\Http\Controllers\Api\MatchController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -40,7 +41,7 @@ Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:6,
 Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])->middleware('throttle:3,1');
 Route::post('/reset-password', [PasswordResetController::class, 'reset']);
 
-// Entreprises
+// Entreprises (public)
 Route::get('/companies', [CompanyController::class, 'index']);
 Route::get('/companies/{company}', [CompanyController::class, 'show'])->where('company', '[0-9]+');
 
@@ -60,7 +61,7 @@ Route::get('/skill-categories', [SkillController::class, 'categories']);
 Route::get('/skills/stats', [SkillController::class, 'stats']);
 Route::get('/skills', [SkillController::class, 'index']);
 
-// ✅ NOUVEAU : Référentiel langues (public)
+// Référentiel langues (public)
 Route::get('/languages', function () {
     return \App\Models\Language::select('name')
         ->distinct()
@@ -68,16 +69,19 @@ Route::get('/languages', function () {
         ->pluck('name');
 });
 
-// Resource Offers
+// Resource Offers (public)
 Route::get('/resource-offers', [ResourceOfferController::class, 'index']);
 
-// Resource Requests
+// Resource Requests (public — liste + détail)
 Route::get('/resource-requests', [ResourceRequestController::class, 'index']);
 Route::get('/resource-requests/{resourceRequest}', [ResourceRequestController::class, 'show']);
 
-// Job Offers
+// Job Offers (public)
 Route::get('/job-offers', [JobOfferController::class, 'index']);
 Route::get('/job-offers/{jobOffer}', [JobOfferController::class, 'show']);
+
+// ✅ Matching (P0-10)
+Route::post('/match/explain', [MatchController::class, 'explain']);
 
 
 // =============================================
@@ -91,17 +95,21 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
 
     // === Entreprise ===
-    Route::get('/companies/me', [CompanyController::class, 'me']);
-    Route::post('/companies', [CompanyController::class, 'store']);
-    Route::patch('/companies/{company}', [CompanyController::class, 'update']);
-    Route::post('/companies/{company}/logo', [CompanyController::class, 'uploadLogo']);
-    Route::post('/companies/{company}/members', [CompanyController::class, 'addMember']);
-    Route::delete('/companies/{company}/members/{member}', [CompanyController::class, 'removeMember']);
-    Route::get('/companies/{company}/members', [CompanyController::class, 'members']);
-    Route::post('/companies/{company}/verify', [CompanyController::class, 'requestVerification']);
-    Route::get('/companies/{company}/employees', [CompanyController::class, 'employees']);
-    Route::post('/companies/{company}/employees', [CompanyController::class, 'addEmployee']);
-    Route::delete('/companies/{company}/employees/{employee}', [CompanyController::class, 'removeEmployee']);
+    // ⚠️ ORDRE CRITIQUE : "me" AVANT "{company}"
+    Route::get   ('/companies/me',                                    [CompanyController::class, 'me']);
+    Route::get   ('/companies/me/employees',                          [CompanyController::class, 'myEmployees']);
+    Route::get   ('/companies/my/all',                                [CompanyController::class, 'myCompanies']);
+
+    Route::post  ('/companies',                                       [CompanyController::class, 'store']);
+    Route::patch ('/companies/{company}',                             [CompanyController::class, 'update']);
+    Route::post  ('/companies/{company}/logo',                        [CompanyController::class, 'uploadLogo']);
+    Route::post  ('/companies/{company}/members',                     [CompanyController::class, 'addMember']);
+    Route::delete('/companies/{company}/members/{member}',            [CompanyController::class, 'removeMember']);
+    Route::get   ('/companies/{company}/members',                     [CompanyController::class, 'members']);
+    Route::post  ('/companies/{company}/verify',                      [CompanyController::class, 'requestVerification']);
+    Route::get   ('/companies/{company}/employees',                   [CompanyController::class, 'employees']);
+    Route::post  ('/companies/{company}/employees',                   [CompanyController::class, 'addEmployee']);
+    Route::delete('/companies/{company}/employees/{employee}',        [CompanyController::class, 'removeEmployee']);
 
     // === Universités ===
     Route::post('/universities', [UniversityController::class, 'store']);
@@ -151,23 +159,45 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/portfolio/projects/{project}', [PortfolioController::class, 'deleteProject']);
     Route::patch('/portfolio/visibility', [PortfolioController::class, 'updateVisibility']);
 
-    // === Resource Offers ===
+    // === Resource Offers (protégés) ===
     Route::get('/resource-offers/my', [ResourceOfferController::class, 'my']);
     Route::post('/resource-offers', [ResourceOfferController::class, 'store']);
     Route::patch('/resource-offers/{resourceOffer}', [ResourceOfferController::class, 'update']);
     Route::delete('/resource-offers/{resourceOffer}', [ResourceOfferController::class, 'destroy']);
 
-    // === Resource Requests ===
-    Route::post('/resource-requests', [ResourceRequestController::class, 'store']);
-    Route::patch('/resource-requests/{resourceRequest}', [ResourceRequestController::class, 'update']);
-    Route::delete('/resource-requests/{resourceRequest}', [ResourceRequestController::class, 'destroy']);
-    Route::get('/resource-requests/{resourceRequest}/candidates', [ResourceRequestController::class, 'candidates']);
+    // =============================================
+    // ✅ P0-9 : RESOURCE REQUESTS (complet)
+    // =============================================
+    Route::get   ('/resource-requests/my',                            [ResourceRequestController::class, 'index']);
+    Route::post  ('/resource-requests',                                [ResourceRequestController::class, 'store']);
 
-    // === Propositions ===
-    Route::post('/proposals', [ProposalController::class, 'store']);
-    Route::get('/proposals/{proposal}', [ProposalController::class, 'show']);
-    Route::post('/proposals/{proposal}/accept', [ProposalController::class, 'accept']);
-    Route::post('/proposals/{proposal}/decline', [ProposalController::class, 'decline']);
+    // ⚠️ /candidates AVANT /{resourceRequest}
+    Route::get   ('/resource-requests/{resourceRequest}/candidates',   [ResourceRequestController::class, 'candidates']);
+
+    Route::patch ('/resource-requests/{resourceRequest}',              [ResourceRequestController::class, 'update']);
+    Route::delete('/resource-requests/{resourceRequest}',              [ResourceRequestController::class, 'destroy']);
+
+    // Actions de statut
+    Route::post  ('/resource-requests/{resourceRequest}/publish',      [ResourceRequestController::class, 'publish']);
+    Route::post  ('/resource-requests/{resourceRequest}/pause',        [ResourceRequestController::class, 'pause']);
+    Route::post  ('/resource-requests/{resourceRequest}/close',        [ResourceRequestController::class, 'close']);
+    Route::post  ('/resource-requests/{resourceRequest}/mark-filled',  [ResourceRequestController::class, 'markFilled']);
+    Route::post  ('/resource-requests/{resourceRequest}/duplicate',    [ResourceRequestController::class, 'duplicate']);
+
+    // =============================================
+    // ✅ P0-11 : PROPOSITIONS (complet)
+    // ⚠️ ORDRE CRITIQUE : /received et /sent AVANT /{proposal}
+    // =============================================
+    Route::get   ('/proposals/received',              [ProposalController::class, 'received']);
+    Route::get   ('/proposals/sent',                  [ProposalController::class, 'sent']);
+
+    Route::post  ('/proposals',                       [ProposalController::class, 'store']);
+    Route::get   ('/proposals/{proposal}',            [ProposalController::class, 'show']);
+    Route::patch ('/proposals/{proposal}',            [ProposalController::class, 'update']);
+    Route::post  ('/proposals/{proposal}/submit',     [ProposalController::class, 'submit']);
+    Route::post  ('/proposals/{proposal}/cancel',     [ProposalController::class, 'cancel']);
+    Route::post  ('/proposals/{proposal}/accept',     [ProposalController::class, 'accept']);
+    Route::post  ('/proposals/{proposal}/decline',    [ProposalController::class, 'decline']);
 
     // === Missions ===
     Route::get   ('/missions',                   [MissionController::class, 'index']);
@@ -210,9 +240,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/verification-requests', [VerificationRequestController::class, 'store']);
 
     // === Documents ===
-    Route::post('/documents', [DocumentController::class, 'store']);
-    Route::get('/documents', [DocumentController::class, 'index']);
-
+        // === Documents ===
+    Route::post  ('/documents',                 [DocumentController::class, 'upload']);
+    Route::get   ('/documents',                 [DocumentController::class, 'index']);
+    Route::get   ('/documents/{document}/download', [DocumentController::class, 'download']);
+    Route::delete('/documents/{document}',      [DocumentController::class, 'destroy']);
     // === Email ===
     Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
         ->middleware('signed')->name('verification.verify');
@@ -236,9 +268,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch ('/saved-searches/{savedSearch}',     [SavedSearchController::class, 'update']);
     Route::delete('/saved-searches/{savedSearch}',     [SavedSearchController::class, 'destroy']);
     Route::get   ('/saved-searches/{savedSearch}/run', [SavedSearchController::class, 'run']);
-
-    Route::post  ('/match-interactions', [MatchInteractionController::class, 'store']);
+    Route::post  ('/match-interactions',               [MatchInteractionController::class, 'store']);
 });
+
 
 // =============================================
 // ROUTES ADMIN
@@ -248,6 +280,7 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::get('/verification-requests', [AdminVerificationController::class, 'index']);
     Route::patch('/verification-requests/{verificationRequest}/review', [AdminVerificationController::class, 'review']);
 });
+
 
 // =============================================
 // ROUTES PUBLIQUES DYNAMIQUES (À LA FIN)

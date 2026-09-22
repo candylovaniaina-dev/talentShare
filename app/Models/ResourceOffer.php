@@ -85,4 +85,8 @@ class ResourceOffer extends Model
 
         return $this->status;
     }
+    public function proposals()
+{
+    return $this->hasMany(Proposal::class);
+}
 }

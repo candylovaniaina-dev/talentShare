@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Company\CompanyRequest;
 use App\Models\Company;
 use App\Models\CompanyMember;
+use App\Models\Employee;
 use App\Models\User;
 use App\Models\VerificationRequest;
 use Illuminate\Http\Request;
@@ -34,33 +35,73 @@ class CompanyController extends Controller
     }
 
     /**
-     * Récupérer l'entreprise de l'utilisateur connecté
+     * ✅ Récupérer MON entreprise (la plus récente)
      */
-   public function me(Request $request)
-{
-    // Récupérer l'utilisateur connecté
-    $user = $request->user();
-    
-    // Vérifier que l'utilisateur est authentifié
-    if (!$user) {
-        return response()->json([
-            'message' => 'Utilisateur non authentifié'
-        ], 401);
+    public function me(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['message' => 'Utilisateur non authentifié'], 401);
+        }
+
+        $company = Company::where('owner_user_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        if (!$company) {
+            return response()->json(['message' => 'Entreprise non trouvée'], 404);
+        }
+
+        return response()->json($company);
     }
-    
-    // Récupérer l'entreprise (la plus récente)
-    $company = Company::where('owner_user_id', $user->id)
-        ->orderBy('created_at', 'desc')
-        ->first();
-    
-    if (!$company) {
-        return response()->json([
-            'message' => 'Entreprise non trouvée'
-        ], 404);
+
+    /**
+     * ✅ NOUVEAU : Toutes MES entreprises
+     * Route : GET /companies/my/all
+     */
+    public function myCompanies(Request $request)
+    {
+        return $request->user()->companies()
+            ->orderBy('created_at', 'desc')
+            ->get();
     }
-    
-    return response()->json($company);
-}
+
+    /**
+     * ✅ NOUVEAU : Tous MES salariés (toutes mes entreprises)
+     * Route : GET /companies/me/employees
+     */
+    public function myEmployees(Request $request)
+    {
+        try {
+            $user = $request->user();
+            $companyIds = $user->companies()->pluck('id')->toArray();
+
+            if (empty($companyIds)) {
+                return response()->json(['data' => []]);
+            }
+
+            $employees = Employee::whereIn('company_id', $companyIds)
+                ->with([
+                    'user:id,name,email',
+                    'user.professionalProfile:id,user_id,headline,avatar_path',
+                ])
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            return response()->json(['data' => $employees]);
+        } catch (\Exception $e) {
+            \Log::error('myEmployees failed: ' . $e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+            return response()->json([
+                'error'   => $e->getMessage(),
+                'file'    => basename($e->getFile()),
+                'line'    => $e->getLine(),
+            ], 500);
+        }
+    }
 
     /**
      * Créer une entreprise
@@ -73,11 +114,10 @@ class CompanyController extends Controller
 
         $company = Company::create($data);
 
-        // Ajouter le propriétaire comme membre
         $company->members()->create([
             'user_id' => $request->user()->id,
-            'role' => 'owner',
-            'status' => 'active',
+            'role'    => 'owner',
+            'status'  => 'active',
         ]);
 
         return response()->json($company, 201);
@@ -101,12 +141,12 @@ class CompanyController extends Controller
     }
 
     /**
-     * Upload du logo de l'entreprise
+     * Upload du logo
      */
     public function uploadLogo(Request $request, Company $company)
     {
         $this->authorize('update', $company);
-        
+
         $validator = Validator::make($request->all(), [
             'logo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
@@ -115,7 +155,6 @@ class CompanyController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        // Supprimer l'ancien logo
         if ($company->logo_path) {
             Storage::disk('public')->delete($company->logo_path);
         }
@@ -125,24 +164,22 @@ class CompanyController extends Controller
 
         return response()->json([
             'message' => 'Logo mis à jour avec succès ✅',
-            'data' => $company
+            'data'    => $company,
         ]);
     }
 
     /**
-     * Lister les membres de l'entreprise
+     * Lister les membres
      */
     public function members(Company $company)
     {
-        $members = $company->members()
-            ->with('user')
-            ->get();
-
-        return response()->json(['data' => $members]);
+        return response()->json([
+            'data' => $company->members()->with('user')->get(),
+        ]);
     }
 
     /**
-     * Ajouter un membre à l'entreprise
+     * Ajouter un membre
      */
     public function addMember(Request $request, Company $company)
     {
@@ -150,32 +187,31 @@ class CompanyController extends Controller
 
         $validator = Validator::make($request->all(), [
             'user_id' => 'required|exists:users,id',
-            'role' => 'required|string|in:admin,member,viewer',
+            'role'    => 'required|string|in:admin,member,viewer',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        // Vérifier si le membre existe déjà
         if ($company->members()->where('user_id', $request->user_id)->exists()) {
             return response()->json(['message' => 'Cet utilisateur est déjà membre'], 409);
         }
 
         $member = $company->members()->create([
             'user_id' => $request->user_id,
-            'role' => $request->role,
-            'status' => 'active',
+            'role'    => $request->role,
+            'status'  => 'active',
         ]);
 
         return response()->json([
             'message' => 'Membre ajouté avec succès ✅',
-            'data' => $member->load('user')
+            'data'    => $member->load('user'),
         ], 201);
     }
 
     /**
-     * Retirer un membre de l'entreprise
+     * Retirer un membre
      */
     public function removeMember(Request $request, Company $company, $memberId)
     {
@@ -186,7 +222,6 @@ class CompanyController extends Controller
             return response()->json(['message' => 'Membre non trouvé'], 404);
         }
 
-        // Empêcher la suppression du propriétaire
         if ($member->role === 'owner') {
             return response()->json(['message' => 'Impossible de retirer le propriétaire'], 403);
         }
@@ -197,7 +232,7 @@ class CompanyController extends Controller
     }
 
     /**
-     * Demander la vérification de l'entreprise
+     * Demander la vérification
      */
     public function requestVerification(Request $request, Company $company)
     {
@@ -207,28 +242,117 @@ class CompanyController extends Controller
             return response()->json(['message' => 'Cette entreprise est déjà vérifiée'], 409);
         }
 
-        // Vérifier si une demande existe déjà
         $existing = VerificationRequest::where('verifiable_type', Company::class)
             ->where('verifiable_id', $company->id)
             ->where('status', 'pending')
             ->first();
 
         if ($existing) {
-            return response()->json(['message' => 'Une demande de vérification est déjà en cours'], 409);
+            return response()->json(['message' => 'Une demande est déjà en cours'], 409);
         }
 
-        // Créer une demande de vérification
         $verification = VerificationRequest::create([
             'verifiable_type' => Company::class,
-            'verifiable_id' => $company->id,
-            'requested_by' => $request->user()->id,
-            'status' => 'pending',
+            'verifiable_id'   => $company->id,
+            'requested_by'    => $request->user()->id,
+            'status'          => 'pending',
         ]);
 
         return response()->json([
-            'message' => 'Demande de vérification envoyée ✅',
-            'data' => $verification
+            'message' => 'Demande envoyée ✅',
+            'data'    => $verification,
         ]);
+    }
+
+    /**
+     * Lister les salariés d'UNE entreprise (par id)
+     */
+    public function employees(Company $company)
+    {
+        return response()->json([
+            'data' => $company->employees()
+                ->with(['user.professionalProfile'])
+                ->orderBy('created_at', 'desc')
+                ->get(),
+        ]);
+    }
+
+    /**
+     * Ajouter un salarié
+     */
+    public function addEmployee(Request $request, Company $company)
+    {
+        $this->authorize('update', $company);
+
+        $request->validate([
+            'email'      => 'required|email',
+            'first_name' => 'required|string|max:100',
+            'last_name'  => 'required|string|max:100',
+            'position'   => 'nullable|string|max:100',
+            'phone'      => 'nullable|string|max:30',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+        $hasAccount = (bool) $user;
+
+        $existingEmployee = $company->employees()
+            ->where(function ($query) use ($request, $user) {
+                if ($user) {
+                    $query->where('user_id', $user->id);
+                } else {
+                    $query->where('email', $request->email);
+                }
+            })
+            ->exists();
+
+        if ($existingEmployee) {
+            return response()->json(['message' => 'Ce salarié est déjà dans l\'entreprise'], 409);
+        }
+
+        $employee = $company->employees()->create([
+            'company_id' => $company->id,
+            'position'   => $request->position,
+            'status'     => 'active',
+            'email'      => $request->email,
+            'first_name' => $request->first_name,
+            'last_name'  => $request->last_name,
+            'phone'      => $request->phone,
+            'has_account'=> $hasAccount,
+            'user_id'    => $user?->id,
+        ]);
+
+        if ($user) {
+            $existingMember = $company->members()->where('user_id', $user->id)->exists();
+            if (!$existingMember) {
+                $company->members()->create([
+                    'user_id' => $user->id,
+                    'role'    => 'member',
+                    'status'  => 'active',
+                ]);
+            }
+        }
+
+        return response()->json([
+            'message' => $hasAccount ? '✅ Salarié ajouté (avec compte)' : '✅ Salarié ajouté',
+            'data'    => $employee->load('user'),
+        ], 201);
+    }
+
+    /**
+     * Retirer un salarié
+     */
+    public function removeEmployee(Request $request, Company $company, $employeeId)
+    {
+        $this->authorize('update', $company);
+
+        $employee = $company->employees()->where('id', $employeeId)->first();
+        if (!$employee) {
+            return response()->json(['message' => 'Salarié non trouvé'], 404);
+        }
+
+        $employee->delete();
+
+        return response()->json(['message' => 'Salarié retiré avec succès ✅']);
     }
 
     /**
@@ -240,106 +364,14 @@ class CompanyController extends Controller
         $slug = $base;
         $i = 1;
 
-        while (Company::where('slug', $slug)->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))->exists()) {
+        while (
+            Company::where('slug', $slug)
+                ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))
+                ->exists()
+        ) {
             $slug = "{$base}-" . $i++;
         }
 
         return $slug;
     }
-// Lister les salariés
-/**
- * Lister les salariés
- */
-public function employees(Company $company)
-{
-    $employees = $company->employees()
-         ->with(['user.professionalProfile']) 
-        ->orderBy('created_at', 'desc')
-        ->get();
-
-    return response()->json(['data' => $employees]);
-}
-
-/**
- * Ajouter un salarié (avec ou sans compte)
- */
-public function addEmployee(Request $request, Company $company)
-{
-    $this->authorize('update', $company);
-
-    $request->validate([
-        'email' => 'required|email',
-        'first_name' => 'required|string|max:100',
-        'last_name' => 'required|string|max:100',
-        'position' => 'nullable|string|max:100',
-        'phone' => 'nullable|string|max:30',
-    ]);
-
-    // Vérifier si l'utilisateur existe déjà
-    $user = User::where('email', $request->email)->first();
-    $hasAccount = (bool) $user;
-
-    // Vérifier si le salarié existe déjà
-    $existingEmployee = $company->employees()
-        ->where(function ($query) use ($request, $user) {
-            if ($user) {
-                $query->where('user_id', $user->id);
-            } else {
-                $query->where('email', $request->email);
-            }
-        })
-        ->exists();
-
-    if ($existingEmployee) {
-        return response()->json(['message' => 'Ce salarié est déjà dans l\'entreprise'], 409);
-    }
-
-    // Créer le salarié
-    $employeeData = [
-        'company_id' => $company->id,
-        'position' => $request->position,
-        'status' => 'active',
-        'email' => $request->email,
-        'first_name' => $request->first_name,
-        'last_name' => $request->last_name,
-        'phone' => $request->phone,
-        'has_account' => $hasAccount, // 👈 AJOUTE CETTE LIGNE
-        'user_id' => $user?->id,
-    ];
-
-    $employee = $company->employees()->create($employeeData);
-
-    // Si l'utilisateur existe, l'ajouter aussi comme membre (optionnel)
-    if ($user) {
-        $existingMember = $company->members()->where('user_id', $user->id)->exists();
-        if (!$existingMember) {
-            $company->members()->create([
-                'user_id' => $user->id,
-                'role' => 'member',
-                'status' => 'active',
-            ]);
-        }
-    }
-
-    return response()->json([
-        'message' => $hasAccount ? '✅ Salarié ajouté (avec compte)' : '✅ Salarié ajouté',
-        'data' => $employee->load('user')
-    ], 201);
-}
-/**
- * Retirer un salarié
- */
-public function removeEmployee(Request $request, Company $company, $employeeId)
-{
-    $this->authorize('update', $company);
-
-    $employee = $company->employees()->where('id', $employeeId)->first();
-    if (!$employee) {
-        return response()->json(['message' => 'Salarié non trouvé'], 404);
-    }
-
-    $employee->delete();
-
-    return response()->json(['message' => 'Salarié retiré avec succès ✅']);
-}
 }

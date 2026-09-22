@@ -1,81 +1,119 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import api from '../../services/api';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowLeft, Mail, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import api from "../../services/api";
 
-const ForgotPassword = () => {
-  const [email, setEmail] = useState('');
+export default function ForgotPassword() {
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState('');
-  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess(false);
 
     try {
-      await api.post('/forgot-password', { email });
-      setSuccess('Un lien de réinitialisation a été envoyé à votre email.');
-      setEmail('');
+      await api.post("/forgot-password", { email });
+      setSuccess(true);
+      setTimeout(() => navigate("/login"), 4000);
     } catch (err) {
-      setError(err.response?.data?.message || 'Une erreur est survenue.');
+      setError(err.response?.data?.message || "Une erreur est survenue.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-      <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
-        <h1 className="text-2xl font-bold text-center text-blue-600 mb-6">
-          Mot de passe oublié
-        </h1>
-
-        {success && (
-          <div className="bg-green-100 text-green-700 p-3 rounded mb-4">
-            {success}
-          </div>
-        )}
-        {error && (
-          <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
-            {error}
-          </div>
-        )}
-
-        <p className="text-gray-600 text-sm mb-6">
-          Entrez votre email et nous vous enverrons un lien pour réinitialiser votre mot de passe.
-        </p>
-
-        <form onSubmit={handleSubmit}>
-          <div className="mb-6">
-            <label className="block text-sm font-medium mb-1">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
-          >
-            {loading ? 'Envoi...' : 'Envoyer le lien'}
-          </button>
-        </form>
-
-        <p className="text-center mt-4 text-sm text-gray-600">
-          <Link to="/login" className="text-blue-600 hover:underline">
-            Retour à la connexion
-          </Link>
-        </p>
+    <div className="relative min-h-screen overflow-hidden bg-[#0A1229] text-white">
+      {/* Fond : glows */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-32 top-10 h-[420px] w-[420px] rounded-full bg-emerald-500/10 blur-[120px]" />
+        <div className="absolute -right-32 bottom-0 h-[420px] w-[420px] rounded-full bg-blue-500/10 blur-[120px]" />
       </div>
+
+      {/* Retour */}
+      <Link
+        to="/login"
+        className="absolute left-6 top-6 z-20 flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 backdrop-blur-md transition hover:bg-white/10"
+      >
+        <ArrowLeft size={15} /> Connexion
+      </Link>
+
+      {/* Contenu */}
+      <main className="relative z-10 mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-6 py-16">
+        <div className="w-full rounded-3xl border border-white/10 bg-white/[0.04] p-8 shadow-2xl shadow-black/30 backdrop-blur-xl sm:p-10">
+          {/* Icône */}
+          <div className="flex justify-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-400">
+              <Mail size={26} />
+            </div>
+          </div>
+
+          <h1 className="mt-6 text-center text-2xl font-bold text-white">
+            Mot de passe oublié ?
+          </h1>
+          <p className="mt-2 text-center text-sm text-slate-400">
+            Entrez votre email et nous vous enverrons un lien pour réinitialiser votre mot de passe.
+          </p>
+
+          {success && (
+            <div className="mt-6 flex items-start gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3.5 text-sm text-emerald-300">
+              <CheckCircle size={16} className="mt-0.5 shrink-0" />
+              <span>Un lien de réinitialisation a été envoyé à votre email.</span>
+            </div>
+          )}
+
+          {error && (
+            <div className="mt-6 flex items-start gap-2 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-3.5 text-sm text-rose-300">
+              <AlertCircle size={16} className="mt-0.5 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                Email
+              </label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="vous@exemple.com"
+                className="mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-sm text-white placeholder:text-slate-600 transition focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading || success}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-500 py-3.5 text-sm font-bold text-[#0A1229] transition-all hover:scale-[1.01] hover:bg-emerald-400 disabled:opacity-60"
+            >
+              {loading ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" /> Envoi...
+                </>
+              ) : success ? (
+                <>✅ Lien envoyé</>
+              ) : (
+                <>Envoyer le lien</>
+              )}
+            </button>
+          </form>
+
+          <p className="mt-6 text-center text-xs text-slate-500">
+            Vous vous souvenez de votre mot de passe ?{" "}
+            <Link to="/login" className="font-semibold text-emerald-400 hover:text-emerald-300">
+              Se connecter
+            </Link>
+          </p>
+        </div>
+      </main>
     </div>
   );
-};
-
-export default ForgotPassword;
+}

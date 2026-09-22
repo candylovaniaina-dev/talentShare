@@ -2,11 +2,12 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Search, MapPin, Sparkles, ShieldCheck, CalendarCheck,
-  ShieldAlert, Sliders, X, Briefcase, User, Building2,
-  Clock, Euro, Star, Lock,
+  Sliders, X, Briefcase, User, Clock, Euro, Filter,
+  ArrowRight, TrendingUp, Check,
 } from "lucide-react";
 import PublicNavbar from "../components/layout/PublicNavbar";
 import AppShell from "../components/layout/AppShell";
+import ExploreMap from "../components/ExploreMap";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 
@@ -21,11 +22,11 @@ const LEVEL_LABELS = {
 };
 
 const scoreColor = (score) => {
-  if (score === null || score === undefined) return "";
-  if (score >= 80) return "bg-emerald-100 text-emerald-700";
-  if (score >= 60) return "bg-blue-100 text-blue-700";
-  if (score >= 40) return "bg-amber-100 text-amber-700";
-  return "bg-slate-100 text-slate-600";
+  if (score === null || score === undefined) return "bg-slate-700 text-slate-300 border-slate-700";
+  if (score >= 80) return "bg-emerald-500/20 text-emerald-300 border-emerald-500/30";
+  if (score >= 60) return "bg-blue-500/20 text-blue-300 border-blue-500/30";
+  if (score >= 40) return "bg-amber-500/20 text-amber-300 border-amber-500/30";
+  return "bg-slate-500/20 text-slate-300 border-slate-500/30";
 };
 
 const asArray = (data) => {
@@ -38,215 +39,52 @@ export default function Explore() {
   const { user } = useAuth();
   const Layout = user ? AppShell : PublicOnlyLayout;
 
-  // Recherche + filtres
+  // === Recherche ===
   const [search, setSearch] = useState("");
-  const [profileType, setProfileType] = useState("");
-  const [availabilityStatus, setAvailabilityStatus] = useState("");
-  const [locationType, setLocationType] = useState("");
-  const [availableFrom, setAvailableFrom] = useState("");
-  const [availableTo, setAvailableTo] = useState("");
-  const [country, setCountry] = useState("");
-  const [city, setCity] = useState("");
-  const [missionType, setMissionType] = useState("");
-  const [verifiedOnly, setVerifiedOnly] = useState(false);
-  const [rateMin, setRateMin] = useState("");
-  const [rateMax, setRateMax] = useState("");
-  const [minLevel, setMinLevel] = useState("");
-  const [minYears, setMinYears] = useState("");
-
-  const [selectedSkills, setSelectedSkills] = useState([]);
-  const [skillSearch, setSkillSearch] = useState("");
-  const [skillSuggestions, setSkillSuggestions] = useState([]);
-  const [languages, setLanguages] = useState([]);
-  const [languageOptions, setLanguageOptions] = useState([]);
-
-  // Résultats
   const [resultFilter, setResultFilter] = useState("all");
-  const [showFilters, setShowFilters] = useState(false);
+
+  // === Filtres rapides ===
+  const [filters, setFilters] = useState({
+    available: false,
+    remote: false,
+    verified: false,
+    advanced: false,
+  });
+
+  // === Résultats ===
   const [results, setResults] = useState([]);
-  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
 
-  // Recherches sauvegardées
-  const [savedSearches, setSavedSearches] = useState([]);
-  const [showSaveModal, setShowSaveModal] = useState(false);
-  const [searchName, setSearchName] = useState("");
-
-  // ============================================
-  // Chargement initial : langues + saved searches
-  // ============================================
-  useEffect(() => {
-    // Langues disponibles
-    api.get("/languages")
-      .then((res) => setLanguageOptions(asArray(res.data)))
-      .catch(() => setLanguageOptions([]));
-  }, []);
-
-  useEffect(() => {
-    if (user) {
-      api.get("/saved-searches")
-        .then((res) => setSavedSearches(res.data))
-        .catch(() => {});
-    }
-  }, [user]);
-
-  // ============================================
-  // Suggestions de compétences (debounce 300ms)
-  // ============================================
-  useEffect(() => {
-    if (skillSearch.length < 2) { setSkillSuggestions([]); return; }
-    const timeout = setTimeout(() => {
-      api.get("/skills", { params: { search: skillSearch, limit: 10 } })
-        .then((res) => setSkillSuggestions(asArray(res.data)))
-        .catch(() => setSkillSuggestions([]));
-    }, 300);
-    return () => clearTimeout(timeout);
-  }, [skillSearch]);
-
-  // ============================================
-  // ✅ RECHERCHE AUTOMATIQUE (debounce 300ms)
-  // ============================================
+  // ✅ Recherche automatique (debounce 300ms) avec filtres
   useEffect(() => {
     setLoading(true);
     const timeout = setTimeout(() => {
       api.get("/talents/search", {
         params: {
           search: search || undefined,
-          profile_type: profileType || undefined,
-          availability_status: availabilityStatus || undefined,
-          location_type: locationType || undefined,
-          available_from: availableFrom || undefined,
-          available_to: availableTo || undefined,
-          country: country || undefined,
-          city: city || undefined,
-          mission_type: missionType || undefined,
-          verified_only: verifiedOnly || undefined,
-          rate_min: rateMin || undefined,
-          rate_max: rateMax || undefined,
-          min_level: minLevel || undefined,
-          min_years: minYears || undefined,
-          skill_ids: selectedSkills.length > 0 ? selectedSkills.map((s) => s.id).join(",") : undefined,
-          language_names: languages.length > 0 ? languages.join(",") : undefined,
+          availability_status: filters.available ? "available" : undefined,
+          location_type: filters.remote ? "remote" : undefined,
+          verified_only: filters.verified || undefined,
+          min_level: filters.advanced ? "advanced" : undefined,
         },
       })
-        .then((res) => {
-          setResults(res.data.data || []);
-          setTotal(res.data.total || 0);
-        })
-        .catch((err) => console.error("Erreur recherche:", err))
+        .then((res) => setResults(res.data.data || []))
+        .catch(console.error)
         .finally(() => setLoading(false));
     }, 300);
-
     return () => clearTimeout(timeout);
-  }, [
-    search, profileType, availabilityStatus, locationType,
-    availableFrom, availableTo, country, city, missionType,
-    verifiedOnly, rateMin, rateMax, minLevel, minYears,
-    selectedSkills, languages,
-  ]);
+  }, [search, filters]);
 
-  // ============================================
-  // Actions
-  // ============================================
-  const clearFilters = () => {
-    setSearch(""); setProfileType(""); setAvailabilityStatus("");
-    setLocationType(""); setAvailableFrom(""); setAvailableTo("");
-    setCountry(""); setCity(""); setMissionType("");
-    setVerifiedOnly(false); setRateMin(""); setRateMax("");
-    setMinLevel(""); setMinYears("");
-    setSelectedSkills([]); setLanguages([]);
+  // ✅ Toggle filtre
+  const toggleFilter = (key) => {
+    setFilters((f) => ({ ...f, [key]: !f[key] }));
   };
 
-  const addSkill = (s) => {
-    if (!selectedSkills.find((x) => x.id === s.id)) {
-      setSelectedSkills([...selectedSkills, s]);
-    }
-    setSkillSearch("");
-    setSkillSuggestions([]);
-  };
+  // ✅ Compteur filtres actifs
+  const activeFiltersCount = Object.values(filters).filter(Boolean).length;
 
-  const removeSkill = (id) => {
-    setSelectedSkills(selectedSkills.filter((s) => s.id !== id));
-  };
-
-  const toggleLanguage = (lang) => {
-    setLanguages((prev) =>
-      prev.includes(lang) ? prev.filter((l) => l !== lang) : [...prev, lang]
-    );
-  };
-
-  const saveCurrentSearch = async () => {
-    if (!searchName.trim()) return;
-    try {
-      await api.post("/saved-searches", {
-        name: searchName,
-        criteria: {
-          search, profile_type: profileType, availability_status: availabilityStatus,
-          location_type: locationType, available_from: availableFrom, available_to: availableTo,
-          country, city, mission_type: missionType, verified_only: verifiedOnly,
-          rate_min: rateMin, rate_max: rateMax, min_level: minLevel,
-          min_years: minYears, skill_ids: selectedSkills.map((s) => s.id),
-          languages,
-        },
-        notify_on_match: true,
-      });
-      setShowSaveModal(false);
-      setSearchName("");
-      api.get("/saved-searches").then((res) => setSavedSearches(res.data));
-    } catch (err) {
-      alert("Erreur lors de la sauvegarde");
-    }
-  };
-
-  const loadSavedSearch = (s) => {
-    const c = s.criteria || {};
-    if (c.search !== undefined) setSearch(c.search);
-    if (c.profile_type !== undefined) setProfileType(c.profile_type);
-    if (c.availability_status !== undefined) setAvailabilityStatus(c.availability_status);
-    if (c.location_type !== undefined) setLocationType(c.location_type);
-    if (c.available_from !== undefined) setAvailableFrom(c.available_from);
-    if (c.available_to !== undefined) setAvailableTo(c.available_to);
-    if (c.country !== undefined) setCountry(c.country);
-    if (c.city !== undefined) setCity(c.city);
-    if (c.mission_type !== undefined) setMissionType(c.mission_type);
-    if (c.verified_only !== undefined) setVerifiedOnly(c.verified_only);
-    if (c.rate_min !== undefined) setRateMin(c.rate_min);
-    if (c.rate_max !== undefined) setRateMax(c.rate_max);
-    if (c.min_level !== undefined) setMinLevel(c.min_level);
-    if (c.min_years !== undefined) setMinYears(c.min_years);
-    if (c.languages !== undefined) setLanguages(c.languages);
-  };
-
-  const deleteSavedSearch = async (id) => {
-    if (!confirm("Supprimer cette recherche ?")) return;
-    await api.delete(`/saved-searches/${id}`);
-    setSavedSearches(savedSearches.filter((x) => x.id !== id));
-  };
-
-  const trackInteraction = async (targetType, targetId, action, score) => {
-    if (!user) return;
-    try {
-      await api.post("/match-interactions", {
-        target_type: targetType,
-        target_id: targetId,
-        action,
-        match_score_at_action: score,
-        search_criteria: {
-          search, profile_type: profileType, city, country,
-          availability_status: availabilityStatus,
-          location_type: locationType,
-          skill_ids: selectedSkills.map((s) => s.id),
-        },
-      });
-    } catch (err) { /* silent */ }
-  };
-
-  const activeFiltersCount = [
-    availabilityStatus, locationType, availableFrom, availableTo,
-    country, city, missionType, verifiedOnly, rateMin, rateMax,
-    minLevel, minYears,
-  ].filter(Boolean).length + selectedSkills.length + languages.length;
-
+  // ✅ Filtrage par onglet
   const filteredResults = resultFilter === "all"
     ? results
     : results.filter((r) => r.result_type === resultFilter);
@@ -254,564 +92,353 @@ export default function Explore() {
   const countProfiles = results.filter((r) => r.result_type === "profile").length;
   const countOffers = results.filter((r) => r.result_type === "offer").length;
 
+  // ✅ Profils pour la carte (seulement les profils, pas les offres)
+  const profilesForMap = filteredResults.filter((r) => r.result_type === "profile");
+
+  // ✅ Config des chips
+  const CHIPS = [
+    { key: "available", label: "Disponibles", icon: "🟢" },
+    { key: "remote",    label: "Télétravail", icon: "🏠" },
+    { key: "verified",  label: "Vérifiés",    icon: "✅" },
+    { key: "advanced",  label: "Niveau avancé+", icon: "🚀" },
+  ];
+
   return (
     <Layout>
-      {!user && (
-        <div className="mx-auto max-w-6xl px-6 pt-6">
-          <PublicNavbar variant="light" />
-        </div>
-      )}
+      <div className="min-h-screen bg-[#0A1229] text-white font-sans">
 
-      <div className="mx-auto max-w-6xl px-6 py-12">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-6">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-mint">Explorer le réseau</p>
-            <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
-              Les bonnes compétences sont déjà là.
-            </h1>
-            <p className="mt-2 max-w-xl text-slate-500">
-              Trouvez les talents disponibles ou les offres de mise à disposition.
-              Filtrez par compétence, disponibilité, localisation et bien plus.
+        {/* PublicNavbar pour les visiteurs */}
+        {!user && <PublicNavbar variant="dark" />}
+
+        {/* ============ HERO ============ */}
+        <div className="relative overflow-hidden">
+          <div className="absolute top-0 left-1/4 h-96 w-96 rounded-full bg-emerald-500/10 blur-3xl" />
+          <div className="absolute top-20 right-1/4 h-80 w-80 rounded-full bg-blue-500/10 blur-3xl" />
+
+          <div className="relative mx-auto max-w-7xl px-6 pt-24 pb-12">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400">
+              Explorer le réseau
             </p>
-          </div>
-          <span className="hidden shrink-0 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 sm:flex">
-            <ShieldAlert size={14} className="text-mint" /> Données protégées
-          </span>
-        </div>
 
-        {/* ============================================
-            BARRE DE RECHERCHE (sans bouton "Rechercher")
-            ============================================ */}
-        <div className="mt-8 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4">
-          <div className="flex flex-1 min-w-[220px] items-center gap-2 rounded-xl border border-slate-200 px-3 py-2">
-            <Search size={16} className="text-slate-400" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Compétence, poste, entreprise..."
-              className="w-full text-sm focus:outline-none"
-            />
-          </div>
+            <h1 className="mt-4 text-4xl font-bold tracking-tight sm:text-5xl">
+              Les bonnes compétences
+              <br />
+              <span className="text-emerald-400">sont déjà là.</span>
+            </h1>
 
-          <div className="flex rounded-xl border border-slate-200 p-0.5">
-            {[
-              { id: "all",     label: `Tout (${results.length})` },
-              { id: "profile", label: `Talents (${countProfiles})` },
-              { id: "offer",   label: `Offres (${countOffers})` },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setResultFilter(tab.id)}
-                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                  resultFilter === tab.id ? "bg-navy text-white" : "text-slate-600 hover:bg-slate-50"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+            <p className="mt-6 max-w-2xl text-lg text-slate-400">
+              Trouvez un talent, une équipe ou une opportunité à partir de critères concrets.
+              Les localisations sont affichées par zone pour protéger la vie privée.
+            </p>
 
-          <button
-            type="button"
-            onClick={() => setShowFilters(!showFilters)}
-            className={`relative flex items-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-semibold ${
-              showFilters ? "border-navy bg-navy text-white" : "border-slate-200 text-slate-600"
-            }`}
-          >
-            <Sliders size={14} /> Filtres
-            {activeFiltersCount > 0 && (
-              <span className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-mint text-[10px] font-bold text-navy">
-                {activeFiltersCount}
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <span className="flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-300">
+                <ShieldCheck size={16} /> Données de localisation protégées
               </span>
-            )}
-          </button>
-
-          {user && (
-            <button
-              type="button"
-              onClick={() => setShowSaveModal(true)}
-              className="flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 hover:border-navy"
-            >
-              <Star size={14} /> Sauvegarder
-            </button>
-          )}
-        </div>
-
-        {/* Filtres rapides (chips) */}
-        <div className="mt-3 flex flex-wrap gap-2">
-          {[
-            { label: "🟢 Disponibles", key: "available" },
-            { label: "🏠 Télétravail", key: "remote" },
-            { label: "✅ Vérifiés", key: "verified" },
-            { label: "🚀 Niveau avancé+", key: "advanced" },
-          ].map((chip) => {
-            const isActive =
-              chip.key === "available" ? availabilityStatus === "available"
-              : chip.key === "remote" ? locationType === "remote"
-              : chip.key === "verified" ? verifiedOnly
-              : chip.key === "advanced" ? minLevel === "advanced"
-              : false;
-
-            return (
-              <button
-                key={chip.key}
-                type="button"
-                onClick={() => {
-                  if (chip.key === "available") setAvailabilityStatus(isActive ? "" : "available");
-                  if (chip.key === "remote") setLocationType(isActive ? "" : "remote");
-                  if (chip.key === "verified") setVerifiedOnly(!verifiedOnly);
-                  if (chip.key === "advanced") setMinLevel(isActive ? "" : "advanced");
-                }}
-                className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-                  isActive ? "border-navy bg-navy text-white" : "border-slate-200 text-slate-600 hover:border-navy"
-                }`}
-              >
-                {chip.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Recherches sauvegardées */}
-        {savedSearches.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-2 items-center">
-            <p className="text-xs font-semibold uppercase text-slate-400">⭐ Mes recherches</p>
-            {savedSearches.map((s) => (
-              <div key={s.id} className="flex items-center gap-1 rounded-full border border-slate-200 bg-white pl-3 pr-1 py-1">
-                <button onClick={() => loadSavedSearch(s)} className="text-xs font-semibold hover:text-navy">
-                  {s.name}
-                </button>
-                <button onClick={() => deleteSavedSearch(s.id)} className="text-slate-400 hover:text-rose-500 px-1">
-                  <X size={12} />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Filtres avancés */}
-        {showFilters && (
-          <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Filtres avancés</p>
-              {activeFiltersCount > 0 && (
-                <button onClick={clearFilters} className="text-xs font-semibold text-rose-500 hover:underline flex items-center gap-1">
-                  <X size={12} /> Effacer tout
-                </button>
-              )}
+              <span className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-300">
+                <TrendingUp size={16} /> Matching expliqué
+              </span>
             </div>
+          </div>
+        </div>
 
-            {/* Compétences */}
-            <div className="relative">
-              <label className="text-xs font-semibold text-slate-500">Compétences recherchées</label>
-              <div className="mt-1 flex flex-wrap items-center gap-1 rounded-xl border border-slate-200 px-3 py-2 min-h-[42px]">
-                {selectedSkills.map((s) => (
-                  <span key={s.id} className="flex items-center gap-1 rounded-full bg-mint/15 px-2.5 py-1 text-xs font-medium text-navy">
-                    {s.name}
-                    <button type="button" onClick={() => removeSkill(s.id)} className="text-slate-400 hover:text-rose-500">
-                      <X size={11} />
-                    </button>
-                  </span>
-                ))}
-                <input
-                  value={skillSearch}
-                  onChange={(e) => setSkillSearch(e.target.value)}
-                  placeholder={selectedSkills.length === 0 ? "Ex: Python, React, Laravel..." : ""}
-                  className="flex-1 min-w-[150px] bg-transparent text-sm focus:outline-none"
-                />
-              </div>
-              {skillSearch.length >= 2 && skillSuggestions.length > 0 && (
-                <div className="absolute top-full left-0 mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-lg z-20 max-h-60 overflow-y-auto">
-                  {skillSuggestions.map((s) => (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => addSkill(s)}
-                      className="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2"
-                    >
-                      <span>{s.category?.parent?.icon || "🏷️"}</span>
-                      <span className="font-medium">{s.name}</span>
-                      {s.category?.parent?.name && (
-                        <span className="text-xs text-slate-400">· {s.category.parent.name}</span>
-                      )}
-                    </button>
-                  ))}
+        {/* ============ GRILLE PRINCIPALE ============ */}
+        <div className="mx-auto max-w-7xl px-6 pb-16">
+          <div className="grid gap-6 lg:grid-cols-[1fr_400px]">
+
+            {/* ========== COLONNE GAUCHE : Recherche + Résultats ========== */}
+            <div className="min-w-0">
+
+              {/* Barre de recherche */}
+              <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-5">
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex flex-1 min-w-[200px] items-center gap-2 rounded-xl border border-white/10 bg-[#0A1229] px-4 py-3">
+                    <Search size={18} className="text-emerald-400" />
+                    <input
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="Compétence, métier, organisation..."
+                      className="w-full bg-transparent text-sm text-white placeholder:text-slate-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <button
+                    onClick={() => setShowFilters(!showFilters)}
+                    className={`flex items-center gap-1.5 rounded-xl border px-4 py-3 text-sm font-semibold transition ${
+                      showFilters
+                        ? "border-emerald-500/40 bg-emerald-500/20 text-emerald-300"
+                        : "border-white/10 bg-white/5 text-slate-300 hover:border-emerald-500/30"
+                    }`}
+                  >
+                    <Sliders size={14} /> Filtres
+                    {activeFiltersCount > 0 && (
+                      <span className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-[#0A1229]">
+                        {activeFiltersCount}
+                      </span>
+                    )}
+                  </button>
                 </div>
-              )}
-            </div>
 
-            {/* Niveau + Années + Type profil */}
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <div>
-                <label className="text-xs font-semibold text-slate-500">Niveau minimum</label>
-                <select value={minLevel} onChange={(e) => setMinLevel(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                  <option value="">Tous</option>
-                  <option value="beginner">🌱 Débutant</option>
-                  <option value="intermediate">📘 Intermédiaire</option>
-                  <option value="advanced">🚀 Avancé</option>
-                  <option value="expert">🏆 Expert</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-slate-500">Années d'expérience min</label>
-                <input type="number" min="0" max="60" value={minYears}
-                  onChange={(e) => setMinYears(e.target.value)}
-                  placeholder="Ex: 2"
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-slate-500">Type de profil</label>
-                <select value={profileType} onChange={(e) => setProfileType(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                  <option value="">Tous</option>
-                  <option value="employee">Salariés</option>
-                  <option value="student">Étudiants</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Type mission + Loc + Statut */}
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <div>
-                <label className="text-xs font-semibold text-slate-500">Type de mission</label>
-                <select value={missionType} onChange={(e) => setMissionType(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                  <option value="">Tous</option>
-                  {Object.entries(MISSION_TYPES).map(([v, l]) => (
-                    <option key={v} value={v}>{l}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-slate-500">Localisation</label>
-                <select value={locationType} onChange={(e) => setLocationType(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                  <option value="">Toutes</option>
-                  <option value="onsite">🏢 Sur site</option>
-                  <option value="remote">🏠 Télétravail</option>
-                  <option value="hybrid">🔄 Hybride</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-slate-500">Statut de disponibilité</label>
-                <select value={availabilityStatus} onChange={(e) => setAvailabilityStatus(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                  <option value="">Tous</option>
-                  <option value="available">🟢 Disponibles</option>
-                  <option value="partially_available">🟡 Partiels</option>
-                  <option value="on_mission">🔵 En mission</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Pays + Ville */}
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <label className="text-xs font-semibold text-slate-500">Pays</label>
-                <input value={country} onChange={(e) => setCountry(e.target.value)}
-                  placeholder="Ex: Madagascar"
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-slate-500">Ville</label>
-                <input value={city} onChange={(e) => setCity(e.target.value)}
-                  placeholder="Ex: Antananarivo"
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" />
-              </div>
-            </div>
-
-            {/* Période + taux */}
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <div>
-                <label className="text-xs font-semibold text-slate-500">Disponible du</label>
-                <input type="date" value={availableFrom}
-                  min={new Date().toISOString().split("T")[0]}
-                  onChange={(e) => setAvailableFrom(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-slate-500">Au</label>
-                <input type="date" value={availableTo}
-                  min={availableFrom || new Date().toISOString().split("T")[0]}
-                  onChange={(e) => setAvailableTo(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-slate-500">Taux/jour min (€)</label>
-                <input type="number" min="0" value={rateMin}
-                  onChange={(e) => setRateMin(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-slate-500">Taux/jour max (€)</label>
-                <input type="number" min="0" value={rateMax}
-                  onChange={(e) => setRateMax(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" />
-              </div>
-            </div>
-
-            {/* Langues */}
-            <div>
-              <label className="text-xs font-semibold text-slate-500">Langues parlées</label>
-              <div className="mt-1 flex flex-wrap gap-1.5">
-                {languageOptions.length === 0 && (
-                  <span className="text-xs text-slate-400">Chargement des langues...</span>
-                )}
-                {languageOptions.map((lang) => {
-                  const active = languages.includes(lang);
-                  return (
+                {/* Filtres rapides */}
+                <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-white/5 pt-4">
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mr-2">
+                    Filtres rapides
+                  </p>
+                  {CHIPS.map((chip) => {
+                    const active = filters[chip.key];
+                    return (
+                      <button
+                        key={chip.key}
+                        onClick={() => toggleFilter(chip.key)}
+                        className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                          active
+                            ? "border-emerald-500 bg-emerald-500 text-[#0A1229]"
+                            : "border-white/10 bg-white/5 text-slate-300 hover:border-emerald-500/30 hover:text-emerald-300"
+                        }`}
+                      >
+                        <span>{chip.icon}</span> {chip.label}
+                        {active && <Check size={12} />}
+                      </button>
+                    );
+                  })}
+                  {activeFiltersCount > 0 && (
                     <button
-                      key={lang}
-                      type="button"
-                      onClick={() => toggleLanguage(lang)}
-                      className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-                        active ? "bg-navy text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                      }`}
+                      onClick={() => setFilters({ available: false, remote: false, verified: false, advanced: false })}
+                      className="flex items-center gap-1 rounded-full border border-rose-500/30 bg-rose-500/10 px-3 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-500/20"
                     >
-                      {lang}
+                      <X size={12} /> Effacer
                     </button>
-                  );
-                })}
+                  )}
+                </div>
+              </div>
+
+              {/* Onglets */}
+              <div className="mt-6 flex gap-2">
+                {[
+                  { id: "all",     label: `Tout (${results.length})` },
+                  { id: "profile", label: `Talents (${countProfiles})` },
+                  { id: "offer",   label: `Offres (${countOffers})` },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setResultFilter(tab.id)}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                      resultFilter === tab.id
+                        ? "bg-emerald-500 text-[#0A1229]"
+                        : "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Compteur */}
+              <div className="mt-6 flex items-center justify-between">
+                <p className="text-sm text-slate-400">
+                  {loading ? (
+                    <span className="flex items-center gap-2">
+                      <span className="h-3 w-3 animate-spin rounded-full border-2 border-emerald-400 border-t-transparent" />
+                      Recherche...
+                    </span>
+                  ) : (
+                    <>
+                      <b className="text-white">{filteredResults.length}</b> résultat{filteredResults.length > 1 ? "s" : ""} · correspondance par critères
+                    </>
+                  )}
+                </p>
+
+                <button className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white">
+                  <Filter size={14} /> Plus de filtres
+                </button>
+              </div>
+
+              {/* Résultats */}
+              <div className="mt-4 space-y-4">
+                {filteredResults.map((item) =>
+                  item.result_type === "profile" ? (
+                    <TalentCard key={`p-${item.id}`} profile={item} />
+                  ) : (
+                    <OfferCard key={`o-${item.id}`} offer={item} />
+                  )
+                )}
+
+                {!loading && filteredResults.length === 0 && (
+                  <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 p-12 text-center">
+                    <Filter size={40} className="mx-auto text-slate-600 mb-3" />
+                    <p className="font-semibold text-slate-300">Aucun résultat</p>
+                    <p className="mt-1 text-sm text-slate-500">Essayez d'élargir vos filtres.</p>
+                  </div>
+                )}
               </div>
             </div>
 
-            <label className="flex items-center gap-2 text-sm font-medium text-slate-600">
-              <input type="checkbox" checked={verifiedOnly}
-                onChange={(e) => setVerifiedOnly(e.target.checked)} />
-              ✅ Uniquement les profils vérifiés
-            </label>
+            {/* ========== COLONNE DROITE : Carte + CTA ========== */}
+            <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-              <button onClick={clearFilters}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold hover:bg-slate-50">
-                Réinitialiser
-              </button>
-              <button onClick={() => setShowFilters(false)}
-                className="rounded-xl bg-navy px-4 py-2 text-sm font-semibold text-white hover:bg-navy-light">
-                Fermer
-              </button>
+              {/* Carte */}
+              <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#0A1229] to-[#0F1E45] p-5 overflow-hidden">
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-xs font-bold uppercase tracking-wider text-emerald-400">
+                    Vue réseau
+                  </p>
+                  <MapPin size={18} className="text-emerald-400" />
+                </div>
+
+                <ExploreMap profiles={profilesForMap} />
+
+                <p className="mt-4 text-xs text-slate-400 leading-relaxed">
+                  La carte indique des zones d'activité, jamais une adresse personnelle précise.
+                </p>
+              </div>
+
+              {/* CTA */}
+              <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+                <div className="flex items-start gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-400">
+                    <Sparkles size={18} />
+                  </span>
+                  <div>
+                    <p className="font-bold text-white">Vous cherchez une compétence ?</p>
+                    <p className="mt-1 text-sm text-slate-400">Décrivez votre besoin</p>
+                  </div>
+                </div>
+
+                <Link
+                  to="/resource-requests/new"
+                  className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-emerald-500/15 px-4 py-3 text-sm font-semibold text-emerald-300 hover:bg-emerald-500/25 transition"
+                >
+                  Créer une demande <ArrowRight size={14} />
+                </Link>
+              </div>
             </div>
           </div>
-        )}
-
-        {/* ============================================
-            COMPTEUR + INDICATEUR DE RECHERCHE
-            ============================================ */}
-        <div className="mt-6 flex items-center justify-between flex-wrap gap-3">
-          <p className="text-sm font-semibold text-slate-500 flex items-center gap-2">
-            {loading ? (
-              <>
-                <span className="h-3 w-3 animate-spin rounded-full border-2 border-navy border-t-transparent" />
-                Recherche en cours...
-              </>
-            ) : (
-              `${filteredResults.length} résultat${filteredResults.length > 1 ? "s" : ""}`
-            )}
-          </p>
-          {activeFiltersCount > 0 && (
-            <button
-              onClick={clearFilters}
-              className="text-xs font-semibold text-rose-500 hover:underline flex items-center gap-1"
-            >
-              <X size={12} /> Effacer les filtres ({activeFiltersCount})
-            </button>
-          )}
-        </div>
-
-        {/* Résultats */}
-        <div className="mt-3 grid gap-4">
-          {filteredResults.map((item) =>
-            item.result_type === "profile" ? (
-              <ProfileCard
-                key={`p-${item.id}`}
-                profile={item}
-                onView={() => trackInteraction("App\\Models\\ProfessionalProfile", item.id, "viewed", item.match_score)}
-                onPropose={() => trackInteraction("App\\Models\\ProfessionalProfile", item.id, "proposed", item.match_score)}
-              />
-            ) : (
-              <OfferCard
-                key={`o-${item.id}`}
-                offer={item}
-                onView={() => trackInteraction("App\\Models\\ResourceOffer", item.id, "viewed", item.match_score)}
-              />
-            )
-          )}
-
-          {!loading && filteredResults.length === 0 && (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center">
-              <p className="font-semibold text-slate-600">Aucun résultat</p>
-              <p className="mt-1 text-sm text-slate-400">Essayez d'élargir vos filtres.</p>
-            </div>
-          )}
         </div>
       </div>
-
-      {/* Modal sauvegarde */}
-      {showSaveModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowSaveModal(false)}>
-          <div className="w-full max-w-md rounded-2xl bg-white p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
-              <Star size={20} className="text-amber-500" /> Sauvegarder cette recherche
-            </h3>
-            <p className="text-sm text-slate-500 mb-4">
-              Vous serez notifié quand de nouveaux profils correspondront à ces critères.
-            </p>
-            <input
-              value={searchName}
-              onChange={(e) => setSearchName(e.target.value)}
-              placeholder="Ex: Développeur Laravel senior"
-              autoFocus
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-            />
-            <div className="mt-4 flex gap-2">
-              <button
-                onClick={saveCurrentSearch}
-                disabled={!searchName.trim()}
-                className="flex-1 rounded-xl bg-navy py-2.5 text-sm font-semibold text-white disabled:opacity-60"
-              >
-                Sauvegarder
-              </button>
-              <button
-                onClick={() => setShowSaveModal(false)}
-                className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold"
-              >
-                Annuler
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </Layout>
   );
 }
 
 // ============================================
-// CARTE PROFIL
+// CARTE TALENT
 // ============================================
-function ProfileCard({ profile: p, onView, onPropose }) {
+function TalentCard({ profile: p }) {
   const nextAvail = p.availability_windows?.[0];
   const isPrivate = p.visibility === "private";
 
-  const statusCfg = isPrivate
-    ? { emoji: "🔒", label: "Profil privé" }
-    : {
-        available: { emoji: "🟢", label: "Disponible" },
-        partially_available: { emoji: "🟡", label: "Partiel" },
-        on_mission: { emoji: "🔵", label: "En mission" },
-      }[nextAvail?.status] || null;
-
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 hover:shadow-md transition">
+    <div className="group rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-6 hover:border-emerald-500/30 hover:bg-white/[0.07] transition-all">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-start gap-4 flex-1 min-w-0">
-          {p.avatar_path ? (
-            <img
-              src={`http://localhost:8000/storage/${p.avatar_path}`}
-              alt={p.user?.name}
-              className={`h-16 w-16 rounded-2xl object-cover ${isPrivate ? "opacity-60" : ""}`}
-            />
-          ) : (
-            <div className={`flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-navy to-mint text-xl font-bold text-white ${isPrivate ? "opacity-60" : ""}`}>
-              {p.user?.name?.split(" ").map((n) => n[0]).join("").slice(0, 2)}
-            </div>
-          )}
+          {/* Avatar */}
+          <div className="relative shrink-0">
+            {p.avatar_path ? (
+              <img
+                src={`http://localhost:8000/storage/${p.avatar_path}`}
+                alt={p.user?.name}
+                className={`h-16 w-16 rounded-2xl object-cover border border-white/10 ${isPrivate ? "opacity-60" : ""}`}
+              />
+            ) : (
+              <div className={`flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-blue-500 text-xl font-bold text-white ${isPrivate ? "opacity-60" : ""}`}>
+                {p.user?.name?.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+              </div>
+            )}
+            {p.is_verified && (
+              <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-[#0A1229]">
+                <ShieldCheck size={12} />
+              </span>
+            )}
+          </div>
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-blue-700 flex items-center gap-1">
+              <span className="rounded-full border border-blue-500/30 bg-blue-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-blue-300 flex items-center gap-1">
                 <User size={10} /> Talent
               </span>
-              <p className="font-bold">{p.user?.name}</p>
-              {p.is_verified && <ShieldCheck size={14} className="text-mint" />}
-
-              {statusCfg && (
-                <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                  isPrivate ? "bg-slate-100 text-slate-600" : "bg-emerald-100 text-emerald-700"
-                }`}>
-                  {statusCfg.emoji} {statusCfg.label}
+              <h3 className="text-lg font-bold text-white">{p.user?.name}</h3>
+              {p.is_verified && <Check size={14} className="text-emerald-400" />}
+              {isPrivate && (
+                <span className="rounded-full border border-slate-500/30 bg-slate-500/10 px-2 py-0.5 text-[10px] font-bold text-slate-300">
+                  🔒 Privé
                 </span>
               )}
             </div>
 
-            {p.headline && <p className="text-sm text-slate-500 mt-0.5">{p.headline}</p>}
-
-            {p.city && (
-              <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-400">
-                <span className="flex items-center gap-1">
-                  <MapPin size={12} />
-                  {p.city}{p.country ? `, ${p.country}` : ""}
-                </span>
-                {nextAvail && !isPrivate && (
-                  <span className="flex items-center gap-1">
-                    <CalendarCheck size={12} />
-                    Dès {new Date(nextAvail.start_at).toLocaleDateString("fr-FR", { month: "short", day: "numeric" })}
-                  </span>
-                )}
-              </div>
+            {p.headline && (
+              <p className="text-sm text-emerald-400 mt-1">{p.headline}</p>
             )}
 
+            <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-slate-400">
+              {p.city && (
+                <span className="flex items-center gap-1">
+                  <MapPin size={12} /> {p.city}{p.country ? `, ${p.country}` : ""}
+                </span>
+              )}
+              {nextAvail && !isPrivate && (
+                <span className="flex items-center gap-1 text-emerald-400">
+                  <CalendarCheck size={12} />
+                  Disponible dès {new Date(nextAvail.start_at).toLocaleDateString("fr-FR", { month: "short", day: "numeric" })}
+                </span>
+              )}
+            </div>
+
+            {/* Compétences */}
             {!isPrivate && p.skills?.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-1">
+              <div className="mt-3 flex flex-wrap gap-1.5">
                 {p.skills.slice(0, 5).map((s) => (
-                  <span key={s.id} className="rounded-full bg-mint/15 px-2.5 py-1 text-xs font-medium text-navy">
+                  <span
+                    key={s.id}
+                    className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium text-slate-300"
+                  >
                     {s.name}
                     {s.pivot?.level && (
-                      <span className="text-[10px] text-slate-400 ml-1">· {LEVEL_LABELS[s.pivot.level]}</span>
+                      <span className="text-[10px] text-slate-500 ml-1">· {LEVEL_LABELS[s.pivot.level]}</span>
                     )}
                   </span>
                 ))}
                 {p.skills.length > 5 && (
-                  <span className="text-xs text-slate-400 self-center">+{p.skills.length - 5}</span>
+                  <span className="text-xs text-slate-500 self-center">+{p.skills.length - 5}</span>
                 )}
               </div>
             )}
 
             {isPrivate && (
-              <div className="mt-3 rounded-xl bg-slate-50 border border-slate-200 px-3 py-2 text-xs text-slate-500 flex items-center gap-2">
-                <Lock size={13} className="text-slate-400" />
-                <span>Ce profil est privé — infos détaillées masquées.</span>
+              <div className="mt-3 rounded-xl bg-slate-500/10 border border-slate-500/20 px-3 py-2 text-xs text-slate-400">
+                Ce profil est privé — infos détaillées masquées.
               </div>
             )}
           </div>
         </div>
 
-        {p.match_score !== null && p.match_score !== undefined && (
+        {/* Score */}
+        {p.match_score != null && (
           <div className="flex flex-col items-end gap-1 shrink-0">
-            <span className={`rounded-full px-3 py-1 text-sm font-bold ${scoreColor(p.match_score)}`}>
+            <span className={`rounded-full border px-3 py-1.5 text-sm font-bold ${scoreColor(p.match_score)}`}>
               {p.match_score}% match
             </span>
-            <span className="text-[10px] text-slate-400">qualité du profil</span>
+            <span className="text-[10px] text-slate-500">qualité du profil</span>
           </div>
         )}
       </div>
 
-      <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-t border-slate-100 pt-4">
-        <span className="flex items-center gap-1.5 text-xs text-slate-400">
-          <ShieldCheck size={13} className="text-mint" />
+      <div className="mt-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-t border-white/5 pt-5">
+        <span className="flex items-center gap-1.5 text-xs text-slate-500">
+          <ShieldCheck size={13} className="text-emerald-400" />
           {isPrivate ? "Certaines infos masquées" : "Coordonnées après accord"}
         </span>
         <div className="flex gap-2">
           <Link
             to={`/talents/${p.id}`}
-            onClick={onView}
-            className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold hover:border-navy"
+            className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white hover:border-emerald-500/30 hover:text-emerald-300 transition"
           >
             Voir le profil
           </Link>
           {!isPrivate && (
             <Link
               to={`/talents/${p.id}`}
-              onClick={onPropose}
-              className="rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white hover:bg-navy-light"
+              className="rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-[#0A1229] hover:bg-emerald-400 transition flex items-center gap-1"
             >
-              Proposer
+              Proposer <ArrowRight size={12} />
             </Link>
           )}
         </div>
@@ -823,91 +450,65 @@ function ProfileCard({ profile: p, onView, onPropose }) {
 // ============================================
 // CARTE OFFRE
 // ============================================
-function OfferCard({ offer: o, onView }) {
+function OfferCard({ offer: o }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 hover:shadow-md transition">
+    <div className="group rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-6 hover:border-emerald-500/30 hover:bg-white/[0.07] transition-all">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-start gap-4 flex-1 min-w-0">
-          {o.profile?.avatar_path ? (
-            <img src={`http://localhost:8000/storage/${o.profile.avatar_path}`} alt={o.profile.user?.name}
-              className="h-16 w-16 rounded-2xl object-cover" />
-          ) : (
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-navy to-mint text-xl font-bold text-white">
-              {o.profile?.user?.name?.split(" ").map((n) => n[0]).join("").slice(0, 2)}
-            </div>
-          )}
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-emerald-500 text-xl font-bold text-white shrink-0">
+            {o.profile?.user?.name?.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+          </div>
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700 flex items-center gap-1">
+              <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-300 flex items-center gap-1">
                 <Briefcase size={10} /> Offre
               </span>
-              <p className="font-bold">{o.title}</p>
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
-                {MISSION_TYPES[o.mission_type] || o.mission_type}
-              </span>
+              <h3 className="text-lg font-bold text-white">{o.title}</h3>
             </div>
 
             {o.profile?.user && (
-              <p className="text-sm text-slate-500 mt-0.5">
+              <p className="text-sm text-slate-400 mt-1">
                 {o.profile.user.name}
                 {o.profile.headline && ` · ${o.profile.headline}`}
               </p>
             )}
 
             {o.description && (
-              <p className="mt-1 text-sm text-slate-500 line-clamp-2">{o.description}</p>
+              <p className="mt-2 text-sm text-slate-400 line-clamp-2">{o.description}</p>
             )}
 
-            <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-400">
-              {o.location_city && <span className="flex items-center gap-1"><MapPin size={12} />{o.location_city}</span>}
+            <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-slate-400">
+              {o.location_city && (
+                <span className="flex items-center gap-1"><MapPin size={12} />{o.location_city}</span>
+              )}
               <span className="flex items-center gap-1">
-                <Clock size={12} />{o.workload_value}
+                <Clock size={12} /> {o.workload_value}
                 {o.workload_unit === "percentage" ? "%" : o.workload_unit === "hours_per_week" ? "h/sem" : "j/sem"}
               </span>
               {o.daily_rate && (
-                <span className="flex items-center gap-1 text-navy font-semibold">
+                <span className="flex items-center gap-1 text-emerald-400 font-semibold">
                   <Euro size={12} />{o.daily_rate}/jour
                 </span>
               )}
             </div>
-
-            {o.skills?.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-1">
-                {o.skills.slice(0, 4).map((s) => (
-                  <span key={s.id} className="rounded-full bg-mint/15 px-2.5 py-1 text-xs font-medium text-navy">
-                    {s.name}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {o.company && (
-              <p className="mt-2 flex items-center gap-1 text-xs text-slate-400">
-                <Building2 size={12} /> Proposé par {o.company.name}
-              </p>
-            )}
           </div>
         </div>
 
-        {o.match_score !== null && o.match_score !== undefined && (
-          <div className="flex flex-col items-end gap-1 shrink-0">
-            <span className={`rounded-full px-3 py-1 text-sm font-bold ${scoreColor(o.match_score)}`}>
-              {o.match_score}% match
-            </span>
-            <span className="text-[10px] text-slate-400">qualité de l'offre</span>
-          </div>
+        {o.match_score != null && (
+          <span className={`rounded-full border px-3 py-1.5 text-sm font-bold shrink-0 ${scoreColor(o.match_score)}`}>
+            {o.match_score}% match
+          </span>
         )}
       </div>
 
-      <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-t border-slate-100 pt-4">
-        <span className="flex items-center gap-1.5 text-xs text-slate-400">
-          <Sparkles size={13} className="text-mint" /> Mise à disposition
+      <div className="mt-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-t border-white/5 pt-5">
+        <span className="flex items-center gap-1.5 text-xs text-slate-500">
+          <Sparkles size={13} className="text-emerald-400" /> Mise à disposition
         </span>
         <Link
           to={`/resource-offers/${o.id}`}
-          onClick={onView}
-          className="rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white hover:bg-navy-light"
+          className="rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-[#0A1229] hover:bg-emerald-400 transition"
         >
           Voir le détail
         </Link>
@@ -916,7 +517,9 @@ function OfferCard({ offer: o, onView }) {
   );
 }
 
-// Layout visiteur non connecté
+// ============================================
+// LAYOUT VISITEUR
+// ============================================
 function PublicOnlyLayout({ children }) {
-  return <div className="min-h-screen bg-slate-50 font-sans text-navy">{children}</div>;
+  return <div className="min-h-screen bg-[#0A1229] font-sans text-white">{children}</div>;
 }

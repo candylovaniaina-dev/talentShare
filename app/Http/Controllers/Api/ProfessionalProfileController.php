@@ -272,18 +272,23 @@ class ProfessionalProfileController extends Controller
         $professionalProfile->can_view_contact = $isOwner
             || $professionalProfile->visibility === 'public';
 
-        if ($canSeeFull) {
-            $professionalProfile->load([
-                'experiences',
-                'educations',
-                'certifications',
-                'languages',
-                'availabilityWindows' => fn ($q) => $q
-                    ->where('end_at', '>=', now()->startOfDay())
-                    ->orderBy('start_at'),
-                'portfolio.projects',
-            ]);
-        }
+       // ✅ Disponibilités TOUJOURS visibles (même pour visiteurs non connectés)
+$professionalProfile->load([
+    'availabilityWindows' => fn ($q) => $q
+        ->where('end_at', '>=', now()->startOfDay())
+        ->orderBy('start_at'),
+]);
+
+// ✅ Infos sensibles uniquement si autorisé
+if ($canSeeFull) {
+    $professionalProfile->load([
+        'experiences',
+        'educations',
+        'certifications',
+        'languages',
+        'portfolio.projects',
+    ]);
+}
 
         if (!$professionalProfile->can_view_contact && $professionalProfile->user) {
             $professionalProfile->user->makeHidden(['phone', 'email']);

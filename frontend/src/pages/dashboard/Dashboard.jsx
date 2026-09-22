@@ -99,15 +99,9 @@ function CompanyStats({ stats }) {
   return (
     <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <StatCard icon={Building2} label="Entreprises gérées" value={stats.companies_count || 0} accent />
-      <StatCard icon={Layers} label="Demandes publiées" value={stats.resource_requests_open || 0} />
-      <StatCard icon={Handshake} label="Propositions reçues" value={stats.proposals_received || 0} />
-      {/* ✅ Carte cliquable vers /missions */}
-      <StatCard
-        icon={Briefcase}
-        label="Missions actives"
-        value={stats.active_missions || 0}
-        to="/missions"
-      />
+      <StatCard icon={Layers} label="Demandes publiées" value={stats.resource_requests_open || 0} to="/resource-requests" />
+      <StatCard icon={Handshake} label="Propositions reçues" value={stats.proposals_received || 0} to="/proposals" />
+      <StatCard icon={Briefcase} label="Missions actives" value={stats.active_missions || 0} to="/missions" />
       {stats.pending_missions > 0 && (
         <StatCard
           icon={AlertCircle}
@@ -117,19 +111,25 @@ function CompanyStats({ stats }) {
           accent
         />
       )}
-      <StatCard icon={FileText} label="Offres d'emploi ouvertes" value={stats.job_offers_open || 0} />
+      <StatCard icon={FileText} label="Offres d'emploi ouvertes" value={stats.job_offers_open || 0} to="/job-offers" />
     </div>
   );
 }
 
 function TalentStats({ stats, hasProfile }) {
+  const pendingProposals = stats.proposals_pending || 0;
+
   return (
     <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <StatCard icon={User} label="Profil complété" value={hasProfile ? "✅ Oui" : "❌ Non"} accent />
       <StatCard icon={Layers} label="Compétences renseignées" value={stats.skills_count || 0} />
       <StatCard icon={FileText} label="Candidatures envoyées" value={stats.applications_count || 0} />
-      <StatCard icon={Handshake} label="Propositions en attente" value={stats.proposals_pending || 0} />
-      {/* ✅ Carte cliquable vers /missions */}
+      <StatCard
+        icon={Handshake}
+        label="Propositions en attente"
+        value={pendingProposals}
+        to={pendingProposals > 0 ? "/proposals" : undefined}
+      />
       <StatCard
         icon={Briefcase}
         label="Missions actives"
@@ -145,6 +145,8 @@ function TalentStats({ stats, hasProfile }) {
           accent
         />
       )}
+
+     
 
       {!hasProfile && (
         <div className="col-span-full rounded-2xl border border-mint/30 bg-mint/10 p-5">

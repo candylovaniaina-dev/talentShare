@@ -1,27 +1,37 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   Bell, MessageSquare, Eye, Sparkles, Handshake, CheckCircle,
-  Target, PlayCircle, XCircle, Briefcase,
+  Target, PlayCircle, XCircle, Briefcase, Clock, UserPlus,
+  AlertCircle, FileText,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../services/api";
 
-// ✅ Icônes enrichies pour couvrir tous les types
 const ICONS = {
   new_message:              { icon: MessageSquare, color: "text-blue-600",    bg: "bg-blue-50" },
   resource_offer_published: { icon: Sparkles,      color: "text-purple-600",  bg: "bg-purple-50" },
   offer_viewed:             { icon: Eye,           color: "text-amber-600",   bg: "bg-amber-50" },
   offer_contacted:          { icon: Handshake,     color: "text-emerald-600", bg: "bg-emerald-50" },
   proposal_accepted:        { icon: CheckCircle,   color: "text-emerald-600", bg: "bg-emerald-50" },
+  proposal_declined:        { icon: XCircle,       color: "text-rose-600",    bg: "bg-rose-50" },
   talent_available:         { icon: Sparkles,      color: "text-mint",        bg: "bg-mint/10" },
 
-  // ✅ Nouveaux types de mission
   mission_pending_approval: { icon: Target,        color: "text-amber-600",   bg: "bg-amber-50" },
   mission_created_pending:  { icon: Target,        color: "text-blue-600",    bg: "bg-blue-50" },
   mission_accepted:         { icon: CheckCircle,   color: "text-emerald-600", bg: "bg-emerald-50" },
   mission_declined:         { icon: XCircle,       color: "text-rose-600",    bg: "bg-rose-50" },
 
+  availability_expiring:    { icon: Clock,         color: "text-amber-600",   bg: "bg-amber-50" },
+  saved_search_match:       { icon: Sparkles,      color: "text-blue-600",    bg: "bg-blue-50" },
+
+  resource_request_published: { icon: Target,      color: "text-emerald-600", bg: "bg-emerald-50" },
+  resource_request_matched:   { icon: UserPlus,    color: "text-blue-600",    bg: "bg-blue-50" },
+  resource_request_expiring:  { icon: AlertCircle, color: "text-amber-600",   bg: "bg-amber-50" },
+  resource_request_closed:    { icon: FileText,    color: "text-slate-500",   bg: "bg-slate-100" },
+
   default:                  { icon: Bell,          color: "text-slate-500",   bg: "bg-slate-100" },
+proposal_received: { icon: FileText,    color: "text-blue-600",    bg: "bg-blue-50" },
+proposal_expired:  { icon: AlertCircle, color: "text-slate-500",   bg: "bg-slate-100" },
 };
 
 export default function NotificationBell() {
@@ -58,15 +68,23 @@ export default function NotificationBell() {
     load();
   };
 
-  // ✅ Utilise action_url fournie par le backend
   const handleClick = async (n) => {
     await markRead(n.id);
 
     if (n.action_url) {
       setOpen(false);
-      navigate(n.action_url);
+
+      if (n.action_url.includes("#")) {
+        const [path, hash] = n.action_url.split("#");
+        navigate(path);
+        setTimeout(() => {
+          const el = document.getElementById(hash);
+          if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 300);
+      } else {
+        navigate(n.action_url);
+      }
     } else {
-      // Fallback au cas où
       console.warn("Pas d'action_url pour la notification:", n.type);
       setOpen(false);
     }
@@ -114,6 +132,12 @@ export default function NotificationBell() {
               const Icon = cfg.icon;
               const isClickable = !!n.action_url;
 
+              // ✅ Score de matching pour les notifs de demande
+              const matchScore =
+                n.type === "resource_request_published" && n.data?.match_score
+                  ? n.data.match_score
+                  : null;
+
               return (
                 <button
                   key={n.id}
@@ -134,6 +158,19 @@ export default function NotificationBell() {
                     {n.body && (
                       <p className="mt-0.5 text-xs text-slate-500 line-clamp-2">{n.body}</p>
                     )}
+
+                    {/* ✅ NOUVEAU : Badge score de matching */}
+                    {matchScore !== null && (
+                      <span className={`mt-1.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                        matchScore >= 80 ? "bg-emerald-100 text-emerald-700"
+                        : matchScore >= 60 ? "bg-blue-100 text-blue-700"
+                        : matchScore >= 40 ? "bg-amber-100 text-amber-700"
+                        : "bg-slate-100 text-slate-600"
+                      }`}>
+                        🎯 {matchScore}% match
+                      </span>
+                    )}
+
                     <p className="mt-1 text-[11px] text-slate-400">
                       {new Date(n.created_at).toLocaleString("fr-FR", {
                         day: "numeric",
