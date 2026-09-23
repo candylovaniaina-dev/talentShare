@@ -28,6 +28,7 @@ use App\Http\Controllers\Api\ProfileSectionController;
 use App\Http\Controllers\Api\SavedSearchController;
 use App\Http\Controllers\Api\MatchInteractionController;
 use App\Http\Controllers\Api\MatchController;
+use App\Http\Controllers\Api\EducationController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -256,6 +257,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/account/deactivate', [AccountController::class, 'deactivate']);
     Route::delete('/account', [AccountController::class, 'destroy']);
     Route::patch('/account/profile', [AccountController::class, 'updateProfile']);
+Route::patch('/account/preferences', [AccountController::class, 'updatePreferences']);
 
     // === Recherche utilisateur ===
     Route::get('/users/search', [UserController::class, 'search']);
@@ -269,7 +271,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/saved-searches/{savedSearch}',     [SavedSearchController::class, 'destroy']);
     Route::get   ('/saved-searches/{savedSearch}/run', [SavedSearchController::class, 'run']);
     Route::post  ('/match-interactions',               [MatchInteractionController::class, 'store']);
-});
+ Route::apiResource('educations', EducationController::class);
+    });
 
 
 // =============================================

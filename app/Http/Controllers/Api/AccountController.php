@@ -83,4 +83,18 @@ class AccountController extends Controller
 
     return response()->json($user->fresh());
 }
+
+public function updatePreferences(Request $request)
+{
+    $data = $request->validate([
+        'theme_preference' => ['sometimes', 'in:light,dark,system'],
+        'font_size'        => ['sometimes', 'in:small,normal,large'],
+        'high_contrast'    => ['sometimes', 'boolean'],
+        'reduce_motion'    => ['sometimes', 'boolean'],
+    ]);
+
+    $request->user()->update($data);
+
+    return response()->json($request->user()->fresh());
+}
 }

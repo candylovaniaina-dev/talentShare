@@ -54,11 +54,11 @@ export default function AppShell({ children }) {
   const nav = navByRole[user?.role] || navByRole.employee;
 
   return (
-    <div className="min-h-screen bg-[#0A1229] font-sans text-white">
+    <div className="min-h-screen bg-[var(--bg-app)] font-sans text-[var(--text-app)] transition-colors">
       <div className="flex">
         {/* Sidebar */}
-        <aside className="hidden w-64 shrink-0 flex-col border-r border-white/5 bg-[#0A1229] p-5 md:flex">
-          <Link to="/" className="mb-8 flex items-center gap-2 font-bold text-white">
+        <aside className="hidden w-64 shrink-0 flex-col border-r border-[var(--border-app)] bg-[var(--bg-app)] p-5 md:flex">
+          <Link to="/" className="mb-8 flex items-center gap-2 font-bold text-[var(--text-app)]">
             <span className="flex h-8 w-8 items-center justify-center rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
               <Circle size={14} strokeWidth={3} />
             </span>
@@ -75,7 +75,7 @@ export default function AppShell({ children }) {
                   className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
                     active
                       ? "bg-emerald-500 text-[#0A1229] shadow-lg shadow-emerald-500/20"
-                      : "text-slate-400 hover:bg-white/5 hover:text-white"
+                      : "text-[var(--text-muted)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-app)]"
                   }`}
                 >
                   <Icon size={18} />
@@ -85,12 +85,11 @@ export default function AppShell({ children }) {
             })}
           </nav>
 
-          {/* Footer sidebar */}
-          <div className="mt-4 rounded-xl border border-white/5 bg-white/5 p-3">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+          <div className="mt-4 rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-3">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-faint)]">
               Version Beta
             </p>
-            <p className="mt-1 text-xs text-slate-400">
+            <p className="mt-1 text-xs text-[var(--text-muted)]">
               Vos données sont protégées.
             </p>
           </div>
@@ -98,15 +97,14 @@ export default function AppShell({ children }) {
 
         {/* Main */}
         <div className="flex-1 min-w-0">
-          {/* Topbar */}
-          <header className="flex items-center justify-between border-b border-white/5 bg-[#0A1229]/80 backdrop-blur-xl px-6 py-4 sticky top-0 z-30">
+          <header className="flex items-center justify-between border-b border-[var(--border-app)] bg-[var(--bg-app)]/80 backdrop-blur-xl px-6 py-4 sticky top-0 z-30">
             <div>
-              <p className="text-xs text-slate-500">Bienvenue</p>
-              <p className="font-semibold text-white">{user?.name}</p>
+              <p className="text-xs text-[var(--text-faint)]">Bienvenue</p>
+              <p className="font-semibold text-[var(--text-app)]">{user?.name}</p>
             </div>
             <div className="flex items-center gap-4">
               <NotificationBell />
-              <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300">
+              <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400">
                 {roleLabel(user?.role)}
               </span>
               <DropdownMenu />

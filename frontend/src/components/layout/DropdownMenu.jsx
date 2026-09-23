@@ -1,119 +1,132 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { 
-  User, Settings, HelpCircle, LogOut, ChevronDown, Shield, LayoutDashboard
-} from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Settings, HelpCircle, Moon, LogOut, ChevronRight } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
 export default function DropdownMenu() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
 
-  // Fermer le menu si on clique ailleurs
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
+    const onClick = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
+  const initials = user?.name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+
   const handleLogout = async () => {
-    await logout();
-    navigate("/login");
+    setOpen(false);
+    try {
+      if (logout) await logout();
+      else localStorage.removeItem("token");
+    } finally {
+      navigate("/login");
+    }
   };
 
-  // Première lettre du nom pour l'avatar
-  const initial = user?.name?.charAt(0).toUpperCase() || "U";
+  const go = (path) => {
+    setOpen(false);
+    navigate(path);
+  };
 
   return (
-    <div className="relative" ref={dropdownRef}>
-      {/* Bouton - Avatar avec initiale */}
+    <div ref={ref} className="relative">
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 rounded-full px-3 py-2 hover:bg-slate-100 transition"
+        onClick={() => setOpen((o) => !o)}
+        className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-white/10 text-sm font-bold text-white transition hover:opacity-90"
       >
-        <div className="h-8 w-8 rounded-full bg-navy text-white flex items-center justify-center text-sm font-semibold">
-          {initial}
-        </div>
-        <ChevronDown size={16} className={`transition ${isOpen ? "rotate-180" : ""}`} />
+        {user?.avatar_path ? (
+          <img
+            src={`http://localhost:8000/storage/${user.avatar_path}`}
+            alt={user.name}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          initials || "?"
+        )}
       </button>
 
-      {/* Menu déroulant */}
-      {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white shadow-xl border border-slate-200 py-2 z-50">
-          {/* Header - Nom + Email + Rôle */}
-          <div className="px-4 py-3 border-b border-slate-100">
-            <p className="font-semibold text-sm">{user?.name}</p>
-            <p className="text-xs text-slate-500 truncate">{user?.email}</p>
-            <span className="mt-1 inline-block text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
-              {user?.role === 'company' ? '🏢 Entreprise' : 
-               user?.role === 'student' ? '🎓 Étudiant' :
-               user?.role === 'university' ? '🏛️ Université' :
-               user?.role === 'admin' ? '🛡️ Admin' : '👤 Talent'}
-            </span>
+      {open && (
+        <div className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-2xl border border-white/10 bg-[#242526] shadow-2xl">
+          {/* En-tête */}
+          <div className="p-2">
+            <button
+              onClick={() => go("/profile")}
+              className="flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition hover:bg-white/10"
+            >
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-emerald-500/20 text-sm font-bold text-emerald-300">
+                {user?.avatar_path ? (
+                  <img
+                    src={`http://localhost:8000/storage/${user.avatar_path}`}
+                    alt={user.name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  initials || "?"
+                )}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[15px] font-semibold text-white">
+                  {user?.name}
+                </span>
+              </span>
+              <ChevronRight size={16} className="text-slate-400" />
+            </button>
           </div>
 
-          {/* Items du menu */}
-          <div className="py-1">
-            {/* Tableau de bord */}
-            <Link
-              to="/dashboard"
-              onClick={() => setIsOpen(false)}
-              className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-slate-50 transition"
-            >
-              <LayoutDashboard size={18} className="text-slate-500" />
-              <span>Tableau de bord</span>
-            </Link>
+          <div className="mx-2 border-t border-white/10" />
 
-            {/* Mon profil */}
-            <Link
-              to="/profile"
-              onClick={() => setIsOpen(false)}
-              className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-slate-50 transition"
-            >
-              <User size={18} className="text-slate-500" />
-              <span>Mon profil</span>
-            </Link>
+          {/* Liens */}
+          <div className="p-2">
+            <MenuLink
+              icon={Settings}
+              label="Paramètres et confidentialité"
+              onClick={() => go("/account-settings")}
+            />
+            <MenuLink
+              icon={HelpCircle}
+              label="Aide et assistance"
+              onClick={() => go("/help")}
+            />
+            <MenuLink
+              icon={Moon}
+              label="Affichage et accessibilité"
+              onClick={() => go("/appearance")}
+            />
+          </div>
 
-            {/* Paramètres */}
-            <Link
-              to="/account-settings"
-              onClick={() => setIsOpen(false)}
-              className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-slate-50 transition"
-            >
-              <Settings size={18} className="text-slate-500" />
-              <span>Paramètres</span>
-            </Link>
+          <div className="mx-2 border-t border-white/10" />
 
-            {/* Séparateur */}
-            <hr className="my-1 border-slate-100" />
-
-            {/* Aide et assistance */}
-            <Link
-              to="/help"
-              onClick={() => setIsOpen(false)}
-              className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-slate-50 transition"
-            >
-              <HelpCircle size={18} className="text-slate-500" />
-              <span>Aide et assistance</span>
-            </Link>
-
-            {/* Déconnexion */}
-            <button
-              onClick={handleLogout}
-              className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition"
-            >
-              <LogOut size={18} />
-              <span>Se déconnecter</span>
-            </button>
+          <div className="p-2">
+            <MenuLink icon={LogOut} label="Se déconnecter" onClick={handleLogout} danger />
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+function MenuLink({ icon: Icon, label, onClick, danger }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-left text-sm font-medium transition hover:bg-white/10 ${
+        danger ? "text-rose-400" : "text-slate-100"
+      }`}
+    >
+      <span
+        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+          danger ? "bg-rose-500/15" : "bg-white/10"
+        }`}
+      >
+        <Icon size={16} />
+      </span>
+      {label}
+    </button>
   );
 }

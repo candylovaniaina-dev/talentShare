@@ -121,6 +121,8 @@ class PortfolioController extends Controller
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date'],
             'technologies' => ['nullable', 'array'],
+            // ✅ AJOUT : type de projet (Young Talent)
+            'project_type' => ['nullable', 'in:academic,personal,professional'],
         ]);
 
         $project = $portfolio->projects()->create($data);
@@ -142,6 +144,8 @@ class PortfolioController extends Controller
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date'],
             'technologies' => ['nullable', 'array'],
+            // ✅ AJOUT : type de projet (Young Talent)
+            'project_type' => ['nullable', 'in:academic,personal,professional'],
         ]);
 
         $project->update($data);
@@ -226,7 +230,14 @@ class PortfolioController extends Controller
             'country'      => $profile->country,
             'profile_type' => $profile->profile_type,
             'is_verified'  => $profile->is_verified,
-            'cv_path'      => $profile->cv_path,  // ✅ AJOUTÉ
+            'cv_path'      => $profile->cv_path,
+
+            // ✅ AJOUT : Champs Young Talent
+            'is_young_talent'         => $profile->is_young_talent,
+            'looking_for_opportunity' => $profile->looking_for_opportunity,
+            'university'              => $profile->university,
+            'field_of_study'          => $profile->field_of_study,
+            'study_level'             => $profile->study_level,
 
             // ✅ User (phone, country d'origine)
             'user' => [

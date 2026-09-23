@@ -1,197 +1,168 @@
-import React, { useState } from 'react';
-import AppShell from '../components/layout/AppShell';
-import { 
-  HelpCircle, FileText, Mail, Phone, BookOpen, 
-  Shield, User, Settings, ExternalLink, CheckCircle,
-  ChevronDown, ChevronUp, Users, Briefcase, Search
-} from 'lucide-react';
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import {
+  HelpCircle, Search, BookOpen, MessageCircle, Mail, FileText,
+  ChevronDown, ExternalLink, ArrowLeft,
+} from "lucide-react";
+import AppShell from "../components/layout/AppShell";
+
+const FAQ = [
+  {
+    q: "Comment compléter mon profil professionnel ?",
+    a: "Allez dans Mon profil → cliquez sur Modifier. Ajoutez vos compétences, expériences, formations et un titre professionnel. Un profil complet augmente vos chances de matching de 3x.",
+  },
+  {
+    q: "Comment fonctionne le matching ?",
+    a: "Le matching compare vos compétences, votre disponibilité et votre localisation avec les demandes des entreprises. Un score de 0 à 100% est calculé pour chaque opportunité.",
+  },
+  {
+    q: "Puis-je définir ma visibilité ?",
+    a: "Oui. Dans Paramètres → Confidentialité, vous contrôlez qui peut voir votre profil, votre email, votre téléphone et vos disponibilités.",
+  },
+  {
+    q: "Comment gérer mes disponibilités ?",
+    a: "Dans Mon profil, section Disponibilités, vous pouvez ajouter des périodes précises (dates, charge, type de mission). Les conflits sont détectés automatiquement.",
+  },
+  {
+    q: "Comment accepter une proposition ?",
+    a: "Dans Mes propositions, cliquez sur la proposition → bouton Accepter. Une mission sera créée automatiquement.",
+  },
+  {
+    q: "Comment supprimer mon compte ?",
+    a: "Dans Paramètres → Zone dangereuse, cliquez sur Supprimer mon compte. Cette action est irréversible et efface toutes vos données.",
+  },
+];
 
 export default function Help() {
-  const [openFaq, setOpenFaq] = useState(null);
+  const [search, setSearch] = useState("");
+  const [openIndex, setOpenIndex] = useState(null);
 
-  const toggleFaq = (index) => {
-    setOpenFaq(openFaq === index ? null : index);
-  };
-
-  // Données FAQ spécifiques à TalentShare
-  const faqs = [
-    {
-      question: "Comment créer mon profil professionnel ?",
-      answer: "Connectez-vous à votre compte, allez dans 'Mon profil' et remplissez vos informations : photo, titre, bio, compétences et expériences. Plus votre profil est complet, plus vous serez visible par les entreprises."
-    },
-    {
-      question: "Comment une entreprise peut-elle partager une ressource ?",
-      answer: "Les entreprises peuvent déclarer qu'un salarié est disponible via la section 'Resource Sharing'. Sélectionnez le salarié, définissez la période et les compétences, puis publiez l'offre pour que d'autres entreprises puissent la voir."
-    },
-    {
-      question: "Comment postuler à une offre de stage ou d'emploi ?",
-      answer: "Rendez-vous dans la section 'Offres & stages', filtrez par type (stage, CDD, CDI, etc.) et cliquez sur 'Postuler'. Vous pouvez joindre votre CV et une lettre de motivation."
-    },
-    {
-      question: "Comment fonctionne la vérification des profils ?",
-      answer: "Les profils des étudiants peuvent être vérifiés par leur université. Les entreprises peuvent également demander une vérification pour obtenir un badge 'Entreprise vérifiée', ce qui renforce la confiance entre les parties."
-    },
-    {
-      question: "Qu'est-ce que le matching de compétences ?",
-      answer: "TalentShare analyse automatiquement vos compétences, disponibilités et expériences pour vous proposer des missions ou opportunités qui correspondent à votre profil. Le score de correspondance vous indique la pertinence de chaque suggestion."
-    },
-    {
-      question: "Comment gérer mes disponibilités ?",
-      answer: "Dans votre profil, allez dans l'onglet 'Disponibilités'. Vous pouvez ajouter des périodes où vous êtes disponible, définir votre charge de travail (ex: 80%) et indiquer si le télétravail est possible."
-    },
-    {
-      question: "Comment créer un portfolio ?",
-      answer: "Dans l'onglet 'Portfolio' de votre profil, vous pouvez ajouter vos projets, vos réalisations et vos certifications. C'est idéal pour valoriser vos compétences auprès des recruteurs."
-    },
-    {
-      question: "Quels sont les différents rôles sur TalentShare ?",
-      answer: "Il y a 5 rôles : Entreprise (publié des offres), Talent (salarié disponible), Étudiant (en recherche de stage/emploi), Université (partenaire éducatif) et Administrateur (gestion de la plateforme)."
-    }
-  ];
+  const filtered = FAQ.filter(
+    (f) =>
+      f.q.toLowerCase().includes(search.toLowerCase()) ||
+      f.a.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <AppShell>
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <HelpCircle className="text-navy" size={28} />
-          Aide et assistance
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Trouvez des réponses à vos questions et contactez notre équipe.
+      <div className="mb-6">
+        <Link
+          to="/dashboard"
+          className="mb-4 inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-emerald-400"
+        >
+          <ArrowLeft size={13} /> Retour au tableau de bord
+        </Link>
+        <p className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
+          Support
         </p>
+        <h1 className="mt-1 text-3xl font-bold text-white">Aide et assistance</h1>
+        <p className="mt-1 text-sm text-slate-400">
+          Trouvez rapidement des réponses à vos questions.
+        </p>
+      </div>
 
-        {/* Section des guides */}
-        <div className="mt-8 grid gap-4 md:grid-cols-2">
-          {/* Guide d'utilisation */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 hover:shadow-md transition">
-            <h3 className="font-semibold flex items-center gap-2">
-              <BookOpen size={18} className="text-navy" />
-              Guide d'utilisation
-            </h3>
-            <p className="mt-2 text-sm text-slate-600">
-              Découvrez comment utiliser TalentShare étape par étape.
+      {/* Recherche */}
+      <div className="relative max-w-2xl">
+        <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Rechercher une question..."
+          className="w-full rounded-2xl border border-white/10 bg-white/5 py-3.5 pl-11 pr-4 text-sm text-white placeholder:text-slate-600 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+        />
+      </div>
+
+      {/* Cartes d'accès rapide */}
+      <div className="mt-6 grid gap-4 sm:grid-cols-3">
+        <QuickCard icon={BookOpen} title="Guide du démarrage" desc="Premiers pas sur TalentShare" to="/guide" color="mint" />
+        <QuickCard icon={MessageCircle} title="Contacter le support" desc="Réponse sous 24h" to="/contact" color="blue" />
+        <QuickCard icon={FileText} title="CGU & Confidentialité" desc="Conditions d'utilisation" to="/cgu" color="violet" />
+      </div>
+
+      {/* FAQ */}
+      <div className="mt-8">
+        <h2 className="mb-4 text-xl font-bold text-white">Questions fréquentes</h2>
+        <div className="space-y-2">
+          {filtered.length === 0 ? (
+            <p className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 text-center text-sm text-slate-500">
+              Aucun résultat pour "{search}"
             </p>
-            <button 
-              onClick={() => window.open('/guide', '_blank')}
-              className="mt-3 text-sm text-navy font-semibold hover:underline flex items-center gap-1"
-            >
-              Consulter le guide → <ExternalLink size={14} />
-            </button>
-          </div>
-
-          {/* Conditions générales */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 hover:shadow-md transition">
-            <h3 className="font-semibold flex items-center gap-2">
-              <FileText size={18} className="text-navy" />
-              Conditions générales
-            </h3>
-            <p className="mt-2 text-sm text-slate-600">
-              Consultez nos conditions d'utilisation et politiques.
-            </p>
-            <button 
-              onClick={() => window.open('/cgu', '_blank')}
-              className="mt-3 text-sm text-navy font-semibold hover:underline flex items-center gap-1"
-            >
-              Lire les CGU → <ExternalLink size={14} />
-            </button>
-          </div>
-
-          {/* Confidentialité */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 hover:shadow-md transition">
-            <h3 className="font-semibold flex items-center gap-2">
-              <Shield size={18} className="text-navy" />
-              Confidentialité & sécurité
-            </h3>
-            <p className="mt-2 text-sm text-slate-600">
-              Comment nous protégeons vos données et votre vie privée.
-            </p>
-            <button 
-              onClick={() => window.open('/confidentialite', '_blank')}
-              className="mt-3 text-sm text-navy font-semibold hover:underline flex items-center gap-1"
-            >
-              En savoir plus → <ExternalLink size={14} />
-            </button>
-          </div>
-
-          {/* FAQ */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 hover:shadow-md transition">
-            <h3 className="font-semibold flex items-center gap-2">
-              <CheckCircle size={18} className="text-navy" />
-              FAQ
-            </h3>
-            <p className="mt-2 text-sm text-slate-600">
-              Questions fréquentes sur les missions, profils et partenariats.
-            </p>
-            <button 
-              onClick={() => document.getElementById('faq-section')?.scrollIntoView({ behavior: 'smooth' })}
-              className="mt-3 text-sm text-navy font-semibold hover:underline"
-            >
-              Voir les FAQ ↓
-            </button>
-          </div>
-        </div>
-
-        {/* Section FAQ détaillée */}
-        <div id="faq-section" className="mt-10">
-          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-            ❓ Foire Aux Questions
-          </h2>
-          <div className="space-y-3">
-            {faqs.map((faq, index) => (
-              <div key={index} className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+          ) : (
+            filtered.map((item, i) => (
+              <div
+                key={i}
+                className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl"
+              >
                 <button
-                  onClick={() => toggleFaq(index)}
-                  className="w-full flex items-center justify-between p-4 text-left hover:bg-slate-50 transition"
+                  onClick={() => setOpenIndex(openIndex === i ? null : i)}
+                  className="flex w-full items-center justify-between gap-4 p-4 text-left transition hover:bg-white/[0.02]"
                 >
-                  <span className="font-medium text-sm">{faq.question}</span>
-                  {openFaq === index ? (
-                    <ChevronUp size={18} className="text-slate-400" />
-                  ) : (
-                    <ChevronDown size={18} className="text-slate-400" />
-                  )}
+                  <span className="flex items-center gap-3">
+                    <HelpCircle size={18} className="shrink-0 text-emerald-400" />
+                    <span className="font-semibold text-white">{item.q}</span>
+                  </span>
+                  <ChevronDown
+                    size={18}
+                    className={`shrink-0 text-slate-400 transition-transform ${
+                      openIndex === i ? "rotate-180" : ""
+                    }`}
+                  />
                 </button>
-                {openFaq === index && (
-                  <div className="px-4 pb-4 text-sm text-slate-600 border-t border-slate-100 pt-3">
-                    {faq.answer}
+                {openIndex === i && (
+                  <div className="border-t border-white/10 px-4 pb-4 pl-14 pt-3">
+                    <p className="text-sm leading-relaxed text-slate-300">{item.a}</p>
                   </div>
                 )}
               </div>
-            ))}
-          </div>
+            ))
+          )}
         </div>
+      </div>
 
-        {/* Contact */}
-        <div className="mt-10 rounded-2xl border border-slate-200 bg-white p-6">
-          <h2 className="text-lg font-semibold mb-4">📞 Nous contacter</h2>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-4">
-              <Mail size={18} className="text-navy" />
-              <div>
-                <p className="text-sm font-medium">Email</p>
-                <a href="mailto:support@talentshare.mg" className="text-sm text-navy hover:underline">
-                  support@talentshare.mg
-                </a>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-4">
-              <Phone size={18} className="text-navy" />
-              <div>
-                <p className="text-sm font-medium">Téléphone</p>
-                <p className="text-sm text-slate-600">+261 34 00 000 00</p>
-              </div>
+      {/* Contact */}
+      <div className="mt-8 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-400">
+              <Mail size={20} />
+            </span>
+            <div>
+              <p className="font-semibold text-white">Vous ne trouvez pas votre réponse ?</p>
+              <p className="text-sm text-slate-400">Notre équipe vous répond sous 24h ouvrées.</p>
             </div>
           </div>
-          <p className="mt-4 text-xs text-slate-400">
-            Réponse sous 24h ouvrables (du lundi au vendredi).
-          </p>
-        </div>
-
-        {/* Statut */}
-        <div className="mt-6 flex items-center gap-2 text-sm text-slate-500">
-          <span className="inline-block h-2 w-2 rounded-full bg-green-500"></span>
-          Tous les services sont opérationnels
+          <a
+            href="mailto:support@talentshare.mg"
+            className="flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400"
+          >
+            <Mail size={15} /> Contacter le support
+          </a>
         </div>
       </div>
     </AppShell>
+  );
+}
+
+function QuickCard({ icon: Icon, title, desc, to, color = "mint" }) {
+  const colorMap = {
+    mint: "bg-emerald-500/15 text-emerald-400",
+    blue: "bg-blue-500/15 text-blue-400",
+    violet: "bg-violet-500/15 text-violet-400",
+  };
+  return (
+    <Link
+      to={to}
+      className="group rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl transition hover:border-emerald-500/40 hover:bg-white/[0.06]"
+    >
+      <div className="flex items-start justify-between">
+        <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${colorMap[color]}`}>
+          <Icon size={18} />
+        </span>
+        <ExternalLink size={14} className="text-slate-600 group-hover:text-emerald-400" />
+      </div>
+      <p className="mt-4 font-semibold text-white">{title}</p>
+      <p className="mt-0.5 text-xs text-slate-400">{desc}</p>
+    </Link>
   );
 }

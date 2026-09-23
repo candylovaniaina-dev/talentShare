@@ -69,10 +69,16 @@ export default function PublicPortfolio() {
   const isDarkTheme = portfolio.theme === "bold";
   const isOwner = portfolio.is_owner || (user && user.id === portfolio.profile_data?.user_id);
 
-  // ✅ Fusion des données : profil + projets
+  // ✅ Fusion des données : profil + projets + Young Talent
   const mergedProfile = {
     ...(portfolio.profile_data || portfolio.profile || {}),
     projects: portfolio.projects || [],
+    // ✅ Champs Young Talent
+    is_young_talent: portfolio.profile_data?.is_young_talent || false,
+    looking_for_opportunity: portfolio.profile_data?.looking_for_opportunity || false,
+    university: portfolio.profile_data?.university || null,
+    field_of_study: portfolio.profile_data?.field_of_study || null,
+    study_level: portfolio.profile_data?.study_level || null,
   };
 
   // ============================================
@@ -97,6 +103,20 @@ export default function PublicPortfolio() {
             {copied ? <Check size={14} /> : <Share2 size={14} />} {copied ? "Lien copié !" : "Partager"}
           </button>
         </header>
+
+        {/* ✅ Badge Young Talent flottant */}
+        {mergedProfile.is_young_talent && (
+          <div className="fixed right-4 top-20 z-40 flex flex-col gap-2">
+            <span className="rounded-full border border-emerald-500/40 bg-emerald-500/90 px-3 py-1 text-[11px] font-bold text-white shadow-lg backdrop-blur">
+              🎓 Young Talent
+            </span>
+            {mergedProfile.looking_for_opportunity && (
+              <span className="rounded-full border border-amber-500/40 bg-amber-500/90 px-3 py-1 text-[11px] font-bold text-white shadow-lg backdrop-blur">
+                🔍 En recherche
+              </span>
+            )}
+          </div>
+        )}
 
         <ThemeComponent
           portfolio={portfolio}

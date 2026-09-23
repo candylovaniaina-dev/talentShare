@@ -2,18 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ✅ Fond global */
+/* ============================================================
+   BASE GLOBALE
+============================================================ */
+
 html, body, #root {
   min-height: 100vh;
 }
 
-/* ✅ Scroll smooth pour les ancres */
+/* Scroll smooth pour les ancres */
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 100px;
 }
 
-/* ✅ Scrollbar custom (dark) */
+/* ============================================================
+   SCROLLBAR CUSTOM
+============================================================ */
+
+/* Scrollbar sombre (par défaut) */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -32,11 +39,646 @@ html {
   background: rgba(110, 231, 200, 0.4);
 }
 
-/* ✅ Pour le scroll clair (Landing) */
+/* Scrollbar claire */
+html.light ::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+
+html.light ::-webkit-scrollbar-thumb {
+  background: rgba(11, 22, 51, 0.2);
+}
+
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(11, 22, 51, 0.4);
+}
+
 .scrollbar-light::-webkit-scrollbar-track {
   background: #f1f5f9;
 }
 
 .scrollbar-light::-webkit-scrollbar-thumb {
   background: rgba(11, 22, 51, 0.2);
+}
+
+/* ============================================================
+   VARIABLES DE THÈME
+============================================================ */
+
+html.dark {
+  --bg-app: #0A1229;
+  --bg-surface: rgba(255, 255, 255, 0.04);
+  --bg-surface-hover: rgba(255, 255, 255, 0.08);
+  --border-app: rgba(255, 255, 255, 0.1);
+  --text-app: #ffffff;
+  --text-muted: #94a3b8;
+  --text-faint: #64748b;
+}
+
+html.light {
+  --bg-app: #F8FAFC;
+  --bg-surface: #FFFFFF;
+  --bg-surface-hover: #F1F5F9;
+  --border-app: rgba(15, 23, 42, 0.1);
+  --text-app: #0F172A;
+  --text-muted: #475569;
+  --text-faint: #94A3B8;
+}
+
+body {
+  background-color: var(--bg-app);
+  color: var(--text-app);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* ============================================================
+   TAILLE DE TEXTE
+============================================================ */
+
+html.font-small { font-size: 14px; }
+html.font-normal { font-size: 16px; }
+html.font-large { font-size: 18px; }
+
+/* ============================================================
+   CONTRASTE ÉLEVÉ
+============================================================ */
+
+html.high-contrast {
+  --border-app: rgba(255, 255, 255, 0.35);
+}
+html.high-contrast.light {
+  --border-app: rgba(15, 23, 42, 0.4);
+  --text-muted: #1e293b;
+}
+html.high-contrast * {
+  font-weight: 500;
+}
+
+/* ============================================================
+   RÉDUCTION DES ANIMATIONS
+============================================================ */
+
+html.reduce-motion *,
+html.reduce-motion *::before,
+html.reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* ============================================================
+   ✅ MODE CLAIR — CORRECTIONS POUR RENDRE TOUT LISIBLE
+============================================================ */
+
+/* ---- Fonds navy → clair ---- */
+html.light aside,
+html.light .bg-\[\#0A1229\] {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+  border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Topbar */
+html.light header {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Cartes translucides */
+html.light .bg-white\/\[0\.04\],
+html.light .bg-white\/\[0\.06\],
+html.light .bg-white\/\[0\.02\] {
+  background-color: #FFFFFF !important;
+  border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Gradients sombres → clairs */
+html.light .from-\[\#0B1633\] {
+  --tw-gradient-from: #F1F5F9 !important;
+}
+html.light .to-\[\#0A1229\] {
+  --tw-gradient-to: #E2E8F0 !important;
+}
+html.light .from-\[\#0F1E45\] {
+  --tw-gradient-from: #E2E8F0 !important;
+}
+
+/* Modals sombres */
+html.light .bg-\[\#242526\],
+html.light .bg-\[\#0F1A2E\],
+html.light .bg-\[\#0F1E45\] {
+  background-color: #FFFFFF !important;
+  border-color: rgba(15, 23, 42, 0.1) !important;
+}
+
+/* ---- Textes ---- */
+
+/* ✅ Force text-white → foncé en mode clair */
+html.light .text-white {
+  color: #0F172A !important;
+}
+
+/* ✅ MAIS : les boutons emerald gardent leur texte foncé */
+html.light .bg-emerald-500 .text-white,
+html.light .bg-emerald-500.text-white {
+  color: #FFFFFF !important;
+}
+
+html.light .text-slate-300,
+html.light .text-slate-400 {
+  color: #475569 !important;
+}
+
+html.light .text-slate-500 {
+  color: #64748B !important;
+}
+
+/* Emerald reste vert */
+html.light .text-emerald-400,
+html.light .text-emerald-300 {
+  color: #059669 !important;
+}
+
+/* ---- Inputs & formulaires (LE BUG PRINCIPAL) ---- */
+
+html.light input,
+html.light textarea,
+html.light select {
+  background-color: #F8FAFC !important;
+  color: #0F172A !important;
+  border-color: rgba(15, 23, 42, 0.15) !important;
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #94A3B8 !important;
+}
+
+html.light label {
+  color: #64748B !important;
+}
+
+html.light input:disabled {
+  background-color: #F1F5F9 !important;
+  color: #64748B !important;
+}
+
+/* ---- Boutons ---- */
+
+html.light .bg-emerald-500 {
+  background-color: #10B981 !important;
+  color: #FFFFFF !important;
+}
+
+html.light .border-white\/10,
+html.light .border-white\/5 {
+  border-color: rgba(15, 23, 42, 0.1) !important;
+}
+
+html.light .bg-white\/5,
+html.light .bg-white\/10,
+html.light .bg-white\/15 {
+  background-color: rgba(15, 23, 42, 0.04) !important;
+}
+
+/* ---- Zones danger (rouge/ambre) restent lisibles ---- */
+
+html.light .bg-rose-500\/5,
+html.light .bg-rose-500\/10 {
+  background-color: #FEF2F2 !important;
+}
+html.light .text-rose-300,
+html.light .text-rose-400 {
+  color: #DC2626 !important;
+}
+
+html.light .bg-amber-500\/5,
+html.light .bg-amber-500\/10 {
+  background-color: #FFFBEB !important;
+}
+html.light .text-amber-300,
+html.light .text-amber-400 {
+  color: #D97706 !important;
+}
+
+/* ---- Emerald backgrounds (boutons, badges) ---- */
+
+html.light .bg-emerald-500\/10,
+html.light .bg-emerald-500\/15,
+html.light .bg-emerald-500\/20 {
+  background-color: rgba(16, 185, 129, 0.12) !important;
+}
+
+/* ---- Violet (pour badges colorés) ---- */
+
+html.light .bg-violet-500\/10,
+html.light .bg-violet-500\/15 {
+  background-color: rgba(139, 92, 246, 0.12) !important;
+}
+
+/* ---- Blue ---- */
+
+html.light .bg-blue-500\/10,
+html.light .bg-blue-500\/15 {
+  background-color: rgba(59, 130, 246, 0.12) !important;
+}
+
+/* ============================================================
+   ✅ DROPDOWN / MENU PROFIL — CORRECTION MODE CLAIR
+============================================================ */
+
+/* Fond du menu déroulant */
+html.light .bg-\[\#242526\],
+html.light .bg-\[\#1E1E1E\],
+html.light .bg-\[\#18191A\],
+html.light .bg-\[\#0F1A2E\],
+html.light .bg-\[\#1a1a2e\],
+html.light .bg-slate-900,
+html.light .bg-slate-800,
+html.light .bg-neutral-900,
+html.light .bg-neutral-800,
+html.light .bg-gray-900,
+html.light .bg-gray-800,
+html.light .bg-zinc-900,
+html.light .bg-zinc-800 {
+  background-color: #FFFFFF !important;
+  border-color: rgba(15, 23, 42, 0.1) !important;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12) !important;
+  color: #0F172A !important;
+}
+
+/* Texte principal du menu */
+html.light .bg-\[\#242526\] .text-white,
+html.light .bg-slate-900 .text-white,
+html.light .bg-slate-800 .text-white {
+  color: #0F172A !important;
+}
+
+/* Items du menu (Paramètres, Aide, Affichage...) */
+html.light .hover\:bg-white\/5:hover,
+html.light .hover\:bg-white\/10:hover,
+html.light .hover\:bg-slate-800:hover,
+html.light .hover\:bg-slate-700:hover {
+  background-color: #F1F5F9 !important;
+}
+
+/* Séparateurs (border-t / border-b) */
+html.light .border-white\/10,
+html.light .border-white\/5,
+html.light .divide-white\/10 > * + *,
+html.light .divide-white\/5 > * + * {
+  border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Icônes grisées */
+html.light .bg-white\/5 svg,
+html.light .bg-white\/10 svg {
+  color: #64748B !important;
+  stroke: #64748B !important;
+}
+
+/* Flèche ">" à droite du nom */
+html.light .text-slate-400,
+html.light .text-slate-500 {
+  color: #64748B !important;
+}
+
+/* Bouton "Se déconnecter" — garde son style rouge */
+html.light .text-red-500,
+html.light .text-rose-500,
+html.light .text-red-400 {
+  color: #DC2626 !important;
+}
+html.light .bg-red-500\/10,
+html.light .bg-rose-500\/10 {
+  background-color: #FEE2E2 !important;
+}
+
+/* Avatar (initiales LC) */
+html.light .bg-emerald-500\/20,
+html.light .bg-emerald-500\/15 {
+  background-color: #D1FAE5 !important;
+  color: #065F46 !important;
+}
+/* ============================================================
+   ✅ CORRECTION FINALE — TEXTES DU DROPDOWN EN MODE CLAIR
+============================================================ */
+
+/* Forcer TOUS les textes dans le dropdown à être foncés */
+html.light .bg-\[\#242526\] *,
+html.light .bg-\[\#1E1E1E\] *,
+html.light .bg-\[\#18191A\] *,
+html.light .bg-\[\#0F1A2E\] *,
+html.light .bg-\[\#1a1a2e\] *,
+html.light .bg-slate-900 *,
+html.light .bg-slate-800 * {
+  color: #0F172A !important;
+}
+
+/* Garder le bouton "Se déconnecter" en rouge */
+html.light .bg-\[\#242526\] .text-red-400,
+html.light .bg-\[\#242526\] .text-red-500,
+html.light .bg-\[\#242526\] .text-rose-400,
+html.light .bg-\[\#242526\] .text-rose-500,
+html.light .bg-slate-900 .text-red-400,
+html.light .bg-slate-900 .text-red-500 {
+  color: #DC2626 !important;
+}
+
+/* Garder l'avatar "LC" en vert */
+html.light .bg-\[\#242526\] .bg-emerald-500\/20,
+html.light .bg-\[\#242526\] .bg-emerald-500\/15,
+html.light .bg-slate-900 .bg-emerald-500\/20 {
+  color: #065F46 !important;
+}
+
+/* Améliorer le contraste des items du menu (gris moyen) */
+html.light .bg-\[\#242526\] .text-slate-300,
+html.light .bg-\[\#242526\] .text-slate-400,
+html.light .bg-\[\#242526\] .text-gray-300,
+html.light .bg-\[\#242526\] .text-gray-400,
+html.light .bg-\[\#242526\] .text-zinc-300,
+html.light .bg-\[\#242526\] .text-zinc-400 {
+  color: #475569 !important;
+}
+
+/* Cas générique : tout texte dans un élément avec ces classes de fond */
+html.light [class*="bg-[#242526]"],
+html.light [class*="bg-[#1E1E1E]"],
+html.light [class*="bg-[#18191A]"] {
+  color: #0F172A !important;
+}
+
+html.light [class*="bg-[#242526]"] button,
+html.light [class*="bg-[#1E1E1E]"] button,
+html.light [class*="bg-[#18191A]"] button {
+  color: #334155 !important;
+}
+
+html.light [class*="bg-[#242526]"] button:hover,
+html.light [class*="bg-[#1E1E1E]"] button:hover {
+  color: #0F172A !important;
+}
+
+/* ============================================================
+   🎨 DESIGN PREMIUM — SELECTS & MODALS EN MODE CLAIR
+   Style : blanc cassé, ombre douce, accent émeraude
+============================================================ */
+
+/* ---------- SELECT (mode clair) ---------- */
+html.light select {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+  border: 1px solid #E2E8F0 !important;
+  border-radius: 10px !important;
+  padding: 10px 36px 10px 14px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2310B981' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 12px center !important;
+  background-size: 14px !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+}
+
+html.light select:hover {
+  border-color: #10B981 !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.1) !important;
+}
+
+html.light select:focus {
+  outline: none !important;
+  border-color: #10B981 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15) !important;
+}
+
+/* ---------- OPTIONS DU SELECT ---------- */
+html.light select option {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+  padding: 12px 14px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  border-bottom: 1px solid #F1F5F9 !important;
+}
+
+html.light select option:checked,
+html.light select option:hover,
+html.light select option:focus {
+  background: linear-gradient(90deg, #10B981 0%, #059669 100%) !important;
+  color: #FFFFFF !important;
+  font-weight: 600 !important;
+}
+
+/* ---------- INPUTS (mode clair) ---------- */
+html.light input:not([type="checkbox"]):not([type="radio"]),
+html.light textarea {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+  border: 1px solid #E2E8F0 !important;
+  border-radius: 10px !important;
+  padding: 10px 14px !important;
+  font-size: 13px !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+}
+
+html.light input:not([type="checkbox"]):not([type="radio"]):hover,
+html.light textarea:hover {
+  border-color: #CBD5E1 !important;
+}
+
+html.light input:not([type="checkbox"]):not([type="radio"]):focus,
+html.light textarea:focus {
+  outline: none !important;
+  border-color: #10B981 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15) !important;
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #94A3B8 !important;
+  font-weight: 400 !important;
+}
+
+/* ---------- LABELS ---------- */
+html.light label {
+  color: #64748B !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.05em !important;
+}
+
+/* ============================================================
+   🎨 MODAL EN MODE CLAIR — DESIGN PREMIUM
+============================================================ */
+
+html.light .bg-\[\#0F1E45\] {
+  background: #FFFFFF !important;
+  border: 1px solid #E2E8F0 !important;
+  border-radius: 16px !important;
+  box-shadow: 
+    0 0 0 1px rgba(15, 23, 42, 0.04),
+    0 20px 50px rgba(15, 23, 42, 0.12),
+    0 8px 20px rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Titre du modal */
+html.light .bg-\[\#0F1E45\] h3 {
+  color: #0F172A !important;
+  font-weight: 700 !important;
+  font-size: 15px !important;
+}
+
+/* Labels uppercase */
+html.light .bg-\[\#0F1E45\] label,
+html.light .bg-\[\#0F1E45\] .text-slate-500 {
+  color: #64748B !important;
+}
+
+/* Bouton fermer (X) */
+html.light .bg-\[\#0F1E45\] button.text-slate-500,
+html.light .bg-\[\#0F1E45\] button:has(svg.lucide-x) {
+  color: #94A3B8 !important;
+  transition: all 0.15s ease !important;
+  border-radius: 6px !important;
+  padding: 4px !important;
+}
+
+html.light .bg-\[\#0F1E45\] button.text-slate-500:hover,
+html.light .bg-\[\#0F1E45\] button:has(svg.lucide-x):hover {
+  color: #DC2626 !important;
+  background-color: #FEF2F2 !important;
+}
+
+/* ============================================================
+   🎨 BADGE YOUNG TALENT (mode clair) — plus élégant
+============================================================ */
+
+html.light .bg-emerald-500\/90 {
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3) !important;
+}
+
+html.light .bg-amber-500\/90 {
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3) !important;
+}
+
+/* ============================================================
+   🎨 CHECKBOX & RADIO — style custom en mode clair
+============================================================ */
+
+html.light input[type="checkbox"],
+html.light input[type="radio"] {
+  accent-color: #10B981 !important;
+  width: 16px !important;
+  height: 16px !important;
+  cursor: pointer !important;
+}
+
+/* ============================================================
+   🎨 SCROLLBAR DANS LES MODALS (mode clair)
+============================================================ */
+
+html.light .bg-\[\#0F1E45\]::-webkit-scrollbar-track,
+html.light .bg-\[\#0F1E45\] *::-webkit-scrollbar-track {
+  background: #F8FAFC !important;
+  border-radius: 10px !important;
+}
+
+html.light .bg-\[\#0F1E45\]::-webkit-scrollbar-thumb,
+html.light .bg-\[\#0F1E45\] *::-webkit-scrollbar-thumb {
+  background: #CBD5E1 !important;
+  border-radius: 10px !important;
+}
+
+html.light .bg-\[\#0F1E45\]::-webkit-scrollbar-thumb:hover,
+html.light .bg-\[\#0F1E45\] *::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8 !important;
+}
+
+/* ============================================================
+   ✅ DATALIST (Ville) en mode clair
+============================================================ */
+
+html.light input[list] {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+}
+
+html.light datalist option {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+}
+
+/* ============================================================
+   ✅ MODE SOMBRE — select cohérent avec le thème
+============================================================ */
+
+html.dark select {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  color: #FFFFFF !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 10px !important;
+  padding: 10px 36px 10px 14px !important;
+  font-size: 13px !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236EE7C8' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 12px center !important;
+  background-size: 14px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+html.dark select:hover {
+  border-color: rgba(110, 231, 200, 0.4) !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark select:focus {
+  outline: none !important;
+  border-color: #6EE7C8 !important;
+  box-shadow: 0 0 0 3px rgba(110, 231, 200, 0.15) !important;
+}
+
+html.dark select option {
+  background-color: #0F1E45 !important;
+  color: #FFFFFF !important;
+  padding: 12px 14px !important;
+  font-size: 13px !important;
+}
+
+html.dark select option:checked,
+html.dark select option:hover {
+  background: linear-gradient(90deg, #10B981 0%, #059669 100%) !important;
+  color: #FFFFFF !important;
+  font-weight: 600 !important;
+}
+
+/* ============================================================
+   ✨ MICRO-ANIMATIONS (subtiles)
+============================================================ */
+
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+html.light .bg-\[\#0F1E45\] {
+  animation: slideUpFade 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }

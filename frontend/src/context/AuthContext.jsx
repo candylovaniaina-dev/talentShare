@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 import api from "../services/api";
+import { useTheme } from "./ThemeContext";
 
 const AuthContext = createContext();
 
@@ -7,6 +8,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem("token"));
+  const { syncFromUser } = useTheme();
 
   useEffect(() => {
     if (token) {
@@ -20,6 +22,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await api.get("/me");
       setUser(response.data);
+      syncFromUser(response.data); // ✅ applique le thème propre à cet utilisateur
     } catch (error) {
       console.error("Erreur fetch user:", error);
       logout();
@@ -28,7 +31,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ✅ Sauvegarde le dernier utilisateur pour préremplir le login
   const saveLastUser = (user, email) => {
     try {
       localStorage.setItem("last_user", JSON.stringify({
@@ -51,8 +53,8 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem("token", token);
     setToken(token);
     setUser(user);
+    syncFromUser(user); // ✅ thème de CET utilisateur, pas celui du précédent
 
-    // ✅ Sauvegarder le dernier user
     saveLastUser(user, email);
 
     return user;
@@ -65,8 +67,8 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem("token", token);
     setToken(token);
     setUser(user);
+    syncFromUser(user);
 
-    // ✅ Sauvegarder le dernier user
     saveLastUser(user, userData.email);
 
     return user;
@@ -76,7 +78,6 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("token");
     setToken(null);
     setUser(null);
-    // ⚠️ On garde "last_user" pour le préremplir au prochain login
     api.post("/logout").catch(console.error);
   };
 
@@ -84,13 +85,11 @@ export const AuthProvider = ({ children }) => {
     await fetchUser();
   };
 
-  // ✅ Récupère le dernier utilisateur (pour le login)
   const getLastUser = () => {
     try {
       const stored = localStorage.getItem("last_user");
       if (!stored) return null;
       const data = JSON.parse(stored);
-      // Expire après 30 jours
       if (Date.now() - data.timestamp > 30 * 24 * 60 * 60 * 1000) {
         localStorage.removeItem("last_user");
         return null;
@@ -101,7 +100,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ✅ Supprime le "dernier utilisateur" (pour "Utiliser un autre profil")
   const clearLastUser = () => {
     localStorage.removeItem("last_user");
   };

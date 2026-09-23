@@ -37,6 +37,7 @@ import ResourceOfferDetail from "./pages/ResourceOfferDetail";
 import Proposals from "./pages/Proposals";
 import CreateProposal from "./pages/CreateProposal";
 import ProposalDetail from "./pages/ProposalDetail";
+import Appearance from "./pages/Appearance";
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -119,6 +120,7 @@ function App() {
           <Route path="/resource-offers" element={<ProtectedRoute><ResourceOffers /></ProtectedRoute>} />
           <Route path="/resource-offers/new" element={<ProtectedRoute><CreateResourceOffer /></ProtectedRoute>} />
           <Route path="/resource-offers/:id/edit" element={<ProtectedRoute><CreateResourceOffer /></ProtectedRoute>} />
+       <Route path="/appearance" element={<Appearance />} />
         </Routes>
       </Router>
     </AuthProvider>

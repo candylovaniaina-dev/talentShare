@@ -7,26 +7,34 @@ use Illuminate\Database\Eloquent\Model;
 class PortfolioProject extends Model
 {
     protected $fillable = [
-        'portfolio_id',
-        'title',
-        'description',
-        'project_url',
-        'cover_image_path',
-        'position',
-        'start_date',
-        'end_date',
-        'technologies',
+        'portfolio_id', 'title', 'description', 'project_url',
+        'start_date', 'end_date', 'technologies', 'project_type',
     ];
 
     protected $casts = [
+        'technologies' => 'array',
         'start_date' => 'date',
         'end_date' => 'date',
-        'technologies' => 'array',
-        'position' => 'integer',
     ];
 
     public function portfolio()
     {
         return $this->belongsTo(Portfolio::class);
+    }
+
+    /**
+     * Scope : projets universitaires
+     */
+    public function scopeAcademic($query)
+    {
+        return $query->where('project_type', 'academic');
+    }
+
+    /**
+     * Scope : projets personnels
+     */
+    public function scopePersonal($query)
+    {
+        return $query->where('project_type', 'personal');
     }
 }

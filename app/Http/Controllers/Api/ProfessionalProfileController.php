@@ -363,12 +363,26 @@ if ($canSeeFull) {
     /**
      * ✅ Mettre à jour mon profil
      */
-    public function update(ProfessionalProfileRequest $request, ProfessionalProfile $professionalProfile)
-    {
-        $this->authorize('update', $professionalProfile);
-        $professionalProfile->update($request->validated());
-        return $professionalProfile;
+    // Dans la méthode update() ou store()
+public function update(ProfessionalProfileRequest $request, ProfessionalProfile $profile)
+{
+    // Vérifier que c'est bien le profil de l'utilisateur
+    if ($request->user()->id !== $profile->user_id) {
+        abort(403);
     }
+
+    $data = $request->validated();
+
+    // Si Young Talent, on synchronise automatiquement
+    if (!empty($data['is_young_talent']) || $data['profile_type'] === 'student') {
+        $data['is_young_talent'] = true;
+        $data['profile_type'] = 'student';
+    }
+
+    $profile->update($data);
+
+    return response()->json($profile->fresh());
+}
 
     /**
      * ✅ Liste publique (legacy)
