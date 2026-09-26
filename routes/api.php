@@ -3,6 +3,9 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\UniversityController;
+use App\Http\Controllers\Api\FacultyController;
+use App\Http\Controllers\Api\DepartmentController;
+use App\Http\Controllers\Api\ProgramController;
 use App\Http\Controllers\Api\ProfessionalProfileController;
 use App\Http\Controllers\Api\SkillController;
 use App\Http\Controllers\Api\AvailabilityController;
@@ -50,6 +53,18 @@ Route::get('/companies/{company}', [CompanyController::class, 'show'])->where('c
 Route::get('/universities', [UniversityController::class, 'index']);
 Route::get('/universities/{university}', [UniversityController::class, 'show']);
 
+// Facultés (public)
+Route::get('universities/{university}/faculties', [FacultyController::class, 'index']);
+Route::get('faculties/{faculty}', [FacultyController::class, 'show']);
+
+// Départements (public)
+Route::get('faculties/{faculty}/departments', [DepartmentController::class, 'index']);
+Route::get('departments/{department}', [DepartmentController::class, 'show']);
+
+// Formations (public)
+Route::get('departments/{department}/programs', [ProgramController::class, 'index']);
+Route::get('programs/{program}', [ProgramController::class, 'show']);
+
 // ✅ P0-8 : Recherche avancée (DOIT ÊTRE AVANT /professional-profiles/{id})
 Route::get('/talents/search', [ProfessionalProfileController::class, 'search']);
 
@@ -90,6 +105,27 @@ Route::post('/match/explain', [MatchController::class, 'explain']);
 // =============================================
 
 Route::middleware('auth:sanctum')->group(function () {
+
+    // ─── P0-16 : Universités (écriture) ────────────────
+    Route::post('universities', [UniversityController::class, 'store']);
+    Route::put('universities/{university}', [UniversityController::class, 'update']);
+    Route::patch('universities/{university}', [UniversityController::class, 'update']);
+    Route::delete('universities/{university}', [UniversityController::class, 'destroy']);
+
+    Route::post('universities/{university}/faculties', [FacultyController::class, 'store']);
+    Route::put('faculties/{faculty}', [FacultyController::class, 'update']);
+    Route::patch('faculties/{faculty}', [FacultyController::class, 'update']);
+    Route::delete('faculties/{faculty}', [FacultyController::class, 'destroy']);
+
+    Route::post('faculties/{faculty}/departments', [DepartmentController::class, 'store']);
+    Route::put('departments/{department}', [DepartmentController::class, 'update']);
+    Route::patch('departments/{department}', [DepartmentController::class, 'update']);
+    Route::delete('departments/{department}', [DepartmentController::class, 'destroy']);
+
+    Route::post('departments/{department}/programs', [ProgramController::class, 'store']);
+    Route::put('programs/{program}', [ProgramController::class, 'update']);
+    Route::patch('programs/{program}', [ProgramController::class, 'update']);
+    Route::delete('programs/{program}', [ProgramController::class, 'destroy']);
 
     // === Auth ===
     Route::post('/logout', [AuthController::class, 'logout']);
