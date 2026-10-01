@@ -39,6 +39,13 @@ import CreateProposal from "./pages/CreateProposal";
 import ProposalDetail from "./pages/ProposalDetail";
 import Appearance from "./pages/Appearance";
 
+// ✅ P0-15 : Candidatures
+import OfferApplications from "./pages/dashboard/OfferApplications";
+import ApplicationDetail from "./pages/dashboard/ApplicationDetail";
+
+// ✅ Fusion JobOffers + ResourceOffers pour entreprise
+import MyOffers from "./pages/MyOffers";
+
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
@@ -79,8 +86,11 @@ function App() {
           {/* Entreprise */}
           <Route path="/company" element={<ProtectedRoute><CompanyProfile /></ProtectedRoute>} />
 
-          {/* Opportunités */}
+          {/* Opportunités (contient les onglets "Offres" + "Mes candidatures") */}
           <Route path="/opportunites" element={<ProtectedRoute><Opportunities /></ProtectedRoute>} />
+
+          {/* Mes offres (entreprise) — Offres d'emploi + Offres de ressources */}
+          <Route path="/my-offers" element={<ProtectedRoute><MyOffers /></ProtectedRoute>} />
 
           {/* =============================================
               ✅ P0-9 : RESOURCE REQUESTS
@@ -99,11 +109,18 @@ function App() {
           <Route path="/proposals/new" element={<ProtectedRoute><CreateProposal /></ProtectedRoute>} />
           <Route path="/proposals/:id" element={<ProtectedRoute><ProposalDetail /></ProtectedRoute>} />
 
+          {/* =============================================
+              ✅ P0-15 : CANDIDATURES (Young Talent)
+              ⚠️ ORDRE : liste candidatures AVANT détail
+              ============================================= */}
+          <Route path="/job-offers/:id/applications" element={<ProtectedRoute><OfferApplications /></ProtectedRoute>} />
+          <Route path="/applications/:id" element={<ProtectedRoute><ApplicationDetail /></ProtectedRoute>} />
+
           {/* Missions */}
           <Route path="/missions" element={<ProtectedRoute><Missions /></ProtectedRoute>} />
           <Route path="/missions/:id" element={<ProtectedRoute><MissionDetail /></ProtectedRoute>} />
 
-          {/* Job Offers / Messages */}
+          {/* Job Offers (étudiants) / Messages */}
           <Route path="/job-offers" element={<ProtectedRoute><JobOffers /></ProtectedRoute>} />
           <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
 
@@ -120,7 +137,8 @@ function App() {
           <Route path="/resource-offers" element={<ProtectedRoute><ResourceOffers /></ProtectedRoute>} />
           <Route path="/resource-offers/new" element={<ProtectedRoute><CreateResourceOffer /></ProtectedRoute>} />
           <Route path="/resource-offers/:id/edit" element={<ProtectedRoute><CreateResourceOffer /></ProtectedRoute>} />
-       <Route path="/appearance" element={<Appearance />} />
+
+          <Route path="/appearance" element={<Appearance />} />
         </Routes>
       </Router>
     </AuthProvider>

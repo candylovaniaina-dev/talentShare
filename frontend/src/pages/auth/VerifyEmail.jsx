@@ -1,63 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import api from '../../services/api';
 
 const VerifyEmail = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [status, setStatus] = useState('loading');
-  const [message, setMessage] = useState('');
-  const [userId, setUserId] = useState(null);
-  const [hash, setHash] = useState('');
+  const [message, setMessage] = useState('Vérification en cours...');
 
   useEffect(() => {
-    const id = searchParams.get('id');
-    const h = searchParams.get('hash');
-    const expires = searchParams.get('expires');
-    const signature = searchParams.get('signature');
+    // ✅ Le backend a déjà fait le travail
+    // On lit juste les paramètres d'URL status + message
+    const statusParam = searchParams.get('status');
+    const messageParam = searchParams.get('message');
 
-    if (id && h) {
-      setUserId(id);
-      setHash(h);
-      verifyEmail(id, h, expires, signature);
+    if (statusParam === 'success') {
+      setStatus('success');
+      setMessage(messageParam || 'Email vérifié avec succès !');
+
+      // Redirige vers /login après 3 secondes
+      setTimeout(() => navigate('/login'), 3000);
+    } else if (statusParam === 'error') {
+      setStatus('error');
+      setMessage(messageParam || 'Le lien est invalide ou a expiré.');
     } else {
+      // Aucun paramètre : l'utilisateur a ouvert la page directement
       setStatus('error');
       setMessage('Lien de vérification invalide.');
     }
-  }, [searchParams]);
-
-  const verifyEmail = async (id, hash, expires, signature) => {
-    try {
-      const response = await api.get(
-        `/email/verify/${id}/${hash}?expires=${expires}&signature=${signature}`
-      );
-      setStatus('success');
-      setMessage(response.data.message || 'Email vérifié avec succès !');
-      setTimeout(() => navigate('/login'), 3000);
-    } catch (err) {
-      setStatus('error');
-      setMessage(
-        err.response?.data?.message || 'Le lien de vérification est invalide ou a expiré.'
-      );
-    }
-  };
-
-  const handleResend = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setMessage('Veuillez vous connecter pour renvoyer un email.');
-        navigate('/login');
-        return;
-      }
-      await api.post('/email/resend', {}, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setMessage('Un nouvel email de vérification a été envoyé.');
-    } catch (err) {
-      setMessage(err.response?.data?.message || 'Une erreur est survenue.');
-    }
-  };
+  }, [searchParams, navigate]);
 
   if (status === 'loading') {
     return (
@@ -86,10 +56,10 @@ const VerifyEmail = () => {
             <h1 className="text-2xl font-bold text-red-600">Vérification échouée</h1>
             <p className="text-gray-600 mt-2">{message}</p>
             <button
-              onClick={handleResend}
+              onClick={() => navigate('/login')}
               className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
             >
-              Renvoyer l'email de vérification
+              Retour à la connexion
             </button>
           </>
         )}

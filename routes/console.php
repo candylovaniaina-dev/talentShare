@@ -25,3 +25,6 @@ Schedule::job(new RenewRecurringAvailabilities)->dailyAt('00:30');
 // ✅ P0-9 : Expiration automatique des demandes (chaque jour à 1h)
 Schedule::job(new ExpireResourceRequests)->dailyAt('01:00');
 Schedule::job(new ExpireProposals)->dailyAt('02:00');
+
+// ✅ Rappels d'entretien (30 min avant, vérifié toutes les 5 min)
+Schedule::command('interviews:send-reminders')->everyFiveMinutes();

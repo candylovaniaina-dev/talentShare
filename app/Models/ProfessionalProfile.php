@@ -37,11 +37,10 @@ class ProfessionalProfile extends Model
     {
         return $this->hasMany(AvailabilityWindow::class);
     }
-
-    public function portfolio()
-    {
-        return $this->hasOne(Portfolio::class);
-    }
+public function portfolio()
+{
+    return $this->hasOne(Portfolio::class);
+}
 
     public function applications()
     {

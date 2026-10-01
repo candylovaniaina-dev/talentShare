@@ -321,8 +321,8 @@ if ($canSeeFull) {
         return $hasConversation;
     }
 
-    /**
-     * ✅ Mon profil (propriétaire)
+        /**
+     * ✅ Mon profil (propriétaire) — avec portfolio chargé
      */
     public function me(Request $request)
     {
@@ -340,6 +340,7 @@ if ($canSeeFull) {
             'educations',
             'certifications',
             'languages',
+            'portfolio',           // ✅ AJOUT : charge le portfolio
         ]);
     }
 

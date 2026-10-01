@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   Bell, MessageSquare, Eye, Sparkles, Handshake, CheckCircle,
   Target, PlayCircle, XCircle, Briefcase, Clock, UserPlus,
-  AlertCircle, FileText,
+  AlertCircle, FileText, Send, Video, UserCheck,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../services/api";
@@ -29,18 +29,42 @@ const ICONS = {
   resource_request_expiring:  { icon: AlertCircle, color: "text-amber-600",   bg: "bg-amber-50" },
   resource_request_closed:    { icon: FileText,    color: "text-slate-500",   bg: "bg-slate-100" },
 
-  default:                  { icon: Bell,          color: "text-slate-500",   bg: "bg-slate-100" },
-proposal_received: { icon: FileText,    color: "text-blue-600",    bg: "bg-blue-50" },
-proposal_expired:  { icon: AlertCircle, color: "text-slate-500",   bg: "bg-slate-100" },
+  proposal_received: { icon: FileText,    color: "text-blue-600",    bg: "bg-blue-50" },
+  proposal_expired:  { icon: AlertCircle, color: "text-slate-500",   bg: "bg-slate-100" },
+
+  // ✅ P0-15 : Candidatures
+  new_application:         { icon: FileText,    color: "text-emerald-600", bg: "bg-emerald-50" },
+  application_viewed:      { icon: Eye,         color: "text-blue-600",    bg: "bg-blue-50" },
+  application_shortlisted: { icon: UserCheck,   color: "text-violet-600",  bg: "bg-violet-50" },
+  application_interview:   { icon: Video,       color: "text-amber-600",   bg: "bg-amber-50" },
+  application_accepted:    { icon: CheckCircle, color: "text-emerald-600", bg: "bg-emerald-50" },
+  application_rejected:    { icon: XCircle,     color: "text-rose-600",    bg: "bg-rose-50" },
+
+  default: { icon: Bell, color: "text-slate-500", bg: "bg-slate-100" },
 };
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const ref = useRef(null);
   const navigate = useNavigate();
 
-  const load = () => api.get("/notifications").then((res) => setItems(res.data));
+  // ✅ CORRECTION : Supporte les 2 formats de réponse
+  const load = () =>
+    api.get("/notifications").then((res) => {
+      const payload = res.data;
+      const data = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.notifications)
+          ? payload.notifications
+          : [];
+      setItems(data);
+
+      // Compte des non-lus (fallback si l'API ne fournit pas unread_count)
+      const unread = payload?.unread_count ?? data.filter((n) => !n.read_at).length;
+      setUnreadCount(unread);
+    });
 
   useEffect(() => {
     load();
@@ -55,8 +79,6 @@ export default function NotificationBell() {
     document.addEventListener("mousedown", onClickOutside);
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
-
-  const unreadCount = items.filter((n) => !n.read_at).length;
 
   const markRead = async (id) => {
     await api.post(`/notifications/${id}/read`);
@@ -132,7 +154,6 @@ export default function NotificationBell() {
               const Icon = cfg.icon;
               const isClickable = !!n.action_url;
 
-              // ✅ Score de matching pour les notifs de demande
               const matchScore =
                 n.type === "resource_request_published" && n.data?.match_score
                   ? n.data.match_score
@@ -159,7 +180,6 @@ export default function NotificationBell() {
                       <p className="mt-0.5 text-xs text-slate-500 line-clamp-2">{n.body}</p>
                     )}
 
-                    {/* ✅ NOUVEAU : Badge score de matching */}
                     {matchScore !== null && (
                       <span className={`mt-1.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
                         matchScore >= 80 ? "bg-emerald-100 text-emerald-700"

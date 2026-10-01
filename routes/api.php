@@ -77,9 +77,13 @@ Route::get('/resource-offers', [ResourceOfferController::class, 'index']);
 Route::get('/resource-requests', [ResourceRequestController::class, 'index']);
 Route::get('/resource-requests/{resourceRequest}', [ResourceRequestController::class, 'show']);
 
-// Job Offers (public)
-Route::get('/job-offers', [JobOfferController::class, 'index']);
-Route::get('/job-offers/{jobOffer}', [JobOfferController::class, 'show']);
+// =============================================
+// ✅ JOB OFFERS — ORDRE CRITIQUE
+// /my AVANT /{jobOffer} sinon Laravel plante
+// =============================================
+Route::get('/job-offers/my', [JobOfferController::class, 'my'])->middleware('auth:sanctum'); // ✅ protégé, AVANT
+Route::get('/job-offers', [JobOfferController::class, 'index']);                             // public
+Route::get('/job-offers/{jobOffer}', [JobOfferController::class, 'show']);                   // public
 
 // ✅ Matching (P0-10)
 Route::post('/match/explain', [MatchController::class, 'explain']);
@@ -208,16 +212,27 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post  ('/missions/{mission}/decline', [MissionController::class, 'decline']);
     Route::patch ('/missions/{mission}/status',  [MissionController::class, 'updateStatus']);
 
-    // === Offres d'emploi ===
-    Route::post('/job-offers', [JobOfferController::class, 'store']);
-    Route::patch('/job-offers/{jobOffer}', [JobOfferController::class, 'update']);
-    Route::delete('/job-offers/{jobOffer}', [JobOfferController::class, 'destroy']);
-    Route::get('/job-offers/{jobOffer}/applications', [JobOfferController::class, 'applications']);
+    // =============================================
+    // ✅ OFFRES D'EMPLOI (création, modif, suppression)
+    // ⚠️ /my est DÉJÀ déclarée en public AVANT /{jobOffer}
+    // =============================================
+    Route::post  ('/job-offers',                        [JobOfferController::class, 'store']);
+    Route::patch ('/job-offers/{jobOffer}',             [JobOfferController::class, 'update']);
+    Route::delete('/job-offers/{jobOffer}',             [JobOfferController::class, 'destroy']);
+    Route::get   ('/job-offers/{jobOffer}/applications',[JobOfferController::class, 'applications']);
 
-    // === Candidatures ===
-    Route::get('/applications', [ApplicationController::class, 'index']);
-    Route::post('/applications', [ApplicationController::class, 'store']);
-    Route::patch('/applications/{application}/status', [ApplicationController::class, 'updateStatus']);
+    // =============================================
+    // ✅ P0-15 : CANDIDATURES (Young Talent)
+    // ⚠️ ORDRE CRITIQUE : /stats AVANT /{application}
+    // =============================================
+    Route::get   ('/applications',                       [ApplicationController::class, 'index']);
+    Route::get   ('/applications/stats',                 [ApplicationController::class, 'stats']);
+    Route::post  ('/applications',                       [ApplicationController::class, 'store']);
+    Route::get   ('/applications/{application}',         [ApplicationController::class, 'show']);
+    Route::delete('/applications/{application}',         [ApplicationController::class, 'withdraw']);
+    Route::patch ('/applications/{application}/status',  [ApplicationController::class, 'updateStatus']);
+    Route::post  ('/applications/{application}/schedule-interview', [ApplicationController::class, 'scheduleInterview']); 
+    Route::post  ('/applications/{application}/viewed',  [ApplicationController::class, 'markAsViewed']);
 
     // === Dashboard ===
     Route::get('/dashboard', [DashboardController::class, 'index']);
@@ -241,23 +256,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/verification-requests', [VerificationRequestController::class, 'store']);
 
     // === Documents ===
-        // === Documents ===
     Route::post  ('/documents',                 [DocumentController::class, 'upload']);
     Route::get   ('/documents',                 [DocumentController::class, 'index']);
     Route::get   ('/documents/{document}/download', [DocumentController::class, 'download']);
     Route::delete('/documents/{document}',      [DocumentController::class, 'destroy']);
-    // === Email ===
-    Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
-        ->middleware('signed')->name('verification.verify');
-    Route::post('/email/resend', [EmailVerificationController::class, 'resend'])->middleware('throttle:3,1');
 
+    // === Email ===
+     Route::post('/email/resend', [EmailVerificationController::class, 'resend'])->middleware('throttle:3,1');
     // === Compte ===
     Route::patch('/account', [AccountController::class, 'update']);
     Route::patch('/account/password', [AccountController::class, 'changePassword']);
     Route::post('/account/deactivate', [AccountController::class, 'deactivate']);
     Route::delete('/account', [AccountController::class, 'destroy']);
     Route::patch('/account/profile', [AccountController::class, 'updateProfile']);
-Route::patch('/account/preferences', [AccountController::class, 'updatePreferences']);
+    Route::patch('/account/preferences', [AccountController::class, 'updatePreferences']);
 
     // === Recherche utilisateur ===
     Route::get('/users/search', [UserController::class, 'search']);
@@ -271,8 +283,10 @@ Route::patch('/account/preferences', [AccountController::class, 'updatePreferenc
     Route::delete('/saved-searches/{savedSearch}',     [SavedSearchController::class, 'destroy']);
     Route::get   ('/saved-searches/{savedSearch}/run', [SavedSearchController::class, 'run']);
     Route::post  ('/match-interactions',               [MatchInteractionController::class, 'store']);
- Route::apiResource('educations', EducationController::class);
-    });
+
+    // === Educations (API Resource) ===
+    Route::apiResource('educations', EducationController::class);
+});
 
 
 // =============================================

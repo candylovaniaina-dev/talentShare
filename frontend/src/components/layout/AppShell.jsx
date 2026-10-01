@@ -2,7 +2,7 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, User, Briefcase, Search, MessageSquare,
-  LogOut, Circle, Building2, Handshake, FileText,
+  Circle, Building2, Handshake, FileText,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import NotificationBell from "./NotificationBell";
@@ -12,12 +12,11 @@ const navByRole = {
   company: [
     { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
     { to: "/company", label: "Mon entreprise", icon: Building2 },
+    { to: "/my-offers", label: "Mes offres", icon: Briefcase },                      // ✅ NOUVEAU
     { to: "/resource-requests", label: "Mes demandes", icon: Search },
-    { to: "/resource-offers", label: "Mes offres de ressources", icon: Handshake },
     { to: "/resource-offers/browse", label: "Ressources disponibles", icon: Search },
     { to: "/proposals", label: "Propositions", icon: FileText },
     { to: "/missions", label: "Missions", icon: Briefcase },
-    { to: "/job-offers", label: "Mes offres d'emploi", icon: Briefcase },
     { to: "/messages", label: "Messagerie", icon: MessageSquare },
   ],
   employee: [
@@ -32,7 +31,7 @@ const navByRole = {
   student: [
     { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
     { to: "/profile", label: "Mon profil", icon: User },
-    { to: "/job-offers", label: "Offres & stages", icon: Briefcase },
+    { to: "/opportunites", label: "Opportunités", icon: Search },
     { to: "/browse-requests", label: "Demandes des entreprises", icon: FileText },
     { to: "/proposals", label: "Mes propositions", icon: Handshake },
     { to: "/missions", label: "Mes missions", icon: Briefcase },

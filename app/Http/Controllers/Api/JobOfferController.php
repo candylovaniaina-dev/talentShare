@@ -78,10 +78,77 @@ class JobOfferController extends Controller
         return response()->json(['message' => 'Offre supprimée.']);
     }
 
-    public function applications(JobOffer $jobOffer)
+    /**
+     * ✅ Liste les candidatures d'une offre (recruteur)
+     */
+    public function applications(Request $request, JobOffer $jobOffer)
     {
-        $this->authorize('viewApplications', $jobOffer);
+        // Autorisation
+        $isOwner = $request->user()->companies()
+            ->where('id', $jobOffer->company_id)->exists();
 
-        return $jobOffer->applications()->with('profile.user', 'portfolio')->latest()->get();
+        abort_unless($isOwner, 403, 'Non autorisé.');
+
+        // Charger les candidatures avec toutes les relations
+        $applications = $jobOffer->applications()
+            ->with([
+                'profile.user:id,name,email,phone,first_name,last_name',
+                'profile.skills.category.parent',
+                'profile.skills.category',
+                'profile.educations',
+                'profile.experiences',
+                'portfolio:id,title,public_slug',
+            ])
+            ->orderByRaw("CASE status 
+                WHEN 'interview' THEN 1
+                WHEN 'shortlisted' THEN 2
+                WHEN 'viewed' THEN 3
+                WHEN 'sent' THEN 4
+                WHEN 'accepted' THEN 5
+                WHEN 'rejected' THEN 6
+                ELSE 7 END")
+            ->latest()
+            ->get();
+
+        // ✅ Marquer automatiquement les candidatures 'sent' comme 'viewed'
+        $jobOffer->applications()
+            ->where('status', 'sent')
+            ->update(['status' => 'viewed', 'viewed_at' => now()]);
+
+        return response()->json([
+            'job_offer' => $jobOffer->load('company:id,name,logo_path'),
+            'applications' => $applications,
+            'stats' => [
+                'total' => $applications->count(),
+                'sent' => $applications->where('status', 'sent')->count(),
+                'viewed' => $applications->where('status', 'viewed')->count(),
+                'shortlisted' => $applications->where('status', 'shortlisted')->count(),
+                'interview' => $applications->where('status', 'interview')->count(),
+                'accepted' => $applications->where('status', 'accepted')->count(),
+                'rejected' => $applications->where('status', 'rejected')->count(),
+            ],
+        ]);
+    }
+
+    /**
+     * Liste des offres de l'utilisateur (recruteur)
+     */
+    public function my(Request $request)
+    {
+        $user = $request->user();
+        $companyIds = $user->companies()->pluck('id');
+
+        if ($companyIds->isEmpty()) {
+            return response()->json([]);
+        }
+
+        return JobOffer::query()
+            ->whereIn('company_id', $companyIds)
+            ->with(['company:id,name,logo_path,city,country', 'skills'])
+            ->withCount('applications')
+            ->when($request->status, fn($q, $v) => $q->where('status', $v))
+            ->when($request->offer_type, fn($q, $v) => $q->where('offer_type', $v))
+            ->latest()
+            ->get();
     }
 }

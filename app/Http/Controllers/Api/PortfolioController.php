@@ -13,27 +13,48 @@ class PortfolioController extends Controller
     /**
      * Récupérer ou créer automatiquement le portfolio de l'utilisateur
      */
-    public function myPortfolio(Request $request)
-    {
-        $profile = $request->user()->professionalProfile;
-        
-        if (!$profile) {
-            return response()->json(['message' => 'Créez d\'abord votre profil professionnel.'], 422);
-        }
+   public function myPortfolio(Request $request)
+{
+    $user = $request->user();
+    $profile = $user->professionalProfile;
 
-        $portfolio = Portfolio::firstOrCreate(
+    if (!$profile) {
+        return response()->json([
+            'message' => 'Créez d\'abord votre profil professionnel.',
+        ], 422);
+    }
+
+    // ✅ NETTOYAGE : supprime les portfolios orphelins (mauvais profile_id)
+    \App\Models\Portfolio::where('professional_profile_id', '!=', $profile->id)
+        ->whereNotIn('professional_profile_id', 
+            \App\Models\ProfessionalProfile::pluck('id')
+        )
+        ->delete();
+
+    try {
+        $portfolio = \App\Models\Portfolio::firstOrCreate(
             ['professional_profile_id' => $profile->id],
             [
                 'title' => 'Mon portfolio',
+                'summary' => 'Portfolio de ' . $user->name,
                 'visibility' => 'public',
-                'public_slug' => Str::slug($request->user()->name) . '-' . Str::random(6),
+                'public_slug' => \Illuminate\Support\Str::slug($user->name) . '-' . \Illuminate\Support\Str::random(6),
+                'theme' => 'minimal',
+                'accent_color' => '#6EE7C8',
             ]
         );
-        
-        $portfolio->load('projects');
-
-        return response()->json($portfolio);
+    } catch (\Exception $e) {
+        \Log::error('Erreur création portfolio: ' . $e->getMessage());
+        return response()->json([
+            'message' => 'Erreur lors de la création du portfolio',
+            'debug' => $e->getMessage(),
+        ], 500);
     }
+
+    $portfolio->load('projects');
+
+    return response()->json($portfolio);
+}
 
     /**
      * Créer un portfolio
