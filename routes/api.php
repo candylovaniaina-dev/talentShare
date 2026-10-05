@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\UniversityController;
+use App\Http\Controllers\Api\UniversityStudentController;
 use App\Http\Controllers\Api\FacultyController;
 use App\Http\Controllers\Api\DepartmentController;
 use App\Http\Controllers\Api\ProgramController;
@@ -105,6 +106,14 @@ Route::post('/match/explain', [MatchController::class, 'explain']);
 // =============================================
 
 Route::middleware('auth:sanctum')->group(function () {
+    
+    // ─── P0-16 : Étudiants de l'université ────────────────
+Route::get('universities/{university}/students', [UniversityStudentController::class, 'index']);
+Route::get('universities/{university}/students/pending', [UniversityStudentController::class, 'pending']);
+Route::get('universities/{university}/students/stats', [UniversityStudentController::class, 'stats']);
+Route::post('universities/{university}/students/{student}/approve', [UniversityStudentController::class, 'approve']);
+Route::post('universities/{university}/students/{student}/reject', [UniversityStudentController::class, 'reject']);
+Route::delete('universities/{university}/students/{student}', [UniversityStudentController::class, 'remove']);
 
     // ─── P0-16 : Universités (écriture) ────────────────
     Route::post('universities', [UniversityController::class, 'store']);

@@ -60,4 +60,41 @@ class University extends Model
             ->withPivot(['status', 'contract_type', 'started_at', 'ended_at', 'notes'])
             ->withTimestamps();
     }
+        /**
+     * Tous les étudiants rattachés à cette université.
+     */
+    public function students(): HasMany
+    {
+        return $this->hasMany(User::class)->where('role', 'student');
+    }
+
+    /**
+     * Étudiants en attente de validation.
+     */
+    public function pendingStudents(): HasMany
+    {
+        return $this->hasMany(User::class)
+                    ->where('role', 'student')
+                    ->where('university_status', 'pending');
+    }
+
+    /**
+     * Étudiants validés.
+     */
+    public function approvedStudents(): HasMany
+    {
+        return $this->hasMany(User::class)
+                    ->where('role', 'student')
+                    ->where('university_status', 'approved');
+    }
+
+    /**
+     * Étudiants refusés.
+     */
+    public function rejectedStudents(): HasMany
+    {
+        return $this->hasMany(User::class)
+                    ->where('role', 'student')
+                    ->where('university_status', 'rejected');
+    }
 }

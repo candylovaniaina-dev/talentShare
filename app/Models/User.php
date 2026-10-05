@@ -29,6 +29,9 @@ class User extends Authenticatable
     'avatar_path',
     'status', 'first_name', 'last_name', 'country',
     'theme_preference', 'font_size', 'high_contrast', 'reduce_motion',
+    'university_id',
+    'university_status',
+    'university_verified_at',
 ];
 
     /**
@@ -147,4 +150,27 @@ public function matchWeights()
 {
     return $this->hasOne(MatchWeight::class);
 }
+    /**
+     * L'université à laquelle l'utilisateur est rattaché.
+     */
+    public function university(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(University::class);
+    }
+
+    /**
+     * Vérifie si l'utilisateur est un étudiant.
+     */
+    public function isStudent(): bool
+    {
+        return $this->role === 'student';
+    }
+
+    /**
+     * Vérifie si le profil étudiant est vérifié par l'université.
+     */
+    public function isUniversityVerified(): bool
+    {
+        return $this->university_verified_at !== null;
+    }
 }

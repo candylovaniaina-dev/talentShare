@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             SkillCategorySeeder::class,
             UniversitySeeder::class,
+            StudentSeeder::class,
         ]);
     }
 }
