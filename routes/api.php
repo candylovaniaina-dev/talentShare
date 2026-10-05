@@ -106,7 +106,10 @@ Route::post('/match/explain', [MatchController::class, 'explain']);
 // =============================================
 
 Route::middleware('auth:sanctum')->group(function () {
-    
+
+        // Mes universités
+    Route::get('my-universities', [UniversityController::class, 'myUniversities']);
+
     // ─── P0-16 : Étudiants de l'université ────────────────
 Route::get('universities/{university}/students', [UniversityStudentController::class, 'index']);
 Route::get('universities/{university}/students/pending', [UniversityStudentController::class, 'pending']);

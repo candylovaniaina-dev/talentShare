@@ -111,4 +111,14 @@ class UniversityController extends Controller
 
         return $slug;
     }
+        /**
+     * Liste les universités de l'utilisateur connecté.
+     */
+    public function myUniversities(Request $request)
+    {
+        return University::where('owner_user_id', $request->user()->id)
+            ->with('owner:id,name,email')
+            ->latest()
+            ->get();
+    }
 }

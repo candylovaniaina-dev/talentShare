@@ -44,6 +44,41 @@ const universityService = {
         const response = await api.get(`/departments/${departmentId}/programs`);
         return response.data;
     },
+        // ─── Étudiants ──────────────────────────────────
+    async listStudents(universityId, params = {}) {
+        const response = await api.get(`/universities/${universityId}/students`, { params });
+        return response.data;
+    },
+
+    async listPendingStudents(universityId) {
+        const response = await api.get(`/universities/${universityId}/students/pending`);
+        return response.data;
+    },
+
+    async getStudentStats(universityId) {
+        const response = await api.get(`/universities/${universityId}/students/stats`);
+        return response.data;
+    },
+
+    async approveStudent(universityId, studentId) {
+        const response = await api.post(`/universities/${universityId}/students/${studentId}/approve`);
+        return response.data;
+    },
+
+    async rejectStudent(universityId, studentId) {
+        const response = await api.post(`/universities/${universityId}/students/${studentId}/reject`);
+        return response.data;
+    },
+
+    async removeStudent(universityId, studentId) {
+        const response = await api.delete(`/universities/${universityId}/students/${studentId}`);
+        return response.data;
+    },
+    
+        async getMyUniversities() {
+        const response = await api.get("/my-universities");
+        return response.data;
+    },
 };
 
 export default universityService;

@@ -7,6 +7,7 @@ import Universities from "./pages/Universities";
 import UniversityDetail from "./pages/UniversityDetail";
 import CreateUniversity from "./pages/CreateUniversity";
 import EditUniversity from "./pages/EditUniversity";
+import UniversityStudents from "./pages/UniversityStudents";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import ForgotPassword from "./pages/auth/ForgotPassword";
@@ -79,6 +80,9 @@ function App() {
           {/* ============ ROUTES PROTÉGÉES ============ */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
 
+          {/* Universités — Étudiants */}
+          <Route path="/university/students" element={<ProtectedRoute><UniversityStudents /></ProtectedRoute>} />
+
           {/* Profil */}
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/profile/view" element={<Navigate to="/profile" replace />} />
@@ -128,7 +132,9 @@ function App() {
           <Route path="/resource-offers" element={<ProtectedRoute><ResourceOffers /></ProtectedRoute>} />
           <Route path="/resource-offers/new" element={<ProtectedRoute><CreateResourceOffer /></ProtectedRoute>} />
           <Route path="/resource-offers/:id/edit" element={<ProtectedRoute><CreateResourceOffer /></ProtectedRoute>} />
-       <Route path="/appearance" element={<Appearance />} />
+
+          {/* Apparence */}
+          <Route path="/appearance" element={<Appearance />} />
         </Routes>
       </Router>
     </AuthProvider>
