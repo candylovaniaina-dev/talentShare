@@ -1,8 +1,8 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, User, Briefcase, Search, MessageSquare,
-  LogOut, Circle, Building2, Handshake, FileText,
+    LayoutDashboard, User, Briefcase, Search, MessageSquare,
+    LogOut, Circle, Building2, Handshake, FileText, Plus,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import NotificationBell from "./NotificationBell";
@@ -40,8 +40,10 @@ const navByRole = {
   ],
   university: [
     { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
+    { to: "/universities", label: "Universités", icon: Building2 },
+    { to: "/universities/new", label: "Ajouter une université", icon: Plus },
     { to: "/messages", label: "Messagerie", icon: MessageSquare },
-  ],
+],
   admin: [
     { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
     { to: "/admin/verifications", label: "Vérifications", icon: User },
