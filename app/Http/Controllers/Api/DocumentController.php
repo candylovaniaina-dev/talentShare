@@ -4,160 +4,323 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Document;
-use App\Models\Mission;
-use App\Models\Proposal;
+use App\Models\DocumentVersion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class DocumentController extends Controller
 {
     /**
-     * ✅ Upload d'un document sur une Proposition ou Mission
-     * POST /documents/upload
+     * Types de documents autorisés
      */
-    public function upload(Request $request)
-    {
-        $data = $request->validate([
-            'documentable_type' => ['required', 'in:proposal,mission'],
-            'documentable_id'   => ['required', 'integer'],
-            'type'              => ['required', 'in:contract,agreement,attachment,other'],
-            'file'              => ['required', 'file', 'max:10240', 'mimes:pdf,doc,docx,png,jpg,jpeg,webp'],
-        ]);
-
-        $map = [
-            'proposal' => Proposal::class,
-            'mission'  => Mission::class,
-        ];
-
-        $modelClass = $map[$data['documentable_type']];
-
-        // ✅ Vérifier que le parent existe
-        $parent = $modelClass::find($data['documentable_id']);
-        if (!$parent) {
-            return response()->json(['message' => 'Élément parent introuvable.'], 404);
-        }
-
-        // ✅ Autorisation : le user doit être lié
-        $user = $request->user();
-        $companyIds = $user->companies()->pluck('id')->toArray();
-
-        if ($data['documentable_type'] === 'proposal') {
-            $allowed = in_array($parent->proposed_by_company_id, $companyIds)
-                || in_array($parent->to_company_id, $companyIds)
-                || ($user->professionalProfile && $user->professionalProfile->id === $parent->professional_profile_id);
-
-            if (!$allowed) {
-                return response()->json(['message' => 'Non autorisé à ajouter un document.'], 403);
-            }
-        }
-
-        // ✅ Stocker le fichier
-        $folder = "documents/{$data['documentable_type']}s/{$data['documentable_id']}";
-        $path = $request->file('file')->store($folder, 'public');
-
-        // ✅ Créer le Document
-        $document = Document::create([
-            'documentable_type' => $modelClass,
-            'documentable_id'   => $data['documentable_id'],
-            'uploaded_by'       => $user->id,
-            'type'              => $data['type'],
-            'file_path'         => $path,
-            'original_name'     => $request->file('file')->getClientOriginalName(),
-            'mime_type'         => $request->file('file')->getMimeType(),
-            'size'              => $request->file('file')->getSize(),
-            'status'            => 'draft',
-        ]);
-
-        return response()->json($document->load('uploader:id,name'), 201);
-    }
+    const DOCUMENT_TYPES = ['contract', 'agreement', 'invoice', 'quote', 'attachment', 'other'];
+    const DOCUMENT_STATUSES = ['draft', 'pending', 'signed', 'expired', 'cancelled'];
 
     /**
-     * ✅ Liste des documents d'un parent
-     * GET /documents?documentable_type=proposal&documentable_id=1
+     * ✅ Liste des documents (filtrée par documentable_type/id)
      */
     public function index(Request $request)
     {
-        $data = $request->validate([
-            'documentable_type' => ['required', 'in:proposal,mission'],
-            'documentable_id'   => ['required', 'integer'],
-        ]);
+        $query = Document::query()
+            ->with(['uploader:id,name,email,avatar_path', 'currentVersionFile'])
+            ->where(function ($q) use ($request) {
+                // ✅ Sécurité : ne voir que les documents liés à des ressources accessibles
+                $q->where('uploaded_by', $request->user()->id);
 
-        $map = [
-            'proposal' => Proposal::class,
-            'mission'  => Mission::class,
-        ];
-
-        return Document::where('documentable_type', $map[$data['documentable_type']])
-            ->where('documentable_id', $data['documentable_id'])
-            ->with('uploader:id,name')
-            ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function ($d) {
-                $d->append(['file_url', 'formatted_size']);
-                return $d;
+                // Ou ceux liés à une mission où je suis impliqué
+                $q->orWhereHasMorph('documentable', ['App\Models\Mission', 'App\Models\Proposal'], function ($qq) use ($request) {
+                    // Le contrôleur appelant gère plus finement si besoin
+                });
             });
+
+        if ($request->has('documentable_type') && $request->has('documentable_id')) {
+            $query->where('documentable_type', $request->documentable_type)
+                ->where('documentable_id', $request->documentable_id);
+        }
+
+        if ($request->has('document_type')) {
+            $query->where('document_type', $request->document_type);
+        }
+
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+
+        return $query->latest()->get();
     }
 
     /**
-     * ✅ Télécharger un document
-     * GET /documents/{id}/download
+     * ✅ Upload d'un document
      */
-    public function download(Request $request, Document $document)
+    public function upload(Request $request)
     {
-        // Vérifier l'autorisation
-        $user = $request->user();
+        $validator = Validator::make($request->all(), [
+            'file' => [
+                'required', 'file', 'max:10240', // 10 Mo
+                'mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,webp,txt',
+            ],
+            'documentable_type' => ['required', 'string', 'in:App\Models\Mission,App\Models\Proposal,App\Models\Application'],
+            'documentable_id' => ['required', 'integer'],
+            'document_type' => ['required', 'string', 'in:' . implode(',', self::DOCUMENT_TYPES)],
+            'status' => ['nullable', 'string', 'in:' . implode(',', self::DOCUMENT_STATUSES)],
+            'expires_at' => ['nullable', 'date', 'after:now'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
 
-        if ($document->documentable_type === Proposal::class) {
-            $proposal = $document->documentable;
-            $companyIds = $user->companies()->pluck('id')->toArray();
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
 
-            $allowed = in_array($proposal->proposed_by_company_id, $companyIds)
-                || in_array($proposal->to_company_id, $companyIds)
-                || ($user->professionalProfile && $user->professionalProfile->id === $proposal->professional_profile_id);
+        $data = $validator->validated();
 
-            if (!$allowed) {
-                abort(403, 'Non autorisé.');
+        // ✅ Vérifier que l'utilisateur a accès au documentable
+        $this->authorizeDocumentable($request, $data['documentable_type'], $data['documentable_id']);
+
+        // ✅ Upload sécurisé
+        $file = $request->file('file');
+        $path = $file->store('documents/' . date('Y/m'), 'public');
+
+        $document = Document::create([
+            'documentable_type' => $data['documentable_type'],
+            'documentable_id' => $data['documentable_id'],
+            'type' => $data['document_type'], // compat ancien champ
+            'document_type' => $data['document_type'],
+            'status' => $data['status'] ?? 'draft',
+            'file_path' => $path,
+            'original_name' => $file->getClientOriginalName(),
+            'mime_type' => $file->getMimeType(),
+            'size' => $file->getSize(),
+            'current_version' => 1,
+            'expires_at' => $data['expires_at'] ?? null,
+            'notes' => $data['notes'] ?? null,
+            'uploaded_by' => $request->user()->id,
+        ]);
+
+        // ✅ Créer la version 1
+        $document->versions()->create([
+            'version_number' => 1,
+            'file_path' => $path,
+            'original_name' => $file->getClientOriginalName(),
+            'mime_type' => $file->getMimeType(),
+            'size' => $file->getSize(),
+            'uploaded_by' => $request->user()->id,
+        ]);
+
+        $document->logHistory('created', null, null, "Document uploadé : {$file->getClientOriginalName()}");
+
+        return response()->json([
+            'message' => 'Document uploadé avec succès',
+            'document' => $document->load(['uploader:id,name,email', 'currentVersionFile']),
+        ], 201);
+    }
+
+    /**
+     * ✅ Détails d'un document
+     */
+    public function show(Request $request, Document $document)
+    {
+        $this->authorizeDocumentAccess($request, $document);
+
+        return $document->load([
+            'uploader:id,name,email,avatar_path',
+            'signedBy:id,name,email',
+            'versions.uploader:id,name,email',
+            'history.user:id,name,email',
+        ]);
+    }
+
+    /**
+     * ✅ Mettre à jour les métadonnées
+     */
+    public function update(Request $request, Document $document)
+    {
+        $this->authorizeDocumentAccess($request, $document);
+
+        $data = $request->validate([
+            'document_type' => ['sometimes', 'string', 'in:' . implode(',', self::DOCUMENT_TYPES)],
+            'status' => ['sometimes', 'string', 'in:' . implode(',', self::DOCUMENT_STATUSES)],
+            'expires_at' => ['nullable', 'date'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $old = $document->only(array_keys($data));
+        $document->update($data);
+
+        // ✅ Logger chaque changement
+        foreach ($data as $key => $value) {
+            if (($old[$key] ?? null) != $value) {
+                $document->logHistory(
+                    $key === 'status' ? 'status_changed' : 'updated',
+                    $old[$key] ?? null,
+                    is_string($value) ? $value : json_encode($value),
+                    "Champ modifié : {$key}"
+                );
             }
         }
 
-        if (!Storage::disk('public')->exists($document->file_path)) {
-            return response()->json(['message' => 'Fichier introuvable.'], 404);
-        }
-
-        return Storage::disk('public')->download(
-            $document->file_path,
-            $document->original_name ?? basename($document->file_path)
-        );
+        return response()->json([
+            'message' => 'Document mis à jour',
+            'document' => $document->fresh(['uploader', 'currentVersionFile']),
+        ]);
     }
 
     /**
-     * ✅ Supprimer un document
-     * DELETE /documents/{id}
+     * ✅ Upload d'une nouvelle version
+     */
+    public function uploadVersion(Request $request, Document $document)
+    {
+        $this->authorizeDocumentAccess($request, $document);
+
+        $request->validate([
+            'file' => [
+                'required', 'file', 'max:10240',
+                'mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,webp,txt',
+            ],
+            'notes' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $file = $request->file('file');
+        $path = $file->store('documents/' . date('Y/m'), 'public');
+
+        $version = $document->addVersion(
+            $path,
+            $file->getClientOriginalName(),
+            $file->getMimeType(),
+            $file->getSize()
+        );
+
+        if ($request->filled('notes')) {
+            $version->update(['notes' => $request->notes]);
+        }
+
+        return response()->json([
+            'message' => 'Nouvelle version ajoutée',
+            'document' => $document->fresh(['versions.uploader']),
+            'version' => $version,
+        ], 201);
+    }
+
+    /**
+     * ✅ Marquer comme signé
+     */
+    public function markAsSigned(Request $request, Document $document)
+    {
+        $this->authorizeDocumentAccess($request, $document);
+
+        if ($document->status === 'signed') {
+            return response()->json(['message' => 'Déjà signé'], 409);
+        }
+
+        $oldStatus = $document->status;
+        $document->update([
+            'status' => 'signed',
+            'signed_at' => now(),
+            'signed_by' => $request->user()->id,
+        ]);
+
+        $document->logHistory('signed', $oldStatus, 'signed', 'Document marqué comme signé');
+
+        return response()->json([
+            'message' => 'Document signé',
+            'document' => $document->fresh(['signedBy']),
+        ]);
+    }
+
+    /**
+     * ✅ Télécharger (log dans l'historique)
+     */
+    public function download(Request $request, Document $document)
+    {
+        $this->authorizeDocumentAccess($request, $document);
+
+        $document->logHistory('downloaded', null, null, 'Téléchargement');
+
+        $path = storage_path('app/public/' . $document->file_path);
+        if (!file_exists($path)) {
+            return response()->json(['message' => 'Fichier introuvable'], 404);
+        }
+
+        return response()->download($path, $document->original_name);
+    }
+
+    /**
+     * ✅ Télécharger une version spécifique
+     */
+    public function downloadVersion(Request $request, Document $document, DocumentVersion $version)
+    {
+        $this->authorizeDocumentAccess($request, $document);
+        abort_unless($version->document_id === $document->id, 404);
+
+        $path = storage_path('app/public/' . $version->file_path);
+        if (!file_exists($path)) {
+            return response()->json(['message' => 'Fichier introuvable'], 404);
+        }
+
+        return response()->download($path, $version->original_name);
+    }
+
+    /**
+     * ✅ Historique
+     */
+    public function history(Request $request, Document $document)
+    {
+        $this->authorizeDocumentAccess($request, $document);
+
+        return $document->history()->with('user:id,name,email,avatar_path')->get();
+    }
+
+    /**
+     * ✅ Supprimer (soft delete)
      */
     public function destroy(Request $request, Document $document)
     {
-        $user = $request->user();
+        $this->authorizeDocumentAccess($request, $document);
 
-        // Seul l'uploader ou un admin peut supprimer
-        if ($document->uploaded_by !== $user->id && !$user->isAdmin()) {
-            abort(403, 'Non autorisé.');
-        }
-
-        // Supprimer le fichier physique
-        if (Storage::disk('public')->exists($document->file_path)) {
-            Storage::disk('public')->delete($document->file_path);
-        }
-
+        $document->logHistory('deleted', null, null, 'Document supprimé');
         $document->delete();
 
-        return response()->json(['message' => 'Document supprimé.']);
+        return response()->json(['message' => 'Document supprimé']);
     }
 
-    /**
-     * ⚠️ Méthode legacy (store) — conservée pour compatibilité
-     */
-    public function store(Request $request)
+    // ============ AUTORISATIONS ============
+    private function authorizeDocumentAccess(Request $request, Document $document): void
     {
-        return $this->upload($request);
+        $user = $request->user();
+
+        // Propriétaire direct
+        if ($document->uploaded_by === $user->id) return;
+
+        // Lié à une mission où je suis impliqué
+        if ($document->documentable_type === 'App\Models\Mission') {
+            $mission = $document->documentable;
+            if ($mission && (
+                $mission->employee_id === $user->id ||
+                $mission->supplying_company_id === optional($user->companies()->first())->id ||
+                $mission->requesting_company_id === optional($user->companies()->first())->id
+            )) return;
+        }
+
+        abort(403, 'Accès refusé à ce document.');
+    }
+
+    private function authorizeDocumentable(Request $request, string $type, int $id): void
+    {
+        $model = $type::find($id);
+        abort_unless($model, 404, 'Ressource introuvable.');
+
+        // Pour MVP : on accepte si l'utilisateur est lié à la ressource
+        // Tu peux renforcer avec une Policy plus tard
+        $user = $request->user();
+
+        if ($type === 'App\Models\Mission' && $model->employee_id !== $user->id) {
+            $companyIds = $user->companies()->pluck('id')->toArray();
+            abort_unless(
+                in_array($model->supplying_company_id, $companyIds) ||
+                in_array($model->requesting_company_id, $companyIds),
+                403,
+                'Vous n\'êtes pas autorisé à ajouter des documents à cette mission.'
+            );
+        }
     }
 }

@@ -24,7 +24,6 @@ class ProfessionalProfileController extends Controller
             ? (is_array($request->skill_ids) ? $request->skill_ids : explode(',', $request->skill_ids))
             : [];
 
-        // ✅ Corrigé : language_names (noms) au lieu de language_ids
         $wantedLanguageNames = $request->language_names
             ? (is_array($request->language_names) ? $request->language_names : explode(',', $request->language_names))
             : [];
@@ -64,7 +63,6 @@ class ProfessionalProfileController extends Controller
                 'educations',
             ]);
 
-        // Recherche texte
         $profileQuery->when($request->search, function ($q, $s) {
             $q->where(function ($sq) use ($s) {
                 $sq->where('headline', 'ilike', "%{$s}%")
@@ -74,21 +72,14 @@ class ProfessionalProfileController extends Controller
             });
         });
 
-        // Type de profil
         $profileQuery->when($request->profile_type, fn ($q, $v) => $q->where('profile_type', $v));
-
-        // Pays
         $profileQuery->when($request->country, fn ($q, $v) => $q->where('country', $v));
-
-        // Ville
         $profileQuery->when($request->city, fn ($q, $v) => $q->where('city', 'ilike', "%{$v}%"));
 
-        // Compétences (multi)
         $profileQuery->when($wantedSkillIds, function ($q) use ($wantedSkillIds) {
             $q->whereHas('skills', fn ($sq) => $sq->whereIn('skills.id', $wantedSkillIds));
         });
 
-        // Niveau minimum
         $profileQuery->when($request->min_level, function ($q) use ($request) {
             $levels = ['beginner', 'intermediate', 'advanced', 'expert'];
             $idx = array_search($request->min_level, $levels);
@@ -97,28 +88,24 @@ class ProfessionalProfileController extends Controller
             $q->whereHas('skills', fn ($sq) => $sq->whereIn('profile_skills.level', $acceptedLevels));
         });
 
-        // Années d'expérience minimum
         $profileQuery->when($request->min_years, function ($q, $y) {
             $q->whereHas('skills', fn ($sq) =>
                 $sq->where('profile_skills.years_experience', '>=', (int) $y)
             );
         });
 
-        // Statut de disponibilité
         $profileQuery->when($request->availability_status, function ($q, $s) {
             $q->whereHas('availabilityWindows', fn ($sq) =>
                 $sq->where('status', $s)->where('end_at', '>=', now())
             );
         });
 
-        // Localisation
         $profileQuery->when($request->location_type, function ($q, $l) {
             $q->whereHas('availabilityWindows', fn ($sq) =>
                 $sq->where('location_type', $l)->where('end_at', '>=', now())
             );
         });
 
-        // Période de disponibilité
         $profileQuery->when($request->available_from || $request->available_to, function ($q) use ($request) {
             $q->whereHas('availabilityWindows', function ($sq) use ($request) {
                 $sq->where('status', '!=', 'unavailable');
@@ -127,10 +114,8 @@ class ProfessionalProfileController extends Controller
             });
         });
 
-        // Vérifié uniquement
         $profileQuery->when($request->boolean('verified_only'), fn ($q) => $q->where('is_verified', true));
 
-        // Langues (par noms)
         $profileQuery->when($wantedLanguageNames, function ($q) use ($wantedLanguageNames) {
             $q->whereHas('languages', fn ($sq) => $sq->whereIn('name', $wantedLanguageNames));
         });
@@ -156,7 +141,6 @@ class ProfessionalProfileController extends Controller
                 'skills',
             ]);
 
-        // Recherche texte
         $offerQuery->when($request->search, function ($q, $s) {
             $q->where(function ($sq) use ($s) {
                 $sq->where('title', 'ilike', "%{$s}%")
@@ -272,23 +256,21 @@ class ProfessionalProfileController extends Controller
         $professionalProfile->can_view_contact = $isOwner
             || $professionalProfile->visibility === 'public';
 
-       // ✅ Disponibilités TOUJOURS visibles (même pour visiteurs non connectés)
-$professionalProfile->load([
-    'availabilityWindows' => fn ($q) => $q
-        ->where('end_at', '>=', now()->startOfDay())
-        ->orderBy('start_at'),
-]);
+        $professionalProfile->load([
+            'availabilityWindows' => fn ($q) => $q
+                ->where('end_at', '>=', now()->startOfDay())
+                ->orderBy('start_at'),
+        ]);
 
-// ✅ Infos sensibles uniquement si autorisé
-if ($canSeeFull) {
-    $professionalProfile->load([
-        'experiences',
-        'educations',
-        'certifications',
-        'languages',
-        'portfolio.projects',
-    ]);
-}
+        if ($canSeeFull) {
+            $professionalProfile->load([
+                'experiences',
+                'educations',
+                'certifications',
+                'languages',
+                'portfolio.projects',
+            ]);
+        }
 
         if (!$professionalProfile->can_view_contact && $professionalProfile->user) {
             $professionalProfile->user->makeHidden(['phone', 'email']);
@@ -321,18 +303,36 @@ if ($canSeeFull) {
         return $hasConversation;
     }
 
-        /**
-     * ✅ Mon profil (propriétaire) — avec portfolio chargé
+    /**
+     * ✅ Mon profil (propriétaire) — avec auto-création + synchro photo salarié
      */
     public function me(Request $request)
     {
-        $profile = $request->user()->professionalProfile;
+        $user = $request->user();
+        $profile = $user->professionalProfile;
 
+        // ✅ AUTO-CRÉATION : si le profil n'existe pas, on le crée
         if (!$profile) {
-            return response()->json(null);
+            $profile = ProfessionalProfile::create([
+                'user_id'      => $user->id,
+                'profile_type' => 'employee',
+                'headline'     => $user->name ?? 'Professionnel',
+                'visibility'   => 'network',
+            ]);
         }
 
-        return $profile->load([
+        // ✅ SYNCHRO PHOTO : si le user est salarié d'une entreprise,
+        //    on récupère sa photo et on l'injecte dans son profil
+        if (!$profile->avatar_path) {
+            $employee = \App\Models\Employee::where('user_id', $user->id)
+                ->whereNotNull('photo_path')
+                ->first();
+            if ($employee) {
+                $profile->update(['avatar_path' => $employee->photo_path]);
+            }
+        }
+
+        $profile->load([
             'user',
             'skills.category.parent',
             'skills.category',
@@ -340,7 +340,55 @@ if ($canSeeFull) {
             'educations',
             'certifications',
             'languages',
-            'portfolio',           // ✅ AJOUT : charge le portfolio
+        ]);
+
+        $profile->availability_windows = $profile->availabilityWindows()
+            ->where('end_at', '>=', now()->startOfDay())
+            ->orderBy('start_at')
+            ->get();
+
+        // ✅ CONSTRUIRE LA RÉPONSE MANUELLEMENT POUR ÊTRE SÛR
+        return response()->json([
+            'id' => $profile->id,
+            'user_id' => $profile->user_id,
+            'profile_type' => $profile->profile_type,
+            'headline' => $profile->headline,
+            'bio' => $profile->bio,
+            'country' => $profile->country,
+            'city' => $profile->city,
+            'visibility' => $profile->visibility,
+            'avatar_path' => $profile->avatar_path,
+            'cover_path' => $profile->cover_path,
+            'cv_path' => $profile->cv_path,
+            'is_verified' => $profile->is_verified,
+            'is_young_talent' => $profile->is_young_talent,
+            'looking_for_opportunity' => $profile->looking_for_opportunity,
+            'university' => $profile->university,
+            'field_of_study' => $profile->field_of_study,
+            'study_level' => $profile->study_level,
+            'portfolio_url' => $profile->portfolio_url,
+            'linkedin_url' => $profile->linkedin_url,
+            'github_url' => $profile->github_url,
+            'behance_url' => $profile->behance_url,
+
+            // ✅ USER explicitement
+            'user' => $profile->user ? [
+                'id' => $profile->user->id,
+                'name' => $profile->user->name,
+                'first_name' => $profile->user->first_name,
+                'last_name' => $profile->user->last_name,
+                'email' => $profile->user->email,
+                'phone' => $profile->user->phone,
+                'country' => $profile->user->country,
+            ] : null,
+
+            // Relations
+            'skills' => $profile->skills,
+            'experiences' => $profile->experiences,
+            'educations' => $profile->educations,
+            'certifications' => $profile->certifications,
+            'languages' => $profile->languages,
+            'availability_windows' => $profile->availability_windows,
         ]);
     }
 
@@ -364,26 +412,36 @@ if ($canSeeFull) {
     /**
      * ✅ Mettre à jour mon profil
      */
-    // Dans la méthode update() ou store()
-public function update(ProfessionalProfileRequest $request, ProfessionalProfile $profile)
-{
-    // Vérifier que c'est bien le profil de l'utilisateur
-    if ($request->user()->id !== $profile->user_id) {
-        abort(403);
+    public function update(ProfessionalProfileRequest $request, $id)
+    {
+        $profile = ProfessionalProfile::findOrFail($id);
+
+        if ($request->user()->id !== $profile->user_id) {
+            \Log::warning('403 update profile', [
+                'auth_user_id'     => $request->user()->id,
+                'profile_user_id'  => $profile->user_id,
+                'profile_id'       => $profile->id,
+            ]);
+            return response()->json([
+                'message' => 'Non autorisé à modifier ce profil.',
+            ], 403);
+        }
+
+        $data = $request->validated();
+
+        // Synchroniser Young Talent
+        $isYoungTalent = ($data['is_young_talent'] ?? false) 
+            || ($data['profile_type'] ?? '') === 'student';
+
+        if ($isYoungTalent) {
+            $data['is_young_talent'] = true;
+            $data['profile_type'] = 'student';
+        }
+
+        $profile->update($data);
+
+        return response()->json($profile->fresh());
     }
-
-    $data = $request->validated();
-
-    // Si Young Talent, on synchronise automatiquement
-    if (!empty($data['is_young_talent']) || $data['profile_type'] === 'student') {
-        $data['is_young_talent'] = true;
-        $data['profile_type'] = 'student';
-    }
-
-    $profile->update($data);
-
-    return response()->json($profile->fresh());
-}
 
     /**
      * ✅ Liste publique (legacy)
@@ -555,5 +613,33 @@ public function update(ProfessionalProfileRequest $request, ProfessionalProfile 
 
         $profile->update(['visibility' => $data['visibility']]);
         return response()->json($profile);
+    }
+
+    /**
+     * ✅ Uploader la photo de couverture
+     */
+    public function uploadCover(Request $request)
+    {
+        $request->validate([
+            'cover' => 'required|image|max:10240',
+        ]);
+
+        $profile = $request->user()->professionalProfile;
+        if (!$profile) {
+            return response()->json(['message' => 'Créez d\'abord votre profil professionnel.'], 404);
+        }
+
+        if ($profile->cover_path && \Storage::disk('public')->exists($profile->cover_path)) {
+            \Storage::disk('public')->delete($profile->cover_path);
+        }
+
+        $path = $request->file('cover')->store('covers', 'public');
+
+        $profile->update(['cover_path' => $path]);
+
+        return response()->json([
+            'message'    => 'Photo de couverture mise à jour ✅',
+            'cover_path' => $path,
+        ]);
     }
 }

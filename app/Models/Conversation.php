@@ -13,14 +13,23 @@ class Conversation extends Model
         return $this->morphTo();
     }
 
-    public function participants()
+        public function participants()
     {
         return $this->belongsToMany(User::class, 'conversation_participants')
-                     ->withPivot('last_read_at')->withTimestamps();
+                     ->withPivot('last_read_at', 'is_archived')
+                     ->withTimestamps();
     }
 
     public function messages()
     {
         return $this->hasMany(Message::class)->orderBy('created_at');
+    }
+        /**
+     * ✅ Compteur simple des non-lus (calculé via relation)
+     */
+    public function unreadMessagesFor(int $userId)
+    {
+        return $this->hasMany(Message::class)
+            ->where('sender_id', '!=', $userId);
     }
 }

@@ -23,12 +23,12 @@ class ProfileSectionController extends Controller
     public function storeExperience(Request $request)
     {
         $data = $request->validate([
-            'title' => ['required', 'string', 'max:150'],
-            'company' => ['required', 'string', 'max:150'],
-            'location' => ['nullable', 'string', 'max:120'],
-            'start_date' => ['required', 'date'],
-            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
-            'is_current' => ['boolean'],
+            'title'       => ['required', 'string', 'max:150'],
+            'company'     => ['required', 'string', 'max:150'],
+            'location'    => ['nullable', 'string', 'max:120'],
+            'start_date'  => ['required', 'date'],
+            'end_date'    => ['nullable', 'date', 'after_or_equal:start_date'],
+            'is_current'  => ['boolean'],
             'description' => ['nullable', 'string'],
         ]);
 
@@ -40,12 +40,12 @@ class ProfileSectionController extends Controller
     {
         abort_unless($experience->professional_profile_id === $this->profile($request)->id, 403);
         $experience->update($request->validate([
-            'title' => ['sometimes', 'string', 'max:150'],
-            'company' => ['sometimes', 'string', 'max:150'],
-            'location' => ['nullable', 'string', 'max:120'],
-            'start_date' => ['sometimes', 'date'],
-            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
-            'is_current' => ['boolean'],
+            'title'       => ['sometimes', 'string', 'max:150'],
+            'company'     => ['sometimes', 'string', 'max:150'],
+            'location'    => ['nullable', 'string', 'max:120'],
+            'start_date'  => ['sometimes', 'date'],
+            'end_date'    => ['nullable', 'date', 'after_or_equal:start_date'],
+            'is_current'  => ['boolean'],
             'description' => ['nullable', 'string'],
         ]));
         return $experience;
@@ -63,13 +63,20 @@ class ProfileSectionController extends Controller
     public function storeEducation(Request $request)
     {
         $data = $request->validate([
-            'institution' => ['required', 'string', 'max:150'],
-            'degree' => ['required', 'string', 'max:150'],
-            'field_of_study' => ['nullable', 'string', 'max:150'],
-            'start_date' => ['required', 'date'],
-            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
-            'is_current' => ['boolean'],
+            'institution'     => ['required', 'string', 'max:150'],
+            'degree'          => ['required', 'string', 'max:150'],
+            'field_of_study'  => ['nullable', 'string', 'max:150'],
+            'study_level'     => ['nullable', 'string', 'max:40'],      // ✅ AJOUT
+            'start_date'      => ['nullable', 'date'],                   // ✅ nullable
+            'end_date'        => ['nullable', 'date', 'after_or_equal:start_date'],
+            'is_current'      => ['boolean'],
+            'is_young_talent' => ['boolean'],                            // ✅ AJOUT
         ]);
+
+        // ✅ Fallback automatique si pas de start_date (Young Talent)
+        if (empty($data['start_date'])) {
+            $data['start_date'] = now()->startOfYear()->format('Y-m-d');
+        }
 
         $education = $this->profile($request)->educations()->create($data);
         return response()->json($education, 201);
@@ -78,13 +85,16 @@ class ProfileSectionController extends Controller
     public function updateEducation(Request $request, Education $education)
     {
         abort_unless($education->professional_profile_id === $this->profile($request)->id, 403);
+        
         $education->update($request->validate([
-            'institution' => ['sometimes', 'string', 'max:150'],
-            'degree' => ['sometimes', 'string', 'max:150'],
-            'field_of_study' => ['nullable', 'string', 'max:150'],
-            'start_date' => ['sometimes', 'date'],
-            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
-            'is_current' => ['boolean'],
+            'institution'     => ['sometimes', 'string', 'max:150'],
+            'degree'          => ['sometimes', 'string', 'max:150'],
+            'field_of_study'  => ['nullable', 'string', 'max:150'],
+            'study_level'     => ['nullable', 'string', 'max:40'],       // ✅ AJOUT
+            'start_date'      => ['sometimes', 'nullable', 'date'],      // ✅ nullable
+            'end_date'        => ['nullable', 'date', 'after_or_equal:start_date'],
+            'is_current'      => ['boolean'],
+            'is_young_talent' => ['boolean'],                             // ✅ AJOUT
         ]));
         return $education;
     }
@@ -101,14 +111,26 @@ class ProfileSectionController extends Controller
     public function storeCertification(Request $request)
     {
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:150'],
+            'name'                 => ['required', 'string', 'max:150'],
             'issuing_organization' => ['required', 'string', 'max:150'],
-            'issue_date' => ['required', 'date'],
-            'credential_url' => ['nullable', 'url'],
+            'issue_date'           => ['required', 'date'],
+            'credential_url'       => ['nullable', 'url'],
         ]);
 
         $certification = $this->profile($request)->certifications()->create($data);
         return response()->json($certification, 201);
+    }
+
+    public function updateCertification(Request $request, Certification $certification)
+    {
+        abort_unless($certification->professional_profile_id === $this->profile($request)->id, 403);
+        $certification->update($request->validate([
+            'name'                 => ['sometimes', 'string', 'max:150'],
+            'issuing_organization' => ['sometimes', 'string', 'max:150'],
+            'issue_date'           => ['sometimes', 'date'],
+            'credential_url'       => ['nullable', 'url'],
+        ]));
+        return $certification;
     }
 
     public function destroyCertification(Request $request, Certification $certification)
@@ -123,7 +145,7 @@ class ProfileSectionController extends Controller
     public function storeLanguage(Request $request)
     {
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:80'],
+            'name'  => ['required', 'string', 'max:80'],
             'level' => ['required', 'in:basic,conversational,fluent,native'],
         ]);
 
@@ -132,6 +154,16 @@ class ProfileSectionController extends Controller
             ['level' => $data['level']]
         );
         return response()->json($language, 201);
+    }
+
+    public function updateLanguage(Request $request, Language $language)
+    {
+        abort_unless($language->professional_profile_id === $this->profile($request)->id, 403);
+        $language->update($request->validate([
+            'name'  => ['sometimes', 'string', 'max:80'],
+            'level' => ['sometimes', 'in:basic,conversational,fluent,native'],
+        ]));
+        return $language;
     }
 
     public function destroyLanguage(Request $request, Language $language)

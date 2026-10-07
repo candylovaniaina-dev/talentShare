@@ -89,6 +89,12 @@ class ApplicationController extends Controller
      */
     public function store(ApplicationRequest $request)
     {
+         if ($request->user()->role === "company") {
+        return response()->json([
+            'message' => 'Une entreprise ne peut pas postuler à une offre. Utilisez la messagerie.',
+        ], 403);
+    }
+
         $profile = $request->user()->professionalProfile;
 
         if (!$profile) {

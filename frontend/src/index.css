@@ -5,12 +5,10 @@
 /* ============================================================
    BASE GLOBALE
 ============================================================ */
-
 html, body, #root {
   min-height: 100vh;
 }
 
-/* Scroll smooth pour les ancres */
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 100px;
@@ -19,15 +17,13 @@ html {
 /* ============================================================
    SCROLLBAR CUSTOM
 ============================================================ */
-
-/* Scrollbar sombre (par défaut) */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0A1229;
+  background: var(--bg-app);
 }
 
 ::-webkit-scrollbar-thumb {
@@ -39,7 +35,6 @@ html {
   background: rgba(110, 231, 200, 0.4);
 }
 
-/* Scrollbar claire */
 html.light ::-webkit-scrollbar-track {
   background: #F1F5F9;
 }
@@ -52,18 +47,9 @@ html.light ::-webkit-scrollbar-thumb:hover {
   background: rgba(11, 22, 51, 0.4);
 }
 
-.scrollbar-light::-webkit-scrollbar-track {
-  background: #f1f5f9;
-}
-
-.scrollbar-light::-webkit-scrollbar-thumb {
-  background: rgba(11, 22, 51, 0.2);
-}
-
 /* ============================================================
    VARIABLES DE THÈME
 ============================================================ */
-
 html.dark {
   --bg-app: #0A1229;
   --bg-surface: rgba(255, 255, 255, 0.04);
@@ -93,7 +79,6 @@ body {
 /* ============================================================
    TAILLE DE TEXTE
 ============================================================ */
-
 html.font-small { font-size: 14px; }
 html.font-normal { font-size: 16px; }
 html.font-large { font-size: 18px; }
@@ -101,7 +86,6 @@ html.font-large { font-size: 18px; }
 /* ============================================================
    CONTRASTE ÉLEVÉ
 ============================================================ */
-
 html.high-contrast {
   --border-app: rgba(255, 255, 255, 0.35);
 }
@@ -116,7 +100,6 @@ html.high-contrast * {
 /* ============================================================
    RÉDUCTION DES ANIMATIONS
 ============================================================ */
-
 html.reduce-motion *,
 html.reduce-motion *::before,
 html.reduce-motion *::after {
@@ -127,248 +110,8 @@ html.reduce-motion *::after {
 }
 
 /* ============================================================
-   ✅ MODE CLAIR — CORRECTIONS POUR RENDRE TOUT LISIBLE
-============================================================ */
-
-/* ---- Fonds navy → clair ---- */
-html.light aside,
-html.light .bg-\[\#0A1229\] {
-  background-color: #FFFFFF !important;
-  color: #0F172A !important;
-  border-color: rgba(15, 23, 42, 0.08) !important;
-}
-
-/* Topbar */
-html.light header {
-  background-color: rgba(255, 255, 255, 0.95) !important;
-  border-color: rgba(15, 23, 42, 0.08) !important;
-}
-
-/* Cartes translucides */
-html.light .bg-white\/\[0\.04\],
-html.light .bg-white\/\[0\.06\],
-html.light .bg-white\/\[0\.02\] {
-  background-color: #FFFFFF !important;
-  border-color: rgba(15, 23, 42, 0.08) !important;
-}
-
-/* Gradients sombres → clairs */
-html.light .from-\[\#0B1633\] {
-  --tw-gradient-from: #F1F5F9 !important;
-}
-html.light .to-\[\#0A1229\] {
-  --tw-gradient-to: #E2E8F0 !important;
-}
-html.light .from-\[\#0F1E45\] {
-  --tw-gradient-from: #E2E8F0 !important;
-}
-
-/* Modals sombres */
-html.light .bg-\[\#242526\],
-html.light .bg-\[\#0F1A2E\],
-html.light .bg-\[\#0F1E45\] {
-  background-color: #FFFFFF !important;
-  border-color: rgba(15, 23, 42, 0.1) !important;
-}
-
-/* ---- Textes ---- */
-
-/* ✅ Force text-white → foncé en mode clair */
-html.light .text-white {
-  color: #0F172A !important;
-}
-
-/* ✅ MAIS : les boutons emerald gardent leur texte foncé */
-html.light .bg-emerald-500 .text-white,
-html.light .bg-emerald-500.text-white {
-  color: #FFFFFF !important;
-}
-
-html.light .text-slate-300,
-html.light .text-slate-400 {
-  color: #475569 !important;
-}
-
-html.light .text-slate-500 {
-  color: #64748B !important;
-}
-
-/* Emerald reste vert */
-html.light .text-emerald-400,
-html.light .text-emerald-300 {
-  color: #059669 !important;
-}
-
-/* ---- Inputs & formulaires (LE BUG PRINCIPAL) ---- */
-
-html.light input,
-html.light textarea,
-html.light select {
-  background-color: #F8FAFC !important;
-  color: #0F172A !important;
-  border-color: rgba(15, 23, 42, 0.15) !important;
-}
-
-html.light input::placeholder,
-html.light textarea::placeholder {
-  color: #94A3B8 !important;
-}
-
-html.light label {
-  color: #64748B !important;
-}
-
-html.light input:disabled {
-  background-color: #F1F5F9 !important;
-  color: #64748B !important;
-}
-
-/* ---- Boutons ---- */
-
-html.light .bg-emerald-500 {
-  background-color: #10B981 !important;
-  color: #FFFFFF !important;
-}
-
-html.light .border-white\/10,
-html.light .border-white\/5 {
-  border-color: rgba(15, 23, 42, 0.1) !important;
-}
-
-html.light .bg-white\/5,
-html.light .bg-white\/10,
-html.light .bg-white\/15 {
-  background-color: rgba(15, 23, 42, 0.04) !important;
-}
-
-/* ---- Zones danger (rouge/ambre) restent lisibles ---- */
-
-html.light .bg-rose-500\/5,
-html.light .bg-rose-500\/10 {
-  background-color: #FEF2F2 !important;
-}
-html.light .text-rose-300,
-html.light .text-rose-400 {
-  color: #DC2626 !important;
-}
-
-html.light .bg-amber-500\/5,
-html.light .bg-amber-500\/10 {
-  background-color: #FFFBEB !important;
-}
-html.light .text-amber-300,
-html.light .text-amber-400 {
-  color: #D97706 !important;
-}
-
-/* ---- Emerald backgrounds (boutons, badges) ---- */
-
-html.light .bg-emerald-500\/10,
-html.light .bg-emerald-500\/15,
-html.light .bg-emerald-500\/20 {
-  background-color: rgba(16, 185, 129, 0.12) !important;
-}
-
-/* ---- Violet (pour badges colorés) ---- */
-
-html.light .bg-violet-500\/10,
-html.light .bg-violet-500\/15 {
-  background-color: rgba(139, 92, 246, 0.12) !important;
-}
-
-/* ---- Blue ---- */
-
-html.light .bg-blue-500\/10,
-html.light .bg-blue-500\/15 {
-  background-color: rgba(59, 130, 246, 0.12) !important;
-}
-
-/* ============================================================
-   ✅ DROPDOWN / MENU PROFIL — CORRECTION MODE CLAIR
-============================================================ */
-
-/* Fond du menu déroulant */
-html.light .bg-\[\#242526\],
-html.light .bg-\[\#1E1E1E\],
-html.light .bg-\[\#18191A\],
-html.light .bg-\[\#0F1A2E\],
-html.light .bg-\[\#1a1a2e\],
-html.light .bg-slate-900,
-html.light .bg-slate-800,
-html.light .bg-neutral-900,
-html.light .bg-neutral-800,
-html.light .bg-gray-900,
-html.light .bg-gray-800,
-html.light .bg-zinc-900,
-html.light .bg-zinc-800 {
-  background-color: #FFFFFF !important;
-  border-color: rgba(15, 23, 42, 0.1) !important;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12) !important;
-  color: #0F172A !important;
-}
-
-/* Texte principal du menu */
-html.light .bg-\[\#242526\] .text-white,
-html.light .bg-slate-900 .text-white,
-html.light .bg-slate-800 .text-white {
-  color: #0F172A !important;
-}
-
-/* Items du menu (Paramètres, Aide, Affichage...) */
-html.light .hover\:bg-white\/5:hover,
-html.light .hover\:bg-white\/10:hover,
-html.light .hover\:bg-slate-800:hover,
-html.light .hover\:bg-slate-700:hover {
-  background-color: #F1F5F9 !important;
-}
-
-/* Séparateurs (border-t / border-b) */
-html.light .border-white\/10,
-html.light .border-white\/5,
-html.light .divide-white\/10 > * + *,
-html.light .divide-white\/5 > * + * {
-  border-color: rgba(15, 23, 42, 0.08) !important;
-}
-
-/* Icônes grisées */
-html.light .bg-white\/5 svg,
-html.light .bg-white\/10 svg {
-  color: #64748B !important;
-  stroke: #64748B !important;
-}
-
-/* Flèche ">" à droite du nom */
-html.light .text-slate-400,
-html.light .text-slate-500 {
-  color: #64748B !important;
-}
-
-/* Bouton "Se déconnecter" — garde son style rouge */
-html.light .text-red-500,
-html.light .text-rose-500,
-html.light .text-red-400 {
-  color: #DC2626 !important;
-}
-html.light .bg-red-500\/10,
-html.light .bg-rose-500\/10 {
-  background-color: #FEE2E2 !important;
-}
-
-/* Avatar (initiales LC) */
-html.light .bg-emerald-500\/20,
-html.light .bg-emerald-500\/15 {
-  background-color: #D1FAE5 !important;
-  color: #065F46 !important;
-}
-/* ============================================================
-   ✅ CORRECTION FINALE — TEXTES DU DROPDOWN EN MODE CLAIR
-============================================================ */
-
-/* Forcer TOUS les textes dans le dropdown à être foncés */
-/* ============================================================
-   ✅ CORRECTION FINALE — MENUS DÉROULANTS (SELECT/OPTION)
-   Problème : en mode clair, les <option> restent blanc sur blanc
-   Solution : forcer les couleurs natives sur select ET option
+   MENUS DÉROULANTS NATIFS — CORRECTION NAVIGATEUR
+   (les <option> ne peuvent pas utiliser var() sur certains navigateurs)
 ============================================================ */
 
 /* ---- MODE CLAIR ---- */
@@ -378,21 +121,18 @@ html.light select {
   border-color: rgba(15, 23, 42, 0.15) !important;
 }
 
-/* ⚠️ CRUCIAL : cibler les <option> elles-mêmes */
 html.light select option {
   background-color: #FFFFFF !important;
   color: #0F172A !important;
   padding: 8px !important;
 }
 
-/* Option sélectionnée / survolée */
 html.light select option:checked,
 html.light select option:hover {
   background-color: #10B981 !important;
   color: #FFFFFF !important;
 }
 
-/* Flèche du select (appearance native) */
 html.light select {
   appearance: none;
   -webkit-appearance: none;
@@ -404,7 +144,7 @@ html.light select {
   padding-right: 32px !important;
 }
 
-/* ---- MODE SOMBRE (au cas où) ---- */
+/* ---- MODE SOMBRE ---- */
 html.dark select {
   background-color: rgba(255, 255, 255, 0.05);
   color: #FFFFFF;
@@ -421,10 +161,7 @@ html.dark select option:hover {
   color: #FFFFFF !important;
 }
 
-/* ============================================================
-   ✅ BONUS : corriger les <datalist> (utilisé pour "Ville")
-============================================================ */
-
+/* ---- Datalist ---- */
 html.light input[list] {
   background-color: #FFFFFF !important;
   color: #0F172A !important;
@@ -435,48 +172,11 @@ html.light datalist option {
   color: #0F172A !important;
 }
 
-/* ============================================================
-   ✅ CORRECTION ADITIONNELLE : MODAL EN MODE CLAIR
-   Le modal "Ajouter une formation" a un fond #0F1E45 qui reste sombre
-============================================================ */
-
-html.light .bg-\[\#0F1E45\] {
-  background-color: #FFFFFF !important;
-  border-color: rgba(15, 23, 42, 0.1) !important;
-  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.15) !important;
-}
-
-/* Titres dans le modal */
-html.light .bg-\[\#0F1E45\] h3,
-html.light .bg-\[\#0F1E45\] label {
-  color: #0F172A !important;
-}
-
-/* Labels uppercase gris */
-html.light .bg-\[\#0F1E45\] .text-slate-500,
-html.light .bg-\[\#0F1E45\] .text-\[\#64748B\] {
-  color: #64748B !important;
-}
-
-/* Bouton fermer (X) */
-html.light .bg-\[\#0F1E45\] button.text-slate-500 {
-  color: #64748B !important;
-}
-html.light .bg-\[\#0F1E45\] button.text-slate-500:hover {
-  color: #0F172A !important;
-}
-
-/* ============================================================
-   ✅ CORRECTION : Forcer la visibilité des <option> partout
-   (Certains navigateurs ignorent le background-color sur option)
-============================================================ */
-
-select,
-select option {
+/* ---- Fallback focus ---- */
+select, select option {
   font-family: inherit;
 }
 
-/* Fallback pour navigateurs qui ignorent le style des options */
 html.light select:focus {
   background-color: #FFFFFF !important;
   color: #0F172A !important;
@@ -485,4 +185,17 @@ html.light select:focus {
 html.light select:focus option {
   background-color: #FFFFFF !important;
   color: #0F172A !important;
+}
+/* ============================================================
+   ANIMATION DES TOASTS
+============================================================ */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }

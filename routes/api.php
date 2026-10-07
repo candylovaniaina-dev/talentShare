@@ -42,27 +42,21 @@ Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:6,
 Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])->middleware('throttle:3,1');
 Route::post('/reset-password', [PasswordResetController::class, 'reset']);
 
-// Entreprises (public)
 Route::get('/companies', [CompanyController::class, 'index']);
 Route::get('/companies/{company}', [CompanyController::class, 'show'])->where('company', '[0-9]+');
 
-// Universités
 Route::get('/universities', [UniversityController::class, 'index']);
 Route::get('/universities/{university}', [UniversityController::class, 'show']);
 
-// ✅ P0-8 : Recherche avancée (DOIT ÊTRE AVANT /professional-profiles/{id})
 Route::get('/talents/search', [ProfessionalProfileController::class, 'search']);
 
-// Profils professionnels (publics)
 Route::get('/professional-profiles', [ProfessionalProfileController::class, 'index']);
 Route::get('/professional-profiles/{professionalProfile}', [ProfessionalProfileController::class, 'show']);
 
-// Compétences (référentiel)
 Route::get('/skill-categories', [SkillController::class, 'categories']);
 Route::get('/skills/stats', [SkillController::class, 'stats']);
 Route::get('/skills', [SkillController::class, 'index']);
 
-// Référentiel langues (public)
 Route::get('/languages', function () {
     return \App\Models\Language::select('name')
         ->distinct()
@@ -70,22 +64,15 @@ Route::get('/languages', function () {
         ->pluck('name');
 });
 
-// Resource Offers (public)
 Route::get('/resource-offers', [ResourceOfferController::class, 'index']);
 
-// Resource Requests (public — liste + détail)
 Route::get('/resource-requests', [ResourceRequestController::class, 'index']);
 Route::get('/resource-requests/{resourceRequest}', [ResourceRequestController::class, 'show']);
 
-// =============================================
-// ✅ JOB OFFERS — ORDRE CRITIQUE
-// /my AVANT /{jobOffer} sinon Laravel plante
-// =============================================
-Route::get('/job-offers/my', [JobOfferController::class, 'my'])->middleware('auth:sanctum'); // ✅ protégé, AVANT
-Route::get('/job-offers', [JobOfferController::class, 'index']);                             // public
-Route::get('/job-offers/{jobOffer}', [JobOfferController::class, 'show']);                   // public
+Route::get('/job-offers/my', [JobOfferController::class, 'my'])->middleware('auth:sanctum');
+Route::get('/job-offers', [JobOfferController::class, 'index']);
+Route::get('/job-offers/{jobOffer}', [JobOfferController::class, 'show']);
 
-// ✅ Matching (P0-10)
 Route::post('/match/explain', [MatchController::class, 'explain']);
 
 
@@ -100,7 +87,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
 
     // === Entreprise ===
-    // ⚠️ ORDRE CRITIQUE : "me" AVANT "{company}"
     Route::get   ('/companies/me',                                    [CompanyController::class, 'me']);
     Route::get   ('/companies/me/employees',                          [CompanyController::class, 'myEmployees']);
     Route::get   ('/companies/my/all',                                [CompanyController::class, 'myCompanies']);
@@ -108,12 +94,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post  ('/companies',                                       [CompanyController::class, 'store']);
     Route::patch ('/companies/{company}',                             [CompanyController::class, 'update']);
     Route::post  ('/companies/{company}/logo',                        [CompanyController::class, 'uploadLogo']);
-    Route::post  ('/companies/{company}/members',                     [CompanyController::class, 'addMember']);
-    Route::delete('/companies/{company}/members/{member}',            [CompanyController::class, 'removeMember']);
+    Route::delete('/companies/{company}/logo',                        [CompanyController::class, 'deleteLogo']);
+
+    // Membres
     Route::get   ('/companies/{company}/members',                     [CompanyController::class, 'members']);
+    Route::post  ('/companies/{company}/members',                     [CompanyController::class, 'addMember']);
+    Route::post  ('/companies/{company}/members/{member}/photo',      [CompanyController::class, 'uploadMemberPhoto']);
+    Route::delete('/companies/{company}/members/{member}',            [CompanyController::class, 'removeMember']);
+
     Route::post  ('/companies/{company}/verify',                      [CompanyController::class, 'requestVerification']);
+
+    // Salariés
     Route::get   ('/companies/{company}/employees',                   [CompanyController::class, 'employees']);
     Route::post  ('/companies/{company}/employees',                   [CompanyController::class, 'addEmployee']);
+    Route::post  ('/companies/{company}/employees/{employee}/photo',  [CompanyController::class, 'uploadEmployeePhoto']);
     Route::delete('/companies/{company}/employees/{employee}',        [CompanyController::class, 'removeEmployee']);
 
     // === Universités ===
@@ -127,6 +121,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/professional-profiles/{professionalProfile}', [ProfessionalProfileController::class, 'update']);
     Route::post('/profile/avatar', [ProfessionalProfileController::class, 'uploadAvatar']);
     Route::post('/profile/cv', [ProfessionalProfileController::class, 'uploadCv']);
+    Route::post('/profile/cover', [ProfessionalProfileController::class, 'uploadCover']);
 
     // === Expériences / Formations / Certifs / Langues ===
     Route::post('/experiences', [ProfileSectionController::class, 'storeExperience']);
@@ -164,38 +159,28 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/portfolio/projects/{project}', [PortfolioController::class, 'deleteProject']);
     Route::patch('/portfolio/visibility', [PortfolioController::class, 'updateVisibility']);
 
-    // === Resource Offers (protégés) ===
+    // === Resource Offers ===
     Route::get('/resource-offers/my', [ResourceOfferController::class, 'my']);
     Route::post('/resource-offers', [ResourceOfferController::class, 'store']);
     Route::patch('/resource-offers/{resourceOffer}', [ResourceOfferController::class, 'update']);
     Route::delete('/resource-offers/{resourceOffer}', [ResourceOfferController::class, 'destroy']);
 
-    // =============================================
-    // ✅ P0-9 : RESOURCE REQUESTS (complet)
-    // =============================================
+    // === Resource Requests ===
     Route::get   ('/resource-requests/my',                            [ResourceRequestController::class, 'index']);
     Route::post  ('/resource-requests',                                [ResourceRequestController::class, 'store']);
-
-    // ⚠️ /candidates AVANT /{resourceRequest}
     Route::get   ('/resource-requests/{resourceRequest}/candidates',   [ResourceRequestController::class, 'candidates']);
-
     Route::patch ('/resource-requests/{resourceRequest}',              [ResourceRequestController::class, 'update']);
     Route::delete('/resource-requests/{resourceRequest}',              [ResourceRequestController::class, 'destroy']);
 
-    // Actions de statut
     Route::post  ('/resource-requests/{resourceRequest}/publish',      [ResourceRequestController::class, 'publish']);
     Route::post  ('/resource-requests/{resourceRequest}/pause',        [ResourceRequestController::class, 'pause']);
     Route::post  ('/resource-requests/{resourceRequest}/close',        [ResourceRequestController::class, 'close']);
     Route::post  ('/resource-requests/{resourceRequest}/mark-filled',  [ResourceRequestController::class, 'markFilled']);
     Route::post  ('/resource-requests/{resourceRequest}/duplicate',    [ResourceRequestController::class, 'duplicate']);
 
-    // =============================================
-    // ✅ P0-11 : PROPOSITIONS (complet)
-    // ⚠️ ORDRE CRITIQUE : /received et /sent AVANT /{proposal}
-    // =============================================
+    // === Propositions ===
     Route::get   ('/proposals/received',              [ProposalController::class, 'received']);
     Route::get   ('/proposals/sent',                  [ProposalController::class, 'sent']);
-
     Route::post  ('/proposals',                       [ProposalController::class, 'store']);
     Route::get   ('/proposals/{proposal}',            [ProposalController::class, 'show']);
     Route::patch ('/proposals/{proposal}',            [ProposalController::class, 'update']);
@@ -213,35 +198,48 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch ('/missions/{mission}/status',  [MissionController::class, 'updateStatus']);
 
     // =============================================
-    // ✅ OFFRES D'EMPLOI (création, modif, suppression)
-    // ⚠️ /my est DÉJÀ déclarée en public AVANT /{jobOffer}
+    // ✅ JOB OFFERS (avec interactions sociales)
     // =============================================
     Route::post  ('/job-offers',                        [JobOfferController::class, 'store']);
     Route::patch ('/job-offers/{jobOffer}',             [JobOfferController::class, 'update']);
     Route::delete('/job-offers/{jobOffer}',             [JobOfferController::class, 'destroy']);
     Route::get   ('/job-offers/{jobOffer}/applications',[JobOfferController::class, 'applications']);
 
-    // =============================================
-    // ✅ P0-15 : CANDIDATURES (Young Talent)
-    // ⚠️ ORDRE CRITIQUE : /stats AVANT /{application}
-    // =============================================
+    // ✅ NOUVEAU — Interactions sociales
+       // ✅ NOUVEAU — Interactions sociales
+    Route::post  ('/job-offers/{jobOffer}/like',        [JobOfferController::class, 'toggleLike']);
+    Route::post  ('/job-offers/{jobOffer}/comment',     [JobOfferController::class, 'comment']);
+    Route::get   ('/job-offers/{jobOffer}/comments',    [JobOfferController::class, 'comments']);  // ✅ AJOUT
+    Route::post  ('/job-offers/{jobOffer}/share',       [JobOfferController::class, 'share']);
+    // === Candidatures ===
     Route::get   ('/applications',                       [ApplicationController::class, 'index']);
     Route::get   ('/applications/stats',                 [ApplicationController::class, 'stats']);
     Route::post  ('/applications',                       [ApplicationController::class, 'store']);
     Route::get   ('/applications/{application}',         [ApplicationController::class, 'show']);
     Route::delete('/applications/{application}',         [ApplicationController::class, 'withdraw']);
     Route::patch ('/applications/{application}/status',  [ApplicationController::class, 'updateStatus']);
-    Route::post  ('/applications/{application}/schedule-interview', [ApplicationController::class, 'scheduleInterview']); 
+    Route::post  ('/applications/{application}/schedule-interview', [ApplicationController::class, 'scheduleInterview']);
     Route::post  ('/applications/{application}/viewed',  [ApplicationController::class, 'markAsViewed']);
 
     // === Dashboard ===
     Route::get('/dashboard', [DashboardController::class, 'index']);
 
     // === Messagerie ===
-    Route::get('/conversations', [ConversationController::class, 'index']);
-    Route::post('/conversations', [ConversationController::class, 'store']);
-    Route::get('/conversations/{conversation}/messages', [ConversationController::class, 'messages']);
-    Route::post('/conversations/{conversation}/messages', [ConversationController::class, 'sendMessage']);
+    Route::get   ('/conversations',                                       [ConversationController::class, 'index']);
+    Route::get   ('/conversations/unread-count',                          [ConversationController::class, 'unreadCount']);
+    Route::post  ('/conversations/direct',                                [ConversationController::class, 'createDirect']);
+    Route::post  ('/conversations/group',                                 [ConversationController::class, 'createGroup']);
+    Route::post  ('/conversations',                                       [ConversationController::class, 'store']);
+    Route::get   ('/conversations/{conversation}',                        [ConversationController::class, 'show']);
+    Route::get   ('/conversations/{conversation}/messages',               [ConversationController::class, 'messages']);
+    Route::post  ('/conversations/{conversation}/messages',               [ConversationController::class, 'sendMessage']);
+    Route::post  ('/conversations/{conversation}/mark-unread',            [ConversationController::class, 'markUnread']);
+    Route::post  ('/conversations/{conversation}/archive',                [ConversationController::class, 'archive']);
+    Route::post  ('/conversations/{conversation}/participants',           [ConversationController::class, 'addParticipant']);
+    Route::delete('/conversations/{conversation}/participants/{userId}',  [ConversationController::class, 'removeParticipant']);
+    Route::post  ('/conversations/{conversation}/leave',                  [ConversationController::class, 'leave']);
+    Route::patch ('/conversations/{conversation}',                        [ConversationController::class, 'update']);
+    Route::delete('/conversations/{conversation}',                        [ConversationController::class, 'destroy']);
 
     // === Notifications ===
     Route::get('/notifications', [NotificationController::class, 'index']);
@@ -256,13 +254,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/verification-requests', [VerificationRequestController::class, 'store']);
 
     // === Documents ===
-    Route::post  ('/documents',                 [DocumentController::class, 'upload']);
-    Route::get   ('/documents',                 [DocumentController::class, 'index']);
-    Route::get   ('/documents/{document}/download', [DocumentController::class, 'download']);
-    Route::delete('/documents/{document}',      [DocumentController::class, 'destroy']);
+    Route::get   ('/documents',                                            [DocumentController::class, 'index']);
+    Route::post  ('/documents',                                            [DocumentController::class, 'upload']);
+    Route::get   ('/documents/{document}',                                 [DocumentController::class, 'show']);
+    Route::patch ('/documents/{document}',                                 [DocumentController::class, 'update']);
+    Route::delete('/documents/{document}',                                 [DocumentController::class, 'destroy']);
+    Route::post  ('/documents/{document}/versions',                        [DocumentController::class, 'uploadVersion']);
+    Route::get   ('/documents/{document}/versions/{version}/download',     [DocumentController::class, 'downloadVersion']);
+    Route::get   ('/documents/{document}/download',                        [DocumentController::class, 'download']);
+    Route::get   ('/documents/{document}/history',                         [DocumentController::class, 'history']);
+    Route::post  ('/documents/{document}/sign',                            [DocumentController::class, 'markAsSigned']);
 
     // === Email ===
-     Route::post('/email/resend', [EmailVerificationController::class, 'resend'])->middleware('throttle:3,1');
+    Route::post('/email/resend', [EmailVerificationController::class, 'resend'])->middleware('throttle:3,1');
+
     // === Compte ===
     Route::patch('/account', [AccountController::class, 'update']);
     Route::patch('/account/password', [AccountController::class, 'changePassword']);
@@ -273,10 +278,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // === Recherche utilisateur ===
     Route::get('/users/search', [UserController::class, 'search']);
+    Route::get('/users/suggestions', [UserController::class, 'suggestions']);
 
-    // =============================================
-    // ✅ P0-8 : RECHERCHES SAUVEGARDÉES + MATCHING
-    // =============================================
+    // === Recherches sauvegardées + Matching ===
     Route::get   ('/saved-searches',                   [SavedSearchController::class, 'index']);
     Route::post  ('/saved-searches',                   [SavedSearchController::class, 'store']);
     Route::patch ('/saved-searches/{savedSearch}',     [SavedSearchController::class, 'update']);
@@ -300,7 +304,7 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
 
 
 // =============================================
-// ROUTES PUBLIQUES DYNAMIQUES (À LA FIN)
+// ROUTES PUBLIQUES DYNAMIQUES
 // =============================================
 
 Route::get('/resource-offers/{resourceOffer}', [ResourceOfferController::class, 'show']);

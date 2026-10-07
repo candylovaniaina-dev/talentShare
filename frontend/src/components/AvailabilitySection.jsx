@@ -1,24 +1,27 @@
 import React, { useState } from "react";
-import { Plus, Trash2, Edit, Calendar as CalendarIcon, List, MapPin, Clock, LayoutGrid } from "lucide-react";
+import {
+  Plus, Trash2, Edit, Calendar as CalendarIcon, List,
+  MapPin, Clock, LayoutGrid,
+} from "lucide-react";
 import AvailabilityCalendar from "./AvailabilityCalendar";
+import { Card, SectionTitle, EmptyState, GhostButton } from "./ui/Card";
 
 const STATUS_CONFIG = {
-  available:           { label: "Disponible",               color: "emerald", emoji: "🟢" },
-  partially_available: { label: "Partiellement disponible", color: "amber",   emoji: "🟡" },
-  unavailable:         { label: "Non disponible",           color: "rose",    emoji: "🔴" },
-  on_mission:          { label: "En mission",               color: "blue",    emoji: "🔵" },
+  available:           { label: "Disponible",               tone: "emerald", emoji: "🟢" },
+  partially_available: { label: "Partiellement disponible", tone: "amber",   emoji: "🟡" },
+  unavailable:         { label: "Non disponible",           tone: "rose",    emoji: "🔴" },
+  on_mission:          { label: "En mission",               tone: "blue",    emoji: "🔵" },
 };
 
 const TYPE_LABELS = {
   full_time: "Temps plein", part_time: "Temps partiel", freelance: "Freelance",
   internship: "Stage", mission: "Mission",
 };
-
-const LOCATION_LABELS = { onsite: "🏢 Sur site", remote: "🏠 Télétravail", hybrid: "🔄 Hybride" };
+const LOCATION_LABELS = { onsite: "Sur site", remote: "Télétravail", hybrid: "Hybride" };
 const UNIT_LABELS = { percentage: "%", hours_per_week: "h/sem", days_per_week: "j/sem" };
 
 export default function AvailabilitySection({ profile, onOpenModal, onDelete }) {
-  const [view, setView] = useState("list"); // "list" | "calendar"
+  const [view, setView] = useState("list");
   const windows = profile?.availability_windows || [];
 
   const today = new Date();
@@ -33,50 +36,53 @@ export default function AvailabilitySection({ profile, onOpenModal, onDelete }) 
     .sort((a, b) => new Date(b.start_at) - new Date(a.start_at));
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-6">
-      <div className="flex items-start justify-between mb-4">
-        <div>
-          <h3 className="font-bold">Disponibilités</h3>
-          <p className="text-sm text-slate-400">
-            Périodes déclarées. Les chevauchements sont détectés automatiquement.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Onglets vue */}
-          <div className="flex rounded-full border border-slate-200 p-0.5">
-            <button
-              onClick={() => setView("list")}
-              className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition ${
-                view === "list" ? "bg-navy text-white" : "text-slate-500 hover:text-navy"
-              }`}
-            >
-              <List size={12} /> Liste
-            </button>
-            <button
-              onClick={() => setView("calendar")}
-              className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition ${
-                view === "calendar" ? "bg-navy text-white" : "text-slate-500 hover:text-navy"
-              }`}
-            >
-              <LayoutGrid size={12} /> Calendrier
-            </button>
+    <Card>
+      <SectionTitle
+        title="Disponibilités"
+        action={
+          <div className="flex items-center gap-2">
+            <div className="flex rounded-full border border-[var(--border-app)] p-0.5">
+              <button
+                onClick={() => setView("list")}
+                className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold transition ${
+                  view === "list"
+                    ? "bg-emerald-500 text-[#0A1229]"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-app)]"
+                }`}
+              >
+                <List size={11} /> Liste
+              </button>
+              <button
+                onClick={() => setView("calendar")}
+                className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold transition ${
+                  view === "calendar"
+                    ? "bg-emerald-500 text-[#0A1229]"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-app)]"
+                }`}
+              >
+                <LayoutGrid size={11} /> Calendrier
+              </button>
+            </div>
+            <GhostButton icon={Plus} onClick={() => onOpenModal("availability")}>
+              Ajouter
+            </GhostButton>
           </div>
-          <button
-            onClick={() => onOpenModal("availability")}
-            className="flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold hover:border-navy"
-          >
-            <Plus size={13} /> Ajouter
-          </button>
-        </div>
-      </div>
+        }
+      />
 
       {windows.length === 0 ? (
-        <p className="text-sm text-slate-400">
-          Aucune disponibilité renseignée.{" "}
-          <button onClick={() => onOpenModal("availability")} className="font-semibold text-navy hover:underline">
-            Ajoutez une période
-          </button>
-        </p>
+        <EmptyState
+          emoji="🕐"
+          text="Aucune disponibilité renseignée. Ajoutez une période pour indiquer quand vous êtes disponible."
+          action={
+            <button
+              onClick={() => onOpenModal("availability")}
+              className="text-xs font-medium text-emerald-400 hover:text-emerald-300"
+            >
+              + Ajouter une période
+            </button>
+          }
+        />
       ) : view === "calendar" ? (
         <AvailabilityCalendar
           windows={windows}
@@ -85,11 +91,12 @@ export default function AvailabilitySection({ profile, onOpenModal, onDelete }) 
       ) : (
         <>
           {upcoming.length > 0 && (
-            <div className="mt-2">
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-2">
+            <div>
+              <p className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[var(--text-faint)]">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
                 À venir ({upcoming.length})
               </p>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {upcoming.map((w) => (
                   <WindowCard
                     key={w.id}
@@ -103,8 +110,9 @@ export default function AvailabilitySection({ profile, onOpenModal, onDelete }) 
           )}
 
           {past.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-slate-100">
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-2">
+            <div className="mt-6 border-t border-[var(--border-app)] pt-5">
+              <p className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[var(--text-faint)]">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--text-faint)]" />
                 Historique ({past.length})
               </p>
               <div className="space-y-2 opacity-60">
@@ -114,6 +122,7 @@ export default function AvailabilitySection({ profile, onOpenModal, onDelete }) 
                     w={w}
                     onEdit={() => onOpenModal("availability", w)}
                     onDelete={() => onDelete(w.id)}
+                    compact
                   />
                 ))}
               </div>
@@ -121,59 +130,158 @@ export default function AvailabilitySection({ profile, onOpenModal, onDelete }) 
           )}
         </>
       )}
-    </div>
+    </Card>
   );
 }
 
-function WindowCard({ w, onEdit, onDelete }) {
+function WindowCard({ w, onEdit, onDelete, compact = false }) {
   const cfg = STATUS_CONFIG[w.status] || STATUS_CONFIG.available;
 
-  const colorClasses = {
-    emerald: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    amber:   "bg-amber-50 text-amber-700 border-amber-200",
-    rose:    "bg-rose-50 text-rose-700 border-rose-200",
-    blue:    "bg-blue-50 text-blue-700 border-blue-200",
-  }[cfg.color];
+  // Couleurs subtiles par statut
+  const statusColors = {
+    emerald: {
+      border: "border-emerald-500/30",
+      bg: "bg-emerald-500/[0.06]",
+      dot: "bg-emerald-400",
+      text: "text-emerald-400",
+      badge: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
+    },
+    amber: {
+      border: "border-amber-500/30",
+      bg: "bg-amber-500/[0.06]",
+      dot: "bg-amber-400",
+      text: "text-amber-400",
+      badge: "border-amber-500/30 bg-amber-500/10 text-amber-400",
+    },
+    rose: {
+      border: "border-rose-500/30",
+      bg: "bg-rose-500/[0.06]",
+      dot: "bg-rose-400",
+      text: "text-rose-400",
+      badge: "border-rose-500/30 bg-rose-500/10 text-rose-400",
+    },
+    blue: {
+      border: "border-blue-500/30",
+      bg: "bg-blue-500/[0.06]",
+      dot: "bg-blue-400",
+      text: "text-blue-400",
+      badge: "border-blue-500/30 bg-blue-500/10 text-blue-400",
+    },
+  }[cfg.tone];
+
+  const startDate = new Date(w.start_at).toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+  const endDate = new Date(w.end_at).toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 
   return (
-    <div className={`group relative rounded-2xl border p-4 ${colorClasses}`}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-lg">{cfg.emoji}</span>
-            <span className="font-semibold text-sm">{cfg.label}</span>
-            <span className="text-xs opacity-70">· {TYPE_LABELS[w.type] || w.type}</span>
-          </div>
-
-          <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs">
-            <span className="flex items-center gap-1">
-              <CalendarIcon size={12} />
-              {new Date(w.start_at).toLocaleDateString("fr-FR")} → {new Date(w.end_at).toLocaleDateString("fr-FR")}
-            </span>
-            <span className="flex items-center gap-1">
-              <Clock size={12} />
-              {w.workload_value}{UNIT_LABELS[w.workload_unit] || "%"}
-            </span>
-            <span className="flex items-center gap-1">
-              <MapPin size={12} />
-              {LOCATION_LABELS[w.location_type] || w.location_type}
-              {w.location_city && ` · ${w.location_city}`}
-            </span>
-          </div>
-
-          {w.notes && <p className="mt-2 text-xs italic opacity-80">"{w.notes}"</p>}
-          {w.is_recurring && <p className="mt-1 text-xs opacity-70">🔁 Récurrent : {w.recurrence_pattern}</p>}
+    <div
+      className={`group relative rounded-xl border ${statusColors.border} ${statusColors.bg} transition hover:bg-opacity-100`}
+    >
+      {/* Barre supérieure avec statut */}
+      <div className="flex items-center justify-between gap-3 border-b border-[var(--border-app)] px-4 py-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${statusColors.dot} animate-pulse`} />
+          <span className={`text-sm font-semibold ${statusColors.text} truncate`}>
+            {cfg.label}
+          </span>
+          <span className="hidden text-[11px] text-[var(--text-faint)] sm:inline">
+            · {TYPE_LABELS[w.type] || w.type}
+          </span>
         </div>
 
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
-          <button onClick={onEdit} className="p-1.5 rounded-lg bg-white/70 hover:bg-white" title="Modifier">
-            <Edit size={14} />
+        {/* Actions hover */}
+        <div className="flex shrink-0 gap-1 opacity-0 transition group-hover:opacity-100">
+          <button
+            onClick={onEdit}
+            className="rounded-md bg-[var(--bg-surface-hover)] p-1.5 text-[var(--text-muted)] transition hover:bg-[var(--bg-surface)] hover:text-emerald-400"
+            title="Modifier"
+          >
+            <Edit size={12} />
           </button>
-          <button onClick={onDelete} className="p-1.5 rounded-lg bg-white/70 hover:bg-white" title="Supprimer">
-            <Trash2 size={14} />
+          <button
+            onClick={onDelete}
+            className="rounded-md bg-[var(--bg-surface-hover)] p-1.5 text-[var(--text-muted)] transition hover:bg-[var(--bg-surface)] hover:text-rose-400"
+            title="Supprimer"
+          >
+            <Trash2 size={12} />
           </button>
         </div>
       </div>
+
+      {/* Corps : grille d'infos alignées */}
+      <div className="grid gap-3 px-4 py-3 sm:grid-cols-3">
+        {/* Période */}
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-surface-hover)] text-[var(--text-muted)]">
+            <CalendarIcon size={13} />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--text-faint)]">
+              Période
+            </p>
+            <p className="truncate text-xs font-medium text-[var(--text-app)]">
+              {startDate} <span className="text-[var(--text-faint)]">→</span> {endDate}
+            </p>
+          </div>
+        </div>
+
+        {/* Charge */}
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-surface-hover)] text-[var(--text-muted)]">
+            <Clock size={13} />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--text-faint)]">
+              Charge
+            </p>
+            <p className="truncate text-xs font-medium text-[var(--text-app)]">
+              {w.workload_value}{UNIT_LABELS[w.workload_unit] || "%"}
+            </p>
+          </div>
+        </div>
+
+        {/* Localisation */}
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-surface-hover)] text-[var(--text-muted)]">
+            <MapPin size={13} />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--text-faint)]">
+              Localisation
+            </p>
+            <p className="truncate text-xs font-medium text-[var(--text-app)]">
+              {LOCATION_LABELS[w.location_type] || w.location_type}
+              {w.location_city && ` · ${w.location_city}`}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Notes (optionnel) */}
+      {!compact && w.notes && (
+        <div className="border-t border-[var(--border-app)] px-4 py-2.5">
+          <p className="text-xs leading-relaxed text-[var(--text-muted)]">
+            <span className="text-[var(--text-faint)]">Notes : </span>
+            {w.notes}
+          </p>
+        </div>
+      )}
+
+      {/* Récurrence (optionnel) */}
+      {!compact && w.is_recurring && (
+        <div className="border-t border-[var(--border-app)] px-4 py-2">
+          <span className={`inline-flex items-center gap-1.5 rounded border px-2 py-0.5 text-[10px] font-semibold ${statusColors.badge}`}>
+            🔁 Récurrent · {w.recurrence_pattern}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

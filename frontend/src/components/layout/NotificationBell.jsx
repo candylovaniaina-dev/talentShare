@@ -3,6 +3,7 @@ import {
   Bell, MessageSquare, Eye, Sparkles, Handshake, CheckCircle,
   Target, PlayCircle, XCircle, Briefcase, Clock, UserPlus,
   AlertCircle, FileText, Send, Video, UserCheck,
+  Heart, MessageCircle,   // ✅ AJOUT
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../services/api";
@@ -40,6 +41,10 @@ const ICONS = {
   application_accepted:    { icon: CheckCircle, color: "text-emerald-600", bg: "bg-emerald-50" },
   application_rejected:    { icon: XCircle,     color: "text-rose-600",    bg: "bg-rose-50" },
 
+  // ✅ Interactions sociales
+  offer_liked:     { icon: Heart,          color: "text-rose-600", bg: "bg-rose-50" },
+  offer_commented: { icon: MessageCircle,  color: "text-blue-600", bg: "bg-blue-50" },
+
   default: { icon: Bell, color: "text-slate-500", bg: "bg-slate-100" },
 };
 
@@ -50,7 +55,6 @@ export default function NotificationBell() {
   const ref = useRef(null);
   const navigate = useNavigate();
 
-  // ✅ CORRECTION : Supporte les 2 formats de réponse
   const load = () =>
     api.get("/notifications").then((res) => {
       const payload = res.data;
@@ -60,8 +64,6 @@ export default function NotificationBell() {
           ? payload.notifications
           : [];
       setItems(data);
-
-      // Compte des non-lus (fallback si l'API ne fournit pas unread_count)
       const unread = payload?.unread_count ?? data.filter((n) => !n.read_at).length;
       setUnreadCount(unread);
     });
@@ -99,15 +101,22 @@ export default function NotificationBell() {
       if (n.action_url.includes("#")) {
         const [path, hash] = n.action_url.split("#");
         navigate(path);
+
+        // ✅ Attendre que la page soit chargée + le feed affiché
         setTimeout(() => {
           const el = document.getElementById(hash);
-          if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-        }, 300);
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+            el.classList.add("ring-2", "ring-emerald-500", "rounded-xl");
+            setTimeout(() => {
+              el.classList.remove("ring-2", "ring-emerald-500", "rounded-xl");
+            }, 2500);
+          }
+        }, 800);
       } else {
         navigate(n.action_url);
       }
     } else {
-      console.warn("Pas d'action_url pour la notification:", n.type);
       setOpen(false);
     }
   };
@@ -154,11 +163,6 @@ export default function NotificationBell() {
               const Icon = cfg.icon;
               const isClickable = !!n.action_url;
 
-              const matchScore =
-                n.type === "resource_request_published" && n.data?.match_score
-                  ? n.data.match_score
-                  : null;
-
               return (
                 <button
                   key={n.id}
@@ -179,18 +183,6 @@ export default function NotificationBell() {
                     {n.body && (
                       <p className="mt-0.5 text-xs text-slate-500 line-clamp-2">{n.body}</p>
                     )}
-
-                    {matchScore !== null && (
-                      <span className={`mt-1.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                        matchScore >= 80 ? "bg-emerald-100 text-emerald-700"
-                        : matchScore >= 60 ? "bg-blue-100 text-blue-700"
-                        : matchScore >= 40 ? "bg-amber-100 text-amber-700"
-                        : "bg-slate-100 text-slate-600"
-                      }`}>
-                        🎯 {matchScore}% match
-                      </span>
-                    )}
-
                     <p className="mt-1 text-[11px] text-slate-400">
                       {new Date(n.created_at).toLocaleString("fr-FR", {
                         day: "numeric",
@@ -208,15 +200,6 @@ export default function NotificationBell() {
               );
             })}
           </div>
-
-          {items.length > 0 && (
-            <Link
-              to="/notifications"
-              className="block border-t border-slate-100 p-3 text-center text-xs font-semibold text-navy hover:bg-slate-50"
-            >
-              Voir toutes les notifications
-            </Link>
-          )}
         </div>
       )}
     </div>

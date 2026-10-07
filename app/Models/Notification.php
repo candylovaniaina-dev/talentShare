@@ -17,11 +17,19 @@ class Notification extends Model
     ];
 
     /**
-     * Accessor : construit l'URL de redirection selon le type
+     * ✅ Construit l'URL de redirection selon le type
      */
     public function getActionUrlAttribute()
     {
-        // ✅ P0-15 : Candidatures
+        // ✅ Interactions sociales sur offres (like / commentaire)
+        if (in_array($this->type, ['offer_liked', 'offer_commented'])) {
+            if (is_array($this->data) && isset($this->data['url'])) {
+                return $this->data['url'];
+            }
+            return "/company#offer-{$this->subject_id}";
+        }
+
+        // ✅ Candidatures
         $applicationTypes = [
             'new_application',
             'application_viewed',
@@ -31,20 +39,13 @@ class Notification extends Model
             'application_rejected',
         ];
         if (in_array($this->type, $applicationTypes)) {
-            // Si on a un subject_id qui pointe vers une Application
-            if ($this->subject_type === 'App\\Models\\Application' && $this->subject_id) {
-                // Recruteur → liste des candidatures de l'offre
-                // Candidat → détail de la candidature
-                // On regarde dans data['url'] si fourni
-                if (is_array($this->data) && isset($this->data['url'])) {
-                    return $this->data['url'];
-                }
-                // Fallback
-                if ($this->type === 'new_application') {
-                    return "/my-offers";
-                }
-                return "/applications/{$this->subject_id}";
+            if (is_array($this->data) && isset($this->data['url'])) {
+                return $this->data['url'];
             }
+            if ($this->type === 'new_application') {
+                return "/job-offers/{$this->subject_id}/applications";
+            }
+            return "/applications/{$this->subject_id}";
         }
 
         // Missions

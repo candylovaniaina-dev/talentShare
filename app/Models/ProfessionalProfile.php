@@ -12,7 +12,7 @@ class ProfessionalProfile extends Model
         'avatar_path', 'linkedin_url', 'github_url', 'behance_url',
         // Young Talent fields
         'university', 'field_of_study', 'study_level',
-        'is_young_talent', 'looking_for_opportunity',
+        'is_young_talent', 'looking_for_opportunity', 'cover_path', 
     ];
 
     protected $casts = [

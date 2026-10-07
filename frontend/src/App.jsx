@@ -1,6 +1,6 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "./context/AuthContext";
+import { useAuth } from "./context/AuthContext";   // ✅ AuthProvider retiré
 
 import Landing from "./pages/Landing";
 import Login from "./pages/auth/Login";
@@ -23,6 +23,8 @@ import JobOffers from "./pages/JobOffers";
 import Messages from "./pages/Messages";
 import AdminVerifications from "./pages/AdminVerifications";
 import Explore from "./pages/Explore";
+import ExploreDashboard from "./pages/ExploreDashboard";
+import MyActivity from "./pages/MyActivity";
 import TalentProfile from "./pages/TalentProfile";
 import CreateResourceRequest from "./pages/CreateResourceRequest";
 import Help from './pages/Help';
@@ -39,12 +41,12 @@ import CreateProposal from "./pages/CreateProposal";
 import ProposalDetail from "./pages/ProposalDetail";
 import Appearance from "./pages/Appearance";
 
-// ✅ P0-15 : Candidatures
 import OfferApplications from "./pages/dashboard/OfferApplications";
 import ApplicationDetail from "./pages/dashboard/ApplicationDetail";
 
-// ✅ Fusion JobOffers + ResourceOffers pour entreprise
 import MyOffers from "./pages/MyOffers";
+import Accueil from "./pages/Accueil";
+import Actualite from "./pages/Actualite";
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -54,94 +56,79 @@ const ProtectedRoute = ({ children }) => {
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          {/* ============ ROUTES PUBLIQUES ============ */}
-          <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/email/verify" element={<VerifyEmail />} />
-          <Route path="/explore" element={<Explore />} />
-          <Route path="/talents/:id" element={<TalentProfile />} />
-          <Route path="/portfolio/:slug" element={<PublicPortfolio />} />
+    <Router>
+      <Routes>
+        {/* ============ ROUTES PUBLIQUES ============ */}
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/email/verify" element={<VerifyEmail />} />
+        <Route path="/explore" element={<Explore />} />
+        <Route path="/talents/:id" element={<TalentProfile />} />
+        <Route path="/portfolio/:slug" element={<PublicPortfolio />} />
 
-          {/* RESOURCE OFFERS (publics) — /browse AVANT /:id */}
-          <Route path="/resource-offers/browse" element={<BrowseResourceOffers />} />
-          <Route path="/resource-offers/:id" element={<ResourceOfferDetail />} />
+        <Route path="/resource-offers/browse" element={<BrowseResourceOffers />} />
+        <Route path="/resource-offers/:id" element={<ResourceOfferDetail />} />
 
-          {/* Browse public des demandes de ressources */}
-          <Route path="/browse-requests" element={<BrowseResourceRequests />} />
+        <Route path="/browse-requests" element={<BrowseResourceRequests />} />
 
-          {/* ============ ROUTES PROTÉGÉES ============ */}
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        {/* ============ ROUTES PROTÉGÉES ============ */}
+        <Route path="/accueil" element={<ProtectedRoute><Accueil /></ProtectedRoute>} />
+        <Route path="/actualite" element={<ProtectedRoute><Actualite /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/explore-dashboard" element={<ProtectedRoute><ExploreDashboard /></ProtectedRoute>} />
+        <Route path="/my-activity" element={<ProtectedRoute><MyActivity /></ProtectedRoute>} />
 
-          {/* Profil */}
-          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-          <Route path="/profile/view" element={<Navigate to="/profile" replace />} />
-          <Route path="/account-settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/profile/view" element={<Navigate to="/profile" replace />} />
+        <Route path="/account-settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
 
-          {/* Entreprise */}
-          <Route path="/company" element={<ProtectedRoute><CompanyProfile /></ProtectedRoute>} />
+        <Route path="/company" element={<ProtectedRoute><CompanyProfile /></ProtectedRoute>} />
 
-          {/* Opportunités (contient les onglets "Offres" + "Mes candidatures") */}
-          <Route path="/opportunites" element={<ProtectedRoute><Opportunities /></ProtectedRoute>} />
+        {/* ✅ Opportunités — liste + détail */}
+        <Route path="/opportunites" element={<ProtectedRoute><Opportunities /></ProtectedRoute>} />
+        <Route path="/opportunites/:id" element={<ProtectedRoute><Opportunities /></ProtectedRoute>} />
 
-          {/* Mes offres (entreprise) — Offres d'emploi + Offres de ressources */}
-          <Route path="/my-offers" element={<ProtectedRoute><MyOffers /></ProtectedRoute>} />
+        <Route path="/my-offers" element={<ProtectedRoute><MyOffers /></ProtectedRoute>} />
 
-          {/* =============================================
-              ✅ P0-9 : RESOURCE REQUESTS
-              ============================================= */}
-          <Route path="/resource-requests" element={<ProtectedRoute><ResourceRequests /></ProtectedRoute>} />
-          <Route path="/resource-requests/new" element={<ProtectedRoute><CreateResourceRequest /></ProtectedRoute>} />
-          <Route path="/resource-requests/:id/candidates" element={<ProtectedRoute><ResourceRequestCandidates /></ProtectedRoute>} />
-          <Route path="/resource-requests/:id/edit" element={<ProtectedRoute><CreateResourceRequest /></ProtectedRoute>} />
-          <Route path="/resource-requests/:id" element={<ProtectedRoute><ResourceRequestDetail /></ProtectedRoute>} />
+        <Route path="/resource-requests" element={<ProtectedRoute><ResourceRequests /></ProtectedRoute>} />
+        <Route path="/resource-requests/new" element={<ProtectedRoute><CreateResourceRequest /></ProtectedRoute>} />
+        <Route path="/resource-requests/:id/candidates" element={<ProtectedRoute><ResourceRequestCandidates /></ProtectedRoute>} />
+        <Route path="/resource-requests/:id/edit" element={<ProtectedRoute><CreateResourceRequest /></ProtectedRoute>} />
+        <Route path="/resource-requests/:id" element={<ProtectedRoute><ResourceRequestDetail /></ProtectedRoute>} />
 
-          {/* =============================================
-              ✅ P0-11 : PROPOSITIONS
-              ⚠️ ORDRE CRITIQUE : /new AVANT /:id
-              ============================================= */}
-          <Route path="/proposals" element={<ProtectedRoute><Proposals /></ProtectedRoute>} />
-          <Route path="/proposals/new" element={<ProtectedRoute><CreateProposal /></ProtectedRoute>} />
-          <Route path="/proposals/:id" element={<ProtectedRoute><ProposalDetail /></ProtectedRoute>} />
+        <Route path="/proposals" element={<ProtectedRoute><Proposals /></ProtectedRoute>} />
+        <Route path="/proposals/new" element={<ProtectedRoute><CreateProposal /></ProtectedRoute>} />
+        <Route path="/proposals/:id" element={<ProtectedRoute><ProposalDetail /></ProtectedRoute>} />
 
-          {/* =============================================
-              ✅ P0-15 : CANDIDATURES (Young Talent)
-              ⚠️ ORDRE : liste candidatures AVANT détail
-              ============================================= */}
-          <Route path="/job-offers/:id/applications" element={<ProtectedRoute><OfferApplications /></ProtectedRoute>} />
-          <Route path="/applications/:id" element={<ProtectedRoute><ApplicationDetail /></ProtectedRoute>} />
+        <Route path="/job-offers/:id/applications" element={<ProtectedRoute><OfferApplications /></ProtectedRoute>} />
+        <Route path="/applications/:id" element={<ProtectedRoute><ApplicationDetail /></ProtectedRoute>} />
 
-          {/* Missions */}
-          <Route path="/missions" element={<ProtectedRoute><Missions /></ProtectedRoute>} />
-          <Route path="/missions/:id" element={<ProtectedRoute><MissionDetail /></ProtectedRoute>} />
+        <Route path="/missions" element={<ProtectedRoute><Missions /></ProtectedRoute>} />
+        <Route path="/missions/:id" element={<ProtectedRoute><MissionDetail /></ProtectedRoute>} />
 
-          {/* Job Offers (étudiants) / Messages */}
-          <Route path="/job-offers" element={<ProtectedRoute><JobOffers /></ProtectedRoute>} />
-          <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+        <Route path="/job-offers" element={<ProtectedRoute><JobOffers /></ProtectedRoute>} />
+        <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
 
-          {/* Admin */}
-          <Route path="/admin/verifications" element={<ProtectedRoute><AdminVerifications /></ProtectedRoute>} />
+        <Route path="/admin/verifications" element={<ProtectedRoute><AdminVerifications /></ProtectedRoute>} />
 
-          {/* Pages statiques */}
-          <Route path="/help" element={<ProtectedRoute><Help /></ProtectedRoute>} />
-          <Route path="/guide" element={<ProtectedRoute><Guide /></ProtectedRoute>} />
-          <Route path="/cgu" element={<ProtectedRoute><Cgu /></ProtectedRoute>} />
-          <Route path="/confidentialite" element={<ProtectedRoute><Confidentialite /></ProtectedRoute>} />
+        <Route path="/help" element={<ProtectedRoute><Help /></ProtectedRoute>} />
+        <Route path="/guide" element={<ProtectedRoute><Guide /></ProtectedRoute>} />
+        <Route path="/cgu" element={<ProtectedRoute><Cgu /></ProtectedRoute>} />
+        <Route path="/confidentialite" element={<ProtectedRoute><Confidentialite /></ProtectedRoute>} />
 
-          {/* === RESOURCE OFFERS (protégés) === */}
-          <Route path="/resource-offers" element={<ProtectedRoute><ResourceOffers /></ProtectedRoute>} />
-          <Route path="/resource-offers/new" element={<ProtectedRoute><CreateResourceOffer /></ProtectedRoute>} />
-          <Route path="/resource-offers/:id/edit" element={<ProtectedRoute><CreateResourceOffer /></ProtectedRoute>} />
+        <Route path="/resource-offers" element={<ProtectedRoute><ResourceOffers /></ProtectedRoute>} />
+        <Route path="/resource-offers/new" element={<ProtectedRoute><CreateResourceOffer /></ProtectedRoute>} />
+        <Route path="/resource-offers/:id/edit" element={<ProtectedRoute><CreateResourceOffer /></ProtectedRoute>} />
 
-          <Route path="/appearance" element={<Appearance />} />
-        </Routes>
-      </Router>
-    </AuthProvider>
+        <Route path="/appearance" element={<Appearance />} />
+
+        {/* ✅ Fallback : redirige vers login si aucune route ne matche */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Router>
   );
 }
 

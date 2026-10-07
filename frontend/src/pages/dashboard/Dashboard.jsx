@@ -6,7 +6,7 @@ import {
   ArrowRight, AlertCircle, ArrowRightCircle, Sparkles, TrendingUp,
   CheckCircle2, Circle, Plus, Target, Calendar, Bell, MoreVertical,
   RefreshCw, EyeOff, MessageCircle, MapPin, Clock, Zap, Search,
-  FolderPlus, Compass,
+  FolderPlus, Compass, Gauge,
 } from "lucide-react";
 import AppShell from "../../components/layout/AppShell";
 import api from "../../services/api";
@@ -305,7 +305,6 @@ function LineChart({ data, labels }) {
         </linearGradient>
       </defs>
 
-      {/* Lignes de grille */}
       {[0.25, 0.5, 0.75, 1].map((f) => (
         <line
           key={f}
@@ -337,6 +336,154 @@ function LineChart({ data, labels }) {
         </text>
       ))}
     </svg>
+  );
+}
+
+/* ============================================================
+   ✅ NOUVEAU : JAUGE SEMI-CIRCULAIRE (SVG, sans dépendance)
+   Inspirée du "Taux d'avancement moyen" d'un tableau de bord projet
+============================================================ */
+
+function polarToCartesian(cx, cy, r, angleDeg) {
+  const rad = ((angleDeg - 90) * Math.PI) / 180;
+  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+}
+
+function describeArc(cx, cy, r, startAngle, endAngle) {
+  const start = polarToCartesian(cx, cy, r, endAngle);
+  const end = polarToCartesian(cx, cy, r, startAngle);
+  const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+  return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`;
+}
+
+function GaugeChart({ percent, label }) {
+  const cx = 110;
+  const cy = 108;
+  const r = 82;
+  const strokeWidth = 16;
+  const clamped = Math.max(0, Math.min(100, percent));
+  const sweep = (clamped / 100) * 180;
+
+  const color = clamped >= 80 ? "#34d399" : clamped >= 40 ? "#fbbf24" : "#64748b";
+
+  return (
+    <div className="flex flex-col items-center">
+      <svg viewBox="0 0 220 128" className="w-full max-w-[220px]">
+        <path
+          d={describeArc(cx, cy, r, -90, 90)}
+          fill="none"
+          stroke="rgba(255,255,255,0.08)"
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+        />
+        {clamped > 0 && (
+          <path
+            d={describeArc(cx, cy, r, -90, -90 + sweep)}
+            fill="none"
+            stroke={color}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+            style={{ transition: "all 0.6s ease" }}
+          />
+        )}
+        <text x={cx} y={cy - 6} textAnchor="middle" fontSize="30" fontWeight="800" fill="#ffffff">
+          {clamped}%
+        </text>
+        <text x={cx} y={cy + 16} textAnchor="middle" fontSize="11" fill="rgba(148,163,184,0.9)">
+          {label}
+        </text>
+      </svg>
+    </div>
+  );
+}
+
+/* ============================================================
+   ✅ NOUVEAU : LISTE DE PROGRESSION (barres horizontales)
+============================================================ */
+
+function ProgressList({ items }) {
+  return (
+    <div className="space-y-3">
+      {items.map((item, i) => (
+        <div key={item.label}>
+          <div className="mb-1 flex items-center justify-between text-xs">
+            <span className="flex items-center gap-1.5 font-medium text-slate-300">
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-white/10 text-[9px] font-bold text-slate-400">
+                {i + 1}
+              </span>
+              {item.label}
+            </span>
+            <span className={`font-bold ${item.done ? "text-emerald-400" : "text-slate-500"}`}>
+              {item.percent}%
+            </span>
+          </div>
+          <div className="h-1.5 rounded-full bg-white/10">
+            <div
+              className={`h-1.5 rounded-full transition-all ${item.done ? "bg-emerald-400" : "bg-slate-600"}`}
+              style={{ width: `${item.percent}%` }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ============================================================
+   ✅ NOUVEAU : RÉSUMÉ DE L'ACTIVITÉ (jauge + progression + KPIs)
+============================================================ */
+
+function ActivitySummary({ completion, breakdown, applications, pendingProposals, activeMissions, skillsCount }) {
+  const kpis = [
+    { label: "Candidatures", value: applications, color: "border-blue-500/30 bg-blue-500/10 text-blue-300" },
+    { label: "Missions actives", value: activeMissions, color: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" },
+    { label: "Propositions en attente", value: pendingProposals, color: "border-amber-500/30 bg-amber-500/10 text-amber-300" },
+    { label: "Compétences", value: skillsCount, color: "border-violet-500/30 bg-violet-500/10 text-violet-300" },
+  ];
+
+  const progressItems = (breakdown.length > 0 ? breakdown : []).map((item) => ({
+    label: item.label,
+    done: item.done,
+    percent: item.done ? 100 : 0,
+  }));
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl">
+      <SectionTitle
+        icon={Gauge}
+        title="Résumé de votre activité"
+        subtitle="Vue d'ensemble de votre progression sur TalentShare."
+      />
+
+      {/* Bande de KPIs */}
+      <div className="mb-6 flex flex-wrap gap-2">
+        {kpis.map((k) => (
+          <span
+            key={k.label}
+            className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold ${k.color}`}
+          >
+            <span className="text-sm font-bold">{k.value}</span> {k.label}
+          </span>
+        ))}
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-[220px_1fr]">
+        {/* Jauge */}
+        <div className="flex items-center justify-center rounded-xl border border-white/5 bg-white/[0.02] py-4">
+          <GaugeChart percent={completion} label="Taux de complétion" />
+        </div>
+
+        {/* Progression détaillée */}
+        <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
+          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-500">Progression</p>
+          {progressItems.length > 0 ? (
+            <ProgressList items={progressItems} />
+          ) : (
+            <p className="text-sm text-slate-500">Aucune donnée de progression disponible.</p>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -411,7 +558,10 @@ function CompanyDashboard({ stats, user }) {
 ============================================================ */
 
 function TalentDashboard({ stats, user, profile, hasProfile }) {
-  const completion = hasProfile ? 78 : 0; // ← pourra être calculé plus finement
+  const completion = stats.completion ?? (hasProfile ? 0 : 0);
+  const nextStep = stats.completion_next_step || "Compléter votre profil";
+  const breakdown = stats.completion_breakdown || [];
+
   const skillsCount = stats.skills_count || 0;
   const applications = stats.applications_count || 0;
   const pendingProposals = stats.proposals_pending || 0;
@@ -421,13 +571,23 @@ function TalentDashboard({ stats, user, profile, hasProfile }) {
 
   return (
     <div className="space-y-6">
+      {/* ✅ Résumé de l'activité (nouveau) */}
+      <ActivitySummary
+        completion={completion}
+        breakdown={breakdown}
+        applications={applications}
+        pendingProposals={pendingProposals}
+        activeMissions={activeMissions}
+        skillsCount={skillsCount}
+      />
+
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           icon={User}
           label="Profil complété"
-          value={hasProfile ? `${completion}%` : "0%"}
-          trend={hasProfile ? "+12% ce mois" : undefined}
+          value={`${completion}%`}
+          trend={completion >= 80 ? "Bien !" : completion >= 50 ? "+ Continue" : "À compléter"}
           color="violet"
         />
         <StatCard
@@ -475,14 +635,14 @@ function TalentDashboard({ stats, user, profile, hasProfile }) {
           />
         </div>
 
-        {/* CTA Profile */}
+        {/* CTA Profile — Complétion réelle */}
         <div className="rounded-2xl bg-gradient-to-br from-[#0B1633] to-[#0A1229] p-6 text-white">
           <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-emerald-400">
             <Target size={14} /> Prochaine action
           </p>
-          <h3 className="mt-3 text-xl font-bold">Ajoutez une expérience à votre portfolio.</h3>
+          <h3 className="mt-3 text-xl font-bold">{nextStep}</h3>
           <p className="mt-2 text-sm text-slate-300">
-            Les projets universitaires et personnels comptent aussi. Ils donnent aux recruteurs une première preuve de votre façon de faire.
+            Complétez votre profil pour apparaître dans plus de recherches.
           </p>
           <div className="mt-4">
             <div className="flex items-center justify-between text-xs text-slate-400">
@@ -491,7 +651,7 @@ function TalentDashboard({ stats, user, profile, hasProfile }) {
             </div>
             <div className="mt-2 h-1.5 rounded-full bg-white/10">
               <div
-                className="h-1.5 rounded-full bg-emerald-400"
+                className="h-1.5 rounded-full bg-emerald-400 transition-all"
                 style={{ width: `${completion}%` }}
               />
             </div>
@@ -504,6 +664,57 @@ function TalentDashboard({ stats, user, profile, hasProfile }) {
           </Link>
         </div>
       </div>
+
+      {/* Checklist détaillée */}
+      {breakdown.length > 0 && (
+        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl">
+          <SectionTitle
+            icon={CheckCircle2}
+            title="Complétion du profil"
+            subtitle="Cochez chaque étape pour atteindre 100%."
+            action={
+              <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-bold text-emerald-400">
+                {completion}%
+              </span>
+            }
+          />
+          <div className="grid gap-2 sm:grid-cols-2">
+            {breakdown.map((item) => (
+              <div
+                key={item.key}
+                className={`flex items-start gap-3 rounded-lg border p-3 transition ${
+                  item.done
+                    ? "border-emerald-500/20 bg-emerald-500/5"
+                    : "border-white/5 bg-white/[0.02]"
+                }`}
+              >
+                <span
+                  className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
+                    item.done
+                      ? "bg-emerald-500 text-white"
+                      : "border-2 border-slate-600 bg-transparent"
+                  }`}
+                >
+                  {item.done && <CheckCircle2 size={12} />}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-xs font-semibold ${item.done ? "text-emerald-300" : "text-white"}`}>
+                    {item.label}
+                  </p>
+                  {!item.done && (
+                    <p className="mt-0.5 text-[10px] text-slate-500">
+                      {item.action}
+                    </p>
+                  )}
+                </div>
+                <span className="shrink-0 text-[10px] text-slate-500">
+                  {item.weight}%
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Disponibilité + Messages + Notifications */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -530,9 +741,7 @@ function TalentDashboard({ stats, user, profile, hasProfile }) {
         />
       </div>
 
-      {/* Activité + Opportunités */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Activité */}
         <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl">
           <SectionTitle
             icon={Sparkles}
@@ -581,7 +790,6 @@ function TalentDashboard({ stats, user, profile, hasProfile }) {
           </ul>
         </div>
 
-        {/* Opportunités */}
         <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl">
           <SectionTitle
             icon={Target}
@@ -589,27 +797,9 @@ function TalentDashboard({ stats, user, profile, hasProfile }) {
             subtitle={`Pour le profil ${user?.name?.split(" ")[0] || ""}.`}
           />
           <ul className="space-y-3">
-            <OpportunityItem
-              icon={Briefcase}
-              title="Explorer les ressources disponibles"
-              company="TalentShare"
-              match="Nouveau"
-              to="/explore"
-            />
-            <OpportunityItem
-              icon={FileText}
-              title="Parcourir les offres d'emploi"
-              company="Job Board"
-              match="Recommandé"
-              to="/job-offers"
-            />
-            <OpportunityItem
-              icon={Handshake}
-              title="Voir les demandes des entreprises"
-              company="Réseau B2B"
-              match="Nouveau"
-              to="/browse-requests"
-            />
+            <OpportunityItem icon={Briefcase} title="Explorer les ressources disponibles" company="TalentShare" match="Nouveau" to="/explore" />
+            <OpportunityItem icon={FileText} title="Parcourir les offres d'emploi" company="Job Board" match="Recommandé" to="/job-offers" />
+            <OpportunityItem icon={Handshake} title="Voir les demandes des entreprises" company="Réseau B2B" match="Nouveau" to="/browse-requests" />
           </ul>
         </div>
       </div>
@@ -623,7 +813,6 @@ function TalentDashboard({ stats, user, profile, hasProfile }) {
         ]}
       />
 
-      {/* Bandeau final */}
       <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">

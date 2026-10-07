@@ -3,13 +3,15 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Building2, Calendar, Clock, User, CheckCircle,
   XCircle, PlayCircle, Flag, Loader2, MessageSquare, Timer,
-  AlertCircle,
+  AlertCircle, FileText, History,
 } from "lucide-react";
 import AppShell from "../components/layout/AppShell";
 import Toast from "../components/ui/Toast";
 import { useToast } from "../hooks/useToast";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
+import DocumentUploader from "../components/documents/DocumentUploader";
+import DocumentList from "../components/documents/DocumentList";
 
 const STATUS_CONFIG = {
   pending_employee: { label: "⏳ En attente du salarié",          badge: "bg-amber-100 text-amber-700" },
@@ -19,7 +21,6 @@ const STATUS_CONFIG = {
   cancelled:        { label: "❌ Annulée",                        badge: "bg-rose-100 text-rose-700" },
 };
 
-// ✅ Calcul du temps restant + progression
 function computeTimeline(mission) {
   if (!mission?.start_at || !mission?.end_at) return null;
 
@@ -53,6 +54,7 @@ export default function MissionDetail() {
   const [mission, setMission] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [docsRefresh, setDocsRefresh] = useState(0);
   const { toast, show: showToast, close: closeToast } = useToast();
 
   const load = () => {
@@ -100,7 +102,6 @@ export default function MissionDetail() {
     );
   }
 
-  // ✅ Détection des rôles
   const myProfileId =
     user?.professional_profile?.id ||
     user?.professionalProfile?.id ||
@@ -140,7 +141,6 @@ export default function MissionDetail() {
                 </span>
               </div>
 
-              {/* ✅ Badges de rôle */}
               <div className="mt-3 flex flex-wrap gap-2">
                 {isEmployee && (
                   <span className="rounded-full bg-purple-500/20 px-2.5 py-1 text-[11px] font-semibold text-purple-200">
@@ -192,7 +192,6 @@ export default function MissionDetail() {
               </div>
             </div>
 
-            {/* Barre de progression */}
             <div className="relative">
               <div className="h-3 w-full rounded-full bg-slate-100 overflow-hidden">
                 <div
@@ -207,7 +206,6 @@ export default function MissionDetail() {
               </div>
             </div>
 
-            {/* Stats détaillées */}
             <div className="mt-4 grid grid-cols-3 gap-4 text-center">
               <div className="rounded-xl bg-slate-50 p-3">
                 <p className="text-xs text-slate-400">Durée totale</p>
@@ -249,6 +247,38 @@ export default function MissionDetail() {
           </div>
         </div>
 
+        {/* ============ 📄 CONTRATS & DOCUMENTS (P0-23) ============ */}
+        <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <FileText size={18} className="text-navy" />
+              <h3 className="font-bold">Contrats & documents</h3>
+            </div>
+            <span className="flex items-center gap-1 text-xs text-slate-400">
+              <History size={12} /> Versionné
+            </span>
+          </div>
+
+          {/* Upload (uniquement prêteur / salarié) */}
+          {(isSupplying || isEmployee) && (
+            <div className="mb-4">
+              <DocumentUploader
+                documentableType="App\Models\Mission"
+                documentableId={mission.id}
+                allowedTypes={["contract", "agreement", "invoice", "attachment"]}
+                onUploaded={() => setDocsRefresh((r) => r + 1)}
+              />
+            </div>
+          )}
+
+          {/* Liste des documents */}
+          <DocumentList
+            documentableType="App\Models\Mission"
+            documentableId={mission.id}
+            refreshKey={docsRefresh}
+          />
+        </div>
+
         {/* ============ MESSAGE D'ATTENTE (si pending) ============ */}
         {mission.status === "pending_employee" && (
           <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-800 flex items-start gap-3">
@@ -265,7 +295,6 @@ export default function MissionDetail() {
         {/* ============ ACTIONS ============ */}
         <div className="mt-6 flex flex-wrap gap-3">
 
-          {/* 🎯 Salarié : Accepter / Refuser */}
           {isEmployee && mission.status === "pending_employee" && (
             <>
               <button
@@ -285,7 +314,6 @@ export default function MissionDetail() {
             </>
           )}
 
-          {/* 🏢 Prêteur : Démarrer */}
           {isSupplying && mission.status === "planned" && (
             <button
               onClick={() => doAction("active")}
@@ -296,7 +324,6 @@ export default function MissionDetail() {
             </button>
           )}
 
-          {/* 🏢 Prêteur : Terminer */}
           {isSupplying && mission.status === "active" && (
             <button
               onClick={() => doAction("completed")}
@@ -307,7 +334,6 @@ export default function MissionDetail() {
             </button>
           )}
 
-          {/* 🏢 Emprunteur : Message */}
           {isRequesting && (
             <Link
               to="/messages"
@@ -317,7 +343,6 @@ export default function MissionDetail() {
             </Link>
           )}
 
-          {/* 📄 Lien offre */}
           {mission.resource_offer_id && (
             <Link
               to={`/resource-offers/${mission.resource_offer_id}`}
@@ -328,7 +353,6 @@ export default function MissionDetail() {
           )}
         </div>
 
-        {/* ============ INFO SI AUCUN RÔLE ============ */}
         {!isEmployee && !isSupplying && !isRequesting && (
           <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600">
             ℹ️ Vous n'avez pas de rôle actif sur cette mission.

@@ -17,11 +17,6 @@ class InterviewScheduled extends Mailable
     public Application $application;
     public bool $emailNotVerified;
 
-    /**
-     * ⚠️ $emailNotVerified DOIT être passé ici, au constructeur.
-     * Un ->with() appelé après coup ne change pas cette propriété
-     * et content() ne verrait jamais le flag.
-     */
     public function __construct(Application $application, bool $emailNotVerified = false)
     {
         $this->application = $application;
@@ -75,10 +70,11 @@ class InterviewScheduled extends Mailable
     }
 
     /**
-     * Génère un fichier .ics valide RFC 5545 :
-     * - lignes repliées à 75 octets (obligatoire pour certains clients)
-     * - ORGANIZER / ATTENDEE présents (nécessaires pour que les clients
-     *   calendrier reconnaissent l'événement comme une vraie invitation)
+     * Génère un fichier .ics VALIDE RFC 5545 :
+     * ✅ Bloc VTIMEZONE pour Indian/Antananarivo (Madagascar UTC+3)
+     * ✅ ORGANIZER + ATTENDEE
+     * ✅ Folding à 75 octets
+     * ✅ Échappement complet
      */
     private function buildIcs(): string
     {
@@ -95,8 +91,10 @@ class InterviewScheduled extends Mailable
         $company = $offer->company;
         $applicant = $this->application->profile->user;
 
-        $start = $this->application->interview_at->copy()->utc();
-        $end = $this->application->interview_at->copy()->addHour()->utc();
+        // ✅ Heure locale Madagascar
+        $start = $this->application->interview_at->copy()->setTimezone('Indian/Antananarivo');
+        $end = $start->copy()->addHour();
+
         $uid = 'talentshare-' . $this->application->id . '-' . $this->application->interview_at->timestamp . '@talentshare.local';
         $dtstamp = now()->utc()->format('Ymd\THis\Z');
 
@@ -104,8 +102,8 @@ class InterviewScheduled extends Mailable
         $description = "Entretien pour le poste « {$offer->title} » chez {$company?->name}.\n\n"
             . "Rejoindre la visioconférence : {$this->application->interview_link}";
 
-        $organizerEmail = $company?->email ?: config('mail.from.address');
-        $organizerName  = $company?->name ?: config('mail.from.name');
+        $organizerEmail = $company?->email ?: config('mail.from.address', 'noreply@talentshare.com');
+        $organizerName  = $company?->name ?: config('mail.from.name', 'TalentShare');
 
         $lines = [
             "BEGIN:VCALENDAR",
@@ -113,11 +111,25 @@ class InterviewScheduled extends Mailable
             "PRODID:-//TalentShare//Entretien//FR",
             "CALSCALE:GREGORIAN",
             "METHOD:REQUEST",
+
+            // ✅ BLOC VTIMEZONE OBLIGATOIRE pour Indian/Antananarivo
+            "BEGIN:VTIMEZONE",
+            "TZID:Indian/Antananarivo",
+            "X-LIC-LOCATION:Indian/Antananarivo",
+            "BEGIN:STANDARD",
+            "DTSTART:19700101T000000",
+            "TZOFFSETFROM:+0300",
+            "TZOFFSETTO:+0300",
+            "TZNAME:EAT",
+            "END:STANDARD",
+            "END:VTIMEZONE",
+
             "BEGIN:VEVENT",
             "UID:{$uid}",
             "DTSTAMP:{$dtstamp}",
-            "DTSTART:" . $start->format('Ymd\THis\Z'),
-            "DTEND:" . $end->format('Ymd\THis\Z'),
+            // ✅ DTSTART/DTEND avec TZID (plus fiable que Z)
+            "DTSTART;TZID=Indian/Antananarivo:" . $start->format('Ymd\THis'),
+            "DTEND;TZID=Indian/Antananarivo:" . $end->format('Ymd\THis'),
             $this->foldLine("SUMMARY:" . $this->escapeIcs($summary)),
             $this->foldLine("DESCRIPTION:" . $this->escapeIcs($description)),
             "LOCATION:Visioconférence",
@@ -149,8 +161,6 @@ class InterviewScheduled extends Mailable
 
     /**
      * Replie une ligne iCalendar à 75 octets max (RFC 5545 §3.1).
-     * Sans ce repli, certains clients (Outlook notamment) tronquent
-     * ou rejettent les lignes trop longues (SUMMARY, DESCRIPTION...).
      */
     private function foldLine(string $line): string
     {

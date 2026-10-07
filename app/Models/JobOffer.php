@@ -32,4 +32,13 @@ class JobOffer extends Model
     {
         return $this->hasMany(Application::class);
     }
+    public function likes()
+{
+    return $this->hasMany(\App\Models\OfferLike::class, 'job_offer_id');
+}
+
+public function comments()
+{
+    return $this->hasMany(\App\Models\OfferComment::class, 'job_offer_id');
+}
 }
