@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { countries } from "../utils/countries";
 import { cities } from "../utils/cities";
+import SuggestedTalentsSection from "../components/talents/SuggestedTalentsSection";
 import {
   Building2, MapPin, Globe, Phone, Users, Edit, Camera, X, Plus,
   Trash2, CheckCircle, AlertCircle, Loader2, Save, Building,
@@ -35,9 +36,26 @@ const EMPTY_FORM = {
 
 const TABS = [
   { id: "home",     label: "Accueil",   icon: Home,     color: "text-emerald-400" },
+  { id: "team",     label: "Équipe",    icon: Users,    color: "text-violet-400" },
   { id: "requests", label: "Demande",   icon: Layers,   color: "text-amber-400" },
   { id: "feed",     label: "Actualité", icon: Sparkles, color: "text-blue-400" },
 ];
+
+/* ============================================
+   UI HELPERS
+============================================ */
+const inputCls = "w-full rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-3 py-2 text-sm text-[var(--text-app)] placeholder:text-[var(--text-faint)] transition focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20";
+
+function Field({ label, icon: Icon, children }) {
+  return (
+    <div>
+      <label className="mb-1.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)]">
+        {Icon && <Icon size={11} />} {label}
+      </label>
+      {children}
+    </div>
+  );
+}
 
 /* ============================================
    AVATAR
@@ -76,6 +94,240 @@ function Avatar({ path, name, size = "md", rounded = "full" }) {
 }
 
 /* ============================================
+   TESTIMONIALS SECTION
+============================================ */
+function TestimonialsSection({ companyId }) {
+  const [testimonials, setTestimonials] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`testimonials_${companyId}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+  const [showModal, setShowModal] = useState(false);
+
+  const save = (list) => {
+    setTestimonials(list);
+    try { localStorage.setItem(`testimonials_${companyId}`, JSON.stringify(list)); } catch {}
+  };
+
+  const remove = (id) => {
+    if (!confirm("Supprimer ce témoignage ?")) return;
+    save(testimonials.filter((t) => t.id !== id));
+  };
+
+  return (
+    <>
+      <div className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
+            <Quote size={12} /> Témoignages
+          </p>
+          <button
+            onClick={() => setShowModal(true)}
+            className="inline-flex items-center gap-1 rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-2.5 py-1.5 text-[10px] font-semibold text-[var(--text-app)] transition hover:bg-[var(--bg-surface)]"
+          >
+            <Plus size={11} /> Ajouter
+          </button>
+        </div>
+
+        {testimonials.length === 0 ? (
+          <div className="py-6 text-center">
+            <p className="text-xs text-[var(--text-faint)]">Aucun témoignage pour l'instant</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {testimonials.map((t) => (
+              <div key={t.id} className="group relative rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-hover)] p-3.5">
+                <button
+                  onClick={() => remove(t.id)}
+                  className="absolute right-2 top-2 hidden text-[var(--text-faint)] hover:text-rose-400 group-hover:block"
+                >
+                  <X size={12} />
+                </button>
+                <div className="flex items-center gap-2.5">
+                  <Avatar name={t.author} size="sm" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-bold text-[var(--text-app)]">{t.author}</p>
+                    {t.role && <p className="truncate text-[10px] text-[var(--text-faint)]">{t.role}</p>}
+                  </div>
+                  <div className="flex shrink-0 gap-0.5 text-amber-400">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <Star key={n} size={10} fill={n <= t.rating ? "currentColor" : "none"} />
+                    ))}
+                  </div>
+                </div>
+                <p className="mt-2 text-xs italic leading-relaxed text-[var(--text-muted)]">
+                  "{t.text}"
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {showModal && (
+        <AddTestimonialModal
+          onClose={() => setShowModal(false)}
+          onSuccess={(entry) => {
+            save([entry, ...testimonials]);
+            setShowModal(false);
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+/* ============================================
+   MODAL : Ajouter un témoignage
+============================================ */
+function AddTestimonialModal({ onClose, onSuccess }) {
+  const [author, setAuthor] = useState("");
+  const [role, setRole] = useState("");
+  const [text, setText] = useState("");
+  const [rating, setRating] = useState(5);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [onClose]);
+
+  const submit = (e) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!author.trim()) return setError("Le nom est requis.");
+    if (!text.trim()) return setError("Le témoignage est requis.");
+
+    const entry = {
+      id: Date.now(),
+      author: author.trim(),
+      role: role.trim(),
+      text: text.trim(),
+      rating,
+      date: new Date().toISOString(),
+    };
+
+    onSuccess(entry);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-3 border-b border-[var(--border-app)] px-6 py-5">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+              Nouveau témoignage
+            </p>
+            <h2 className="mt-0.5 text-xl font-bold text-[var(--text-app)]">
+              Ajouter un témoignage
+            </h2>
+            <p className="mt-1 text-xs text-[var(--text-muted)]">
+              Partagez votre expérience avec cette entreprise.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-[var(--text-faint)] transition hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-app)]"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <form onSubmit={submit} className="flex-1 space-y-4 overflow-y-auto px-6 py-6">
+          {error && (
+            <div className="flex items-start gap-2 rounded-lg border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-400">
+              <AlertCircle size={14} className="mt-0.5 shrink-0" />
+              {error}
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field icon={Users} label="Nom de la personne *">
+              <input
+                required
+                value={author}
+                onChange={(e) => setAuthor(e.target.value)}
+                placeholder="Ex: Jean Dupont"
+                className={inputCls}
+              />
+            </Field>
+            <Field icon={Briefcase} label="Poste / relation">
+              <input
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                placeholder="Ex: Directeur RH"
+                className={inputCls}
+              />
+            </Field>
+          </div>
+
+          <Field icon={Quote} label="Témoignage *">
+            <textarea
+              required
+              rows={5}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Décrivez votre expérience avec cette entreprise..."
+              className={inputCls}
+            />
+            <p className="mt-1 text-[10px] text-[var(--text-faint)]">
+              {text.length} caractère{text.length > 1 ? "s" : ""}
+            </p>
+          </Field>
+
+          <Field icon={Star} label="Note">
+            <div className="flex items-center gap-2 pt-1">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setRating(n)}
+                  className="text-amber-400 transition hover:scale-110"
+                >
+                  <Star size={22} fill={n <= rating ? "currentColor" : "none"} />
+                </button>
+              ))}
+              <span className="ml-2 text-xs text-[var(--text-muted)]">{rating}/5</span>
+            </div>
+          </Field>
+        </form>
+
+        <div className="flex items-center justify-end gap-2 border-t border-[var(--border-app)] px-6 py-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg px-4 py-2 text-sm text-[var(--text-muted)] transition hover:bg-[var(--bg-surface-hover)]"
+          >
+            Annuler
+          </button>
+          <button
+            type="button"
+            onClick={submit}
+            className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400"
+          >
+            <CheckCircle size={14} />
+            Publier le témoignage
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================
    PAGE PRINCIPALE
 ============================================ */
 export default function CompanyProfile() {
@@ -100,48 +352,78 @@ export default function CompanyProfile() {
 
   const [activeTab, setActiveTab] = useState("home");
 
+  const [myOffers, setMyOffers] = useState([]);
+  const [otherRequests, setOtherRequests] = useState([]);
   const [feedOffers, setFeedOffers] = useState([]);
-  const [loadingFeed, setLoadingFeed] = useState(false);
+  const [feedRequests, setFeedRequests] = useState([]);
 
-  const [requests, setRequests] = useState([]);
+  const [loadingFeed, setLoadingFeed] = useState(false);
   const [loadingRequests, setLoadingRequests] = useState(false);
 
   useEffect(() => { loadCompany(); }, []);
 
   useEffect(() => {
     if (!company) return;
-    if (activeTab === "home") loadFeed("mine");
-    if (activeTab === "feed") loadFeed("others");
-    if (activeTab === "requests") loadRequests();
+    if (activeTab === "home")  loadHome();
+    if (activeTab === "feed")  loadActualite();
+    if (activeTab === "requests") loadOtherRequests();
   }, [company, activeTab]);
 
-  const loadFeed = async (mode = "mine") => {
+  // ✅ Accueil → uniquement mes offres
+  const loadHome = async () => {
     try {
       setLoadingFeed(true);
-      const params = { per_page: 20 };
-      if (mode === "mine")   params.only_mine = 1;
-      if (mode === "others") params.exclude_mine = 1;
-
-      const res = await api.get("/job-offers", { params });
-      setFeedOffers(res.data.data || []);
+      const offersRes = await api.get("/job-offers", { params: { only_mine: 1, per_page: 20 } })
+        .catch(() => ({ data: { data: [] } }));
+      setMyOffers(offersRes.data.data || []);
     } catch (err) {
-      console.error("Erreur chargement feed:", err);
-      setFeedOffers([]);
+      console.error("Erreur chargement home:", err);
+      setMyOffers([]);
     } finally {
       setLoadingFeed(false);
     }
   };
 
-  const loadRequests = async () => {
+  // ✅ Demandes des autres entreprises
+  const loadOtherRequests = async () => {
     try {
       setLoadingRequests(true);
-      const res = await api.get("/resource-requests?per_page=30");
-      setRequests(res.data.data || res.data || []);
+      const res = await api.get("/resource-requests", { params: { per_page: 30 } });
+      const all = res.data.data || res.data || [];
+      const others = all.filter(
+        (r) => r.author_type !== "talent" && r.company_id !== company?.id
+      );
+      setOtherRequests(others);
     } catch (err) {
       console.error("Erreur chargement demandes:", err);
-      setRequests([]);
+      setOtherRequests([]);
     } finally {
       setLoadingRequests(false);
+    }
+  };
+
+  // ✅ Actualité → tout (offres + demandes, entreprises + talents)
+  const loadActualite = async () => {
+    try {
+      setLoadingFeed(true);
+      const [offersRes, requestsRes] = await Promise.all([
+        api.get("/job-offers", { params: { exclude_mine: 1, per_page: 20 } }).catch(() => ({ data: { data: [] } })),
+        api.get("/resource-requests", { params: { per_page: 30 } }).catch(() => ({ data: { data: [] } })),
+      ]);
+
+      const offers = offersRes.data.data || offersRes.data || [];
+      const requests = requestsRes.data.data || requestsRes.data || [];
+
+      const otherReqs = requests.filter((r) => r.company_id !== company?.id);
+
+      setFeedOffers(offers);
+      setFeedRequests(otherReqs);
+    } catch (err) {
+      console.error("Erreur chargement actualité:", err);
+      setFeedOffers([]);
+      setFeedRequests([]);
+    } finally {
+      setLoadingFeed(false);
     }
   };
 
@@ -285,7 +567,7 @@ export default function CompanyProfile() {
     <AppShell>
       <div className="grid gap-5 lg:grid-cols-[240px_1fr_280px]">
 
-        {/* COLONNE GAUCHE */}
+        {/* ============ COLONNE GAUCHE ============ */}
         <aside className="hidden space-y-4 lg:block">
           <div className="overflow-hidden rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)]">
             <div className="h-16 bg-gradient-to-r from-emerald-500/40 to-blue-500/30" />
@@ -413,7 +695,7 @@ export default function CompanyProfile() {
           </div>
         </aside>
 
-        {/* COLONNE CENTRALE */}
+        {/* ============ COLONNE CENTRALE ============ */}
         <div className="min-w-0 space-y-4">
 
           {/* Composer + onglets */}
@@ -444,7 +726,10 @@ export default function CompanyProfile() {
                     {t.label}
                     {active && (
                       <span className={`absolute inset-x-2 -bottom-[13px] h-[2px] rounded-full ${
-                        t.id === "home" ? "bg-emerald-400" : t.id === "requests" ? "bg-amber-400" : "bg-blue-400"
+                        t.id === "home" ? "bg-emerald-400"
+                        : t.id === "team" ? "bg-violet-400"
+                        : t.id === "requests" ? "bg-amber-400"
+                        : "bg-blue-400"
                       }`} />
                     )}
                   </button>
@@ -453,7 +738,7 @@ export default function CompanyProfile() {
             </div>
           </div>
 
-          {/* ONGLET ACCUEIL */}
+          {/* ============ ONGLET ACCUEIL ============ */}
           {activeTab === "home" && (
             <>
               {company.description && (
@@ -467,8 +752,53 @@ export default function CompanyProfile() {
                 </div>
               )}
 
+              {/* MES OFFRES PUBLIÉES */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between px-1">
+                  <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                    <Briefcase size={12} /> Mes offres publiées
+                  </p>
+                  <button
+                    onClick={loadHome}
+                    className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300"
+                  >
+                    Rafraîchir
+                  </button>
+                </div>
+
+                {loadingFeed ? (
+                  <div className="flex h-40 items-center justify-center rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)]">
+                    <Loader2 className="animate-spin text-emerald-400" size={24} />
+                  </div>
+                ) : myOffers.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-[var(--border-app)] bg-[var(--bg-surface)] p-10 text-center">
+                    <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--bg-surface-hover)] text-[var(--text-faint)]">
+                      <Briefcase size={22} />
+                    </span>
+                    <p className="mt-3 text-sm font-semibold text-[var(--text-app)]">
+                      Vous n'avez publié aucune offre pour le moment
+                    </p>
+                    <p className="mt-1 text-xs text-[var(--text-muted)]">
+                      Cliquez sur « Publier une offre... » pour commencer.
+                    </p>
+                  </div>
+                ) : (
+                  myOffers.map((offer) => (
+                    <OfferFeedCard
+                      key={offer.id}
+                      offer={offer}
+                      currentCompanyId={company.id}
+                      currentUser={user}
+                      onDeleted={loadHome}
+                      onApply={(o) => setApplyOffer(o)}
+                    />
+                  ))
+                )}
+              </div>
+
               <TestimonialsSection companyId={company.id} />
 
+              {/* ACTIVITÉ RÉCENTE */}
               <div className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-5">
                 <p className="mb-4 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
                   <TrendingUp size={12} /> Activité récente
@@ -528,31 +858,26 @@ export default function CompanyProfile() {
                   </div>
                 </div>
               </div>
+            </>
+          )}
 
+          {/* ============ ONGLET ÉQUIPE ============ */}
+          {activeTab === "team" && (
+            <>
               <div className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-5">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-bold text-[var(--text-app)]">Équipe</p>
+                    <p className="text-sm font-bold text-[var(--text-app)]">Membres</p>
                     <p className="text-xs text-[var(--text-faint)]">
                       {members.length} membre{members.length > 1 ? "s" : ""}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {members.length > 4 && (
-                      <button
-                        onClick={() => setShowAllMembers(true)}
-                        className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300"
-                      >
-                        Voir tout →
-                      </button>
-                    )}
-                    <button
-                      onClick={() => setShowAddMember(true)}
-                      className="inline-flex items-center gap-1 rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-2.5 py-1.5 text-[10px] font-semibold text-[var(--text-app)] transition hover:bg-[var(--bg-surface)]"
-                    >
-                      <Plus size={11} /> Ajouter
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => setShowAddMember(true)}
+                    className="inline-flex items-center gap-1 rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-2.5 py-1.5 text-[10px] font-semibold text-[var(--text-app)] transition hover:bg-[var(--bg-surface)]"
+                  >
+                    <Plus size={11} /> Ajouter
+                  </button>
                 </div>
 
                 {members.length === 0 ? (
@@ -561,7 +886,7 @@ export default function CompanyProfile() {
                   </div>
                 ) : (
                   <div className="grid gap-3 sm:grid-cols-2">
-                    {members.slice(0, 4).map((member) => (
+                    {members.map((member) => (
                       <MemberCard
                         key={member.id}
                         member={member}
@@ -581,22 +906,12 @@ export default function CompanyProfile() {
                       {employees.length} salarié{employees.length > 1 ? "s" : ""}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {employees.length > 4 && (
-                      <button
-                        onClick={() => setShowAllEmployees(true)}
-                        className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300"
-                      >
-                        Voir tout →
-                      </button>
-                    )}
-                    <button
-                      onClick={() => setShowAddEmployee(true)}
-                      className="inline-flex items-center gap-1 rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-2.5 py-1.5 text-[10px] font-semibold text-[var(--text-app)] transition hover:bg-[var(--bg-surface)]"
-                    >
-                      <Plus size={11} /> Ajouter
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => setShowAddEmployee(true)}
+                    className="inline-flex items-center gap-1 rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-2.5 py-1.5 text-[10px] font-semibold text-[var(--text-app)] transition hover:bg-[var(--bg-surface)]"
+                  >
+                    <Plus size={11} /> Ajouter
+                  </button>
                 </div>
 
                 {employees.length === 0 ? (
@@ -605,7 +920,7 @@ export default function CompanyProfile() {
                   </div>
                 ) : (
                   <div className="grid gap-3 sm:grid-cols-2">
-                    {employees.slice(0, 4).map((emp) => (
+                    {employees.map((emp) => (
                       <EmployeeCard
                         key={emp.id}
                         employee={emp}
@@ -616,62 +931,18 @@ export default function CompanyProfile() {
                   </div>
                 )}
               </div>
-
-              {/* MES OFFRES PUBLIÉES (uniquement sur l'onglet Accueil) */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between px-1">
-                  <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                    <Briefcase size={12} /> Mes offres publiées
-                  </p>
-                  <button
-                    onClick={() => loadFeed("mine")}
-                    className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300"
-                  >
-                    Rafraîchir
-                  </button>
-                </div>
-
-                {loadingFeed ? (
-                  <div className="flex h-40 items-center justify-center rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)]">
-                    <Loader2 className="animate-spin text-emerald-400" size={24} />
-                  </div>
-                ) : feedOffers.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-[var(--border-app)] bg-[var(--bg-surface)] p-10 text-center">
-                    <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--bg-surface-hover)] text-[var(--text-faint)]">
-                      <Briefcase size={22} />
-                    </span>
-                    <p className="mt-3 text-sm font-semibold text-[var(--text-app)]">
-                      Vous n'avez publié aucune offre pour le moment
-                    </p>
-                    <p className="mt-1 text-xs text-[var(--text-muted)]">
-                      Cliquez sur « Publier une offre... » pour commencer.
-                    </p>
-                  </div>
-                ) : (
-                  feedOffers.map((offer) => (
-                    <OfferFeedCard
-                      key={offer.id}
-                      offer={offer}
-                      currentCompanyId={company.id}
-                      currentUser={user}
-                      onDeleted={() => loadFeed("mine")}
-                        onApply={(o) => setApplyOffer(o)} 
-                    />
-                  ))
-                )}
-              </div>
             </>
           )}
 
-          {/* ONGLET DEMANDE */}
+          {/* ============ ONGLET DEMANDE ============ */}
           {activeTab === "requests" && (
             <div className="space-y-4">
               <div className="flex items-center justify-between px-1">
                 <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                  <Layers size={12} /> Demandes des entreprises
+                  <Layers size={12} /> Demandes des autres entreprises
                 </p>
                 <button
-                  onClick={loadRequests}
+                  onClick={loadOtherRequests}
                   className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300"
                 >
                   Rafraîchir
@@ -682,7 +953,7 @@ export default function CompanyProfile() {
                 <div className="flex h-40 items-center justify-center rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)]">
                   <Loader2 className="animate-spin text-emerald-400" size={24} />
                 </div>
-              ) : requests.length === 0 ? (
+              ) : otherRequests.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-[var(--border-app)] bg-[var(--bg-surface)] p-10 text-center">
                   <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--bg-surface-hover)] text-[var(--text-faint)]">
                     <Layers size={22} />
@@ -691,24 +962,26 @@ export default function CompanyProfile() {
                     Aucune demande pour le moment
                   </p>
                   <p className="mt-1 text-xs text-[var(--text-muted)]">
-                    Les entreprises n'ont pas encore publié de besoins.
+                    Les autres entreprises n'ont pas encore publié de besoins.
                   </p>
                 </div>
               ) : (
-                requests.map((r) => <RequestFeedCard key={r.id} request={r} />)
+                otherRequests.map((r) => (
+                  <RequestFeedCard key={r.id} request={r} currentUser={user} />
+                ))
               )}
             </div>
           )}
 
-          {/* ONGLET ACTUALITÉ */}
+          {/* ============ ONGLET ACTUALITÉ ============ */}
           {activeTab === "feed" && (
             <div className="space-y-4">
               <div className="flex items-center justify-between px-1">
                 <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                  <Sparkles size={12} /> Offres des autres entreprises
+                  <Sparkles size={12} /> Actualité du réseau
                 </p>
                 <button
-                  onClick={() => loadFeed("others")}
+                  onClick={loadActualite}
                   className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300"
                 >
                   Rafraîchir
@@ -719,93 +992,57 @@ export default function CompanyProfile() {
                 <div className="flex h-40 items-center justify-center rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)]">
                   <Loader2 className="animate-spin text-emerald-400" size={24} />
                 </div>
-              ) : feedOffers.length === 0 ? (
+              ) : feedOffers.length === 0 && feedRequests.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-[var(--border-app)] bg-[var(--bg-surface)] p-10 text-center">
                   <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--bg-surface-hover)] text-[var(--text-faint)]">
-                    <Briefcase size={22} />
+                    <Sparkles size={22} />
                   </span>
                   <p className="mt-3 text-sm font-semibold text-[var(--text-app)]">
-                    Aucune offre d'une autre entreprise pour le moment
+                    Aucune actualité pour le moment
                   </p>
                   <p className="mt-1 text-xs text-[var(--text-muted)]">
                     Revenez plus tard pour voir les publications du réseau.
                   </p>
                 </div>
               ) : (
-                feedOffers.map((offer) => (
-                  <OfferFeedCard
-                    key={offer.id}
-                    offer={offer}
-                    currentCompanyId={company.id}
-                    currentUser={user}
-                    onDeleted={() => loadFeed("others")}
-                    onApply={(o) => setApplyOffer(o)}
-                  />
-                ))
+                <>
+                  {feedRequests.length > 0 && (
+                    <div className="space-y-3">
+                      <p className="flex items-center gap-1.5 px-1 text-[10px] font-bold uppercase tracking-wider text-amber-400">
+                        <Layers size={11} /> Demandes du réseau
+                      </p>
+                      {feedRequests.map((r) => (
+                        <RequestFeedCard key={`req-${r.id}`} request={r} currentUser={user} />
+                      ))}
+                    </div>
+                  )}
+
+                  {feedOffers.length > 0 && (
+                    <div className="space-y-3">
+                      <p className="flex items-center gap-1.5 px-1 text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                        <Briefcase size={11} /> Offres d'emploi
+                      </p>
+                      {feedOffers.map((offer) => (
+                        <OfferFeedCard
+                          key={`offer-${offer.id}`}
+                          offer={offer}
+                          currentCompanyId={company.id}
+                          currentUser={user}
+                          onDeleted={loadActualite}
+                          onApply={(o) => setApplyOffer(o)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
         </div>
 
-        {/* COLONNE DROITE */}
+        {/* ============ COLONNE DROITE ============ */}
         <aside className="hidden space-y-4 lg:block">
-          <div className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-4">
-            <p className="text-sm font-bold text-[var(--text-app)]">Talents suggérés</p>
-            <p className="mt-0.5 text-[11px] text-[var(--text-faint)]">
-              Basés sur votre activité
-            </p>
-
-            <div className="mt-3 space-y-3">
-              <Link
-                to="/explore-dashboard"
-                className="flex items-center gap-3 rounded-lg p-2 transition hover:bg-[var(--bg-surface-hover)]"
-              >
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-xs font-bold text-white">
-                  LC
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-semibold text-[var(--text-app)]">Lovaniaina Candy</p>
-                  <p className="truncate text-[10px] text-[var(--text-faint)]">Développeuse Fullstack</p>
-                </div>
-                <Plus size={14} className="text-emerald-400" />
-              </Link>
-
-              <Link
-                to="/explore-dashboard"
-                className="flex items-center gap-3 rounded-lg p-2 transition hover:bg-[var(--bg-surface-hover)]"
-              >
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-xs font-bold text-white">
-                  LR
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-semibold text-[var(--text-app)]">Laza Rakotondrasoa</p>
-                  <p className="truncate text-[10px] text-[var(--text-faint)]">Chef de projet</p>
-                </div>
-                <Plus size={14} className="text-emerald-400" />
-              </Link>
-
-              <Link
-                to="/explore-dashboard"
-                className="flex items-center gap-3 rounded-lg p-2 transition hover:bg-[var(--bg-surface-hover)]"
-              >
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-violet-400 to-violet-600 text-xs font-bold text-white">
-                  AR
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-semibold text-[var(--text-app)]">Annick Rojonirina</p>
-                  <p className="truncate text-[10px] text-[var(--text-faint)]">Développeur Backend PHP</p>
-                </div>
-                <Plus size={14} className="text-emerald-400" />
-              </Link>
-            </div>
-
-            <Link
-              to="/explore-dashboard"
-              className="mt-3 flex items-center justify-center gap-1 rounded-lg border border-dashed border-[var(--border-app)] py-2 text-[11px] font-medium text-[var(--text-muted)] transition hover:text-emerald-400"
-            >
-              Voir tous les talents <ArrowRight size={11} />
-            </Link>
-          </div>
+          <SuggestedTalentsSection />
 
           <div className="rounded-xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/[0.08] to-transparent p-4">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400">
@@ -852,7 +1089,7 @@ export default function CompanyProfile() {
         </aside>
       </div>
 
-      {/* MODALS */}
+      {/* ============ MODALS ============ */}
       {showAllMembers && (
         <AllPeopleModal
           title="Tous les membres"
@@ -923,180 +1160,124 @@ export default function CompanyProfile() {
           onSuccess={() => {
             setShowCreateOffer(false);
             showToast("Offre publiée ✅", "success");
-            loadFeed("mine");
+            loadHome();
           }}
         />
       )}
       {applyOffer && (
-  <ApplyOfferModal
-    offer={applyOffer}
-    onClose={() => setApplyOffer(null)}
-    onSuccess={() => {
-      setApplyOffer(null);
-      showToast("Candidature envoyée ✅", "success");
-    }}
-  />
-)}
+        <ApplyOfferModal
+          offer={applyOffer}
+          onClose={() => setApplyOffer(null)}
+          onSuccess={() => {
+            setApplyOffer(null);
+            showToast("Candidature envoyée ✅", "success");
+          }}
+        />
+      )}
     </AppShell>
   );
 }
 
 /* ============================================
-   SECTION TÉMOIGNAGES
+   CARTE DEMANDE — adaptatif talent / entreprise
 ============================================ */
-function TestimonialsSection({ companyId }) {
-  const [testimonials, setTestimonials] = useState(() => {
-    try {
-      const saved = localStorage.getItem(`testimonials_${companyId}`);
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
-  });
-  const [showForm, setShowForm] = useState(false);
-  const [author, setAuthor] = useState("");
-  const [role, setRole] = useState("");
-  const [text, setText] = useState("");
-  const [rating, setRating] = useState(5);
+function RequestFeedCard({ request, currentUser }) {
+  const { showToast } = useToast();
+  const navigate = useNavigate();
 
-  const save = (list) => {
-    setTestimonials(list);
-    try { localStorage.setItem(`testimonials_${companyId}`, JSON.stringify(list)); } catch {}
-  };
+  const [liked, setLiked] = useState(request.is_liked || false);
+  const [likesCount, setLikesCount] = useState(request.likes_count || 0);
+  const [liking, setLiking] = useState(false);
 
-  const submit = (e) => {
-    e.preventDefault();
-    if (!author.trim() || !text.trim()) return;
-    const entry = {
-      id: Date.now(),
-      author: author.trim(),
-      role: role.trim(),
-      text: text.trim(),
-      rating,
-      date: new Date().toISOString(),
-    };
-    save([entry, ...testimonials]);
-    setAuthor(""); setRole(""); setText(""); setRating(5);
-    setShowForm(false);
-  };
+  const [showComments, setShowComments] = useState(false);
+  const [comments, setComments] = useState([]);
+  const [commentText, setCommentText] = useState("");
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [postingComment, setPostingComment] = useState(false);
+  const [commentsCount, setCommentsCount] = useState(request.comments_count || 0);
 
-  const remove = (id) => {
-    if (!confirm("Supprimer ce témoignage ?")) return;
-    save(testimonials.filter((t) => t.id !== id));
-  };
-
-  return (
-    <div className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-5">
-      <div className="mb-4 flex items-center justify-between">
-        <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-          <Quote size={12} /> Témoignages
-        </p>
-        <button
-          onClick={() => setShowForm((s) => !s)}
-          className="inline-flex items-center gap-1 rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-2.5 py-1.5 text-[10px] font-semibold text-[var(--text-app)] transition hover:bg-[var(--bg-surface)]"
-        >
-          <Plus size={11} /> Ajouter
-        </button>
-      </div>
-
-      {showForm && (
-        <form onSubmit={submit} className="mb-4 space-y-2.5 rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-hover)] p-3">
-          <div className="grid grid-cols-2 gap-2">
-            <input
-              required
-              value={author}
-              onChange={(e) => setAuthor(e.target.value)}
-              placeholder="Nom de la personne"
-              className={inputCls}
-            />
-            <input
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              placeholder="Poste / relation"
-              className={inputCls}
-            />
-          </div>
-          <textarea
-            required
-            rows={3}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Le témoignage..."
-            className={inputCls}
-          />
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1">
-              {[1, 2, 3, 4, 5].map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  onClick={() => setRating(n)}
-                  className="text-amber-400"
-                >
-                  <Star size={16} fill={n <= rating ? "currentColor" : "none"} />
-                </button>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="rounded-lg px-3 py-1.5 text-xs text-[var(--text-muted)] hover:bg-[var(--bg-surface)]"
-              >
-                Annuler
-              </button>
-              <button
-                type="submit"
-                className="rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-bold text-[#0A1229] hover:bg-emerald-400"
-              >
-                Publier
-              </button>
-            </div>
-          </div>
-        </form>
-      )}
-
-      {testimonials.length === 0 ? (
-        <div className="py-6 text-center">
-          <p className="text-xs text-[var(--text-faint)]">Aucun témoignage pour l'instant</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {testimonials.map((t) => (
-            <div key={t.id} className="group relative rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-hover)] p-3.5">
-              <button
-                onClick={() => remove(t.id)}
-                className="absolute right-2 top-2 hidden text-[var(--text-faint)] hover:text-rose-400 group-hover:block"
-              >
-                <X size={12} />
-              </button>
-              <div className="flex items-center gap-2.5">
-                <Avatar name={t.author} size="sm" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-bold text-[var(--text-app)]">{t.author}</p>
-                  {t.role && <p className="truncate text-[10px] text-[var(--text-faint)]">{t.role}</p>}
-                </div>
-                <div className="flex shrink-0 gap-0.5 text-amber-400">
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <Star key={n} size={10} fill={n <= t.rating ? "currentColor" : "none"} />
-                  ))}
-                </div>
-              </div>
-              <p className="mt-2 text-xs italic leading-relaxed text-[var(--text-muted)]">
-                "{t.text}"
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ============================================
-   CARTE DEMANDE
-============================================ */
-function RequestFeedCard({ request }) {
-  const isUrgent = request.urgency === "urgent";
+  const isOwner = currentUser?.id === request.created_by;
+  const isTalent = request.author_type === "talent";
   const company = request.company;
+  const author = request.author;
+  const isUrgent = request.urgency === "urgent";
+  const hasBudget = request.budget_min && request.budget_max;
+  const hasSkills = request.skills?.length > 0;
+
+  useEffect(() => {
+    api.get(`/resource-requests/${request.id}/comments`)
+      .then((res) => {
+        const list = res.data.data || [];
+        setCommentsCount(list.length);
+      })
+      .catch(() => {});
+  }, [request.id]);
+
+  const handleLike = async () => {
+    if (liking) return;
+    setLiking(true);
+    try {
+      const res = await api.post(`/resource-requests/${request.id}/like`);
+      setLiked(res.data.liked);
+      setLikesCount(res.data.likes_count);
+    } catch (err) {
+      setLiked((l) => {
+        const next = !l;
+        setLikesCount((c) => Math.max(0, c + (next ? 1 : -1)));
+        return next;
+      });
+    } finally {
+      setLiking(false);
+    }
+  };
+
+  const handleShare = async () => {
+    const url = `${window.location.origin}/resource-requests/${request.id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast("Lien copié ✅", "success");
+      api.post(`/resource-requests/${request.id}/share`).catch(() => {});
+    } catch {
+      showToast("Impossible de copier", "error");
+    }
+  };
+
+  const toggleComments = async () => {
+    const next = !showComments;
+    setShowComments(next);
+    if (next && comments.length === 0) {
+      setLoadingComments(true);
+      try {
+        const res = await api.get(`/resource-requests/${request.id}/comments`);
+        setComments(res.data.data || []);
+      } catch {
+        setComments([]);
+      }
+      setLoadingComments(false);
+    }
+  };
+
+  const submitComment = async (e) => {
+    e.preventDefault();
+    if (!commentText.trim()) return;
+    setPostingComment(true);
+    try {
+      const res = await api.post(`/resource-requests/${request.id}/comment`, {
+        content: commentText.trim(),
+      });
+      setComments([res.data.comment, ...comments]);
+      setCommentsCount((c) => c + 1);
+      setCommentText("");
+      showToast("Commentaire ajouté ✅", "success");
+    } catch (err) {
+      showToast(
+        err.response?.data?.message || `Erreur ${err.response?.status || ""}`,
+        "error"
+      );
+    } finally {
+      setPostingComment(false);
+    }
+  };
 
   const timeAgo = (dateStr) => {
     if (!dateStr) return "";
@@ -1111,57 +1292,264 @@ function RequestFeedCard({ request }) {
   };
 
   return (
-    <div className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-4 transition hover:border-amber-500/30">
-      <div className="flex items-start gap-3">
-        <Avatar path={company?.logo_path} name={company?.name || "Entreprise"} size="md" rounded="lg" />
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="truncate text-sm font-bold text-[var(--text-app)]">{company?.name || "Entreprise"}</p>
-            {isUrgent && (
-              <span className="inline-flex items-center gap-1 rounded-md border border-rose-500/40 bg-rose-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase text-rose-400">
-                <Zap size={9} /> Urgent
-              </span>
-            )}
-          </div>
-          <p className="mt-0.5 flex items-center gap-2 text-[11px] text-[var(--text-faint)]">
-            <Clock size={10} /> {timeAgo(request.created_at)}
-            {request.city && (
-              <>
-                <span>·</span>
-                <MapPin size={10} /> {request.city}
-              </>
-            )}
-          </p>
+    <div
+      id={`request-${request.id}`}
+      className={`group relative overflow-hidden rounded-xl border bg-[var(--bg-surface)] transition hover:border-amber-500/30 ${
+        isUrgent ? "border-rose-500/30" : "border-[var(--border-app)]"
+      }`}
+    >
+      <span className={`absolute inset-y-0 left-0 w-[3px] ${isUrgent ? "bg-rose-500" : "bg-amber-500"}`} />
+
+      <div className="p-5 pl-6">
+        {/* Header : auteur (talent OU entreprise) */}
+        <div className="flex items-start gap-3">
+          {isTalent ? (
+            <>
+             <Avatar
+  path={
+    author?.professional_profile?.avatar_path ||   // ✅ On cherche dans le profil pro
+    author?.professionalProfile?.avatar_path ||
+    author?.avatar_path                             // Fallback users.avatar_path
+  }
+  name={author?.name || "Talent"}
+  size="md"
+/>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="truncate text-sm font-semibold text-[var(--text-app)]">
+                    {author?.name || "Talent"}
+                  </p>
+                  <span className="inline-flex items-center gap-1 rounded-md border border-purple-500/30 bg-purple-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-purple-400">
+                    🎓 Talent
+                  </span>
+                  {isUrgent && (
+                    <span className="inline-flex items-center gap-1 rounded-md border border-rose-500/40 bg-rose-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-rose-400">
+                      <Zap size={9} /> Urgent
+                    </span>
+                  )}
+                  {isOwner && (
+                    <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase text-emerald-400">
+                      Ma publication
+                    </span>
+                  )}
+                </div>
+                <p className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] text-[var(--text-faint)]">
+                  <Clock size={10} /> {timeAgo(request.created_at)}
+                  {request.city && (
+                    <>
+                      <span>·</span>
+                      <MapPin size={10} /> {request.city}
+                    </>
+                  )}
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              <Avatar path={company?.logo_path} name={company?.name || "Entreprise"} size="md" rounded="lg" />
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="truncate text-sm font-semibold text-[var(--text-app)]">
+                    {company?.name || "Entreprise"}
+                  </p>
+                  {isUrgent && (
+                    <span className="inline-flex items-center gap-1 rounded-md border border-rose-500/40 bg-rose-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-rose-400">
+                      <Zap size={9} /> Urgent
+                    </span>
+                  )}
+                  {isOwner && (
+                    <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase text-emerald-400">
+                      Ma publication
+                    </span>
+                  )}
+                </div>
+                <p className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] text-[var(--text-faint)]">
+                  <Clock size={10} /> {timeAgo(request.created_at)}
+                  {request.city && (
+                    <>
+                      <span>·</span>
+                      <MapPin size={10} /> {request.city}
+                    </>
+                  )}
+                </p>
+              </div>
+            </>
+          )}
         </div>
-      </div>
 
-      <div className="mt-3">
-        <h3 className="text-base font-bold text-[var(--text-app)]">{request.title}</h3>
-        {request.description && (
-          <p className="mt-1.5 line-clamp-3 text-sm leading-relaxed text-[var(--text-muted)]">
-            {request.description}
-          </p>
-        )}
+        {/* Titre + description */}
+        <div className="mt-4">
+          <h3 className="text-base font-bold leading-snug text-[var(--text-app)] transition group-hover:text-amber-400">
+            {request.title}
+          </h3>
+          {request.description && (
+            <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-[var(--text-muted)]">
+              {request.description}
+            </p>
+          )}
+        </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          {request.budget_min && request.budget_max && (
-            <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-400">
+        {/* Meta */}
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs">
+          {hasBudget && (
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 font-semibold text-emerald-400">
               <Euro size={11} /> {request.budget_min}–{request.budget_max} €/j
             </span>
           )}
-          {request.skills?.length > 0 && request.skills.slice(0, 4).map((s) => (
-            <span key={s.id} className="rounded-md border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-2 py-0.5 text-[10px] text-[var(--text-muted)]">
-              {s.name}
+          {request.start_at && request.end_at && (
+            <span className="inline-flex items-center gap-1.5 text-[var(--text-faint)]">
+              <Calendar size={11} />
+              {new Date(request.start_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+              {" → "}
+              {new Date(request.end_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
             </span>
-          ))}
+          )}
+          {request.workload_percent && (
+            <span className="text-[var(--text-faint)]">{request.workload_percent}%</span>
+          )}
         </div>
 
-        <Link
-          to={`/resource-requests/${request.id}`}
-          className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-4 py-2 text-xs font-bold text-[#0A1229] transition hover:bg-amber-400"
-        >
-          Proposer un profil <ArrowRight size={12} />
-        </Link>
+        {/* Compétences */}
+        {hasSkills && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {request.skills.slice(0, 5).map((s) => (
+              <span
+                key={s.id}
+                className="rounded-md border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-2 py-0.5 text-[11px] font-medium text-[var(--text-muted)]"
+              >
+                {s.name}
+              </span>
+            ))}
+            {request.skills.length > 5 && (
+              <span className="self-center text-[11px] text-[var(--text-faint)]">
+                +{request.skills.length - 5}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Compteur likes */}
+        {likesCount > 0 && (
+          <div className="mt-3 flex items-center gap-1.5 text-[11px] text-[var(--text-faint)]">
+            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-white">
+              <Heart size={9} fill="currentColor" />
+            </span>
+            {likesCount} {likesCount > 1 ? "personnes aiment" : "personne aime"}
+          </div>
+        )}
+
+        {/* ✅ Actions : J'aime · Commenter · Partager · Proposer/Contacter */}
+        <div className="mt-2 flex items-center gap-1 border-t border-[var(--border-app)] pt-3">
+          <button
+            onClick={handleLike}
+            disabled={liking}
+            className={`flex flex-1 items-center justify-center gap-1 rounded-lg py-2 text-xs font-semibold transition ${
+              liked
+                ? "text-rose-400 hover:bg-rose-500/10"
+                : "text-[var(--text-muted)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-app)]"
+            }`}
+          >
+            <Heart size={14} fill={liked ? "currentColor" : "none"} />
+            J'aime
+          </button>
+
+          <button
+            onClick={toggleComments}
+            className="flex flex-1 items-center justify-center gap-1 rounded-lg py-2 text-xs font-semibold text-[var(--text-muted)] transition hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-app)]"
+          >
+            <MessageCircle size={14} />
+            {commentsCount > 0 ? commentsCount : "Commenter"}
+          </button>
+
+          <button
+            onClick={handleShare}
+            className="flex flex-1 items-center justify-center gap-1 rounded-lg py-2 text-xs font-semibold text-[var(--text-muted)] transition hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-app)]"
+          >
+            <Send size={14} />
+            Partager
+          </button>
+
+          {!isOwner && (
+            <>
+              {/* ✅ TALENT → Proposer (candidater) */}
+              {(currentUser?.role === "employee" || currentUser?.role === "student") && (
+                <Link
+                  to={`/resource-requests/${request.id}`}
+                  className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-amber-500/10 py-2 text-xs font-bold text-amber-400 transition hover:bg-amber-500/20"
+                >
+                  <ArrowRight size={14} />
+                  Proposer
+                </Link>
+              )}
+
+              {/* ✅ ENTREPRISE → Contacter */}
+              {currentUser?.role === "company" && (
+                <button
+                  onClick={() => {
+                    const ownerId = request.author_type === "talent"
+                      ? request.author?.id
+                      : request.company?.owner_user_id;
+                    if (ownerId) navigate(`/messages?to=${ownerId}`);
+                  }}
+                  className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-blue-500/10 py-2 text-xs font-bold text-blue-400 transition hover:bg-blue-500/20"
+                >
+                  <MessageCircle size={14} />
+                  Contacter
+                </button>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* ✅ Zone commentaires inline */}
+        {showComments && (
+          <div className="mt-3 border-t border-[var(--border-app)] pt-3">
+            <form onSubmit={submitComment} className="flex items-center gap-2">
+              <Avatar path={currentUser?.avatar_path} name={currentUser?.name || "?"} size="xs" />
+              <input
+                type="text"
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder="Écrivez un commentaire..."
+                className="flex-1 rounded-full border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-3 py-1.5 text-xs text-[var(--text-app)] placeholder:text-[var(--text-faint)] focus:border-amber-500/50 focus:outline-none"
+              />
+              <button
+                type="submit"
+                disabled={postingComment || !commentText.trim()}
+                className="rounded-full bg-amber-500 p-1.5 text-[#0A1229] transition hover:bg-amber-400 disabled:opacity-40"
+              >
+                {postingComment ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
+              </button>
+            </form>
+
+            <div className="mt-3 space-y-2">
+              {loadingComments ? (
+                <div className="flex justify-center py-3">
+                  <Loader2 size={16} className="animate-spin text-amber-400" />
+                </div>
+              ) : comments.length === 0 ? (
+                <p className="py-2 text-center text-[11px] text-[var(--text-faint)]">
+                  Aucun commentaire pour le moment
+                </p>
+              ) : (
+                comments.map((c) => (
+                  <div key={c.id} className="flex gap-2">
+                    <Avatar path={c.user?.avatar_path} name={c.user?.name || "?"} size="xs" />
+                    <div className="flex-1 rounded-2xl bg-[var(--bg-surface-hover)] px-3 py-2">
+                      <p className="text-[11px] font-bold text-[var(--text-app)]">
+                        {c.user?.name || "Utilisateur"}
+                      </p>
+                      <p className="mt-0.5 text-xs text-[var(--text-muted)]">{c.content}</p>
+                      <p className="mt-1 text-[10px] text-[var(--text-faint)]">
+                        {timeAgo(c.created_at)}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1197,10 +1585,7 @@ function MemberCard({ member, onRemove, onClick }) {
       }`}>
         {member.role}
       </span>
-      <ArrowRight
-        size={14}
-        className="shrink-0 text-[var(--text-faint)] opacity-0 transition group-hover:opacity-100"
-      />
+      <ArrowRight size={14} className="shrink-0 text-[var(--text-faint)] opacity-0 transition group-hover:opacity-100" />
     </div>
   );
 }
@@ -1232,10 +1617,7 @@ function EmployeeCard({ employee, onRemove, onClick }) {
           Compte
         </span>
       )}
-      <ArrowRight
-        size={14}
-        className="shrink-0 text-[var(--text-faint)] opacity-0 transition group-hover:opacity-100"
-      />
+      <ArrowRight size={14} className="shrink-0 text-[var(--text-faint)] opacity-0 transition group-hover:opacity-100" />
     </div>
   );
 }
@@ -1254,30 +1636,17 @@ function EmployeeDetailModal({ employee, onClose }) {
   const headline = profile?.headline;
   const displayPosition = position || headline;
 
-  const links = {
-    portfolio: profile?.portfolio_url,
-    linkedin: profile?.linkedin_url,
-    github: profile?.github_url,
-  };
-  const hasLinks = links.portfolio || links.linkedin || links.github;
-
   const avatar = employee.photo_path || profile?.avatar_path;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
       <div
         className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-[var(--border-app)] px-6 py-4">
           <p className="text-sm font-bold text-[var(--text-app)]">Détails du salarié</p>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-1.5 text-[var(--text-faint)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-app)]"
-          >
+          <button onClick={onClose} className="rounded-lg p-1.5 text-[var(--text-faint)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-app)]">
             <X size={18} />
           </button>
         </div>
@@ -1302,9 +1671,7 @@ function EmployeeDetailModal({ employee, onClose }) {
 
           {bio && (
             <div className="mt-5 rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-hover)] p-3">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-faint)]">
-                À propos
-              </p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-faint)]">À propos</p>
               <p className="mt-1 text-xs leading-relaxed text-[var(--text-muted)]">{bio}</p>
             </div>
           )}
@@ -1333,7 +1700,6 @@ function MemberDetailModal({ member, companyId, onClose, onPhotoUpdated }) {
   const role = member.role;
   const profile = member.user?.professional_profile || member.user?.professionalProfile;
   const headline = profile?.headline;
-  const bio = profile?.bio;
 
   const avatar =
     profile?.avatar_path ||
@@ -1366,20 +1732,14 @@ function MemberDetailModal({ member, companyId, onClose, onPhotoUpdated }) {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
       <div
         className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-[var(--border-app)] px-6 py-4">
           <p className="text-sm font-bold text-[var(--text-app)]">Détails du membre</p>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-1.5 text-[var(--text-faint)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-app)]"
-          >
+          <button onClick={onClose} className="rounded-lg p-1.5 text-[var(--text-faint)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-app)]">
             <X size={18} />
           </button>
         </div>
@@ -1392,24 +1752,13 @@ function MemberDetailModal({ member, companyId, onClose, onPhotoUpdated }) {
             >
               <Avatar path={avatar} name={name} size="xl" />
               <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 transition group-hover:opacity-100">
-                {uploading
-                  ? <Loader2 size={20} className="animate-spin text-white" />
-                  : <Camera size={20} className="text-white" />}
+                {uploading ? <Loader2 size={20} className="animate-spin text-white" /> : <Camera size={20} className="text-white" />}
               </div>
-              <input
-                ref={photoInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handlePhotoUpload}
-              />
+              <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
             </div>
 
             <h2 className="mt-3 text-lg font-bold text-[var(--text-app)]">{name}</h2>
-
-            {headline && (
-              <p className="mt-1 text-xs text-[var(--text-muted)]">{headline}</p>
-            )}
+            {headline && <p className="mt-1 text-xs text-[var(--text-muted)]">{headline}</p>}
 
             <span className={`mt-2 inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase ${
               role === "owner" ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
@@ -1436,7 +1785,7 @@ function MemberDetailModal({ member, companyId, onClose, onPhotoUpdated }) {
 }
 
 /* ============================================
-   Ligne de détail
+   DetailRow
 ============================================ */
 function DetailRow({ icon: Icon, label, value }) {
   return (
@@ -1445,9 +1794,7 @@ function DetailRow({ icon: Icon, label, value }) {
         <Icon size={13} />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-faint)]">
-          {label}
-        </p>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-faint)]">{label}</p>
         <p className="mt-0.5 truncate text-xs text-[var(--text-app)]">{value}</p>
       </div>
     </div>
@@ -1702,9 +2049,7 @@ function AddMemberModal({ companyId, onClose, onSuccess }) {
         .then((res) => {
           const u = res.data;
           setSuggestedUser(u);
-          if (u.avatar_path) {
-            setAvatarPreview(`http://localhost:8000/storage/${u.avatar_path}`);
-          }
+          if (u.avatar_path) setAvatarPreview(`http://localhost:8000/storage/${u.avatar_path}`);
         })
         .catch(() => setSuggestedUser(null))
         .finally(() => setSearching(false));
@@ -1740,11 +2085,9 @@ function AddMemberModal({ companyId, onClose, onSuccess }) {
         const fd = new FormData();
         fd.append("photo", photoFile);
         try {
-          await api.post(
-            `/companies/${companyId}/members/${createdMember.id}/photo`,
-            fd,
-            { headers: { "Content-Type": "multipart/form-data" } }
-          );
+          await api.post(`/companies/${companyId}/members/${createdMember.id}/photo`, fd, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
         } catch (err) {
           console.warn("Photo non uploadée :", err.response?.data);
         }
@@ -1763,16 +2106,9 @@ function AddMemberModal({ companyId, onClose, onSuccess }) {
     <ModalShell title="Ajouter un membre" onClose={onClose}>
       <form onSubmit={submit} className="space-y-4">
         <div className="flex items-center gap-4">
-          <div
-            className="group relative cursor-pointer"
-            onClick={() => photoInputRef.current?.click()}
-          >
+          <div className="group relative cursor-pointer" onClick={() => photoInputRef.current?.click()}>
             {avatarPreview ? (
-              <img
-                src={avatarPreview}
-                alt="preview"
-                className="h-16 w-16 rounded-full border-2 border-[var(--border-app)] object-cover"
-              />
+              <img src={avatarPreview} alt="preview" className="h-16 w-16 rounded-full border-2 border-[var(--border-app)] object-cover" />
             ) : (
               <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-dashed border-[var(--border-app)] bg-[var(--bg-surface-hover)] text-[var(--text-faint)]">
                 <Camera size={20} />
@@ -1781,13 +2117,7 @@ function AddMemberModal({ companyId, onClose, onSuccess }) {
             <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 transition group-hover:opacity-100">
               <span className="text-[9px] font-bold text-white">Changer</span>
             </div>
-            <input
-              ref={photoInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handlePhotoSelect}
-            />
+            <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoSelect} />
           </div>
           <div>
             <p className="text-xs font-semibold text-[var(--text-app)]">Photo du membre</p>
@@ -1797,20 +2127,8 @@ function AddMemberModal({ companyId, onClose, onSuccess }) {
 
         <Field icon={Mail} label="Email *">
           <div className="relative">
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="email@exemple.com"
-              className={inputCls}
-            />
-            {searching && (
-              <Loader2
-                size={14}
-                className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-emerald-400"
-              />
-            )}
+            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@exemple.com" className={inputCls} />
+            {searching && <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-emerald-400" />}
           </div>
 
           {suggestedUser && (
@@ -1834,18 +2152,10 @@ function AddMemberModal({ companyId, onClose, onSuccess }) {
         </Field>
 
         <div className="flex justify-end gap-2 border-t border-[var(--border-app)] pt-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg px-4 py-2 text-sm text-[var(--text-muted)] hover:bg-[var(--bg-surface-hover)]"
-          >
+          <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-[var(--text-muted)] hover:bg-[var(--bg-surface-hover)]">
             Annuler
           </button>
-          <button
-            type="submit"
-            disabled={saving}
-            className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400 disabled:opacity-50"
-          >
+          <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400 disabled:opacity-50">
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} Ajouter
           </button>
         </div>
@@ -1889,9 +2199,7 @@ function AddEmployeeModal({ companyId, onClose, onSuccess }) {
             phone: prev.phone || u.phone || "",
             position: prev.position || u.headline || "",
           }));
-          if (u.avatar_path) {
-            setAvatarPreview(`http://localhost:8000/storage/${u.avatar_path}`);
-          }
+          if (u.avatar_path) setAvatarPreview(`http://localhost:8000/storage/${u.avatar_path}`);
         })
         .catch(() => setSuggestedUser(null))
         .finally(() => setSearching(false));
@@ -1930,11 +2238,9 @@ function AddEmployeeModal({ companyId, onClose, onSuccess }) {
         const fd = new FormData();
         fd.append("photo", photoFile);
         try {
-          await api.post(
-            `/companies/${companyId}/employees/${created.id}/photo`,
-            fd,
-            { headers: { "Content-Type": "multipart/form-data" } }
-          );
+          await api.post(`/companies/${companyId}/employees/${created.id}/photo`, fd, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
         } catch (err) {
           console.warn("Photo non uploadée :", err.response?.data);
         }
@@ -1953,10 +2259,7 @@ function AddEmployeeModal({ companyId, onClose, onSuccess }) {
     <ModalShell title="Ajouter un salarié" onClose={onClose}>
       <form onSubmit={submit} className="space-y-4">
         <div className="flex items-center gap-4">
-          <div
-            className="group relative cursor-pointer"
-            onClick={() => photoInputRef.current?.click()}
-          >
+          <div className="group relative cursor-pointer" onClick={() => photoInputRef.current?.click()}>
             {avatarPreview ? (
               <img src={avatarPreview} alt="preview" className="h-16 w-16 rounded-full border-2 border-[var(--border-app)] object-cover" />
             ) : (
@@ -1977,17 +2280,8 @@ function AddEmployeeModal({ companyId, onClose, onSuccess }) {
 
         <Field icon={Mail} label="Email *">
           <div className="relative">
-            <input
-              type="email"
-              required
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              placeholder="email@exemple.com"
-              className={inputCls}
-            />
-            {searching && (
-              <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-emerald-400" />
-            )}
+            <input type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="email@exemple.com" className={inputCls} />
+            {searching && <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-emerald-400" />}
           </div>
 
           {suggestedUser && (
@@ -2020,29 +2314,15 @@ function AddEmployeeModal({ companyId, onClose, onSuccess }) {
         </Field>
 
         <div className="flex justify-end gap-2 border-t border-[var(--border-app)] pt-4">
-          <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-[var(--text-muted)] hover:bg-[var(--bg-surface-hover)]">Annuler</button>
+          <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-[var(--text-muted)] hover:bg-[var(--bg-surface-hover)]">
+            Annuler
+          </button>
           <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400 disabled:opacity-50">
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} Ajouter
           </button>
         </div>
       </form>
     </ModalShell>
-  );
-}
-
-/* ============================================
-   UI HELPERS
-============================================ */
-const inputCls = "w-full rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-3 py-2 text-sm text-[var(--text-app)] placeholder:text-[var(--text-faint)] transition focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20";
-
-function Field({ label, icon: Icon, children }) {
-  return (
-    <div>
-      <label className="mb-1.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)]">
-        {Icon && <Icon size={11} />} {label}
-      </label>
-      {children}
-    </div>
   );
 }
 
@@ -2092,14 +2372,8 @@ function CreateOfferModal({ company, onClose, onSuccess }) {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-3 border-b border-[var(--border-app)] px-6 py-5">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
@@ -2110,10 +2384,7 @@ function CreateOfferModal({ company, onClose, onSuccess }) {
             </h2>
             <p className="text-xs text-[var(--text-muted)]">pour {company.name}</p>
           </div>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-1.5 text-[var(--text-faint)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-app)]"
-          >
+          <button onClick={onClose} className="rounded-lg p-1.5 text-[var(--text-faint)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-app)]">
             <X size={18} />
           </button>
         </div>
@@ -2127,21 +2398,11 @@ function CreateOfferModal({ company, onClose, onSuccess }) {
           )}
 
           <Field icon={Briefcase} label="Titre de l'offre *">
-            <input
-              required
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder="Ex: Développeur Web Junior"
-              className={inputCls}
-            />
+            <input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Ex: Développeur Web Junior" className={inputCls} />
           </Field>
 
           <Field icon={FileText} label="Type d'offre *">
-            <select
-              value={form.offer_type}
-              onChange={(e) => setForm({ ...form, offer_type: e.target.value })}
-              className={inputCls}
-            >
+            <select value={form.offer_type} onChange={(e) => setForm({ ...form, offer_type: e.target.value })} className={inputCls}>
               <option value="internship">Stage</option>
               <option value="apprenticeship">Alternance</option>
               <option value="junior_mission">Mission junior</option>
@@ -2150,14 +2411,7 @@ function CreateOfferModal({ company, onClose, onSuccess }) {
           </Field>
 
           <Field icon={FileText} label="Description *">
-            <textarea
-              required
-              rows={4}
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              placeholder="Décrivez la mission, les compétences recherchées, les conditions..."
-              className={inputCls}
-            />
+            <textarea required rows={4} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Décrivez la mission..." className={inputCls} />
             <p className={`mt-1 text-[10px] ${form.description.length < 20 ? "text-amber-400" : "text-[var(--text-faint)]"}`}>
               {form.description.length} / 20 caractères minimum
             </p>
@@ -2165,56 +2419,28 @@ function CreateOfferModal({ company, onClose, onSuccess }) {
 
           <div className="grid grid-cols-2 gap-3">
             <Field icon={MapPin} label="Ville">
-              <input
-                value={form.city}
-                onChange={(e) => setForm({ ...form, city: e.target.value })}
-                placeholder="Antananarivo"
-                className={inputCls}
-              />
+              <input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="Antananarivo" className={inputCls} />
             </Field>
             <Field icon={MapPin} label="Pays">
-              <input
-                value={form.country}
-                onChange={(e) => setForm({ ...form, country: e.target.value })}
-                placeholder="Madagascar"
-                className={inputCls}
-              />
+              <input value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} placeholder="Madagascar" className={inputCls} />
             </Field>
           </div>
 
           <Field icon={Calendar} label="Date limite de candidature">
-            <input
-              type="date"
-              value={form.application_deadline}
-              onChange={(e) => setForm({ ...form, application_deadline: e.target.value })}
-              className={inputCls}
-            />
+            <input type="date" value={form.application_deadline} onChange={(e) => setForm({ ...form, application_deadline: e.target.value })} className={inputCls} />
           </Field>
 
           <label className="flex items-center gap-2.5 rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-hover)] p-3 text-sm text-[var(--text-app)]">
-            <input
-              type="checkbox"
-              checked={form.remote}
-              onChange={(e) => setForm({ ...form, remote: e.target.checked })}
-              className="h-4 w-4 accent-emerald-500"
-            />
+            <input type="checkbox" checked={form.remote} onChange={(e) => setForm({ ...form, remote: e.target.checked })} className="h-4 w-4 accent-emerald-500" />
             <Home size={14} className="text-[var(--text-muted)]" />
             Poste en télétravail
           </label>
 
           <div className="flex justify-end gap-2 border-t border-[var(--border-app)] pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg px-4 py-2 text-sm text-[var(--text-muted)] hover:bg-[var(--bg-surface-hover)]"
-            >
+            <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-[var(--text-muted)] hover:bg-[var(--bg-surface-hover)]">
               Annuler
             </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400 disabled:opacity-50"
-            >
+            <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400 disabled:opacity-50">
               {saving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
               {saving ? "Publication..." : "Publier l'offre"}
             </button>
@@ -2227,7 +2453,6 @@ function CreateOfferModal({ company, onClose, onSuccess }) {
 
 /* ============================================
    CARTE : Offre dans le feed
-   4 boutons + commentaires inline
 ============================================ */
 function OfferFeedCard({ offer, currentCompanyId, currentUser, onDeleted, onApply }) {
   const { showToast } = useToast();
@@ -2242,6 +2467,16 @@ function OfferFeedCard({ offer, currentCompanyId, currentUser, onDeleted, onAppl
   const [commentText, setCommentText] = useState("");
   const [loadingComments, setLoadingComments] = useState(false);
   const [postingComment, setPostingComment] = useState(false);
+  const [commentsCount, setCommentsCount] = useState(offer.comments_count || 0);
+
+  useEffect(() => {
+    api.get(`/job-offers/${offer.id}/comments`)
+      .then((res) => {
+        const list = res.data.data || [];
+        setCommentsCount(list.length);
+      })
+      .catch(() => {});
+  }, [offer.id]);
 
   const isMyOffer = offer.company_id === currentCompanyId;
   const company = offer.company;
@@ -2275,7 +2510,6 @@ function OfferFeedCard({ offer, currentCompanyId, currentUser, onDeleted, onAppl
       setLiked(res.data.liked);
       setLikesCount(res.data.likes_count);
     } catch (err) {
-      // Fallback visuel si la route n'existe pas encore
       setLiked((l) => {
         const next = !l;
         setLikesCount((c) => Math.max(0, c + (next ? 1 : -1)));
@@ -2312,32 +2546,28 @@ function OfferFeedCard({ offer, currentCompanyId, currentUser, onDeleted, onAppl
     }
   };
 
- const submitComment = async (e) => {
-  e.preventDefault();
-  if (!commentText.trim()) return;
-  setPostingComment(true);
-  try {
-    const res = await api.post(`/job-offers/${offer.id}/comment`, {
-      content: commentText.trim(),
-    });
-    setComments([res.data.comment, ...comments]);
-    setCommentText("");
-    showToast("Commentaire ajouté ✅", "success");
-  } catch (err) {
-    // ❌ CE BLOC est le coupable
-    const temp = {
-      id: Date.now(),
-      user: { name: currentUser?.name || "Vous" },
-      content: commentText.trim(),
-      created_at: new Date().toISOString(),
-    };
-    setComments([temp, ...comments]);
-    setCommentText("");
-    showToast("Commentaire enregistré en local", "info");
-  } finally {
-    setPostingComment(false);
-  }
-};
+  const submitComment = async (e) => {
+    e.preventDefault();
+    if (!commentText.trim()) return;
+    setPostingComment(true);
+    try {
+      const res = await api.post(`/job-offers/${offer.id}/comment`, {
+        content: commentText.trim(),
+      });
+      setComments([res.data.comment, ...comments]);
+      setCommentsCount((c) => c + 1);
+      setCommentText("");
+      showToast("Commentaire ajouté ✅", "success");
+    } catch (err) {
+      console.error("Erreur comment:", err.response?.status, err.response?.data);
+      showToast(
+        err.response?.data?.message || `Erreur ${err.response?.status || ""}`,
+        "error"
+      );
+    } finally {
+      setPostingComment(false);
+    }
+  };
 
   const timeAgo = (dateStr) => {
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -2351,11 +2581,7 @@ function OfferFeedCard({ offer, currentCompanyId, currentUser, onDeleted, onAppl
   };
 
   return (
-    <div
-      id={`offer-${offer.id}`}
-      className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-4 transition hover:border-emerald-500/30"
-    >
-      {/* En-tête */}
+    <div id={`offer-${offer.id}`} className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-4 transition hover:border-emerald-500/30">
       <div className="flex items-start gap-3">
         <Avatar path={company?.logo_path} name={company?.name || "Entreprise"} size="md" rounded="lg" />
         <div className="min-w-0 flex-1">
@@ -2363,9 +2589,7 @@ function OfferFeedCard({ offer, currentCompanyId, currentUser, onDeleted, onAppl
             <p className="truncate text-sm font-bold text-[var(--text-app)]">
               {company?.name || "Entreprise"}
             </p>
-            {company?.is_verified && (
-              <BadgeCheck size={13} className="text-emerald-400" />
-            )}
+            {company?.is_verified && <BadgeCheck size={13} className="text-emerald-400" />}
             {isMyOffer && (
               <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase text-emerald-400">
                 Ma publication
@@ -2399,20 +2623,16 @@ function OfferFeedCard({ offer, currentCompanyId, currentUser, onDeleted, onAppl
         )}
       </div>
 
-      {/* Contenu */}
       <div className="mt-3">
         <span className="inline-block rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-400">
           {OFFER_TYPES[offer.offer_type] || offer.offer_type}
         </span>
-        <h3 className="mt-2 text-base font-bold text-[var(--text-app)]">
-          {offer.title}
-        </h3>
+        <h3 className="mt-2 text-base font-bold text-[var(--text-app)]">{offer.title}</h3>
         <p className="mt-1.5 line-clamp-4 text-sm leading-relaxed text-[var(--text-muted)]">
           {offer.description}
         </p>
       </div>
 
-      {/* Compteur likes */}
       {likesCount > 0 && (
         <div className="mt-3 flex items-center gap-1.5 text-[11px] text-[var(--text-faint)]">
           <span className="flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-white">
@@ -2422,7 +2642,6 @@ function OfferFeedCard({ offer, currentCompanyId, currentUser, onDeleted, onAppl
         </div>
       )}
 
-      {/* ✅ 4 boutons : J'aime · Commenter · Partager · Postuler */}
       <div className="mt-2 flex items-center gap-1 border-t border-[var(--border-app)] pt-3">
         <button
           onClick={handleLike}
@@ -2442,7 +2661,7 @@ function OfferFeedCard({ offer, currentCompanyId, currentUser, onDeleted, onAppl
           className="flex flex-1 items-center justify-center gap-1 rounded-lg py-2 text-xs font-semibold text-[var(--text-muted)] transition hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-app)]"
         >
           <MessageCircle size={14} />
-          Commenter
+          {commentsCount > 0 ? commentsCount : "Commenter"}
         </button>
 
         <button
@@ -2453,39 +2672,34 @@ function OfferFeedCard({ offer, currentCompanyId, currentUser, onDeleted, onAppl
           Partager
         </button>
 
-     {!isMyOffer && (
-  <>
-    {/* ✅ Si l'utilisateur est un TALENT/ÉTUDIANT → Postuler */}
-    {(currentUser?.role === "employee" || currentUser?.role === "student") && (
-      <button
-        onClick={() => onApply?.(offer)}
-        className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-emerald-500/10 py-2 text-xs font-bold text-emerald-400 transition hover:bg-emerald-500/20"
-      >
-        <Briefcase size={14} />
-        Postuler
-      </button>
-    )}
+        {!isMyOffer && (
+          <>
+            {(currentUser?.role === "employee" || currentUser?.role === "student") && (
+              <button
+                onClick={() => onApply?.(offer)}
+                className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-emerald-500/10 py-2 text-xs font-bold text-emerald-400 transition hover:bg-emerald-500/20"
+              >
+                <Briefcase size={14} />
+                Postuler
+              </button>
+            )}
 
-    {/* ✅ Si l'utilisateur est une ENTREPRISE → Messenger */}
-    {currentUser?.role === "company" && (
-      <button
-        onClick={() => {
-          const ownerId = offer.company?.owner_user_id;
-          if (ownerId) {
-            navigate(`/messages?to=${ownerId}`);
-          }
-        }}
-        className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-blue-500/10 py-2 text-xs font-bold text-blue-400 transition hover:bg-blue-500/20"
-      >
-     <MessageCircle size={14} />
-Contacter
-      </button>
-    )}
-  </>
-)}
+            {currentUser?.role === "company" && (
+              <button
+                onClick={() => {
+                  const ownerId = offer.company?.owner_user_id;
+                  if (ownerId) navigate(`/messages?to=${ownerId}`);
+                }}
+                className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-blue-500/10 py-2 text-xs font-bold text-blue-400 transition hover:bg-blue-500/20"
+              >
+                <MessageCircle size={14} />
+                Contacter
+              </button>
+            )}
+          </>
+        )}
       </div>
 
-      {/* ✅ Zone commentaires inline */}
       {showComments && (
         <div className="mt-3 border-t border-[var(--border-app)] pt-3">
           <form onSubmit={submitComment} className="flex items-center gap-2">
@@ -2537,6 +2751,7 @@ Contacter
     </div>
   );
 }
+
 /* ============================================
    MODAL : Postuler à une offre
 ============================================ */
@@ -2586,30 +2801,15 @@ function ApplyOfferModal({ offer, onClose, onSuccess }) {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-3 border-b border-[var(--border-app)] px-6 py-5">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
-              Postuler
-            </p>
-            <h2 className="mt-0.5 text-base font-bold text-[var(--text-app)]">
-              {offer.title}
-            </h2>
-            <p className="text-xs text-[var(--text-muted)]">
-              chez {offer.company?.name || "l'entreprise"}
-            </p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Postuler</p>
+            <h2 className="mt-0.5 text-base font-bold text-[var(--text-app)]">{offer.title}</h2>
+            <p className="text-xs text-[var(--text-muted)]">chez {offer.company?.name || "l'entreprise"}</p>
           </div>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-1.5 text-[var(--text-faint)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-app)]"
-          >
+          <button onClick={onClose} className="rounded-lg p-1.5 text-[var(--text-faint)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-app)]">
             <X size={18} />
           </button>
         </div>
@@ -2670,18 +2870,10 @@ function ApplyOfferModal({ offer, onClose, onSuccess }) {
               )}
 
               <div className="flex justify-end gap-2 border-t border-[var(--border-app)] pt-4">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="rounded-lg px-4 py-2 text-sm text-[var(--text-muted)] hover:bg-[var(--bg-surface-hover)]"
-                >
+                <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-[var(--text-muted)] hover:bg-[var(--bg-surface-hover)]">
                   Annuler
                 </button>
-                <button
-                  type="submit"
-                  disabled={saving || !profile}
-                  className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400 disabled:opacity-50"
-                >
+                <button type="submit" disabled={saving || !profile} className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400 disabled:opacity-50">
                   {saving ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                   {saving ? "Envoi..." : "Envoyer ma candidature"}
                 </button>
@@ -2693,6 +2885,10 @@ function ApplyOfferModal({ offer, onClose, onSuccess }) {
     </div>
   );
 }
+
+/* ============================================
+   ModalShell
+============================================ */
 function ModalShell({ title, onClose, children }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>

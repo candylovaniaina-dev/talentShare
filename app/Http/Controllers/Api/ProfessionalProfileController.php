@@ -446,84 +446,95 @@ class ProfessionalProfileController extends Controller
     /**
      * ✅ Liste publique (legacy)
      */
-    public function index(Request $request)
-    {
-        $query = ProfessionalProfile::query()
-            ->whereIn('visibility', ['public', 'network', 'private'])
-            ->with([
-                'user:id,name',
-                'skills.category.parent',
-                'skills.category',
-                'availabilityWindows' => function ($q) {
-                    $q->where('end_at', '>=', now()->startOfDay())->orderBy('start_at');
-                },
-            ]);
+    /**
+ * ✅ Liste publique (legacy)
+ */
+/**
+ * ✅ Liste publique (legacy)
+ */
+public function index(Request $request)
+{
+    $query = ProfessionalProfile::query()
+        ->whereIn('visibility', ['public', 'network', 'private'])
+        ->with([
+            'user:id,name,email,avatar_path,role',   // ✅ FIX : "headline" retiré (n'existe pas dans users)
+            'skills.category.parent',
+            'skills.category',
+            'availabilityWindows' => function ($q) {
+                $q->where('end_at', '>=', now()->startOfDay())->orderBy('start_at');
+            },
+        ]);
 
-        $query->when($request->skill_id, function ($q, $id) {
-            $q->whereHas('skills', fn ($sq) => $sq->where('skills.id', $id));
-        });
-
-        $query->when($request->skill_category_id, function ($q, $catId) {
-            $q->whereHas('skills.category', fn ($sq) =>
-                $sq->where('id', $catId)->orWhere('parent_id', $catId)
-            );
-        });
-
-        $query->when($request->profile_type, fn ($q, $v) => $q->where('profile_type', $v));
-        $query->when($request->country, fn ($q, $v) => $q->where('country', $v));
-
-        $query->when($request->availability_status, function ($q, $status) {
-            $q->whereHas('availabilityWindows', function ($sq) use ($status) {
-                $sq->where('status', $status)->where('end_at', '>=', now()->startOfDay());
-            });
-        });
-
-        $query->when($request->availability_type, function ($q, $type) {
-            $q->whereHas('availabilityWindows', function ($sq) use ($type) {
-                $sq->where('type', $type)->where('end_at', '>=', now()->startOfDay());
-            });
-        });
-
-        $query->when($request->location_type, function ($q, $loc) {
-            $q->whereHas('availabilityWindows', function ($sq) use ($loc) {
-                $sq->where('location_type', $loc)->where('end_at', '>=', now()->startOfDay());
-            });
-        });
-
-        $query->when($request->available_from, function ($q, $date) {
-            $q->whereHas('availabilityWindows', function ($sq) use ($date) {
-                $sq->where('status', 'available')
-                   ->where('start_at', '<=', $date)
-                   ->where('end_at', '>=', $date);
-            });
-        });
-
-        $query->when($request->boolean('remote'), function ($q) {
-            $q->whereHas('availabilityWindows', fn ($sq) =>
-                $sq->whereIn('location_type', ['remote', 'hybrid'])
-            );
-        });
-
-        $query->when($request->boolean('available'), function ($q) {
-            $q->whereHas('availabilityWindows', fn ($sq) =>
-                $sq->where('status', 'available')
-                   ->where('start_at', '<=', now())
-                   ->where('end_at', '>=', now())
-            );
-        });
-
-        $query->when($request->search, function ($q, $s) {
-            $q->where(function ($sq) use ($s) {
-                $sq->where('headline', 'ilike', "%{$s}%")
-                   ->orWhere('bio', 'ilike', "%{$s}%")
-                   ->orWhereHas('user', fn ($uq) => $uq->where('name', 'ilike', "%{$s}%"))
-                   ->orWhereHas('skills', fn ($skq) => $skq->where('name', 'ilike', "%{$s}%"));
-            });
-        });
-
-        return $query->latest()->paginate($request->get('per_page', 12));
+    // ✅ Exclure mon propre profil
+    $viewer = auth('sanctum')->user();
+    if ($viewer) {
+        $query->where('user_id', '!=', $viewer->id);
     }
 
+    $query->when($request->skill_id, function ($q, $id) {
+        $q->whereHas('skills', fn ($sq) => $sq->where('skills.id', $id));
+    });
+
+    $query->when($request->skill_category_id, function ($q, $catId) {
+        $q->whereHas('skills.category', fn ($sq) =>
+            $sq->where('id', $catId)->orWhere('parent_id', $catId)
+        );
+    });
+
+    $query->when($request->profile_type, fn ($q, $v) => $q->where('profile_type', $v));
+    $query->when($request->country, fn ($q, $v) => $q->where('country', $v));
+
+    $query->when($request->availability_status, function ($q, $status) {
+        $q->whereHas('availabilityWindows', function ($sq) use ($status) {
+            $sq->where('status', $status)->where('end_at', '>=', now()->startOfDay());
+        });
+    });
+
+    $query->when($request->availability_type, function ($q, $type) {
+        $q->whereHas('availabilityWindows', function ($sq) use ($type) {
+            $sq->where('type', $type)->where('end_at', '>=', now()->startOfDay());
+        });
+    });
+
+    $query->when($request->location_type, function ($q, $loc) {
+        $q->whereHas('availabilityWindows', function ($sq) use ($loc) {
+            $sq->where('location_type', $loc)->where('end_at', '>=', now()->startOfDay());
+        });
+    });
+
+    $query->when($request->available_from, function ($q, $date) {
+        $q->whereHas('availabilityWindows', function ($sq) use ($date) {
+            $sq->where('status', 'available')
+               ->where('start_at', '<=', $date)
+               ->where('end_at', '>=', $date);
+        });
+    });
+
+    $query->when($request->boolean('remote'), function ($q) {
+        $q->whereHas('availabilityWindows', fn ($sq) =>
+            $sq->whereIn('location_type', ['remote', 'hybrid'])
+        );
+    });
+
+    $query->when($request->boolean('available'), function ($q) {
+        $q->whereHas('availabilityWindows', fn ($sq) =>
+            $sq->where('status', 'available')
+               ->where('start_at', '<=', now())
+               ->where('end_at', '>=', now())
+        );
+    });
+
+    $query->when($request->search, function ($q, $s) {
+        $q->where(function ($sq) use ($s) {
+            $sq->where('headline', 'ilike', "%{$s}%")
+               ->orWhere('bio', 'ilike', "%{$s}%")
+               ->orWhereHas('user', fn ($uq) => $uq->where('name', 'ilike', "%{$s}%"))
+               ->orWhereHas('skills', fn ($skq) => $skq->where('name', 'ilike', "%{$s}%"));
+        });
+    });
+
+    return $query->latest()->paginate($request->get('per_page', 12));
+}
     /**
      * ✅ Upload avatar
      */

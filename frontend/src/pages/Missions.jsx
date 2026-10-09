@@ -171,7 +171,7 @@ export default function Missions() {
           const myProfileId = user?.professional_profile?.id || user?.professionalProfile?.id;
           const isEmployee = myProfileId && mission.professional_profile_id === myProfileId;
           const isSupplier = user?.companies?.some?.((c) => c.id === mission.supplying_company_id);
-          const isRequester = user?.companies?.some?.((c) => c.id === mission.requesting_company_id);
+         const isRequesting = user?.companies?.some?.((c) => c.id === mission.requesting_company_id);
 
           return (
             <div key={mission.id} className="rounded-2xl border border-slate-200 bg-white p-5">
@@ -228,52 +228,77 @@ export default function Missions() {
                   </div>
                 </div>
 
-                <div className="flex gap-2 shrink-0 flex-wrap">
-                  {isEmployee && mission.status === "pending_employee" && (
-                    <>
-                      <button
-                        onClick={() => acceptMission(mission.id)}
-                        disabled={actionLoading === mission.id}
-                        className="rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60 flex items-center gap-1"
-                      >
-                        <Check size={12} /> Accepter
-                      </button>
-                      <button
-                        onClick={() => declineMission(mission.id)}
-                        disabled={actionLoading === mission.id}
-                        className="rounded-full border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-60 flex items-center gap-1"
-                      >
-                        <X size={12} /> Refuser
-                      </button>
-                    </>
-                  )}
+      <div className="flex gap-2 shrink-0 flex-wrap">
+  {/* ✅ SALARIÉ : accepter/refuser quand pending */}
+  {isEmployee && mission.status === "pending_employee" && (
+    <>
+      <button
+        onClick={() => acceptMission(mission.id)}
+        disabled={actionLoading === mission.id}
+        className="rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60 flex items-center gap-1"
+      >
+        <Check size={12} /> Accepter
+      </button>
+      <button
+        onClick={() => declineMission(mission.id)}
+        disabled={actionLoading === mission.id}
+        className="rounded-full border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-60 flex items-center gap-1"
+      >
+        <X size={12} /> Refuser
+      </button>
+    </>
+  )}
 
-                  {!isEmployee && mission.status === "planned" && (isSupplier || isRequester) && (
-                    <button
-                      onClick={() => updateStatus(mission.id, "active")}
-                      disabled={actionLoading === mission.id}
-                      className="rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60 flex items-center gap-1"
-                    >
-                      <PlayCircle size={12} /> Démarrer
-                    </button>
-                  )}
-                  {!isEmployee && mission.status === "active" && (isSupplier || isRequester) && (
-                    <button
-                      onClick={() => updateStatus(mission.id, "completed")}
-                      disabled={actionLoading === mission.id}
-                      className="rounded-full bg-navy px-3 py-1.5 text-xs font-semibold text-white hover:bg-navy-light disabled:opacity-60 flex items-center gap-1"
-                    >
-                      <CheckCircle size={12} /> Terminer
-                    </button>
-                  )}
+  {/* ✅ SALARIÉ : message d'attente quand planned */}
+  {isEmployee && mission.status === "planned" && (
+    <span className="rounded-full bg-amber-50 border border-amber-200 px-3 py-1.5 text-xs font-semibold text-amber-700 flex items-center gap-1">
+      ⏳ En attente du démarrage par l'entreprise
+    </span>
+  )}
 
-                  <Link
-                    to={`/missions/${mission.id}`}
-                    className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold hover:border-navy"
-                  >
-                    Détails
-                  </Link>
-                </div>
+  {/* ✅ SALARIÉ : info quand active */}
+  {isEmployee && mission.status === "active" && (
+    <span className="rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1.5 text-xs font-semibold text-emerald-700 flex items-center gap-1">
+      🚀 Mission en cours
+    </span>
+  )}
+
+  {/* ✅ PRÊTEUR UNIQUEMENT : démarrer quand planned */}
+  {!isEmployee && isSupplier && mission.status === "planned" && (
+    <button
+      onClick={() => updateStatus(mission.id, "active")}
+      disabled={actionLoading === mission.id}
+      className="rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60 flex items-center gap-1"
+    >
+      <PlayCircle size={12} /> Démarrer la mission
+    </button>
+  )}
+
+  {/* ✅ PRÊTEUR : terminer quand active */}
+  {!isEmployee && isSupplier && mission.status === "active" && (
+    <button
+      onClick={() => updateStatus(mission.id, "completed")}
+      disabled={actionLoading === mission.id}
+      className="rounded-full bg-navy px-3 py-1.5 text-xs font-semibold text-white hover:bg-navy-light disabled:opacity-60 flex items-center gap-1"
+    >
+      <CheckCircle size={12} /> Terminer
+    </button>
+  )}
+
+  {/* ✅ EMPRUNTEUR : info d'attente quand planned */}
+  {!isEmployee && isRequesting && !isSupplier && mission.status === "planned" && (
+    <span className="rounded-full bg-blue-50 border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-700 flex items-center gap-1">
+      ⏳ En attente du prêteur
+    </span>
+  )}
+
+  <Link
+    to={`/missions/${mission.id}`}
+    className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold hover:border-navy"
+  >
+    Détails
+  </Link>
+</div>
               </div>
             </div>
           );

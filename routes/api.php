@@ -66,8 +66,10 @@ Route::get('/languages', function () {
 
 Route::get('/resource-offers', [ResourceOfferController::class, 'index']);
 
+// ✅ FIX : contrainte numérique pour ne pas capturer "new"
 Route::get('/resource-requests', [ResourceRequestController::class, 'index']);
-Route::get('/resource-requests/{resourceRequest}', [ResourceRequestController::class, 'show']);
+Route::get('/resource-requests/{resourceRequest}', [ResourceRequestController::class, 'show'])
+    ->where('resourceRequest', '[0-9]+');
 
 Route::get('/job-offers/my', [JobOfferController::class, 'my'])->middleware('auth:sanctum');
 Route::get('/job-offers', [JobOfferController::class, 'index']);
@@ -162,22 +164,43 @@ Route::middleware('auth:sanctum')->group(function () {
     // === Resource Offers ===
     Route::get('/resource-offers/my', [ResourceOfferController::class, 'my']);
     Route::post('/resource-offers', [ResourceOfferController::class, 'store']);
-    Route::patch('/resource-offers/{resourceOffer}', [ResourceOfferController::class, 'update']);
-    Route::delete('/resource-offers/{resourceOffer}', [ResourceOfferController::class, 'destroy']);
+    Route::patch('/resource-offers/{resourceOffer}', [ResourceOfferController::class, 'update'])
+        ->where('resourceOffer', '[0-9]+');
+    Route::delete('/resource-offers/{resourceOffer}', [ResourceOfferController::class, 'destroy'])
+        ->where('resourceOffer', '[0-9]+');
 
     // === Resource Requests ===
-    Route::get   ('/resource-requests/my',                            [ResourceRequestController::class, 'index']);
-    Route::post  ('/resource-requests',                                [ResourceRequestController::class, 'store']);
-    Route::get   ('/resource-requests/{resourceRequest}/candidates',   [ResourceRequestController::class, 'candidates']);
-    Route::patch ('/resource-requests/{resourceRequest}',              [ResourceRequestController::class, 'update']);
-    Route::delete('/resource-requests/{resourceRequest}',              [ResourceRequestController::class, 'destroy']);
+   // === Resource Requests ===
+Route::get   ('/resource-requests/my', [ResourceRequestController::class, 'index']);
+Route::post  ('/resource-requests',    [ResourceRequestController::class, 'store']);
 
-    Route::post  ('/resource-requests/{resourceRequest}/publish',      [ResourceRequestController::class, 'publish']);
-    Route::post  ('/resource-requests/{resourceRequest}/pause',        [ResourceRequestController::class, 'pause']);
-    Route::post  ('/resource-requests/{resourceRequest}/close',        [ResourceRequestController::class, 'close']);
-    Route::post  ('/resource-requests/{resourceRequest}/mark-filled',  [ResourceRequestController::class, 'markFilled']);
-    Route::post  ('/resource-requests/{resourceRequest}/duplicate',    [ResourceRequestController::class, 'duplicate']);
+Route::get   ('/resource-requests/{resourceRequest}/candidates',   [ResourceRequestController::class, 'candidates'])
+    ->where('resourceRequest', '[0-9]+');
 
+Route::patch ('/resource-requests/{resourceRequest}',              [ResourceRequestController::class, 'update'])
+    ->where('resourceRequest', '[0-9]+');
+
+Route::delete('/resource-requests/{resourceRequest}',              [ResourceRequestController::class, 'destroy'])
+    ->where('resourceRequest', '[0-9]+');
+
+Route::post  ('/resource-requests/{resourceRequest}/publish',      [ResourceRequestController::class, 'publish'])
+    ->where('resourceRequest', '[0-9]+');
+Route::post  ('/resource-requests/{resourceRequest}/pause',        [ResourceRequestController::class, 'pause'])
+    ->where('resourceRequest', '[0-9]+');
+Route::post  ('/resource-requests/{resourceRequest}/close',        [ResourceRequestController::class, 'close'])
+    ->where('resourceRequest', '[0-9]+');
+Route::post  ('/resource-requests/{resourceRequest}/mark-filled',  [ResourceRequestController::class, 'markFilled'])
+    ->where('resourceRequest', '[0-9]+');
+Route::post  ('/resource-requests/{resourceRequest}/duplicate',    [ResourceRequestController::class, 'duplicate'])
+    ->where('resourceRequest', '[0-9]+');
+        Route::post('/resource-requests/{resourceRequest}/like',     [ResourceRequestController::class, 'toggleLike'])
+        ->where('resourceRequest', '[0-9]+');
+    Route::post('/resource-requests/{resourceRequest}/comment',  [ResourceRequestController::class, 'comment'])
+        ->where('resourceRequest', '[0-9]+');
+    Route::get ('/resource-requests/{resourceRequest}/comments', [ResourceRequestController::class, 'comments'])
+        ->where('resourceRequest', '[0-9]+');
+    Route::post('/resource-requests/{resourceRequest}/share',    [ResourceRequestController::class, 'share'])
+        ->where('resourceRequest', '[0-9]+');
     // === Propositions ===
     Route::get   ('/proposals/received',              [ProposalController::class, 'received']);
     Route::get   ('/proposals/sent',                  [ProposalController::class, 'sent']);
@@ -197,20 +220,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post  ('/missions/{mission}/decline', [MissionController::class, 'decline']);
     Route::patch ('/missions/{mission}/status',  [MissionController::class, 'updateStatus']);
 
-    // =============================================
-    // ✅ JOB OFFERS (avec interactions sociales)
-    // =============================================
+    // === JOB OFFERS ===
     Route::post  ('/job-offers',                        [JobOfferController::class, 'store']);
     Route::patch ('/job-offers/{jobOffer}',             [JobOfferController::class, 'update']);
     Route::delete('/job-offers/{jobOffer}',             [JobOfferController::class, 'destroy']);
     Route::get   ('/job-offers/{jobOffer}/applications',[JobOfferController::class, 'applications']);
 
-    // ✅ NOUVEAU — Interactions sociales
-       // ✅ NOUVEAU — Interactions sociales
+    // Interactions sociales
     Route::post  ('/job-offers/{jobOffer}/like',        [JobOfferController::class, 'toggleLike']);
     Route::post  ('/job-offers/{jobOffer}/comment',     [JobOfferController::class, 'comment']);
-    Route::get   ('/job-offers/{jobOffer}/comments',    [JobOfferController::class, 'comments']);  // ✅ AJOUT
+    Route::get   ('/job-offers/{jobOffer}/comments',    [JobOfferController::class, 'comments']);
     Route::post  ('/job-offers/{jobOffer}/share',       [JobOfferController::class, 'share']);
+
     // === Candidatures ===
     Route::get   ('/applications',                       [ApplicationController::class, 'index']);
     Route::get   ('/applications/stats',                 [ApplicationController::class, 'stats']);
@@ -307,5 +328,7 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
 // ROUTES PUBLIQUES DYNAMIQUES
 // =============================================
 
-Route::get('/resource-offers/{resourceOffer}', [ResourceOfferController::class, 'show']);
+Route::get('/resource-offers/{resourceOffer}', [ResourceOfferController::class, 'show'])
+    ->where('resourceOffer', '[0-9]+');
+
 Route::get('/portfolio/{slug}', [PortfolioController::class, 'show']);

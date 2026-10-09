@@ -1,12 +1,12 @@
 // frontend/src/pages/dashboard/Dashboard.jsx
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Briefcase, Users, FileText, Handshake, User, Layers, Building2,
   ArrowRight, AlertCircle, ArrowRightCircle, Sparkles, TrendingUp,
   CheckCircle2, Circle, Plus, Target, Calendar, Bell, MoreVertical,
-  RefreshCw, EyeOff, MessageCircle, MapPin, Clock, Zap, Search,
-  FolderPlus, Compass, Gauge,
+  RefreshCw, EyeOff, MessageCircle, MapPin, Zap, Search,
+  FolderPlus, Compass, Gauge, Check, X,
 } from "lucide-react";
 import AppShell from "../../components/layout/AppShell";
 import api from "../../services/api";
@@ -17,6 +17,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState(null);
+  const [tab, setTab] = useState("all");
 
   useEffect(() => {
     api.get("/dashboard")
@@ -29,21 +30,35 @@ export default function Dashboard() {
   }, []);
 
   const hasProfile = Boolean(profile);
-  const firstName = user?.first_name || user?.name?.split(" ")[0] || user?.name || "Utilisateur";
 
   return (
     <AppShell>
       {/* ===== HEADER ===== */}
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
-            Espace personnel
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-white">Mon activité</h1>
+            {stats?.proposals_pending > 0 && (
+              <span className="relative inline-flex h-6 min-w-[24px] items-center justify-center rounded-full bg-emerald-500 px-2 text-xs font-bold text-[#0A1229]">
+                {stats.proposals_pending}
+                <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-300" />
+                </span>
+              </span>
+            )}
+          </div>
+          <p className="mt-1 text-sm text-slate-400">
+            Suivez vos propositions et missions en un seul endroit.
           </p>
-          <h1 className="mt-1 text-3xl font-bold text-white">
-            Bonjour {firstName} —{" "}
-            <span className="text-emerald-400">prêt à grandir ?</span>
-          </h1>
         </div>
+
+        <Link
+          to="/proposals/new"
+          className="flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400"
+        >
+          <Plus size={15} /> Nouvelle proposition
+        </Link>
       </div>
 
       {/* ===== CARTE PROFIL ===== */}
@@ -66,7 +81,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* ===== BANDEAU D'ACTION (missions en attente) ===== */}
+      {/* ===== BANDEAU D'ACTION ===== */}
       {stats?.pending_missions > 0 && (
         <div className="mb-6 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
           <div className="flex items-center gap-3">
@@ -91,13 +106,47 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* ===== ONGLETS ===== */}
+      {stats && (user?.role === "employee" || user?.role === "student") && (
+        <div className="mt-6 flex items-center gap-6 border-b border-white/10">
+          <TabButton
+            active={tab === "all"}
+            onClick={() => setTab("all")}
+            icon={Layers}
+            label="Tout"
+            count={stats.proposals_pending + stats.active_missions}
+            accent
+          />
+          <TabButton
+            active={tab === "proposals"}
+            onClick={() => setTab("proposals")}
+            icon={Handshake}
+            label="Propositions"
+            count={stats.proposals_pending}
+          />
+          <TabButton
+            active={tab === "missions"}
+            onClick={() => setTab("missions")}
+            icon={Briefcase}
+            label="Missions"
+            count={stats.active_missions}
+          />
+        </div>
+      )}
+
       {/* ===== CONTENU PAR RÔLE ===== */}
       <div className="mt-6">
         {stats && user?.role === "company" && (
           <CompanyDashboard stats={stats} user={user} />
         )}
         {stats && (user?.role === "employee" || user?.role === "student") && (
-          <TalentDashboard stats={stats} user={user} profile={profile} hasProfile={hasProfile} />
+          <TalentDashboard
+            stats={stats}
+            user={user}
+            profile={profile}
+            hasProfile={hasProfile}
+            tab={tab}
+          />
         )}
         {stats && user?.role === "university" && (
           <UniversityDashboard stats={stats} user={user} />
@@ -111,7 +160,39 @@ export default function Dashboard() {
 }
 
 /* ============================================================
-   CARTE PROFIL (avatar, statut, disponibilité)
+   ONGLET (avec badge numérique)
+============================================================ */
+
+function TabButton({ active, onClick, icon: Icon, label, count = 0, accent = false }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`group relative flex items-center gap-2 pb-3 text-sm font-semibold transition ${
+        active ? "text-white" : "text-slate-400 hover:text-slate-200"
+      }`}
+    >
+      <Icon size={15} className={active ? "text-emerald-400" : ""} />
+      {label}
+      {count > 0 && (
+        <span
+          className={`flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold ${
+            accent
+              ? "bg-emerald-500 text-[#0A1229]"
+              : "bg-white/10 text-slate-300"
+          }`}
+        >
+          {count}
+        </span>
+      )}
+      {active && (
+        <span className="absolute -bottom-px left-0 right-0 h-0.5 rounded-full bg-emerald-400" />
+      )}
+    </button>
+  );
+}
+
+/* ============================================================
+   CARTE PROFIL
 ============================================================ */
 
 function ProfileCard({ user, profile, hasProfile }) {
@@ -144,11 +225,7 @@ function ProfileCard({ user, profile, hasProfile }) {
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
           <span className="flex items-center gap-1.5">
-            <span
-              className={`h-2 w-2 rounded-full ${
-                hasProfile ? "bg-emerald-400" : "bg-slate-500"
-              }`}
-            />
+            <span className={`h-2 w-2 rounded-full ${hasProfile ? "bg-emerald-400" : "bg-slate-500"}`} />
             {hasProfile ? "Profil actif" : "Profil à compléter"}
           </span>
           {location && (
@@ -213,26 +290,37 @@ function CardMenu() {
   );
 }
 
-function StatCard({ icon: Icon, label, value, trend, to, color = "mint" }) {
+function StatCard({ icon: Icon, label, value, trend, to, color = "mint", badge = 0 }) {
   const Wrapper = to ? Link : "div";
   const wrapperProps = to ? { to } : {};
 
   const colorMap = {
-    mint:    { bg: "bg-emerald-500/15", text: "text-emerald-400" },
-    violet:  { bg: "bg-violet-500/15",  text: "text-violet-400" },
-    blue:    { bg: "bg-blue-500/15",    text: "text-blue-400" },
-    amber:   { bg: "bg-amber-500/15",   text: "text-amber-400" },
-    rose:    { bg: "bg-rose-500/15",    text: "text-rose-400" },
+    mint:   { bg: "bg-emerald-500/15", text: "text-emerald-400" },
+    violet: { bg: "bg-violet-500/15",  text: "text-violet-400" },
+    blue:   { bg: "bg-blue-500/15",    text: "text-blue-400" },
+    amber:  { bg: "bg-amber-500/15",   text: "text-amber-400" },
+    rose:   { bg: "bg-rose-500/15",    text: "text-rose-400" },
   };
   const c = colorMap[color] || colorMap.mint;
 
   return (
     <Wrapper
       {...wrapperProps}
-      className={`group block rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl transition ${
+      className={`group relative block rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl transition ${
         to ? "hover:border-emerald-500/40 hover:bg-white/[0.06] cursor-pointer" : ""
       }`}
     >
+      {/* Badge nouvelle activité */}
+      {badge > 0 && (
+        <span className="absolute -top-1.5 -right-1.5 flex h-6 min-w-[24px] items-center justify-center rounded-full bg-emerald-500 px-1.5 text-[11px] font-bold text-[#0A1229] shadow-lg">
+          {badge}
+          <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-300" />
+          </span>
+        </span>
+      )}
+
       <div className="flex items-start justify-between">
         <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${c.bg} ${c.text}`}>
           <Icon size={18} />
@@ -278,7 +366,7 @@ function SectionTitle({ icon: Icon, title, subtitle, action }) {
 }
 
 /* ============================================================
-   GRAPHIQUE EN COURBE (SVG, sans dépendance)
+   GRAPHIQUE EN COURBE (SVG)
 ============================================================ */
 
 function LineChart({ data, labels }) {
@@ -340,8 +428,7 @@ function LineChart({ data, labels }) {
 }
 
 /* ============================================================
-   ✅ NOUVEAU : JAUGE SEMI-CIRCULAIRE (SVG, sans dépendance)
-   Inspirée du "Taux d'avancement moyen" d'un tableau de bord projet
+   JAUGE SEMI-CIRCULAIRE
 ============================================================ */
 
 function polarToCartesian(cx, cy, r, angleDeg) {
@@ -398,7 +485,7 @@ function GaugeChart({ percent, label }) {
 }
 
 /* ============================================================
-   ✅ NOUVEAU : LISTE DE PROGRESSION (barres horizontales)
+   LISTE DE PROGRESSION
 ============================================================ */
 
 function ProgressList({ items }) {
@@ -430,7 +517,7 @@ function ProgressList({ items }) {
 }
 
 /* ============================================================
-   ✅ NOUVEAU : RÉSUMÉ DE L'ACTIVITÉ (jauge + progression + KPIs)
+   RÉSUMÉ DE L'ACTIVITÉ
 ============================================================ */
 
 function ActivitySummary({ completion, breakdown, applications, pendingProposals, activeMissions, skillsCount }) {
@@ -455,7 +542,6 @@ function ActivitySummary({ completion, breakdown, applications, pendingProposals
         subtitle="Vue d'ensemble de votre progression sur TalentShare."
       />
 
-      {/* Bande de KPIs */}
       <div className="mb-6 flex flex-wrap gap-2">
         {kpis.map((k) => (
           <span
@@ -468,12 +554,10 @@ function ActivitySummary({ completion, breakdown, applications, pendingProposals
       </div>
 
       <div className="grid gap-6 md:grid-cols-[220px_1fr]">
-        {/* Jauge */}
         <div className="flex items-center justify-center rounded-xl border border-white/5 bg-white/[0.02] py-4">
           <GaugeChart percent={completion} label="Taux de complétion" />
         </div>
 
-        {/* Progression détaillée */}
         <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
           <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-500">Progression</p>
           {progressItems.length > 0 ? (
@@ -494,16 +578,14 @@ function ActivitySummary({ completion, breakdown, applications, pendingProposals
 function CompanyDashboard({ stats, user }) {
   return (
     <div className="space-y-6">
-      {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard icon={Building2} label="Entreprises gérées" value={stats.companies_count || 0} color="mint" />
         <StatCard icon={Layers} label="Demandes publiées" value={stats.resource_requests_open || 0} to="/resource-requests" color="violet" />
-        <StatCard icon={Handshake} label="Propositions reçues" value={stats.proposals_received || 0} to="/proposals" color="blue" />
-        <StatCard icon={Briefcase} label="Missions actives" value={stats.active_missions || 0} to="/missions" color="amber" />
+        <StatCard icon={Handshake} label="Propositions reçues" value={stats.proposals_received || 0} to="/proposals" color="blue" badge={stats.proposals_received || 0} />
+        <StatCard icon={Briefcase} label="Missions actives" value={stats.active_missions || 0} to="/missions" color="amber" badge={stats.pending_missions || 0} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Activité récente */}
         <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl">
           <SectionTitle
             icon={Sparkles}
@@ -517,7 +599,6 @@ function CompanyDashboard({ stats, user }) {
           </ul>
         </div>
 
-        {/* CTA */}
         <div className="rounded-2xl bg-gradient-to-br from-[#0B1633] to-[#0A1229] p-6 text-white">
           <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-emerald-400">
             <Target size={14} /> Prochaine action
@@ -535,12 +616,6 @@ function CompanyDashboard({ stats, user }) {
         </div>
       </div>
 
-      {/* Détails */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <StatCard icon={AlertCircle} label="Missions en attente" value={stats.pending_missions || 0} to="/missions" color="rose" />
-        <StatCard icon={FileText} label="Offres d'emploi ouvertes" value={stats.job_offers_open || 0} to="/job-offers" color="mint" />
-      </div>
-
       <QuickActions
         role="company"
         actions={[
@@ -555,10 +630,11 @@ function CompanyDashboard({ stats, user }) {
 
 /* ============================================================
    DASHBOARD TALENT (employee + student)
+   ✅ Filtré par onglet
 ============================================================ */
 
-function TalentDashboard({ stats, user, profile, hasProfile }) {
-  const completion = stats.completion ?? (hasProfile ? 0 : 0);
+function TalentDashboard({ stats, user, profile, hasProfile, tab = "all" }) {
+  const completion = stats.completion ?? 0;
   const nextStep = stats.completion_next_step || "Compléter votre profil";
   const breakdown = stats.completion_breakdown || [];
 
@@ -569,178 +645,192 @@ function TalentDashboard({ stats, user, profile, hasProfile }) {
   const unreadMessages = stats.unread_messages ?? 0;
   const nextAvailability = stats.next_availability_label || "Non renseignée";
 
+  const showProposals = tab === "all" || tab === "proposals";
+  const showMissions = tab === "all" || tab === "missions";
+  const showProfileBlocks = tab === "all";
+
   return (
     <div className="space-y-6">
-      {/* ✅ Résumé de l'activité (nouveau) */}
-      <ActivitySummary
-        completion={completion}
-        breakdown={breakdown}
-        applications={applications}
-        pendingProposals={pendingProposals}
-        activeMissions={activeMissions}
-        skillsCount={skillsCount}
-      />
+      {/* Résumé activité — seulement onglet "Tout" */}
+      {showProfileBlocks && (
+        <ActivitySummary
+          completion={completion}
+          breakdown={breakdown}
+          applications={applications}
+          pendingProposals={pendingProposals}
+          activeMissions={activeMissions}
+          skillsCount={skillsCount}
+        />
+      )}
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          icon={User}
-          label="Profil complété"
-          value={`${completion}%`}
-          trend={completion >= 80 ? "Bien !" : completion >= 50 ? "+ Continue" : "À compléter"}
-          color="violet"
-        />
-        <StatCard
-          icon={Layers}
-          label="Compétences renseignées"
-          value={skillsCount}
-          trend={skillsCount > 0 ? "+2 nouvelles" : "À compléter"}
-          color="mint"
-        />
-        <StatCard
-          icon={FileText}
-          label="Candidatures envoyées"
-          value={applications}
-          to={applications > 0 ? "/missions" : undefined}
-          color="blue"
-        />
-        <StatCard
-          icon={Handshake}
-          label="Propositions en attente"
-          value={pendingProposals}
-          to={pendingProposals > 0 ? "/proposals" : undefined}
-          color="amber"
-        />
+        {showProposals && (
+          <StatCard
+            icon={Handshake}
+            label="Propositions en attente"
+            value={pendingProposals}
+            to={pendingProposals > 0 ? "/proposals" : undefined}
+            color="amber"
+            badge={pendingProposals}
+          />
+        )}
+        {showMissions && (
+          <StatCard
+            icon={Briefcase}
+            label="Missions actives"
+            value={activeMissions}
+            to={activeMissions > 0 ? "/missions" : undefined}
+            color="mint"
+            badge={stats.pending_missions || 0}
+          />
+        )}
+        {showProfileBlocks && (
+          <>
+            <StatCard
+              icon={User}
+              label="Profil complété"
+              value={`${completion}%`}
+              trend={completion >= 80 ? "Bien !" : completion >= 50 ? "+ Continue" : "À compléter"}
+              color="violet"
+            />
+            <StatCard
+              icon={Layers}
+              label="Compétences renseignées"
+              value={skillsCount}
+              trend={skillsCount > 0 ? "+2 nouvelles" : "À compléter"}
+              color="mint"
+            />
+          </>
+        )}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Graphique / Visibilité */}
-        <div className="lg:col-span-2 rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl">
-          <SectionTitle
-            icon={TrendingUp}
-            title="Votre visibilité progresse"
-            subtitle="Vues de profil et mises en relation sur 6 mois."
-            action={
-              <Link
-                to="/profile"
-                className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-slate-200 transition hover:border-emerald-500/40 hover:text-emerald-300"
-              >
-                Voir le portfolio →
-              </Link>
-            }
-          />
-          <LineChart
-            data={[20, 30, 32, 28, 45, 50, 62]}
-            labels={["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil"]}
-          />
-        </div>
-
-        {/* CTA Profile — Complétion réelle */}
-        <div className="rounded-2xl bg-gradient-to-br from-[#0B1633] to-[#0A1229] p-6 text-white">
-          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-emerald-400">
-            <Target size={14} /> Prochaine action
-          </p>
-          <h3 className="mt-3 text-xl font-bold">{nextStep}</h3>
-          <p className="mt-2 text-sm text-slate-300">
-            Complétez votre profil pour apparaître dans plus de recherches.
-          </p>
-          <div className="mt-4">
-            <div className="flex items-center justify-between text-xs text-slate-400">
-              <span>Profil à {completion}%</span>
-              <span>Objectif 100%</span>
-            </div>
-            <div className="mt-2 h-1.5 rounded-full bg-white/10">
-              <div
-                className="h-1.5 rounded-full bg-emerald-400 transition-all"
-                style={{ width: `${completion}%` }}
+      {/* Bloc complétion — seulement onglet "Tout" */}
+      {showProfileBlocks && (
+        <>
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2 rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl">
+              <SectionTitle
+                icon={TrendingUp}
+                title="Votre visibilité progresse"
+                subtitle="Vues de profil et mises en relation sur 6 mois."
+                action={
+                  <Link
+                    to="/profile"
+                    className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-slate-200 transition hover:border-emerald-500/40 hover:text-emerald-300"
+                  >
+                    Voir le portfolio →
+                  </Link>
+                }
+              />
+              <LineChart
+                data={[20, 30, 32, 28, 45, 50, 62]}
+                labels={["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil"]}
               />
             </div>
-          </div>
-          <Link
-            to="/profile"
-            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400"
-          >
-            Compléter mon profil <ArrowRight size={15} />
-          </Link>
-        </div>
-      </div>
 
-      {/* Checklist détaillée */}
-      {breakdown.length > 0 && (
-        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl">
-          <SectionTitle
-            icon={CheckCircle2}
-            title="Complétion du profil"
-            subtitle="Cochez chaque étape pour atteindre 100%."
-            action={
-              <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-bold text-emerald-400">
-                {completion}%
-              </span>
-            }
-          />
-          <div className="grid gap-2 sm:grid-cols-2">
-            {breakdown.map((item) => (
-              <div
-                key={item.key}
-                className={`flex items-start gap-3 rounded-lg border p-3 transition ${
-                  item.done
-                    ? "border-emerald-500/20 bg-emerald-500/5"
-                    : "border-white/5 bg-white/[0.02]"
-                }`}
-              >
-                <span
-                  className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
-                    item.done
-                      ? "bg-emerald-500 text-white"
-                      : "border-2 border-slate-600 bg-transparent"
-                  }`}
-                >
-                  {item.done && <CheckCircle2 size={12} />}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className={`text-xs font-semibold ${item.done ? "text-emerald-300" : "text-white"}`}>
-                    {item.label}
-                  </p>
-                  {!item.done && (
-                    <p className="mt-0.5 text-[10px] text-slate-500">
-                      {item.action}
-                    </p>
-                  )}
+            <div className="rounded-2xl bg-gradient-to-br from-[#0B1633] to-[#0A1229] p-6 text-white">
+              <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-emerald-400">
+                <Target size={14} /> Prochaine action
+              </p>
+              <h3 className="mt-3 text-xl font-bold">{nextStep}</h3>
+              <p className="mt-2 text-sm text-slate-300">
+                Complétez votre profil pour apparaître dans plus de recherches.
+              </p>
+              <div className="mt-4">
+                <div className="flex items-center justify-between text-xs text-slate-400">
+                  <span>Profil à {completion}%</span>
+                  <span>Objectif 100%</span>
                 </div>
-                <span className="shrink-0 text-[10px] text-slate-500">
-                  {item.weight}%
-                </span>
+                <div className="mt-2 h-1.5 rounded-full bg-white/10">
+                  <div
+                    className="h-1.5 rounded-full bg-emerald-400 transition-all"
+                    style={{ width: `${completion}%` }}
+                  />
+                </div>
               </div>
-            ))}
+              <Link
+                to="/profile"
+                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400"
+              >
+                Compléter mon profil <ArrowRight size={15} />
+              </Link>
+            </div>
           </div>
-        </div>
+
+          {breakdown.length > 0 && (
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl">
+              <SectionTitle
+                icon={CheckCircle2}
+                title="Complétion du profil"
+                subtitle="Cochez chaque étape pour atteindre 100%."
+                action={
+                  <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-bold text-emerald-400">
+                    {completion}%
+                  </span>
+                }
+              />
+              <div className="grid gap-2 sm:grid-cols-2">
+                {breakdown.map((item) => (
+                  <div
+                    key={item.key}
+                    className={`flex items-start gap-3 rounded-lg border p-3 transition ${
+                      item.done
+                        ? "border-emerald-500/20 bg-emerald-500/5"
+                        : "border-white/5 bg-white/[0.02]"
+                    }`}
+                  >
+                    <span
+                      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
+                        item.done
+                          ? "bg-emerald-500 text-white"
+                          : "border-2 border-slate-600 bg-transparent"
+                      }`}
+                    >
+                      {item.done && <CheckCircle2 size={12} />}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className={`text-xs font-semibold ${item.done ? "text-emerald-300" : "text-white"}`}>
+                        {item.label}
+                      </p>
+                      {!item.done && (
+                        <p className="mt-0.5 text-[10px] text-slate-500">{item.action}</p>
+                      )}
+                    </div>
+                    <span className="shrink-0 text-[10px] text-slate-500">{item.weight}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <MiniWidget
+              icon={Calendar}
+              color="mint"
+              label="Prochaine disponibilité"
+              value={nextAvailability}
+              action={{ label: "Gérer mes disponibilités", to: "/profile" }}
+            />
+            <MiniWidget
+              icon={MessageCircle}
+              color="blue"
+              label="Messages non lus"
+              value={unreadMessages}
+              action={{ label: "Ouvrir la messagerie", to: "/messages" }}
+            />
+            <MiniWidget
+              icon={Bell}
+              color="amber"
+              label="Notifications"
+              value={stats.notifications_count ?? 0}
+              action={{ label: "Tout voir", to: "/notifications" }}
+            />
+          </div>
+        </>
       )}
 
-      {/* Disponibilité + Messages + Notifications */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <MiniWidget
-          icon={Calendar}
-          color="mint"
-          label="Prochaine disponibilité"
-          value={nextAvailability}
-          action={{ label: "Gérer mes disponibilités", to: "/profile" }}
-        />
-        <MiniWidget
-          icon={MessageCircle}
-          color="blue"
-          label="Messages non lus"
-          value={unreadMessages}
-          action={{ label: "Ouvrir la messagerie", to: "/messages" }}
-        />
-        <MiniWidget
-          icon={Bell}
-          color="amber"
-          label="Notifications"
-          value={stats.notifications_count ?? 0}
-          action={{ label: "Tout voir", to: "/notifications" }}
-        />
-      </div>
-
+      {/* Activité + Opportunités */}
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl">
           <SectionTitle
@@ -754,27 +844,32 @@ function TalentDashboard({ stats, user, profile, hasProfile }) {
             }
           />
           <ul className="space-y-3">
-            {activeMissions > 0 ? (
-              <ActivityItem
-                icon={Briefcase}
-                label={`${activeMissions} mission${activeMissions > 1 ? "s" : ""} active${activeMissions > 1 ? "s" : ""}`}
-                status="En cours"
-                tone="emerald"
-                time="maintenant"
-              />
-            ) : (
-              <EmptyActivity label="Aucune mission active" />
+            {showProposals && (
+              pendingProposals > 0 ? (
+                <ActivityItem
+                  icon={Handshake}
+                  label={`${pendingProposals} proposition${pendingProposals > 1 ? "s" : ""} en attente`}
+                  status="En attente"
+                  tone="amber"
+                  time="à traiter"
+                  badge={pendingProposals}
+                />
+              ) : (
+                <EmptyActivity label="Aucune proposition en attente" />
+              )
             )}
-            {pendingProposals > 0 ? (
-              <ActivityItem
-                icon={Handshake}
-                label={`${pendingProposals} proposition${pendingProposals > 1 ? "s" : ""} en attente`}
-                status="En attente"
-                tone="amber"
-                time="à traiter"
-              />
-            ) : (
-              <EmptyActivity label="Aucune proposition en attente" />
+            {showMissions && (
+              activeMissions > 0 ? (
+                <ActivityItem
+                  icon={Briefcase}
+                  label={`${activeMissions} mission${activeMissions > 1 ? "s" : ""} active${activeMissions > 1 ? "s" : ""}`}
+                  status="En cours"
+                  tone="emerald"
+                  time="maintenant"
+                />
+              ) : (
+                <EmptyActivity label="Aucune mission active" />
+              )
             )}
             {skillsCount > 0 ? (
               <ActivityItem
@@ -839,7 +934,7 @@ function TalentDashboard({ stats, user, profile, hasProfile }) {
 }
 
 /* ============================================================
-   NOUVEAUX PETITS WIDGETS
+   PETITS WIDGETS
 ============================================================ */
 
 function MiniWidget({ icon: Icon, color, label, value, action }) {
@@ -897,7 +992,7 @@ function QuickActions({ actions }) {
    DASHBOARD UNIVERSITÉ
 ============================================================ */
 
-function UniversityDashboard({ stats }) {
+function UniversityDashboard({ stats, user }) {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -934,7 +1029,7 @@ function AdminDashboard({ stats }) {
    PETITS COMPOSANTS D'ACTIVITÉ
 ============================================================ */
 
-function ActivityItem({ icon: Icon, label, status, tone = "emerald", time }) {
+function ActivityItem({ icon: Icon, label, status, tone = "emerald", time, badge = 0 }) {
   const toneMap = {
     emerald: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30",
     amber:   "bg-amber-500/10 text-amber-300 border-amber-500/30",
@@ -944,8 +1039,13 @@ function ActivityItem({ icon: Icon, label, status, tone = "emerald", time }) {
   return (
     <li className="flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/5 p-3">
       <div className="flex items-center gap-3 min-w-0">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
+        <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
           <Icon size={16} />
+          {badge > 0 && (
+            <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[9px] font-bold text-[#0A1229]">
+              {badge}
+            </span>
+          )}
         </span>
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-white">{label}</p>

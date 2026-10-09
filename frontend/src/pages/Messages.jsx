@@ -19,6 +19,16 @@ function initials(name) {
   return (name || "?").split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 }
 
+function getAvatarPath(user) {
+  if (!user) return null;
+  return (
+    user.avatar_path ||
+    user.professional_profile?.avatar_path ||
+    user.professionalProfile?.avatar_path ||
+    null
+  );
+}
+
 function timeAgo(date) {
   if (!date) return "";
   const d = new Date(date);
@@ -63,6 +73,9 @@ export default function Messages() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
 
+  // ✅ Chat virtuel (pas encore en base)
+  const [pendingRecipient, setPendingRecipient] = useState(null);
+
   const [showNewModal, setShowNewModal] = useState(false);
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
@@ -86,7 +99,9 @@ export default function Messages() {
       .then((res) => {
         const list = res.data || [];
         setConversations(list);
-        if (!activeId && list.length > 0) setActiveId(list[0].id);
+        if (!activeId && !pendingRecipient && list.length > 0) {
+          setActiveId(list[0].id);
+        }
       })
       .finally(() => setLoading(false));
   };
@@ -97,44 +112,48 @@ export default function Messages() {
     return () => clearInterval(i);
   }, []);
 
-  // ✅ Gestion du paramètre ?to=userId
+  // ============================================
+  // ?to=userId — LOGIQUE FACEBOOK
+  // ============================================
   useEffect(() => {
     if (!targetUserId || targetHandledRef.current) return;
     targetHandledRef.current = true;
 
     const openConversationWith = async () => {
       try {
-        // 1) Charge les conversations
         const convRes = await api.get("/conversations");
         const list = convRes.data || [];
         setConversations(list);
 
-        // 2) Cherche une conversation existante
         const existing = list.find((c) =>
           c.participants?.some((p) => String(p.id) === String(targetUserId))
         );
 
         if (existing) {
           setActiveId(existing.id);
+          setPendingRecipient(null);
           setShowMobileList(false);
         } else {
-          // 3) Crée une nouvelle conversation directe
-          const createRes = await api.post("/conversations/direct", {
+          const res = await api.post("/conversations/direct", {
             user_id: Number(targetUserId),
           });
-          const newConv = createRes.data;
+          const data = res.data;
 
-          // 4) Recharge la liste
-          const refresh = await api.get("/conversations");
-          setConversations(refresh.data || []);
-
-          setActiveId(newConv.id);
-          setShowMobileList(false);
+          if (data.exists && data.conversation) {
+            setActiveId(data.conversation.id);
+            setPendingRecipient(null);
+            setShowMobileList(false);
+          } else if (data.recipient) {
+            // ✅ Chat virtuel
+            setPendingRecipient(data.recipient);
+            setActiveId(`virtual-${data.recipient.id}`);
+            setMessages([]);
+            setShowMobileList(false);
+          }
         }
       } catch (err) {
         console.error("Erreur ouverture conversation:", err);
       } finally {
-        // 5) Nettoie l'URL
         setSearchParams({}, { replace: true });
       }
     };
@@ -142,8 +161,18 @@ export default function Messages() {
     openConversationWith();
   }, [targetUserId]);
 
+  // ============================================
+  // CHARGER MESSAGES (seulement si vraie conv)
+  // ============================================
   useEffect(() => {
     if (!activeId) return;
+
+    // ✅ Chat virtuel → pas d'appel API
+    if (typeof activeId === "string" && activeId.startsWith("virtual-")) {
+      setShowMobileList(false);
+      return;
+    }
+
     setShowMobileList(false);
 
     const fetchMessages = async () => {
@@ -202,7 +231,7 @@ export default function Messages() {
   };
 
   // ============================================
-  // ENVOI
+  // ENVOI — LOGIQUE FACEBOOK
   // ============================================
   const send = async (e) => {
     e?.preventDefault();
@@ -227,17 +256,47 @@ export default function Messages() {
     setAttachment(null);
 
     try {
-      const formData = new FormData();
-      formData.append("body", text || "");
-      if (file) formData.append("attachment", file);
+      const isVirtual = typeof activeId === "string" && activeId.startsWith("virtual-");
 
-      const res = await api.post(`/conversations/${activeId}/messages`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      if (isVirtual && pendingRecipient) {
+        // ✅ CRÉER LA CONVERSATION + envoyer le 1er message
+        const fd = new FormData();
+        fd.append("participant_ids[0]", pendingRecipient.id);
+        fd.append("body", text || "");
+        if (file) fd.append("attachment", file);
 
-      setMessages((m) => m.map((msg) => (msg.id === tempMsg.id ? res.data : msg)));
-      loadConversations();
-    } catch {
+        const createRes = await api.post("/conversations", fd, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+
+        const newConv = createRes.data;
+
+        // ✅ Rafraîchit la liste
+        const refresh = await api.get("/conversations");
+        setConversations(refresh.data || []);
+
+        // ✅ Bascule sur la vraie conversation
+        setPendingRecipient(null);
+        setActiveId(newConv.id);
+
+        // ✅ Charge les messages
+        const msgRes = await api.get(`/conversations/${newConv.id}/messages`);
+        setMessages(msgRes.data || []);
+      } else {
+        // ✅ Conversation existante → envoi normal
+        const formData = new FormData();
+        formData.append("body", text || "");
+        if (file) formData.append("attachment", file);
+
+        const res = await api.post(`/conversations/${activeId}/messages`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+
+        setMessages((m) => m.map((msg) => (msg.id === tempMsg.id ? res.data : msg)));
+        loadConversations();
+      }
+    } catch (err) {
+      console.error("Erreur envoi:", err);
       setMessages((m) => m.filter((msg) => msg.id !== tempMsg.id));
       alert("Erreur d'envoi");
     } finally {
@@ -260,6 +319,7 @@ export default function Messages() {
     try {
       if (action === "open") {
         setActiveId(conv.id);
+        setPendingRecipient(null);
         return;
       }
 
@@ -302,8 +362,24 @@ export default function Messages() {
     return true;
   });
 
+  // ============================================
+  // CHAT ACTIF (réel ou virtuel)
+  // ============================================
+  const isVirtual = typeof activeId === "string" && activeId.startsWith("virtual-");
   const activeConv = conversations.find((c) => c.id === activeId);
-  const otherUser = activeConv ? getOtherParticipant(activeConv) : null;
+
+  const virtualOther = isVirtual && pendingRecipient
+    ? {
+        id: pendingRecipient.id,
+        name: pendingRecipient.name,
+        avatar_path:
+          pendingRecipient.avatar_path ||
+          pendingRecipient.professional_profile?.avatar_path,
+      }
+    : null;
+
+  const otherUser = virtualOther || (activeConv ? getOtherParticipant(activeConv) : null);
+  const hasActiveChat = Boolean(activeConv || virtualOther);
 
   function getOtherParticipant(conv) {
     return conv.participants?.find((p) => p.id !== user?.id) || conv.participants?.[0];
@@ -387,11 +463,15 @@ export default function Messages() {
               const isActive = conv.id === activeId;
               const isUnread = conv.unread_count > 0;
               const isGroup = conv.participants?.length > 2 || !!conv.title;
+              const avatarPath = getAvatarPath(other);
 
               return (
                 <button
                   key={conv.id}
-                  onClick={() => setActiveId(conv.id)}
+                  onClick={() => {
+                    setActiveId(conv.id);
+                    setPendingRecipient(null);
+                  }}
                   onContextMenu={(e) => {
                     e.preventDefault();
                     setContextMenu({ x: e.clientX, y: e.clientY, conversation: conv });
@@ -405,10 +485,10 @@ export default function Messages() {
                       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
                         <Users size={20} />
                       </div>
-                    ) : other?.avatar_path ? (
-                      <img src={`http://localhost:8000/storage/${other.avatar_path}`}
+                    ) : avatarPath ? (
+                      <img src={`http://localhost:8000/storage/${avatarPath}`}
                         className="h-12 w-12 rounded-full object-cover"
-                        alt={other.name} />
+                        alt={other?.name} />
                     ) : (
                       <div className={`flex h-12 w-12 items-center justify-center rounded-full font-bold text-[#0A1229] ${
                         isUnread ? "bg-emerald-400" : "bg-emerald-500/30 text-emerald-300"
@@ -452,9 +532,9 @@ export default function Messages() {
 
         {/* ==================== COLONNE CHAT ==================== */}
         <section className={`flex-1 flex-col bg-[#0A1229] md:flex ${
-          !showMobileList && activeConv ? "flex" : "hidden md:flex"
+          !showMobileList && hasActiveChat ? "flex" : "hidden md:flex"
         }`}>
-          {!activeConv ? (
+          {!hasActiveChat ? (
             <div className="flex flex-1 flex-col items-center justify-center text-slate-500">
               <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white/5">
                 <Send size={32} />
@@ -473,28 +553,28 @@ export default function Messages() {
                   </button>
 
                   <div className="relative shrink-0">
-                    {activeConv.title || activeConv.participants?.length > 2 ? (
+                    {activeConv?.title || activeConv?.participants?.length > 2 ? (
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
                         <Users size={18} />
                       </div>
-                    ) : otherUser?.avatar_path ? (
+                    ) : getAvatarPath(otherUser) ? (
                       <img
-                        src={`http://localhost:8000/storage/${otherUser.avatar_path}`}
+                        src={`http://localhost:8000/storage/${getAvatarPath(otherUser)}`}
                         className="h-10 w-10 rounded-full object-cover"
-                        alt={otherUser.name}
+                        alt={otherUser?.name}
                       />
                     ) : (
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/30 font-bold text-emerald-300">
                         {initials(otherUser?.name)}
                       </div>
                     )}
-                    {!(activeConv.title || activeConv.participants?.length > 2) && (
+                    {!(activeConv?.title || activeConv?.participants?.length > 2) && (
                       <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-[#0F1E45] bg-emerald-500" />
                     )}
                   </div>
 
                   <div className="min-w-0">
-                    {activeConv.title || activeConv.participants?.length > 2 ? (
+                    {activeConv?.title || activeConv?.participants?.length > 2 ? (
                       <>
                         <p className="truncate font-semibold text-white">
                           {activeConv.title || "Groupe"}
@@ -511,13 +591,15 @@ export default function Messages() {
                     )}
                   </div>
                 </div>
-                <button
-                  onClick={() => setShowInfoModal(true)}
-                  className="rounded-full p-2 text-slate-400 hover:bg-white/5 hover:text-white"
-                  title="Infos"
-                >
-                  <Info size={18} />
-                </button>
+                {activeConv && (
+                  <button
+                    onClick={() => setShowInfoModal(true)}
+                    className="rounded-full p-2 text-slate-400 hover:bg-white/5 hover:text-white"
+                    title="Infos"
+                  >
+                    <Info size={18} />
+                  </button>
+                )}
               </div>
 
               <div className="flex-1 overflow-y-auto p-4 space-y-1">
@@ -541,6 +623,8 @@ export default function Messages() {
                     nextMsg.sender_id !== msg.sender_id ||
                     new Date(nextMsg.created_at).getTime() - new Date(msg.created_at).getTime() > 60000;
 
+                  const senderAvatar = getAvatarPath(msg.sender);
+
                   return (
                     <React.Fragment key={msg.id}>
                       {showDateHeader && (
@@ -557,8 +641,8 @@ export default function Messages() {
                         {!isMine && (
                           <div className="w-7 shrink-0">
                             {showAvatar && (
-                              msg.sender?.avatar_path ? (
-                                <img src={`http://localhost:8000/storage/${msg.sender.avatar_path}`}
+                              senderAvatar ? (
+                                <img src={`http://localhost:8000/storage/${senderAvatar}`}
                                   className="h-7 w-7 rounded-full object-cover" alt="" />
                               ) : (
                                 <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/20 text-[10px] font-bold text-emerald-300">
@@ -731,6 +815,7 @@ export default function Messages() {
             if (conv) {
               loadConversations();
               setActiveId(conv.id);
+              setPendingRecipient(null);
             }
           }}
         />
@@ -743,6 +828,7 @@ export default function Messages() {
             setShowGroupModal(false);
             loadConversations();
             setActiveId(conv.id);
+            setPendingRecipient(null);
           }}
         />
       )}
@@ -807,7 +893,19 @@ function NewConversationModal({ onClose, onCreated }) {
     setCreating(true);
     try {
       const res = await api.post("/conversations/direct", { user_id: userId });
-      onCreated(res.data);
+      const data = res.data;
+
+      // ✅ Conversation existante
+      if (data.exists && data.conversation) {
+        onCreated(data.conversation);
+      }
+      // ✅ Nouveau chat virtuel → on passe le destinataire
+      else if (data.recipient) {
+        onCreated({
+          id: `virtual-${data.recipient.id}`,
+          recipient: data.recipient,
+        });
+      }
     } catch {
       alert("Erreur lors de la création");
     } finally {
@@ -882,30 +980,33 @@ function NewConversationModal({ onClose, onCreated }) {
             <p className="py-6 text-center text-sm text-slate-500">Aucune suggestion</p>
           )}
 
-          {displayUsers.map((u) => (
-            <button
-              key={u.id}
-              onClick={() => startDirect(u.id)}
-              disabled={creating}
-              className="flex w-full items-center gap-3 px-4 py-2 text-left transition hover:bg-white/5 disabled:opacity-50"
-            >
-              {u.avatar_path ? (
-                <img src={`http://localhost:8000/storage/${u.avatar_path}`}
-                  className="h-10 w-10 rounded-full object-cover" alt="" />
-              ) : (
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20 font-bold text-emerald-300">
-                  {initials(u.name)}
+          {displayUsers.map((u) => {
+            const avatarPath = getAvatarPath(u);
+            return (
+              <button
+                key={u.id}
+                onClick={() => startDirect(u.id)}
+                disabled={creating}
+                className="flex w-full items-center gap-3 px-4 py-2 text-left transition hover:bg-white/5 disabled:opacity-50"
+              >
+                {avatarPath ? (
+                  <img src={`http://localhost:8000/storage/${avatarPath}`}
+                    className="h-10 w-10 rounded-full object-cover" alt="" />
+                ) : (
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20 font-bold text-emerald-300">
+                    {initials(u.name)}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-white">{u.name}</p>
+                  <p className="truncate text-xs text-slate-500">
+                    {u.role === "company" ? "Entreprise" : u.role === "student" ? "Étudiant" : "Talent"}
+                    {u.email && ` · ${u.email}`}
+                  </p>
                 </div>
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-white">{u.name}</p>
-                <p className="truncate text-xs text-slate-500">
-                  {u.role === "company" ? "Entreprise" : u.role === "student" ? "Étudiant" : "Talent"}
-                  {u.email && ` · ${u.email}`}
-                </p>
-              </div>
-            </button>
-          ))}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>

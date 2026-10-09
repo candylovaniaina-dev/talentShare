@@ -197,31 +197,124 @@ class MissionController extends Controller
         return response()->json($mission);
     }
 
-    public function updateStatus(Request $request, Mission $mission)
-    {
-        $companyIds = $request->user()->companies()->pluck('id');
+    public function updateStatus(Request $request, Mission $mission, NotificationService $notifications)
+{
+    $user = $request->user();
+    $companyIds = $user->companies()->pluck('id');
+
+    $isSupplying  = $companyIds->contains($mission->supplying_company_id);
+    $isRequesting = $companyIds->contains($mission->requesting_company_id);
+
+    abort_unless($isSupplying || $isRequesting, 403, 'Non autorisé.');
+
+    $data = $request->validate([
+        'status' => ['required', 'in:planned,active,completed,cancelled']
+    ]);
+
+    $newStatus = $data['status'];
+    $oldStatus = $mission->status;
+
+    // ============================================
+    // ✅ RÈGLES MÉTIER PAR TRANSITION
+    // ============================================
+
+    // ▶️ planned → active : SEUL LE PRÊTEUR peut démarrer
+    if ($newStatus === 'active' && $oldStatus === 'planned') {
         abort_unless(
-            $companyIds->contains($mission->requesting_company_id) ||
-            $companyIds->contains($mission->supplying_company_id),
-            403
+            $isSupplying,
+            403,
+            'Seule l\'entreprise prêteuse peut démarrer la mission.'
         );
-
-        $data = $request->validate([
-            'status' => ['required', 'in:planned,active,completed,cancelled']
-        ]);
-
-        $mission->update($data);
-
-        // ✅ Quand la mission est terminée, on clôture l'offre
-        if ($data['status'] === 'completed') {
-            $mission->resourceOffer?->update(['status' => 'closed']);
-        }
-
-        // Si annulée après acceptation, on rouvre l'offre
-        if ($data['status'] === 'cancelled' && $mission->resourceOffer?->status === 'closed') {
-            $mission->resourceOffer->update(['status' => 'published']);
-        }
-
-        return $mission->load(['profile.user', 'supplyingCompany', 'requestingCompany']);
     }
+
+    // ✅ active → completed : prêteur OU emprunteur
+    if ($newStatus === 'completed' && $oldStatus === 'active') {
+        abort_unless(
+            $isSupplying || $isRequesting,
+            403,
+            'Seule une entreprise liée peut terminer la mission.'
+        );
+    }
+
+    // ❌ Transition invalide
+    if (!in_array($newStatus, ['active', 'completed', 'cancelled'])) {
+        return response()->json(['message' => 'Transition non autorisée.'], 422);
+    }
+
+    $mission->update(['status' => $newStatus]);
+
+    // ============================================
+    // ✅ NOTIFICATIONS
+    // ============================================
+
+    try {
+        // 🚀 Mission démarrée → notifier le salarié
+        if ($newStatus === 'active' && $oldStatus === 'planned') {
+            if ($mission->profile?->user) {
+                $notifications->notify(
+                    $mission->profile->user,
+                    'mission_started',
+                    '🚀 La mission a démarré',
+                    "L'entreprise {$mission->supplyingCompany?->name} a démarré la mission du " .
+                    $mission->start_at->format('d/m/Y') . " au " .
+                    $mission->end_at->format('d/m/Y') . ". Bonne mission !",
+                    $mission,
+                    ['mission_id' => $mission->id]
+                );
+            }
+
+            // Notifier aussi l'emprunteur s'il existe
+            if ($mission->requestingCompany?->owner) {
+                $notifications->notify(
+                    $mission->requestingCompany->owner,
+                    'mission_started',
+                    '🚀 Mission démarrée',
+                    "La mission avec {$mission->profile?->user?->name} a démarré.",
+                    $mission
+                );
+            }
+        }
+
+        // ✅ Mission terminée → notifier le salarié
+        if ($newStatus === 'completed') {
+            if ($mission->profile?->user) {
+                $notifications->notify(
+                    $mission->profile->user,
+                    'mission_completed',
+                    '✅ Mission terminée',
+                    "La mission du " . $mission->start_at->format('d/m/Y') .
+                    " au " . $mission->end_at->format('d/m/Y') . " est terminée.",
+                    $mission
+                );
+            }
+        }
+
+        // ❌ Mission annulée → notifier le salarié
+        if ($newStatus === 'cancelled' && $oldStatus !== 'cancelled') {
+            if ($mission->profile?->user) {
+                $notifications->notify(
+                    $mission->profile->user,
+                    'mission_cancelled',
+                    '❌ Mission annulée',
+                    "La mission a été annulée par l'entreprise.",
+                    $mission
+                );
+            }
+        }
+    } catch (\Exception $e) {
+        \Log::warning('Notification failed: ' . $e->getMessage());
+    }
+
+    // Rouvrir l'offre si annulée après acceptation
+    if ($newStatus === 'cancelled' && $mission->resourceOffer?->status === 'closed') {
+        $mission->resourceOffer->update(['status' => 'published']);
+    }
+
+    // Fermer l'offre à la complétion
+    if ($newStatus === 'completed') {
+        $mission->resourceOffer?->update(['status' => 'closed']);
+    }
+
+    return $mission->load(['profile.user', 'supplyingCompany', 'requestingCompany']);
+}
 }

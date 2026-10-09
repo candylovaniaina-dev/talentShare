@@ -8,29 +8,35 @@ use App\Models\ResourceRequest;
 use App\Services\MatchingService;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
+use App\Models\ResourceRequestComment;
+use App\Models\ResourceRequestLike;
+use App\Models\Notification;
+use Illuminate\Support\Str;
 
 class ResourceRequestController extends Controller
 {
     // ============================================
-    // INDEX — Public (talents) OU Mes demandes (entreprises)
+    // INDEX — Public OU Mes demandes
     // ============================================
     public function index(Request $request)
     {
         $user = auth('sanctum')->user();
 
-        // ✅ Mes demandes
+        // ✅ Mes demandes (entreprises + talents)
         if ($request->boolean('my')) {
             abort_unless($user, 401);
 
-            // ⚠️ FIX : toArray() obligatoire pour scopeMyCompany
             $companyIds = $user->companies()->pluck('id')->toArray();
 
-            return ResourceRequest::myCompany($companyIds)
+            // ✅ FIX : retiré published() — myPublications fait déjà le filtre
+            return ResourceRequest::myPublications($user->id, $companyIds)
                 ->with([
                     'company:id,name,logo_path',
+                    'author:id,name,role',
+                    'author.professionalProfile:id,user_id,avatar_path,headline',  // ✅ FIX
                     'skills',
                 ])
-                ->withCount('proposals')
+                ->withCount(['proposals', 'likes', 'comments'])
                 ->latest()
                 ->get()
                 ->map(fn ($r) => $this->appendDisplayData($r));
@@ -40,10 +46,15 @@ class ResourceRequestController extends Controller
         return ResourceRequest::published()
             ->with([
                 'company:id,name,logo_path,city,country,is_verified',
+                'author:id,name,role',
+                'author.professionalProfile:id,user_id,avatar_path,headline',  // ✅ FIX
                 'skills.category.parent',
                 'skills.category',
             ])
-            ->withCount('proposals')
+            ->withCount(['proposals', 'likes', 'comments'])
+            ->when($user, function ($q) use ($user) {
+                $q->with(['likes' => fn ($lq) => $lq->where('user_id', $user->id)]);
+            })
             ->when($request->search, fn ($q, $s) => $q->search($s))
             ->when($request->skill_id, fn ($q, $id) =>
                 $q->whereHas('skills', fn ($sq) => $sq->where('skills.id', $id))
@@ -56,26 +67,34 @@ class ResourceRequestController extends Controller
             ->when($request->budget_max, fn ($q, $v) => $q->where('budget_min', '<=', $v))
             ->latest()
             ->paginate($request->get('per_page', 15))
-            ->through(fn ($r) => $this->appendDisplayData($r));
+            ->through(function ($r) use ($user) {
+                $r->is_liked = $user ? $r->likes->where('user_id', $user->id)->isNotEmpty() : false;
+                unset($r->likes);
+                return $this->appendDisplayData($r);
+            });
     }
 
     // ============================================
-    // SHOW — Détail public
+    // SHOW
     // ============================================
     public function show(Request $request, ResourceRequest $resourceRequest)
     {
         $this->authorize('view', $resourceRequest);
 
         $user = auth('sanctum')->user();
-        $isOwner = $user && $user->companies()->where('id', $resourceRequest->company_id)->exists();
+        $isOwner = $user && (
+            $user->id === $resourceRequest->created_by
+            || $user->companies()->where('id', $resourceRequest->company_id)->exists()
+        );
 
-        // ✅ Incrémenter les vues si ce n'est pas le propriétaire
         if (!$isOwner) {
             $resourceRequest->increment('views_count');
         }
 
         $resourceRequest->load([
             'company:id,name,logo_path,city,country,is_verified,description',
+            'author:id,name,role',
+            'author.professionalProfile:id,user_id,avatar_path,headline',  // ✅ FIX
             'skills.category.parent',
             'skills.category',
             'creator:id,name',
@@ -88,26 +107,41 @@ class ResourceRequestController extends Controller
     }
 
     // ============================================
-    // STORE — Création
+    // STORE — Entreprise OU Talent
     // ============================================
     public function store(ResourceRequestRequest $request, NotificationService $notifications)
     {
-        if ($request->user()->companies()->where('id', $request->company_id)->doesntExist()) {
-            return response()->json(['message' => 'Cette entreprise ne vous appartient pas.'], 403);
-        }
-
+        $user = $request->user();
         $data = $request->validated();
         $skills = $data['skills'] ?? [];
         unset($data['skills']);
 
-        $data['created_by'] = $request->user()->id;
+        // ✅ Cas 1 : Entreprise (company_id fourni)
+        if (!empty($data['company_id'])) {
+            if ($user->companies()->where('id', $data['company_id'])->doesntExist()) {
+                return response()->json(['message' => 'Cette entreprise ne vous appartient pas.'], 403);
+            }
+            $data['author_type'] = 'company';
+        }
+        // ✅ Cas 2 : Talent (pas de company_id)
+        else {
+            if (!$user->isTalent()) {
+                return response()->json([
+                    'message' => 'Seules les entreprises ou les talents peuvent publier.',
+                ], 403);
+            }
+            $data['company_id'] = null;
+            $data['author_type'] = 'talent';
+        }
 
-        // ✅ Auto-expiration 60 jours par défaut
+        $data['created_by'] = $user->id;
+
+        // ✅ Auto-expiration 60 jours
         if (empty($data['expires_at']) && ($data['status'] ?? 'draft') === 'published') {
             $data['expires_at'] = now()->addDays(60)->toDateString();
         }
 
-        // ✅ Tags : s'assurer que c'est un array
+        // ✅ Tags
         if (isset($data['tags']) && !is_array($data['tags'])) {
             $data['tags'] = $data['tags'] ? [$data['tags']] : null;
         }
@@ -123,14 +157,7 @@ class ResourceRequestController extends Controller
         }
 
         $resourceRequest = ResourceRequest::create($data);
-
-        if ($skills) {
-            $resourceRequest->skills()->sync(
-                collect($skills)->mapWithKeys(fn ($s) => [
-                    $s['skill_id'] => ['min_level' => $s['min_level'] ?? 'intermediate'],
-                ])
-            );
-        }
+        $this->syncSkills($resourceRequest, $skills);
 
         // ✅ Notifier les talents matching si publiée
         if ($resourceRequest->status === 'published') {
@@ -142,7 +169,12 @@ class ResourceRequestController extends Controller
         }
 
         return response()->json(
-            $this->appendDisplayData($resourceRequest->load('skills')),
+            $this->appendDisplayData($resourceRequest->load([
+                'skills',
+                'company',
+                'author',
+                'author.professionalProfile:id,user_id,avatar_path,headline',  // ✅ FIX
+            ])),
             201
         );
     }
@@ -158,7 +190,6 @@ class ResourceRequestController extends Controller
         $skills = $data['skills'] ?? null;
         unset($data['skills']);
 
-        // ✅ Tags : s'assurer que c'est un array
         if (isset($data['tags']) && !is_array($data['tags'])) {
             $data['tags'] = $data['tags'] ? [$data['tags']] : null;
         }
@@ -167,14 +198,9 @@ class ResourceRequestController extends Controller
         $resourceRequest->update($data);
 
         if ($skills !== null) {
-            $resourceRequest->skills()->sync(
-                collect($skills)->mapWithKeys(fn ($s) => [
-                    $s['skill_id'] => ['min_level' => $s['min_level'] ?? 'intermediate'],
-                ])
-            );
+            $this->syncSkills($resourceRequest, $skills);
         }
 
-        // ✅ Draft → Published → notifier
         if ($wasDraft && $resourceRequest->status === 'published') {
             try {
                 $this->notifyMatchingTalents($resourceRequest, app(NotificationService::class));
@@ -183,7 +209,12 @@ class ResourceRequestController extends Controller
             }
         }
 
-        return $this->appendDisplayData($resourceRequest->load('skills'));
+        return $this->appendDisplayData($resourceRequest->load([
+            'skills',
+            'company',
+            'author',
+            'author.professionalProfile:id,user_id,avatar_path,headline',  // ✅ FIX
+        ]));
     }
 
     // ============================================
@@ -200,10 +231,6 @@ class ResourceRequestController extends Controller
     // ============================================
     // ACTIONS DE STATUT
     // ============================================
-
-    /**
-     * ✅ Publier (draft/paused → published)
-     */
     public function publish(ResourceRequest $resourceRequest, NotificationService $notifications)
     {
         $this->authorize('changeStatus', $resourceRequest);
@@ -228,13 +255,14 @@ class ResourceRequestController extends Controller
             \Log::warning('notifyMatchingTalents failed: ' . $e->getMessage());
         }
 
-        return $this->appendDisplayData($resourceRequest->load('skills'));
+        return $this->appendDisplayData($resourceRequest->load([
+            'skills',
+            'company',
+            'author',
+            'author.professionalProfile:id,user_id,avatar_path,headline',  // ✅ FIX
+        ]));
     }
 
-    /**
-     * ✅ Pause (published/expired → paused)
-     * ⚠️ FIX : accepte aussi 'expired' pour éviter le 409
-     */
     public function pause(ResourceRequest $resourceRequest)
     {
         $this->authorize('changeStatus', $resourceRequest);
@@ -254,10 +282,6 @@ class ResourceRequestController extends Controller
         return $this->appendDisplayData($resourceRequest);
     }
 
-    /**
-     * ✅ Fermer (published/paused/expired → closed)
-     * ⚠️ FIX : accepte aussi 'expired'
-     */
     public function close(ResourceRequest $resourceRequest)
     {
         $this->authorize('changeStatus', $resourceRequest);
@@ -278,10 +302,6 @@ class ResourceRequestController extends Controller
         return $this->appendDisplayData($resourceRequest);
     }
 
-    /**
-     * ✅ Marquer pourvue (published/paused/expired → filled)
-     * ⚠️ FIX : accepte aussi 'expired'
-     */
     public function markFilled(ResourceRequest $resourceRequest)
     {
         $this->authorize('changeStatus', $resourceRequest);
@@ -302,9 +322,6 @@ class ResourceRequestController extends Controller
         return $this->appendDisplayData($resourceRequest);
     }
 
-    /**
-     * ✅ Dupliquer
-     */
     public function duplicate(ResourceRequest $resourceRequest)
     {
         $this->authorize('view', $resourceRequest);
@@ -319,7 +336,6 @@ class ResourceRequestController extends Controller
         $clone->proposals_count = 0;
         $clone->save();
 
-        // Copier les compétences
         $pivot = $resourceRequest->skills
             ->pluck('pivot.min_level', 'id')
             ->mapWithKeys(fn ($lvl, $id) => [$id => ['min_level' => $lvl]])
@@ -341,16 +357,137 @@ class ResourceRequestController extends Controller
 
         $ranked = $matching->rankCandidates($resourceRequest, 30);
 
+        $ranked = $ranked->filter(function ($item) {
+            $user = $item['profile']->user ?? null;
+            if (!$user) return false;
+            return in_array($user->role, ['employee', 'student']);
+        });
+
         return response()->json(
-            $ranked->map(fn ($item) => [
+            $ranked->values()->map(fn ($item) => [
                 'profile_id'   => $item['profile']->id,
                 'name'         => $item['profile']->user->name,
                 'headline'     => $item['profile']->headline,
                 'avatar_path'  => $item['profile']->avatar_path,
                 'city'         => $item['profile']->city,
+                'role'         => $item['profile']->user->role,
                 'match'        => $item['match'],
             ])
         );
+    }
+
+    // ============================================
+    // ✅ INTERACTIONS SOCIALES
+    // ============================================
+
+    public function toggleLike(Request $request, ResourceRequest $resourceRequest)
+    {
+        $user = $request->user();
+
+        $existing = ResourceRequestLike::where('resource_request_id', $resourceRequest->id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if ($existing) {
+            $existing->delete();
+            $liked = false;
+        } else {
+            ResourceRequestLike::create([
+                'resource_request_id' => $resourceRequest->id,
+                'user_id' => $user->id,
+            ]);
+            $liked = true;
+
+            $ownerId = $resourceRequest->created_by;
+            if ($ownerId && $ownerId !== $user->id) {
+                try {
+                    Notification::create([
+                        'user_id' => $ownerId,
+                        'type' => 'request_liked',
+                        'title' => '❤️ Nouveau J\'aime',
+                        'body' => "{$user->name} a aimé votre demande « {$resourceRequest->title} »",
+                        'subject_type' => ResourceRequest::class,
+                        'subject_id' => $resourceRequest->id,
+                        'data' => json_encode([
+                            'url' => "/resource-requests/{$resourceRequest->id}",
+                            'request_id' => $resourceRequest->id,
+                        ]),
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::warning('Erreur notif like: ' . $e->getMessage());
+                }
+            }
+        }
+
+        $likesCount = ResourceRequestLike::where('resource_request_id', $resourceRequest->id)->count();
+
+        return response()->json([
+            'liked' => $liked,
+            'likes_count' => $likesCount,
+        ]);
+    }
+
+    public function comment(Request $request, ResourceRequest $resourceRequest)
+    {
+        $data = $request->validate([
+            'content' => 'required|string|max:2000',
+        ]);
+
+        $user = $request->user();
+
+        $comment = ResourceRequestComment::create([
+            'resource_request_id' => $resourceRequest->id,
+            'user_id' => $user->id,
+            'content' => $data['content'],
+        ]);
+
+        $ownerId = $resourceRequest->created_by;
+        if ($ownerId && $ownerId !== $user->id) {
+            try {
+                Notification::create([
+                    'user_id' => $ownerId,
+                    'type' => 'request_commented',
+                    'title' => '💬 Nouveau commentaire',
+                    'body' => "{$user->name} a commenté votre demande « {$resourceRequest->title} » : "
+                              . Str::limit($data['content'], 60),
+                    'subject_type' => ResourceRequest::class,
+                    'subject_id' => $resourceRequest->id,
+                    'data' => json_encode([
+                        'url' => "/resource-requests/{$resourceRequest->id}",
+                        'request_id' => $resourceRequest->id,
+                        'comment_id' => $comment->id,
+                    ]),
+                ]);
+            } catch (\Exception $e) {
+                \Log::warning('Erreur notif comment: ' . $e->getMessage());
+            }
+        }
+
+        return response()->json([
+            'message' => 'Commentaire ajouté ✅',
+            'comment' => $comment->load('user:id,name,avatar_path'),
+        ], 201);
+    }
+
+    public function comments(Request $request, ResourceRequest $resourceRequest)
+    {
+        $comments = ResourceRequestComment::where('resource_request_id', $resourceRequest->id)
+            ->with('user:id,name,avatar_path')
+            ->latest()
+            ->limit(50)
+            ->get();
+
+        return response()->json(['data' => $comments]);
+    }
+
+    public function share(Request $request, ResourceRequest $resourceRequest)
+    {
+        $resourceRequest->increment('shares_count');
+
+        return response()->json([
+            'success' => true,
+            'shares_count' => $resourceRequest->fresh()->shares_count,
+        ]);
     }
 
     // ============================================
@@ -359,14 +496,14 @@ class ResourceRequestController extends Controller
     private function appendDisplayData(ResourceRequest $r): ResourceRequest
     {
         try {
-            $r->append(['display_status', 'status_label', 'days_until_expiry', 'is_open']);
+            $r->append(['display_status', 'status_label', 'days_until_expiry', 'is_open', 'is_talent_request']);
         } catch (\Exception $e) {
             \Log::warning('appendDisplayData failed: ' . $e->getMessage());
-            // Fallback minimal
             $r->display_status = $r->status;
             $r->status_label = $r->status;
             $r->days_until_expiry = null;
             $r->is_open = false;
+            $r->is_talent_request = false;
         }
         return $r;
     }
@@ -382,11 +519,15 @@ class ResourceRequestController extends Controller
                 $user = $item['profile']->user;
                 if (!$user) continue;
 
+                $authorName = $request->author_type === 'talent'
+                    ? ($request->author?->name ?? 'Un talent')
+                    : ($request->company?->name ?? 'Une entreprise');
+
                 $notifications->notify(
                     $user,
                     'resource_request_published',
                     '🎯 Nouvelle demande correspondant à votre profil',
-                    "{$request->company->name} recherche : {$request->title}",
+                    "{$authorName} recherche : {$request->title}",
                     $request,
                     [
                         'resource_request_id' => $request->id,
@@ -397,5 +538,42 @@ class ResourceRequestController extends Controller
         } catch (\Exception $e) {
             \Log::warning('notifyMatchingTalents failed: ' . $e->getMessage());
         }
+    }
+
+    private function syncSkills(ResourceRequest $resourceRequest, array $skills): void
+    {
+        if (empty($skills)) {
+            $resourceRequest->skills()->detach();
+            return;
+        }
+
+        $syncData = [];
+
+        foreach ($skills as $item) {
+            $minLevel = $item['min_level'] ?? 'intermediate';
+            $skillId = $item['skill_id'] ?? null;
+            $name = isset($item['name']) ? trim($item['name']) : null;
+
+            if ($skillId) {
+                $exists = \App\Models\Skill::where('id', $skillId)->exists();
+                if ($exists) {
+                    $syncData[$skillId] = ['min_level' => $minLevel];
+                    continue;
+                }
+            }
+
+            if ($name) {
+                $skill = \App\Models\Skill::whereRaw('LOWER(name) = ?', [strtolower($name)])->first();
+                if (!$skill) {
+                    $skill = \App\Models\Skill::create([
+                        'name' => $name,
+                        'category_id' => null,
+                    ]);
+                }
+                $syncData[$skill->id] = ['min_level' => $minLevel];
+            }
+        }
+
+        $resourceRequest->skills()->sync($syncData);
     }
 }

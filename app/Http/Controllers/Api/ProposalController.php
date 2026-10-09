@@ -16,43 +16,58 @@ class ProposalController extends Controller
     // ============================================
     // INDEX — Mes propositions (envoyées + reçues)
     // ============================================
-    public function received(Request $request)
-    {
-        try {
-            $user = $request->user();
-            $companyIds = $user->companies()->pluck('id')->toArray();
-            $profile = $user->professionalProfile;
+   public function received(Request $request)
+{
+    try {
+        $user = $request->user();
+        $companyIds = $user->companies()->pluck('id')->toArray();
+        $profile = $user->professionalProfile;
 
-            return Proposal::where(function ($q) use ($companyIds, $profile) {
-                    if (!empty($companyIds)) {
-                        $q->whereIn('to_company_id', $companyIds)
-                          ->orWhereHas('resourceRequest', fn ($sq) => $sq->whereIn('company_id', $companyIds));
-                    }
-                    if ($profile) {
-                        $q->orWhere('professional_profile_id', $profile->id);
-                    }
-                    if (empty($companyIds) && !$profile) {
-                        $q->whereRaw('1 = 0');
-                    }
-                })
-                ->with([
-                    'profile.user:id,name',
-                    'profile:id,user_id,headline,avatar_path',
-                    'proposingCompany:id,name,logo_path',
-                    'toCompany:id,name,logo_path',
-                    'resourceRequest:id,title,company_id',
-                    'resourceOffer:id,title',
-                    'documents:id,documentable_id,documentable_type,type,file_path,status',
-                ])
-                ->latest()
-                ->get()
-                ->map(fn ($p) => $this->appendDisplay($p));
-        } catch (\Exception $e) {
-            \Log::error('received() failed: ' . $e->getMessage());
-            return response()->json(['error' => $e->getMessage()], 500);
+        $query = Proposal::query();
+
+        // ✅ CAS 1 : Utilisateur est une ENTREPRISE
+        if (!empty($companyIds)) {
+            $query->where(function ($q) use ($companyIds) {
+                $q->whereIn('to_company_id', $companyIds)
+                  ->orWhereHas('resourceRequest', fn ($sq) => $sq->whereIn('company_id', $companyIds));
+            });
         }
-    }
 
+        // ✅ CAS 2 : Utilisateur est un TALENT (mais pas via son entreprise)
+        if ($profile && empty($companyIds)) {
+            // Le talent reçoit les propositions faites à SON profil
+            $query->where('professional_profile_id', $profile->id);
+        } elseif ($profile && !empty($companyIds)) {
+            // Le talent a aussi une entreprise → on ajoute ses propositions reçues
+            $query->orWhere(function ($q) use ($profile) {
+                $q->where('professional_profile_id', $profile->id)
+                  ->whereNull('to_company_id')
+                  ->whereNull('resource_request_id');
+            });
+        }
+
+        if (empty($companyIds) && !$profile) {
+            return response()->json([]);
+        }
+
+        return $query
+            ->with([
+                'profile.user:id,name',
+                'profile:id,user_id,headline,avatar_path',
+                'proposingCompany:id,name,logo_path',
+                'toCompany:id,name,logo_path',
+                'resourceRequest:id,title,company_id',
+                'resourceOffer:id,title',
+                'documents:id,documentable_id,documentable_type,type,file_path,status',
+            ])
+            ->latest()
+            ->get()
+            ->map(fn ($p) => $this->appendDisplay($p));
+    } catch (\Exception $e) {
+        \Log::error('received() failed: ' . $e->getMessage());
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+}
     public function sent(Request $request)
     {
         try {
@@ -398,16 +413,17 @@ class ProposalController extends Controller
         return $p;
     }
 
-    private function notifyRecipient(Proposal $proposal): void
-    {
-        try {
-            $notifications = app(NotificationService::class);
+   private function notifyRecipient(Proposal $proposal): void
+{
+    try {
+        $notifications = app(NotificationService::class);
 
-            $recipient = $proposal->toCompany ?? $proposal->resourceRequest?->company;
-            if (!$recipient?->owner) return;
+        // ✅ CAS 1 : Proposition à une ENTREPRISE (via ResourceRequest)
+        $targetCompany = $proposal->toCompany ?? $proposal->resourceRequest?->company;
 
+        if ($targetCompany?->owner) {
             $notifications->notify(
-                $recipient->owner,
+                $targetCompany->owner,
                 'proposal_received',
                 '📥 Nouvelle proposition reçue',
                 "{$proposal->proposingCompany->name} vous propose : {$proposal->profile->user->name}",
@@ -417,10 +433,26 @@ class ProposalController extends Controller
                     'match_score' => $proposal->match_score,
                 ]
             );
-        } catch (\Exception $e) {
-            \Log::warning('notifyRecipient failed: ' . $e->getMessage());
         }
+
+        // ✅ CAS 2 : Proposition DIRECTE à un TALENT
+        if (!$targetCompany && $proposal->profile?->user) {
+            $notifications->notify(
+                $proposal->profile->user,
+                'proposal_received',
+                '🎯 Nouvelle opportunité !',
+                "{$proposal->proposingCompany->name} souhaite vous proposer une mission.",
+                $proposal,
+                [
+                    'proposal_id' => $proposal->id,
+                    'match_score' => $proposal->match_score,
+                ]
+            );
+        }
+    } catch (\Exception $e) {
+        \Log::warning('notifyRecipient failed: ' . $e->getMessage());
     }
+}
 
     private function authorizeSender(Request $request, Proposal $proposal): void
     {

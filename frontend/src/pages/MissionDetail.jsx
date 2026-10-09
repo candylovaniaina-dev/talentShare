@@ -1,42 +1,48 @@
 import React, { useEffect, useState } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft, Building2, Calendar, Clock, User, CheckCircle,
   XCircle, PlayCircle, Flag, Loader2, MessageSquare, Timer,
-  AlertCircle, FileText, History,
+  AlertCircle, FileText, X, Sparkles, Target,
 } from "lucide-react";
 import AppShell from "../components/layout/AppShell";
-import Toast from "../components/ui/Toast";
-import { useToast } from "../hooks/useToast";
+import { useToast } from "../context/ToastContext";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import DocumentUploader from "../components/documents/DocumentUploader";
 import DocumentList from "../components/documents/DocumentList";
 
+/* ============================================================
+   CONFIG
+============================================================ */
 const STATUS_CONFIG = {
-  pending_employee: { label: "⏳ En attente du salarié",          badge: "bg-amber-100 text-amber-700" },
-  planned:          { label: "📅 Acceptée — prête à démarrer",   badge: "bg-blue-100 text-blue-700" },
-  active:           { label: "🟢 En cours",                       badge: "bg-emerald-100 text-emerald-700" },
-  completed:        { label: "✅ Terminée",                       badge: "bg-slate-100 text-slate-600" },
-  cancelled:        { label: "❌ Annulée",                        badge: "bg-rose-100 text-rose-700" },
+  pending_employee: { label: "En attente du salarié",  tone: "amber"   },
+  planned:          { label: "Acceptée",               tone: "blue"    },
+  active:           { label: "En cours",               tone: "emerald" },
+  completed:        { label: "Terminée",               tone: "slate"   },
+  cancelled:        { label: "Annulée",                tone: "rose"    },
+};
+
+const TONE_STYLES = {
+  emerald: "border-emerald-500/40 bg-emerald-500/10 text-emerald-400",
+  amber:   "border-amber-500/40 bg-amber-500/10 text-amber-400",
+  rose:    "border-rose-500/40 bg-rose-500/10 text-rose-400",
+  blue:    "border-blue-500/40 bg-blue-500/10 text-blue-400",
+  slate:   "border-[var(--border-app)] bg-[var(--bg-surface-hover)] text-[var(--text-muted)]",
 };
 
 function computeTimeline(mission) {
   if (!mission?.start_at || !mission?.end_at) return null;
-
   const now = new Date();
   const start = new Date(mission.start_at);
   const end = new Date(mission.end_at);
-
   const totalMs = end - start;
   const elapsedMs = now - start;
   const remainingMs = end - now;
-
   const days = (ms) => Math.ceil(ms / (1000 * 60 * 60 * 24));
   const percent = totalMs > 0
     ? Math.max(0, Math.min(100, Math.round((elapsedMs / totalMs) * 100)))
     : 0;
-
   return {
     totalDays: days(totalMs),
     elapsedDays: Math.max(0, days(elapsedMs)),
@@ -47,15 +53,18 @@ function computeTimeline(mission) {
   };
 }
 
+/* ============================================================
+   PAGE
+============================================================ */
 export default function MissionDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [mission, setMission] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [showDocs, setShowDocs] = useState(false);
   const [docsRefresh, setDocsRefresh] = useState(0);
-  const { toast, show: showToast, close: closeToast } = useToast();
 
   const load = () => {
     setLoading(true);
@@ -75,8 +84,8 @@ export default function MissionDetail() {
       if (action === "active")    await api.patch(`/missions/${id}/status`, { status: "active" });
       if (action === "completed") await api.patch(`/missions/${id}/status`, { status: "completed" });
 
-      showToast("✅ Action effectuée", "success");
-      setTimeout(() => load(), 800);
+      showToast("Action effectuée", "success");
+      setTimeout(() => load(), 500);
     } catch (err) {
       showToast(err.response?.data?.message || "Erreur serveur", "error");
     } finally {
@@ -88,7 +97,7 @@ export default function MissionDetail() {
     return (
       <AppShell>
         <div className="flex h-64 items-center justify-center">
-          <Loader2 className="animate-spin text-navy" size={32} />
+          <Loader2 className="animate-spin text-emerald-400" size={32} />
         </div>
       </AppShell>
     );
@@ -97,11 +106,12 @@ export default function MissionDetail() {
   if (!mission) {
     return (
       <AppShell>
-        <p className="text-center text-slate-400 py-10">Mission introuvable</p>
+        <p className="text-center text-[var(--text-muted)] py-10">Mission introuvable</p>
       </AppShell>
     );
   }
 
+  /* ---------- Rôles ---------- */
   const myProfileId =
     user?.professional_profile?.id ||
     user?.professionalProfile?.id ||
@@ -112,255 +122,304 @@ export default function MissionDetail() {
   const isEmployee   = myProfileId && Number(mission.professional_profile_id) === Number(myProfileId);
   const isSupplying  = myCompanyIds.includes(mission.supplying_company_id);
   const isRequesting = myCompanyIds.includes(mission.requesting_company_id);
+  const isCompany    = isSupplying || isRequesting;
 
   const cfg = STATUS_CONFIG[mission.status] || STATUS_CONFIG.planned;
   const timeline = computeTimeline(mission);
 
   return (
     <AppShell>
-      <div className="max-w-4xl mx-auto">
-        <Link to="/missions" className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-navy mb-6">
+      <div className="mx-auto max-w-4xl">
+
+        {/* Retour */}
+        <Link
+          to="/missions"
+          className="mb-6 inline-flex items-center gap-1.5 text-sm text-[var(--text-muted)] hover:text-emerald-400 transition"
+        >
           <ArrowLeft size={15} /> Toutes mes missions
         </Link>
 
-        {/* ============ HEADER ============ */}
-        <div className="rounded-3xl bg-navy p-8 text-white">
-          <div className="flex items-start justify-between flex-wrap gap-4">
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-wider text-mint">Mission</p>
-              <h1 className="mt-2 text-3xl font-bold">
-                {mission.resource_offer?.title || "Mission"}
-              </h1>
-              <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-slate-300">
-                <span className="flex items-center gap-1.5">
-                  <Building2 size={14} /> {mission.supplying_company?.name}
+        {/* ============================================
+            BLOC UNIQUE (header + infos + actions)
+        ============================================ */}
+        <div className="rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] overflow-hidden">
+
+          {/* HEADER */}
+          <div className="border-b border-[var(--border-app)] p-6">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div className="flex items-start gap-4">
+                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 shrink-0">
+                  <FileText size={20} />
                 </span>
-                <span>→</span>
-                <span className="flex items-center gap-1.5">
-                  <Building2 size={14} /> {mission.requesting_company?.name || "?"}
-                </span>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-400">
+                    Mission #{mission.id}
+                  </p>
+                  <h1 className="mt-1 text-2xl font-bold text-[var(--text-app)]">
+                    {mission.resource_offer?.title || "Mission"}
+                  </h1>
+
+                  {/* Badges rôle */}
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    {isEmployee && (
+                      <span className="rounded-md border border-purple-500/30 bg-purple-500/10 px-2 py-0.5 text-[10px] font-bold text-purple-400">
+                        👤 Vous êtes le salarié
+                      </span>
+                    )}
+                    {isSupplying && !isEmployee && (
+                      <span className="rounded-md border border-blue-500/30 bg-blue-500/10 px-2 py-0.5 text-[10px] font-bold text-blue-400">
+                        🏢 Prêteur
+                      </span>
+                    )}
+                    {isRequesting && !isSupplying && (
+                      <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
+                        🏢 Emprunteur
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
 
-              <div className="mt-3 flex flex-wrap gap-2">
-                {isEmployee && (
-                  <span className="rounded-full bg-purple-500/20 px-2.5 py-1 text-[11px] font-semibold text-purple-200">
-                    👤 Vous êtes le salarié
-                  </span>
-                )}
-                {isSupplying && !isEmployee && (
-                  <span className="rounded-full bg-blue-500/20 px-2.5 py-1 text-[11px] font-semibold text-blue-200">
-                    🏢 Prêteur
-                  </span>
-                )}
-                {isRequesting && (
-                  <span className="rounded-full bg-emerald-500/20 px-2.5 py-1 text-[11px] font-semibold text-emerald-200">
-                    🏢 Emprunteur
-                  </span>
-                )}
-              </div>
+              <span className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-bold uppercase tracking-wider ${TONE_STYLES[cfg.tone]}`}>
+                {cfg.label}
+              </span>
             </div>
-            <span className={`rounded-full px-3 py-1.5 text-xs font-semibold ${cfg.badge}`}>
-              {cfg.label}
-            </span>
           </div>
-        </div>
 
-        {/* ============ COMPTE À REBOURS + PROGRESSION ============ */}
-        {timeline && ["planned", "active"].includes(mission.status) && (
-          <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6">
-            <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-              <div className="flex items-center gap-2">
-                <Timer size={18} className="text-navy" />
-                <h3 className="font-bold">Temps restant</h3>
-              </div>
-              <div className="text-right">
-                {timeline.notStarted ? (
-                  <p className="text-sm text-slate-500">
-                    Démarre dans{" "}
-                    <b className="text-navy">
-                      {Math.abs(timeline.remainingDays)} jour{Math.abs(timeline.remainingDays) > 1 ? "s" : ""}
-                    </b>
-                  </p>
-                ) : timeline.finished ? (
-                  <p className="text-sm text-rose-600 font-semibold">Mission arrivée à terme</p>
-                ) : (
-                  <p className="text-sm text-slate-500">
-                    <b className="text-emerald-600 text-lg">{timeline.remainingDays}</b>{" "}
-                    jour{timeline.remainingDays > 1 ? "s" : ""} restant{timeline.remainingDays > 1 ? "s" : ""}
-                  </p>
-                )}
-              </div>
-            </div>
+          {/* INFOS CLÉS (grille 4 colonnes compacte) */}
+          <div className="grid grid-cols-2 gap-px bg-[var(--border-app)] sm:grid-cols-4">
+            <InfoBlock icon={User} label="Salarié" value={mission.profile?.user?.name || "—"} />
+            <InfoBlock icon={Building2} label="Prêteur" value={mission.supplying_company?.name || "—"} />
+            <InfoBlock icon={Building2} label="Emprunteur" value={mission.requesting_company?.name || "—"} />
+            <InfoBlock icon={Clock} label="Charge" value={`${mission.workload_percent}%${mission.remote ? " · 🏠" : ""}`} />
+          </div>
 
-            <div className="relative">
-              <div className="h-3 w-full rounded-full bg-slate-100 overflow-hidden">
+          {/* TIMELINE (si planned/active) */}
+          {timeline && ["planned", "active"].includes(mission.status) && (
+            <div className="border-t border-[var(--border-app)] p-6">
+              <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <Timer size={16} className="text-emerald-400" />
+                  <h3 className="text-sm font-bold text-[var(--text-app)]">Progression</h3>
+                </div>
+                <div className="text-xs">
+                  {timeline.notStarted ? (
+                    <span className="text-[var(--text-muted)]">
+                      Démarre dans <b className="text-emerald-400">{Math.abs(timeline.remainingDays)}j</b>
+                    </span>
+                  ) : timeline.finished ? (
+                    <span className="text-rose-400 font-semibold">Mission arrivée à terme</span>
+                  ) : (
+                    <span className="text-[var(--text-muted)]">
+                      <b className="text-emerald-400 text-base">{timeline.remainingDays}</b> jours restants
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="h-2 w-full rounded-full bg-[var(--bg-surface-hover)] overflow-hidden">
                 <div
-                  className="h-3 rounded-full bg-gradient-to-r from-mint to-navy transition-all duration-500"
+                  className="h-2 rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-500"
                   style={{ width: `${timeline.percent}%` }}
                 />
               </div>
-              <div className="flex justify-between text-xs text-slate-400 mt-2">
+              <div className="flex justify-between text-[10px] text-[var(--text-muted)] mt-2">
                 <span>{new Date(mission.start_at).toLocaleDateString("fr-FR")}</span>
-                <span className="font-semibold text-navy">{timeline.percent}% écoulé</span>
+                <span className="font-semibold text-emerald-400">{timeline.percent}% écoulé</span>
                 <span>{new Date(mission.end_at).toLocaleDateString("fr-FR")}</span>
               </div>
             </div>
-
-            <div className="mt-4 grid grid-cols-3 gap-4 text-center">
-              <div className="rounded-xl bg-slate-50 p-3">
-                <p className="text-xs text-slate-400">Durée totale</p>
-                <p className="text-lg font-bold text-navy">{timeline.totalDays}j</p>
-              </div>
-              <div className="rounded-xl bg-slate-50 p-3">
-                <p className="text-xs text-slate-400">Jours écoulés</p>
-                <p className="text-lg font-bold text-navy">{timeline.elapsedDays}j</p>
-              </div>
-              <div className="rounded-xl bg-emerald-50 p-3">
-                <p className="text-xs text-emerald-600">Restants</p>
-                <p className="text-lg font-bold text-emerald-700">{timeline.remainingDays}j</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ============ DÉTAILS ============ */}
-        <div className="mt-6 grid gap-4 sm:grid-cols-3">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5">
-            <p className="text-xs font-bold uppercase text-slate-400 mb-2">Salarié</p>
-            <p className="font-semibold">{mission.profile?.user?.name || "?"}</p>
-            {mission.profile?.headline && <p className="text-xs text-mint">{mission.profile.headline}</p>}
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5">
-            <p className="text-xs font-bold uppercase text-slate-400 mb-2">Période</p>
-            <p className="text-sm">
-              <b>{new Date(mission.start_at).toLocaleDateString("fr-FR")}</b>
-              {" → "}
-              <b>{new Date(mission.end_at).toLocaleDateString("fr-FR")}</b>
-            </p>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5">
-            <p className="text-xs font-bold uppercase text-slate-400 mb-2">Charge</p>
-            <p className="text-sm">
-              <b>{mission.workload_percent}%</b>
-              {mission.remote && " · 🏠 Télétravail"}
-            </p>
-          </div>
-        </div>
-
-        {/* ============ 📄 CONTRATS & DOCUMENTS (P0-23) ============ */}
-        <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <FileText size={18} className="text-navy" />
-              <h3 className="font-bold">Contrats & documents</h3>
-            </div>
-            <span className="flex items-center gap-1 text-xs text-slate-400">
-              <History size={12} /> Versionné
-            </span>
-          </div>
-
-          {/* Upload (uniquement prêteur / salarié) */}
-          {(isSupplying || isEmployee) && (
-            <div className="mb-4">
-              <DocumentUploader
-                documentableType="App\Models\Mission"
-                documentableId={mission.id}
-                allowedTypes={["contract", "agreement", "invoice", "attachment"]}
-                onUploaded={() => setDocsRefresh((r) => r + 1)}
-              />
-            </div>
           )}
 
-          {/* Liste des documents */}
-          <DocumentList
-            documentableType="App\Models\Mission"
-            documentableId={mission.id}
-            refreshKey={docsRefresh}
-          />
-        </div>
+          {/* MESSAGE D'ATTENTE selon rôle */}
+          {mission.status === "pending_employee" && isEmployee && (
+            <ActionBanner
+              tone="amber"
+              icon={AlertCircle}
+              title="⏳ En attente de votre réponse"
+              subtitle="Acceptez ou refusez cette mission pour continuer."
+            />
+          )}
+          {mission.status === "pending_employee" && !isEmployee && (
+            <ActionBanner
+              tone="amber"
+              icon={AlertCircle}
+              title="⏳ En attente de la réponse du salarié"
+              subtitle={`${mission.profile?.user?.name} doit accepter ou refuser cette mission.`}
+            />
+          )}
+          {mission.status === "planned" && isEmployee && (
+            <ActionBanner
+              tone="amber"
+              icon={AlertCircle}
+              title="⏳ En attente du démarrage par l'entreprise"
+              subtitle="Vous recevrez une notification dès que la mission démarre."
+            />
+          )}
+          {mission.status === "planned" && isRequesting && !isSupplying && (
+            <ActionBanner
+              tone="blue"
+              icon={AlertCircle}
+              title="⏳ En attente du prêteur"
+              subtitle="Le prêteur doit démarrer la mission."
+            />
+          )}
 
-        {/* ============ MESSAGE D'ATTENTE (si pending) ============ */}
-        {mission.status === "pending_employee" && (
-          <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-800 flex items-start gap-3">
-            <AlertCircle size={18} className="shrink-0 mt-0.5" />
-            <div>
-              <p className="font-semibold">⏳ En attente de la réponse du salarié</p>
-              <p className="text-xs mt-1">
-                {mission.profile?.user?.name} doit accepter ou refuser cette mission avant qu'elle ne démarre.
-              </p>
-            </div>
-          </div>
-        )}
+          {/* ACTIONS */}
+          <div className="border-t border-[var(--border-app)] p-6 flex flex-wrap gap-3">
+            {/* Salarié : accepter/refuser */}
+            {isEmployee && mission.status === "pending_employee" && (
+              <>
+                <button
+                  onClick={() => doAction("accept")}
+                  disabled={actionLoading}
+                  className="flex-1 min-w-[180px] rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] hover:bg-emerald-400 disabled:opacity-60 inline-flex items-center justify-center gap-2"
+                >
+                  <CheckCircle size={16} /> Accepter
+                </button>
+                <button
+                  onClick={() => doAction("decline")}
+                  disabled={actionLoading}
+                  className="flex-1 min-w-[180px] rounded-lg border border-rose-500/30 bg-transparent px-5 py-2.5 text-sm font-semibold text-rose-400 hover:bg-rose-500/10 disabled:opacity-60 inline-flex items-center justify-center gap-2"
+                >
+                  <XCircle size={16} /> Refuser
+                </button>
+              </>
+            )}
 
-        {/* ============ ACTIONS ============ */}
-        <div className="mt-6 flex flex-wrap gap-3">
-
-          {isEmployee && mission.status === "pending_employee" && (
-            <>
+            {/* Prêteur : démarrer */}
+            {isSupplying && !isEmployee && mission.status === "planned" && (
               <button
-                onClick={() => doAction("accept")}
+                onClick={() => doAction("active")}
                 disabled={actionLoading}
-                className="flex-1 min-w-[220px] rounded-2xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60 flex items-center justify-center gap-2"
+                className="flex-1 min-w-[180px] rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] hover:bg-emerald-400 disabled:opacity-60 inline-flex items-center justify-center gap-2"
               >
-                <CheckCircle size={16} /> Accepter la mission
+                <PlayCircle size={16} /> Démarrer la mission
               </button>
+            )}
+
+            {/* Prêteur : terminer */}
+            {isSupplying && mission.status === "active" && (
               <button
-                onClick={() => doAction("decline")}
+                onClick={() => doAction("completed")}
                 disabled={actionLoading}
-                className="flex-1 min-w-[220px] rounded-2xl border border-rose-200 bg-white px-6 py-3 text-sm font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-60 flex items-center justify-center gap-2"
+                className="flex-1 min-w-[180px] rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] hover:bg-emerald-400 disabled:opacity-60 inline-flex items-center justify-center gap-2"
               >
-                <XCircle size={16} /> Refuser
+                <Flag size={16} /> Marquer comme terminée
               </button>
-            </>
-          )}
+            )}
 
-          {isSupplying && mission.status === "planned" && (
-            <button
-              onClick={() => doAction("active")}
-              disabled={actionLoading}
-              className="flex-1 min-w-[220px] rounded-2xl bg-navy px-6 py-3 text-sm font-semibold text-white hover:bg-navy-light disabled:opacity-60 flex items-center justify-center gap-2"
-            >
-              <PlayCircle size={16} /> Démarrer la mission
-            </button>
-          )}
+            {/* Documents (uniquement entreprises) */}
+            {isCompany && (
+              <button
+                onClick={() => setShowDocs(true)}
+                className="rounded-lg border border-[var(--border-app)] bg-transparent px-5 py-2.5 text-sm font-medium text-[var(--text-app)] hover:border-emerald-500/40 inline-flex items-center justify-center gap-2"
+              >
+                <FileText size={16} /> Documents
+              </button>
+            )}
 
-          {isSupplying && mission.status === "active" && (
-            <button
-              onClick={() => doAction("completed")}
-              disabled={actionLoading}
-              className="flex-1 min-w-[220px] rounded-2xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60 flex items-center justify-center gap-2"
-            >
-              <Flag size={16} /> Marquer comme terminée
-            </button>
-          )}
-
-          {isRequesting && (
-            <Link
-              to="/messages"
-              className="flex-1 min-w-[220px] rounded-2xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold hover:border-navy flex items-center justify-center gap-2"
-            >
-              <MessageSquare size={16} /> Contacter le prêteur
-            </Link>
-          )}
-
-          {mission.resource_offer_id && (
-            <Link
-              to={`/resource-offers/${mission.resource_offer_id}`}
-              className="rounded-2xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold hover:border-navy"
-            >
-              Voir l'offre liée
-            </Link>
-          )}
+            {isRequesting && (
+              <Link
+                to="/messages"
+                className="rounded-lg border border-[var(--border-app)] bg-transparent px-5 py-2.5 text-sm font-medium text-[var(--text-app)] hover:border-emerald-500/40 inline-flex items-center justify-center gap-2"
+              >
+                <MessageSquare size={16} /> Contacter le prêteur
+              </Link>
+            )}
+          </div>
         </div>
 
-        {!isEmployee && !isSupplying && !isRequesting && (
-          <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600">
+        {/* Message si aucun rôle */}
+        {!isEmployee && !isCompany && (
+          <div className="mt-6 rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-5 text-sm text-[var(--text-muted)]">
             ℹ️ Vous n'avez pas de rôle actif sur cette mission.
           </div>
         )}
       </div>
 
-      {toast && <Toast message={toast.message} type={toast.type} onClose={closeToast} />}
+      {/* ============================================
+          MODAL DOCUMENTS (entreprises uniquement)
+      ============================================ */}
+      {showDocs && isCompany && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          onClick={() => setShowDocs(false)}
+        >
+          <div
+            className="relative w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileText size={18} className="text-emerald-400" />
+                <h3 className="text-base font-bold text-[var(--text-app)]">Documents de la mission</h3>
+              </div>
+              <button
+                onClick={() => setShowDocs(false)}
+                className="rounded-lg p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-surface-hover)]"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {(isSupplying || isEmployee) && (
+              <div className="mb-4">
+                <DocumentUploader
+                  documentableType="App\Models\Mission"
+                  documentableId={mission.id}
+                  allowedTypes={["contract", "agreement", "invoice", "attachment"]}
+                  onUploaded={() => setDocsRefresh((r) => r + 1)}
+                />
+              </div>
+            )}
+
+            <DocumentList
+              documentableType="App\Models\Mission"
+              documentableId={mission.id}
+              refreshKey={docsRefresh}
+            />
+          </div>
+        </div>
+      )}
     </AppShell>
+  );
+}
+
+/* ============================================================
+   SOUS-COMPOSANTS
+============================================================ */
+
+function InfoBlock({ icon: Icon, label, value }) {
+  return (
+    <div className="bg-[var(--bg-surface)] p-4">
+      <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+        <Icon size={11} /> {label}
+      </div>
+      <p className="mt-1.5 text-sm font-semibold text-[var(--text-app)] truncate">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function ActionBanner({ tone, icon: Icon, title, subtitle }) {
+  const toneMap = {
+    amber: "border-amber-500/30 bg-amber-500/10 text-amber-400",
+    blue:  "border-blue-500/30 bg-blue-500/10 text-blue-400",
+    emerald: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
+  };
+  const c = toneMap[tone] || toneMap.amber;
+
+  return (
+    <div className={`border-t border-[var(--border-app)] p-5 flex items-start gap-3`}>
+      <span className={`flex h-9 w-9 items-center justify-center rounded-lg border shrink-0 ${c}`}>
+        <Icon size={16} />
+      </span>
+      <div>
+        <p className={`text-sm font-bold ${c.split(" ").pop()}`}>{title}</p>
+        <p className="mt-0.5 text-xs text-[var(--text-muted)]">{subtitle}</p>
+      </div>
+    </div>
   );
 }

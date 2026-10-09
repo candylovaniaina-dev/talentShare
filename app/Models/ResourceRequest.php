@@ -9,11 +9,12 @@ use Carbon\Carbon;
 class ResourceRequest extends Model
 {
     protected $fillable = [
-        'company_id', 'created_by', 'title', 'description',
+        'company_id', 'created_by', 'author_type',  // ✅ AJOUT
+        'title', 'description',
         'start_at', 'end_at', 'workload_percent', 'remote',
         'country', 'city', 'status', 'expires_at',
         'budget_min', 'budget_max', 'positions_count', 'urgency', 'tags',
-        'views_count', 'proposals_count', 'closed_reason', 'closed_at',
+        'views_count', 'proposals_count','shares_count', 'closed_reason', 'closed_at',
     ];
 
     protected $casts = [
@@ -25,6 +26,8 @@ class ResourceRequest extends Model
         'tags' => 'array',
     ];
 
+    protected $appends = ['is_talent_request'];  // ✅ AJOUT
+
     // ============================================
     // RELATIONS
     // ============================================
@@ -34,6 +37,12 @@ class ResourceRequest extends Model
     }
 
     public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    // ✅ Alias sémantique
+    public function author()
     {
         return $this->belongsTo(User::class, 'created_by');
     }
@@ -64,10 +73,21 @@ class ResourceRequest extends Model
         return $q->where(fn ($sq) => $sq->whereNull('expires_at')->orWhere('expires_at', '>=', now()));
     }
 
-  public function scopeMyCompany(Builder $q, $companyIds): Builder
-{
-    return $q->whereIn('company_id', $companyIds);
-}
+    public function scopeMyCompany(Builder $q, $companyIds): Builder
+    {
+        return $q->whereIn('company_id', $companyIds);
+    }
+
+    // ✅ Scope : mes publications (company OU talent)
+    public function scopeMyPublications(Builder $q, int $userId, array $companyIds = []): Builder
+    {
+        return $q->where(function ($sq) use ($userId, $companyIds) {
+            $sq->where('created_by', $userId);
+            if (!empty($companyIds)) {
+                $sq->orWhereIn('company_id', $companyIds);
+            }
+        });
+    }
 
     public function scopeSearch(Builder $q, string $s): Builder
     {
@@ -113,4 +133,21 @@ class ResourceRequest extends Model
         return $this->display_status === 'published'
             && $this->proposals()->whereIn('status', ['sent', 'viewed', 'accepted'])->count() < $this->positions_count;
     }
+
+    // ✅ Booléen : est-ce une publication de talent ?
+    public function getIsTalentRequestAttribute(): bool
+    {
+        return $this->author_type === 'talent';
+    }
+ public function likes()
+    {
+        return $this->hasMany(ResourceRequestLike::class);
+    }
+
+    public function comments()
+    {
+        return $this->hasMany(ResourceRequestComment::class);
+    }
+
+
 }

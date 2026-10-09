@@ -199,3 +199,29 @@ html.light select:focus option {
     transform: translateX(0);
   }
 }
+/* ============================================================
+   ANIMATION DES MODALS
+============================================================ */
+@keyframes modalOverlay {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes modalContent {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-modalOverlay {
+  animation: modalOverlay 0.18s ease-out;
+}
+
+.animate-modalContent {
+  animation: modalContent 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}

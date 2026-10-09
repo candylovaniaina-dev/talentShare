@@ -21,7 +21,10 @@ class ConversationController extends Controller
             ->wherePivot('is_archived', false)
             ->with([
                 'participants:id,name,email,avatar_path,role',
+                'participants.professionalProfile:id,user_id,avatar_path,headline',
                 'messages' => fn ($q) => $q->latest()->limit(1),
+                'messages.sender:id,name,email,avatar_path,role',
+                'messages.sender.professionalProfile:id,user_id,avatar_path',
             ])
             ->latest('conversations.updated_at')
             ->get();
@@ -51,39 +54,50 @@ class ConversationController extends Controller
             403
         );
 
-        return $conversation->load('participants:id,name,email,avatar_path,role');
+        return $conversation->load([
+            'participants:id,name,email,avatar_path,role',
+            'participants.professionalProfile:id,user_id,avatar_path,headline',
+        ]);
     }
 
     /**
      * ✅ Créer une conversation DIRECTE
      */
     public function createDirect(Request $request)
-    {
-        $data = $request->validate([
-            'user_id' => ['required', 'exists:users,id', 'not_in:' . $request->user()->id],
+{
+    $data = $request->validate([
+        'user_id' => ['required', 'exists:users,id', 'not_in:' . $request->user()->id],
+    ]);
+
+    $me = $request->user()->id;
+    $other = (int) $data['user_id'];
+
+    // ✅ Cherche une conversation existante
+    $existing = Conversation::whereHas('participants', fn ($q) => $q->where('users.id', $me))
+        ->whereHas('participants', fn ($q) => $q->where('users.id', $other))
+        ->has('participants', '=', 2)
+        ->first();
+
+    if ($existing) {
+        return response()->json([
+            'exists' => true,
+            'conversation' => $existing->load([
+                'participants:id,name,email,avatar_path,role',
+                'participants.professionalProfile:id,user_id,avatar_path,headline',
+            ]),
         ]);
-
-        $me = $request->user()->id;
-        $other = (int) $data['user_id'];
-
-        $existing = Conversation::whereHas('participants', fn ($q) => $q->where('users.id', $me))
-            ->whereHas('participants', fn ($q) => $q->where('users.id', $other))
-            ->has('participants', '=', 2)
-            ->first();
-
-        if ($existing) {
-            return response()->json($existing->load('participants:id,name,email,avatar_path,role'));
-        }
-
-        $conversation = Conversation::create();
-        $conversation->participants()->attach([$me, $other]);
-
-        return response()->json(
-            $conversation->load('participants:id,name,email,avatar_path,role'),
-            201
-        );
     }
 
+    // ✅ NE PAS CRÉER : retourner juste les infos du destinataire
+    $recipient = User::with('professionalProfile:id,user_id,avatar_path,headline')
+        ->select('id', 'name', 'email', 'avatar_path', 'role')
+        ->findOrFail($other);
+
+    return response()->json([
+        'exists' => false,
+        'recipient' => $recipient,
+    ]);
+}
     /**
      * ✅ Créer un groupe
      */
@@ -102,7 +116,10 @@ class ConversationController extends Controller
         $conversation->participants()->attach($participantIds);
 
         return response()->json(
-            $conversation->load('participants:id,name,email,avatar_path,role'),
+            $conversation->load([
+                'participants:id,name,email,avatar_path,role',
+                'participants.professionalProfile:id,user_id,avatar_path,headline',
+            ]),
             201
         );
     }
@@ -111,24 +128,38 @@ class ConversationController extends Controller
      * ✅ Créer une conversation + message
      */
     public function store(Request $request, NotificationService $notifications)
-    {
-        $data = $request->validate([
-            'participant_ids'    => ['required', 'array', 'min:1'],
-            'participant_ids.*'  => ['exists:users,id'],
-            'title'              => ['nullable', 'string', 'max:180'],
-            'body'               => ['required', 'string'],
-            'resource_offer_id'  => ['nullable', 'exists:resource_offers,id'],
-        ]);
+    {$data = $request->validate([
+    'participant_ids'    => ['required', 'array', 'min:1'],
+    'participant_ids.*'  => ['exists:users,id'],
+    'title'              => ['nullable', 'string', 'max:180'],
+    'body'               => ['nullable', 'string'],
+    'attachment'         => ['nullable', 'file', 'max:5120', 'mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx'],
+    'resource_offer_id'  => ['nullable', 'exists:resource_offers,id'],
+]);
+
+if (empty($data['body']) && !$request->hasFile('attachment')) {
+    return response()->json(['message' => 'Message vide.'], 422);
+}
 
         $conversation = Conversation::create(['title' => $data['title'] ?? null]);
 
         $participantIds = array_unique([...$data['participant_ids'], $request->user()->id]);
         $conversation->participants()->attach($participantIds);
 
-        $message = $conversation->messages()->create([
-            'sender_id' => $request->user()->id,
-            'body'      => $data['body'],
-        ]);
+      $payload = [
+    'sender_id' => $request->user()->id,
+    'body'      => $data['body'] ?? '',
+];
+
+if ($request->hasFile('attachment')) {
+    $file = $request->file('attachment');
+    $path = $file->store('messages', 'public');
+    $payload['attachment_path'] = $path;
+    $payload['attachment_name'] = $file->getClientOriginalName();
+    $payload['attachment_type'] = $file->getMimeType();
+}
+
+$message = $conversation->messages()->create($payload);
 
         foreach (array_diff($participantIds, [$request->user()->id]) as $userId) {
             $recipient = User::find($userId);
@@ -144,10 +175,15 @@ class ConversationController extends Controller
             );
         }
 
-        return response()->json(
-            $conversation->load('messages.sender:id,name,avatar_path', 'participants:id,name,email,avatar_path,role'),
-            201
-        );
+     return response()->json(
+    $conversation->fresh()->load([
+        'messages.sender:id,name,email,avatar_path,role',
+        'messages.sender.professionalProfile:id,user_id,avatar_path',
+        'participants:id,name,email,avatar_path,role',
+        'participants.professionalProfile:id,user_id,avatar_path,headline',
+    ]),
+    201
+);
     }
 
     /**
@@ -166,7 +202,10 @@ class ConversationController extends Controller
         );
 
         return $conversation->messages()
-            ->with('sender:id,name,email,avatar_path,role')
+            ->with([
+                'sender:id,name,email,avatar_path,role',
+                'sender.professionalProfile:id,user_id,avatar_path,headline',
+            ])
             ->get();
     }
 
@@ -227,7 +266,10 @@ class ConversationController extends Controller
         }
 
         return response()->json(
-            $message->load('sender:id,name,email,avatar_path,role'),
+            $message->load([
+                'sender:id,name,email,avatar_path,role',
+                'sender.professionalProfile:id,user_id,avatar_path,headline',
+            ]),
             201
         );
     }
@@ -325,7 +367,10 @@ class ConversationController extends Controller
 
         return response()->json([
             'message' => 'Participant ajouté',
-            'participants' => $conversation->fresh()->load('participants:id,name,email,avatar_path,role')->participants,
+            'participants' => $conversation->fresh()->load([
+                'participants:id,name,email,avatar_path,role',
+                'participants.professionalProfile:id,user_id,avatar_path,headline',
+            ])->participants,
         ]);
     }
 
@@ -343,7 +388,10 @@ class ConversationController extends Controller
 
         return response()->json([
             'message' => 'Participant retiré',
-            'participants' => $conversation->fresh()->load('participants:id,name,email,avatar_path,role')->participants,
+            'participants' => $conversation->fresh()->load([
+                'participants:id,name,email,avatar_path,role',
+                'participants.professionalProfile:id,user_id,avatar_path,headline',
+            ])->participants,
         ]);
     }
 

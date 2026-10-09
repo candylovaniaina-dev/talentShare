@@ -2,8 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, User, Briefcase, Search, MessageSquare,
-  Circle, Building2, Handshake, FileText,
-  Layers,
+  Circle, Building2, Layers,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import NotificationBell from "./NotificationBell";
@@ -12,35 +11,34 @@ import api from "../../services/api";
 
 const navByRole = {
   company: [
-    { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-    { to: "/company", label: "Mon entreprise", icon: Building2 },
-    { to: "/my-offers", label: "Mes offres", icon: Briefcase },
-    { to: "/resource-requests", label: "Mes demandes", icon: Search },
-    { to: "/resource-offers/browse", label: "Ressources disponibles", icon: Search },
-    { to: "/my-activity", label: "Mon activité", icon: Layers },
-    { to: "/messages", label: "Messagerie", icon: MessageSquare, badge: "messages" },
+    { to: "/dashboard",             label: "Tableau de bord",       icon: LayoutDashboard },
+    { to: "/company",               label: "Mon entreprise",        icon: Building2 },
+    { to: "/my-publications",       label: "Mes publications",      icon: Briefcase },
+    { to: "/resource-offers/browse",label: "Ressources disponibles",icon: Search },
+    { to: "/my-activity",           label: "Mon activité",          icon: Layers },
+    { to: "/messages",              label: "Messagerie",            icon: MessageSquare, badge: "messages" },
   ],
   employee: [
-    { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-    { to: "/profile", label: "Mon profil", icon: User },
-    { to: "/explore-dashboard", label: "Explorer", icon: Search },
-    { to: "/my-activity", label: "Mon activité", icon: Layers },
-    { to: "/messages", label: "Messagerie", icon: MessageSquare, badge: "messages" },
+    { to: "/dashboard",             label: "Tableau de bord",       icon: LayoutDashboard },
+    { to: "/profile",               label: "Mon profil",            icon: User },
+    { to: "/explore-dashboard",     label: "Explorer",              icon: Search },
+    { to: "/my-activity",           label: "Mon activité",          icon: Layers },
+    { to: "/messages",              label: "Messagerie",            icon: MessageSquare, badge: "messages" },
   ],
   student: [
-    { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-    { to: "/profile", label: "Mon profil", icon: User },
-    { to: "/explore-dashboard", label: "Explorer", icon: Search },
-    { to: "/my-activity", label: "Mon activité", icon: Layers },
-    { to: "/messages", label: "Messagerie", icon: MessageSquare, badge: "messages" },
+    { to: "/dashboard",             label: "Tableau de bord",       icon: LayoutDashboard },
+    { to: "/profile",               label: "Mon profil",            icon: User },
+    { to: "/explore-dashboard",     label: "Explorer",              icon: Search },
+    { to: "/my-activity",           label: "Mon activité",          icon: Layers },
+    { to: "/messages",              label: "Messagerie",            icon: MessageSquare, badge: "messages" },
   ],
   university: [
-    { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-    { to: "/messages", label: "Messagerie", icon: MessageSquare, badge: "messages" },
+    { to: "/dashboard",             label: "Tableau de bord",       icon: LayoutDashboard },
+    { to: "/messages",              label: "Messagerie",            icon: MessageSquare, badge: "messages" },
   ],
   admin: [
-    { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-    { to: "/admin/verifications", label: "Vérifications", icon: User },
+    { to: "/dashboard",             label: "Tableau de bord",       icon: LayoutDashboard },
+    { to: "/admin/verifications",   label: "Vérifications",         icon: User },
   ],
 };
 

@@ -10,6 +10,7 @@ import {
 import AppShell from "../components/layout/AppShell";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
+import CreateResourceRequestModal from "./CreateResourceRequest";
 import useDebounce from "../hooks/useDebounce";
 import api from "../services/api";
 
@@ -45,6 +46,7 @@ const asArray = (data) => {
 export default function ExploreDashboard() {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const [showCreateRequest, setShowCreateRequest] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [tab, setTab] = useState(searchParams.get("tab") || "jobs");
@@ -376,21 +378,27 @@ export default function ExploreDashboard() {
 
         {/* COLONNE DROITE */}
         <aside className="hidden space-y-4 lg:block">
-          <div className="rounded-xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/[0.08] to-transparent p-4">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400">
-              <Sparkles size={14} />
-            </span>
-            <p className="mt-3 text-sm font-bold text-[var(--text-app)]">Une compétence à trouver ?</p>
-            <p className="mt-1 text-xs leading-relaxed text-[var(--text-muted)]">
-              Publiez votre besoin en 2 minutes et laissez les talents venir à vous.
-            </p>
-            <Link
-              to="/resource-requests/new"
-              className="mt-3 flex items-center justify-center gap-1.5 rounded-lg bg-emerald-500 px-3 py-2 text-xs font-bold text-[#0A1229] transition hover:bg-emerald-400"
-            >
-              Publier un besoin <ArrowUpRight size={12} />
-            </Link>
-          </div>
+        <div className="rounded-xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/[0.08] to-transparent p-4">
+  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400">
+    <Sparkles size={14} />
+  </span>
+  <p className="mt-3 text-sm font-bold text-[var(--text-app)]">
+    {user?.role === "company"
+      ? "Une compétence à trouver ?"
+      : "Vous cherchez un stage ?"}
+  </p>
+  <p className="mt-1 text-xs leading-relaxed text-[var(--text-muted)]">
+    {user?.role === "company"
+      ? "Publiez votre besoin en 2 minutes et laissez les talents venir à vous."
+      : "Publiez votre recherche et laissez les entreprises vous découvrir."}
+  </p>
+  <button
+  onClick={() => setShowCreateRequest(true)}
+  className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-emerald-500 px-3 py-2 text-xs font-bold text-[#0A1229] transition hover:bg-emerald-400"
+>
+  Publier un besoin <ArrowUpRight size={12} />
+</button>
+</div>
 
           <div className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-4">
             <p className="text-xs font-bold text-[var(--text-app)]">Conseils rapides</p>
@@ -428,6 +436,17 @@ export default function ExploreDashboard() {
           }}
         />
       )}
+      {showCreateRequest && (
+  <CreateResourceRequestModal
+    onClose={() => setShowCreateRequest(false)}
+    onSuccess={(data) => {
+      setShowCreateRequest(false);
+      showToast("✅ Besoin publié", "success");
+      // Optionnel : rediriger vers le détail
+      // navigate(`/resource-requests/${data.id}`);
+    }}
+  />
+)}
     </AppShell>
   );
 }

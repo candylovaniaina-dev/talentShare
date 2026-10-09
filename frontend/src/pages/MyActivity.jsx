@@ -1,14 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
-  Handshake, Briefcase, Loader2, Building2, User, Calendar, Check, X,
-  Clock, Users, ArrowUpRight, Plus, FileText, Eye, Send, Ban,
+  Handshake, Briefcase, Building2, User, Calendar, Check, X,
+  Clock, ArrowUpRight, Plus, FileText, Eye, Send, Ban,
   PlayCircle, CheckCircle, XCircle, AlertCircle, Target, Layers,
-  TrendingUp, Sparkles,
+  Sparkles, Timer, Search, SlidersHorizontal,
 } from "lucide-react";
 import AppShell from "../components/layout/AppShell";
 import { Card, EmptyState } from "../components/ui/Card";
 import { useToast } from "../context/ToastContext";
+import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 
 /* ============================================================
@@ -57,14 +58,17 @@ const asArray = (data) => {
 ============================================================ */
 export default function MyActivity() {
   const { showToast } = useToast();
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [tab, setTab] = useState(searchParams.get("tab") || "all");
+  const [query, setQuery] = useState("");        // ✅ recherche dynamique
   const [received, setReceived] = useState([]);
   const [sent, setSent] = useState([]);
   const [missions, setMissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
+  const [selectedMission, setSelectedMission] = useState(null);
 
   useEffect(() => {
     setSearchParams({ tab }, { replace: true });
@@ -149,6 +153,7 @@ export default function MyActivity() {
       await api.post(`/missions/${id}/accept`);
       showToast("Mission acceptée", "success");
       load();
+      setSelectedMission(null);
     } catch (err) {
       showToast(err.response?.data?.message || "Erreur", "error");
     } finally {
@@ -163,6 +168,7 @@ export default function MyActivity() {
       await api.post(`/missions/${id}/decline`);
       showToast("Mission refusée", "info");
       load();
+      setSelectedMission(null);
     } catch (err) {
       showToast(err.response?.data?.message || "Erreur", "error");
     } finally {
@@ -176,6 +182,7 @@ export default function MyActivity() {
       await api.patch(`/missions/${id}/status`, { status });
       showToast(status === "active" ? "Mission démarrée" : "Mission terminée", "success");
       load();
+      setSelectedMission(null);
     } catch (err) {
       showToast(err.response?.data?.message || "Erreur", "error");
     } finally {
@@ -187,14 +194,20 @@ export default function MyActivity() {
   const timeline = useMemo(() => {
     const items = [];
 
-    // Propositions reçues + envoyées
-    [...received].forEach((p) => items.push({ type: "proposal", direction: "received", ...p }));
-    [...sent].forEach((p) => items.push({ type: "proposal", direction: "sent", ...p }));
+    const missionProposalIds = new Set(
+      missions.filter((m) => m.proposal_id).map((m) => m.proposal_id)
+    );
 
-    // Missions
+    const hideIfMissionExists = (p) =>
+      p.status === "accepted" && missionProposalIds.has(p.id);
+
+    const visibleReceived = received.filter((p) => !hideIfMissionExists(p));
+    const visibleSent     = sent.filter((p) => !hideIfMissionExists(p));
+
+    visibleReceived.forEach((p) => items.push({ type: "proposal", direction: "received", ...p }));
+    visibleSent.forEach((p) => items.push({ type: "proposal", direction: "sent", ...p }));
     missions.forEach((m) => items.push({ type: "mission", ...m }));
 
-    // Tri par date récente
     return items.sort((a, b) => {
       const da = new Date(a.updated_at || a.created_at || 0).getTime();
       const db = new Date(b.updated_at || b.created_at || 0).getTime();
@@ -202,12 +215,41 @@ export default function MyActivity() {
     });
   }, [received, sent, missions]);
 
+  /* ---------- Recherche dynamique ---------- */
   const filtered = useMemo(() => {
-    if (tab === "all") return timeline;
-    if (tab === "proposals") return timeline.filter((i) => i.type === "proposal");
-    if (tab === "missions") return timeline.filter((i) => i.type === "mission");
-    return timeline;
-  }, [timeline, tab]);
+    let list = timeline;
+
+    // Filtre par onglet
+    if (tab === "proposals") list = list.filter((i) => i.type === "proposal");
+    if (tab === "missions")  list = list.filter((i) => i.type === "mission");
+
+    // Filtre par recherche
+    const q = query.trim().toLowerCase();
+    if (q) {
+      list = list.filter((item) => {
+        if (item.type === "proposal") {
+          return (
+            item.profile?.user?.name?.toLowerCase().includes(q) ||
+            item.profile?.headline?.toLowerCase().includes(q) ||
+            item.proposingCompany?.name?.toLowerCase().includes(q) ||
+            item.toCompany?.name?.toLowerCase().includes(q) ||
+            item.message?.toLowerCase().includes(q)
+          );
+        }
+        if (item.type === "mission") {
+          return (
+            item.resource_offer?.title?.toLowerCase().includes(q) ||
+            item.profile?.user?.name?.toLowerCase().includes(q) ||
+            item.supplying_company?.name?.toLowerCase().includes(q) ||
+            item.requesting_company?.name?.toLowerCase().includes(q)
+          );
+        }
+        return false;
+      });
+    }
+
+    return list;
+  }, [timeline, tab, query]);
 
   const counts = {
     all:       timeline.length,
@@ -215,20 +257,9 @@ export default function MyActivity() {
     missions:  timeline.filter((i) => i.type === "mission").length,
   };
 
-  /* ---------- Stats ---------- */
   const stats = [
-    {
-      label: "Propositions",
-      count: counts.proposals,
-      icon: Handshake,
-      color: "text-amber-400",
-    },
-    {
-      label: "Missions",
-      count: counts.missions,
-      icon: Briefcase,
-      color: "text-emerald-400",
-    },
+    { label: "Propositions", count: counts.proposals, icon: Handshake, color: "text-amber-400" },
+    { label: "Missions",     count: counts.missions,  icon: Briefcase, color: "text-emerald-400" },
     {
       label: "En cours",
       count: missions.filter((m) => ["planned", "active"].includes(m.status)).length,
@@ -249,7 +280,7 @@ export default function MyActivity() {
 
         {/* ===== HEADER ===== */}
         <div className="mb-6 rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-6">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3">
               <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">
                 <Sparkles size={18} />
@@ -264,16 +295,46 @@ export default function MyActivity() {
               </div>
             </div>
 
-            <Link
-              to="/proposals/new"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-4 py-2 text-xs font-bold text-[#0A1229] transition hover:bg-emerald-400"
-            >
-              <Plus size={13} /> Nouvelle proposition
-            </Link>
+            {/* ✅ Bouton "Publier une proposition" */}
+            {user?.role === "company" && (
+    <Link
+      to="/proposals/new"
+      className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-xs font-bold text-[#0A1229] transition hover:bg-emerald-400"
+    >
+      <Plus size={14} /> Publier une proposition
+    </Link>
+  )}
           </div>
           <p className="mt-2 text-sm text-[var(--text-muted)]">
             Suivez vos propositions et missions en un seul endroit.
           </p>
+
+          {/* ✅ Barre de recherche + Filtres */}
+          <div className="mt-4 flex items-center gap-2 rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-4 py-2.5 focus-within:border-emerald-500/40 transition">
+            <Search size={16} className="text-[var(--text-muted)] shrink-0" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Rechercher une offre, une entreprise, un talent…"
+              className="flex-1 bg-transparent text-sm text-[var(--text-app)] placeholder:text-[var(--text-faint)] outline-none"
+            />
+            {query && (
+              <button
+                onClick={() => setQuery("")}
+                className="rounded-md p-1 text-[var(--text-muted)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-app)] transition"
+                title="Effacer"
+              >
+                <X size={14} />
+              </button>
+            )}
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface)] px-3 py-1.5 text-xs font-semibold text-[var(--text-app)] hover:border-emerald-500/40 transition"
+            >
+              <SlidersHorizontal size={12} /> Filtres
+            </button>
+          </div>
 
           {/* Onglets */}
           <div className="mt-5 flex gap-1 border-b border-[var(--border-app)]">
@@ -318,9 +379,7 @@ export default function MyActivity() {
                     {s.label}
                   </p>
                 </div>
-                <p className={`mt-2 text-2xl font-bold ${s.color}`}>
-                  {s.count}
-                </p>
+                <p className={`mt-2 text-2xl font-bold ${s.color}`}>{s.count}</p>
               </Card>
             );
           })}
@@ -330,26 +389,28 @@ export default function MyActivity() {
         {loading ? (
           <div className="space-y-3">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-32 animate-pulse rounded-2xl bg-[var(--bg-surface)]" />
+              <div key={i} className="h-28 animate-pulse rounded-2xl bg-[var(--bg-surface)]" />
             ))}
           </div>
         ) : filtered.length === 0 ? (
           <EmptyState
-            emoji="📭"
+            emoji={query ? "🔍" : "📭"}
             text={
-              tab === "all"
+              query
+                ? `Aucun résultat pour "${query}"`
+                : tab === "all"
                 ? "Aucune activité pour le moment."
                 : tab === "proposals"
                 ? "Aucune proposition."
                 : "Aucune mission."
             }
             action={
-              tab !== "missions" && (
+              !query && tab !== "missions" && (
                 <Link
                   to="/proposals/new"
                   className="text-xs font-medium text-emerald-400 hover:text-emerald-300"
                 >
-                  Créer une proposition
+                  Publier une proposition
                 </Link>
               )
             }
@@ -372,16 +433,33 @@ export default function MyActivity() {
                 <MissionRow
                   key={`m-${item.id}`}
                   mission={item}
+                  user={user}
                   onAccept={acceptMission}
                   onDecline={declineMission}
                   onUpdateStatus={updateMissionStatus}
                   actionLoading={actionLoading}
+                  onOpenDetails={() => setSelectedMission(item)}
                 />
               )
             )}
           </div>
         )}
       </div>
+
+      {/* ============================================
+          MODAL MISSION DETAILS
+      ============================================ */}
+      {selectedMission && (
+        <MissionDetailModal
+          mission={selectedMission}
+          user={user}
+          onClose={() => setSelectedMission(null)}
+          onAccept={acceptMission}
+          onDecline={declineMission}
+          onUpdateStatus={updateMissionStatus}
+          actionLoading={actionLoading}
+        />
+      )}
     </AppShell>
   );
 }
@@ -401,7 +479,6 @@ function ProposalRow({
   return (
     <div className="group rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-5 transition hover:border-emerald-500/40">
       <div className="flex items-start gap-4">
-        {/* Badge type */}
         <div className="shrink-0">
           <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400">
             <Handshake size={20} />
@@ -409,7 +486,6 @@ function ProposalRow({
         </div>
 
         <div className="min-w-0 flex-1">
-          {/* Header */}
           <div className="flex flex-wrap items-center gap-2">
             <span className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${TONE_STYLES[cfg.tone]}`}>
               <Icon size={10} /> {cfg.label}
@@ -425,7 +501,6 @@ function ProposalRow({
             )}
           </div>
 
-          {/* Nom + contexte */}
           <div className="mt-2">
             {p.profile?.user && (
               <p className="flex items-center gap-1.5 text-sm font-bold text-[var(--text-app)]">
@@ -438,14 +513,12 @@ function ProposalRow({
                 )}
               </p>
             )}
-
             {p.proposingCompany && direction === "received" && (
               <p className="mt-1 flex items-center gap-1 text-xs text-[var(--text-muted)]">
                 <Building2 size={11} />
                 Proposé par <span className="font-medium">{p.proposingCompany.name}</span>
               </p>
             )}
-
             {p.toCompany && direction === "sent" && (
               <p className="mt-1 flex items-center gap-1 text-xs text-[var(--text-muted)]">
                 <Building2 size={11} />
@@ -454,7 +527,6 @@ function ProposalRow({
             )}
           </div>
 
-          {/* Meta */}
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--text-muted)]">
             {p.start_at && p.end_at && (
               <span className="flex items-center gap-1">
@@ -472,14 +544,12 @@ function ProposalRow({
             </span>
           </div>
 
-          {/* Message */}
           {p.message && (
             <p className="mt-2 line-clamp-2 text-xs italic text-[var(--text-muted)]">
               "{p.message}"
             </p>
           )}
 
-          {/* Actions */}
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {direction === "received" && isPending && (
               <>
@@ -542,16 +612,25 @@ function ProposalRow({
 }
 
 /* ============================================================
-   ROW : MISSION
+   ROW : MISSION (compacte)
 ============================================================ */
-function MissionRow({ mission, onAccept, onDecline, onUpdateStatus, actionLoading }) {
+function MissionRow({ mission, user, onAccept, onDecline, onUpdateStatus, actionLoading, onOpenDetails }) {
   const cfg = MISSION_STATUS[mission.status] || MISSION_STATUS.planned;
   const Icon = cfg.icon;
+
+  const myProfileId =
+    user?.professional_profile?.id ||
+    user?.professionalProfile?.id ||
+    user?.professional_profile_id;
+
+  const myCompanyIds = (user?.companies || []).map((c) => c.id);
+  const isEmployee   = myProfileId && Number(mission.professional_profile_id) === Number(myProfileId);
+  const isSupplying  = myCompanyIds.includes(mission.supplying_company_id);
+  const isRequesting = myCompanyIds.includes(mission.requesting_company_id);
 
   return (
     <div className="group rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-5 transition hover:border-emerald-500/40">
       <div className="flex items-start gap-4">
-        {/* Badge type */}
         <div className="shrink-0">
           <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
             <Briefcase size={20} />
@@ -559,7 +638,6 @@ function MissionRow({ mission, onAccept, onDecline, onUpdateStatus, actionLoadin
         </div>
 
         <div className="min-w-0 flex-1">
-          {/* Header */}
           <div className="flex flex-wrap items-center gap-2">
             <span className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${TONE_STYLES[cfg.tone]}`}>
               <Icon size={10} /> {cfg.label}
@@ -567,43 +645,34 @@ function MissionRow({ mission, onAccept, onDecline, onUpdateStatus, actionLoadin
             <span className="rounded-md border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-2 py-0.5 text-[10px] font-semibold text-[var(--text-muted)]">
               Mission #{mission.id}
             </span>
-          </div>
-
-          {/* Nom + contexte */}
-          <div className="mt-2">
-            {mission.resource_offer?.title && (
-              <p className="truncate text-sm font-bold text-[var(--text-app)]">
-                {mission.resource_offer.title}
-              </p>
-            )}
-            {mission.profile?.user && (
-              <p className="mt-0.5 flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
-                <User size={11} />
-                {mission.profile.user.name}
-              </p>
-            )}
-          </div>
-
-          {/* Entreprises */}
-          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-[var(--text-muted)]">
-            {mission.supplying_company && (
-              <span className="inline-flex items-center gap-1">
-                <Building2 size={10} />
-                {mission.supplying_company.name}
+            {isEmployee && (
+              <span className="rounded-md border border-purple-500/30 bg-purple-500/10 px-2 py-0.5 text-[10px] font-bold text-purple-400">
+                👤 Salarié
               </span>
             )}
-            {mission.requesting_company && (
-              <>
-                <span className="text-[var(--text-faint)]">→</span>
-                <span className="inline-flex items-center gap-1">
-                  <Building2 size={10} />
-                  {mission.requesting_company.name}
-                </span>
-              </>
+            {isSupplying && !isEmployee && (
+              <span className="rounded-md border border-blue-500/30 bg-blue-500/10 px-2 py-0.5 text-[10px] font-bold text-blue-400">
+                Prêteur
+              </span>
+            )}
+            {isRequesting && !isSupplying && (
+              <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
+                Emprunteur
+              </span>
             )}
           </div>
 
-          {/* Meta */}
+          <div className="mt-2">
+            <p className="truncate text-sm font-bold text-[var(--text-app)]">
+              {mission.resource_offer?.title || "Mission"}
+            </p>
+            {mission.profile?.user && (
+              <p className="mt-0.5 flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
+                <User size={11} /> {mission.profile.user.name}
+              </p>
+            )}
+          </div>
+
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--text-muted)]">
             {mission.start_at && mission.end_at && (
               <span className="flex items-center gap-1">
@@ -620,9 +689,8 @@ function MissionRow({ mission, onAccept, onDecline, onUpdateStatus, actionLoadin
             )}
           </div>
 
-          {/* Actions */}
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            {mission.status === "pending_employee" && (
+            {isEmployee && mission.status === "pending_employee" && (
               <>
                 <button
                   onClick={() => onAccept(mission.id)}
@@ -641,34 +709,260 @@ function MissionRow({ mission, onAccept, onDecline, onUpdateStatus, actionLoadin
               </>
             )}
 
-            {mission.status === "planned" && (
-              <button
-                onClick={() => onUpdateStatus(mission.id, "active")}
-                disabled={actionLoading === mission.id}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3.5 py-1.5 text-xs font-bold text-[#0A1229] transition hover:bg-emerald-400 disabled:opacity-50"
-              >
-                <PlayCircle size={12} /> Démarrer
-              </button>
-            )}
-
-            {mission.status === "active" && (
-              <button
-                onClick={() => onUpdateStatus(mission.id, "completed")}
-                disabled={actionLoading === mission.id}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3.5 py-1.5 text-xs font-bold text-[#0A1229] transition hover:bg-emerald-400 disabled:opacity-50"
-              >
-                <CheckCircle size={12} /> Terminer
-              </button>
-            )}
-
-            <Link
-              to={`/missions/${mission.id}`}
+            <button
+              onClick={onOpenDetails}
               className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-app)] px-3.5 py-1.5 text-xs font-medium text-[var(--text-app)] transition hover:border-emerald-500/40"
             >
               Détails <ArrowUpRight size={11} />
-            </Link>
+            </button>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   MODAL : MISSION DETAILS
+============================================================ */
+function MissionDetailModal({ mission, user, onClose, onAccept, onDecline, onUpdateStatus, actionLoading }) {
+  const cfg = MISSION_STATUS[mission.status] || MISSION_STATUS.planned;
+  const Icon = cfg.icon;
+
+  const myProfileId =
+    user?.professional_profile?.id ||
+    user?.professionalProfile?.id ||
+    user?.professional_profile_id;
+
+  const myCompanyIds = (user?.companies || []).map((c) => c.id);
+  const isEmployee   = myProfileId && Number(mission.professional_profile_id) === Number(myProfileId);
+  const isSupplying  = myCompanyIds.includes(mission.supplying_company_id);
+  const isRequesting = myCompanyIds.includes(mission.requesting_company_id);
+
+  const timeline = useMemo(() => {
+    if (!mission.start_at || !mission.end_at) return null;
+    const now = new Date();
+    const start = new Date(mission.start_at);
+    const end = new Date(mission.end_at);
+    const totalMs = end - start;
+    const elapsedMs = now - start;
+    const remainingMs = end - now;
+    const days = (ms) => Math.ceil(ms / (1000 * 60 * 60 * 24));
+    const percent = totalMs > 0
+      ? Math.max(0, Math.min(100, Math.round((elapsedMs / totalMs) * 100)))
+      : 0;
+    return {
+      totalDays: days(totalMs),
+      remainingDays: Math.max(0, days(remainingMs)),
+      percent,
+      notStarted: now < start,
+    };
+  }, [mission]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 z-10 border-b border-[var(--border-app)] bg-[var(--bg-surface)] p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 shrink-0">
+                <Briefcase size={18} />
+              </span>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-400">
+                  Mission #{mission.id}
+                </p>
+                <h2 className="mt-1 text-lg font-bold text-[var(--text-app)]">
+                  {mission.resource_offer?.title || "Mission"}
+                </h2>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <span className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${TONE_STYLES[cfg.tone]}`}>
+                    <Icon size={10} /> {cfg.label}
+                  </span>
+                  {isEmployee && (
+                    <span className="rounded-md border border-purple-500/30 bg-purple-500/10 px-2 py-0.5 text-[10px] font-bold text-purple-400">
+                      👤 Salarié
+                    </span>
+                  )}
+                  {isSupplying && !isEmployee && (
+                    <span className="rounded-md border border-blue-500/30 bg-blue-500/10 px-2 py-0.5 text-[10px] font-bold text-blue-400">
+                      Prêteur
+                    </span>
+                  )}
+                  {isRequesting && !isSupplying && (
+                    <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
+                      Emprunteur
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="rounded-lg p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-surface-hover)] transition"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-5">
+          <div className="grid grid-cols-2 gap-3">
+            <InfoCard icon={User} label="Salarié" value={mission.profile?.user?.name || "—"} sub={mission.profile?.headline} />
+            <InfoCard icon={Clock} label="Charge" value={`${mission.workload_percent}%`} sub={mission.remote ? "🏠 Télétravail" : null} />
+            <InfoCard icon={Building2} label="Prêteur" value={mission.supplying_company?.name || "—"} />
+            <InfoCard icon={Building2} label="Emprunteur" value={mission.requesting_company?.name || "—"} />
+          </div>
+
+          <div className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface-hover)] p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">
+              Période
+            </p>
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-semibold text-[var(--text-app)]">
+                {new Date(mission.start_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
+              </span>
+              <span className="text-[var(--text-faint)]">→</span>
+              <span className="font-semibold text-[var(--text-app)]">
+                {new Date(mission.end_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
+              </span>
+            </div>
+          </div>
+
+          {timeline && ["planned", "active"].includes(mission.status) && (
+            <div className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface-hover)] p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Timer size={14} className="text-emerald-400" />
+                  <p className="text-xs font-bold text-[var(--text-app)]">Progression</p>
+                </div>
+                <span className="text-xs text-[var(--text-muted)]">
+                  {timeline.notStarted ? (
+                    <>Démarre dans <b className="text-emerald-400">{Math.abs(timeline.remainingDays)}j</b></>
+                  ) : (
+                    <><b className="text-emerald-400">{timeline.remainingDays}</b> jours restants</>
+                  )}
+                </span>
+              </div>
+              <div className="h-2 w-full rounded-full bg-[var(--bg-surface)] overflow-hidden">
+                <div
+                  className="h-2 rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all"
+                  style={{ width: `${timeline.percent}%` }}
+                />
+              </div>
+              <p className="mt-2 text-[10px] text-[var(--text-muted)] text-center">
+                {timeline.percent}% écoulé · {timeline.totalDays} jours au total
+              </p>
+            </div>
+          )}
+
+          {mission.notes && (
+            <div className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface-hover)] p-4">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">
+                Notes
+              </p>
+              <p className="text-sm text-[var(--text-app)] whitespace-pre-wrap">{mission.notes}</p>
+            </div>
+          )}
+
+          {mission.status === "planned" && isEmployee && (
+            <ActionBanner tone="amber" icon={AlertCircle} title="⏳ En attente du démarrage" subtitle="L'entreprise prêteuse doit démarrer la mission." />
+          )}
+          {mission.status === "planned" && isRequesting && !isSupplying && (
+            <ActionBanner tone="blue" icon={AlertCircle} title="⏳ En attente du prêteur" subtitle="Le prêteur doit démarrer la mission." />
+          )}
+          {mission.status === "pending_employee" && isEmployee && (
+            <ActionBanner tone="amber" icon={AlertCircle} title="⏳ En attente de votre réponse" subtitle="Acceptez ou refusez cette mission." />
+          )}
+        </div>
+
+        <div className="sticky bottom-0 border-t border-[var(--border-app)] bg-[var(--bg-surface)] p-6 flex flex-wrap gap-3">
+          {isEmployee && mission.status === "pending_employee" && (
+            <>
+              <button
+                onClick={() => onAccept(mission.id)}
+                disabled={actionLoading === mission.id}
+                className="flex-1 min-w-[140px] rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] hover:bg-emerald-400 disabled:opacity-60 inline-flex items-center justify-center gap-2"
+              >
+                <Check size={16} /> Accepter
+              </button>
+              <button
+                onClick={() => onDecline(mission.id)}
+                disabled={actionLoading === mission.id}
+                className="flex-1 min-w-[140px] rounded-lg border border-rose-500/30 bg-transparent px-5 py-2.5 text-sm font-semibold text-rose-400 hover:bg-rose-500/10 disabled:opacity-60 inline-flex items-center justify-center gap-2"
+              >
+                <X size={16} /> Refuser
+              </button>
+            </>
+          )}
+
+          {isSupplying && !isEmployee && mission.status === "planned" && (
+            <button
+              onClick={() => onUpdateStatus(mission.id, "active")}
+              disabled={actionLoading === mission.id}
+              className="flex-1 min-w-[180px] rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] hover:bg-emerald-400 disabled:opacity-60 inline-flex items-center justify-center gap-2"
+            >
+              <PlayCircle size={16} /> Démarrer la mission
+            </button>
+          )}
+
+          {isSupplying && mission.status === "active" && (
+            <button
+              onClick={() => onUpdateStatus(mission.id, "completed")}
+              disabled={actionLoading === mission.id}
+              className="flex-1 min-w-[180px] rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] hover:bg-emerald-400 disabled:opacity-60 inline-flex items-center justify-center gap-2"
+            >
+              <CheckCircle size={16} /> Terminer
+            </button>
+          )}
+
+          <Link
+            to={`/missions/${mission.id}`}
+            className="rounded-lg border border-[var(--border-app)] bg-transparent px-5 py-2.5 text-sm font-medium text-[var(--text-app)] hover:border-emerald-500/40 inline-flex items-center justify-center gap-2"
+          >
+            Ouvrir la mission complète <ArrowUpRight size={14} />
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   SOUS-COMPOSANTS
+============================================================ */
+function InfoCard({ icon: Icon, label, value, sub }) {
+  return (
+    <div className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface-hover)] p-3.5">
+      <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+        <Icon size={11} /> {label}
+      </div>
+      <p className="mt-1.5 text-sm font-semibold text-[var(--text-app)] truncate">{value}</p>
+      {sub && <p className="mt-0.5 text-[11px] text-[var(--text-muted)] truncate">{sub}</p>}
+    </div>
+  );
+}
+
+function ActionBanner({ tone, icon: Icon, title, subtitle }) {
+  const toneMap = {
+    amber:   "border-amber-500/30 bg-amber-500/10 text-amber-400",
+    blue:    "border-blue-500/30 bg-blue-500/10 text-blue-400",
+    emerald: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
+  };
+  const c = toneMap[tone] || toneMap.amber;
+
+  return (
+    <div className={`rounded-xl border p-4 flex items-start gap-3 ${c}`}>
+      <Icon size={16} className="shrink-0 mt-0.5" />
+      <div>
+        <p className="text-sm font-bold">{title}</p>
+        <p className="mt-0.5 text-xs opacity-80">{subtitle}</p>
       </div>
     </div>
   );

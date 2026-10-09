@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Plus, Edit, Trash2, Eye, MapPin, Calendar, Clock,
   Handshake, Briefcase,
@@ -35,6 +35,7 @@ const asArray = (data) => {
 
 export default function ResourceOffers() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [company, setCompany] = useState(null);
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -138,8 +139,11 @@ export default function ResourceOffers() {
             <div key={offer.id} className="rounded-2xl border border-slate-200 bg-white p-5 transition hover:shadow-md">
               <div className="flex items-start justify-between flex-wrap gap-3">
 
-                {/* ✅ BLOC CLIQUABLE */}
-                <Link to={`/resource-offers/${offer.id}`} className="flex-1 group min-w-0">
+                {/* ✅ BLOC CLIQUABLE — remplacé <Link> par <div onClick> */}
+                <div
+                  onClick={() => navigate(`/resource-offers/${offer.id}`)}
+                  className="flex-1 group min-w-0 cursor-pointer"
+                >
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-bold group-hover:text-navy group-hover:underline transition">
                       {offer.title}
@@ -150,7 +154,7 @@ export default function ResourceOffers() {
                       {statusCfg.label}
                     </span>
 
-                    {/* ✅ NOUVEAU : LIEN MISSION juste à côté du badge */}
+                    {/* ✅ LIEN MISSION (reste un vrai <Link>, plus de conflit) */}
                     {activeMission && (
                       <Link
                         to={`/missions/${activeMission.id}`}
@@ -217,7 +221,7 @@ export default function ResourceOffers() {
                     {displayKey === "closed"          && "🔒 Offre clôturée"}
                     {displayKey === "draft"           && "📝 Brouillon — non publiée"}
                   </p>
-                </Link>
+                </div>
 
                 {/* ✅ BOUTONS À DROITE */}
                 <div className="flex gap-2 shrink-0 flex-wrap">
