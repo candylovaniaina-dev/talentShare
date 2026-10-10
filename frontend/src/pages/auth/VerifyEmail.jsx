@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 
 const VerifyEmail = () => {
   const [searchParams] = useSearchParams();
@@ -8,22 +9,17 @@ const VerifyEmail = () => {
   const [message, setMessage] = useState('Vérification en cours...');
 
   useEffect(() => {
-    // ✅ Le backend a déjà fait le travail
-    // On lit juste les paramètres d'URL status + message
     const statusParam = searchParams.get('status');
     const messageParam = searchParams.get('message');
 
     if (statusParam === 'success') {
       setStatus('success');
       setMessage(messageParam || 'Email vérifié avec succès !');
-
-      // Redirige vers /login après 3 secondes
       setTimeout(() => navigate('/login'), 3000);
     } else if (statusParam === 'error') {
       setStatus('error');
       setMessage(messageParam || 'Le lien est invalide ou a expiré.');
     } else {
-      // Aucun paramètre : l'utilisateur a ouvert la page directement
       setStatus('error');
       setMessage('Lien de vérification invalide.');
     }
@@ -31,39 +27,53 @@ const VerifyEmail = () => {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-[#0A1526] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Vérification en cours...</p>
+          <Loader2 size={40} strokeWidth={1.5} className="mx-auto animate-spin text-mint" />
+          <p className="mt-4 text-sm text-slate-400">Vérification en cours...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-      <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full text-center">
-        {status === 'success' ? (
-          <>
-            <div className="text-green-500 text-5xl mb-4">✅</div>
-            <h1 className="text-2xl font-bold text-green-600">Email vérifié !</h1>
-            <p className="text-gray-600 mt-2">{message}</p>
-            <p className="text-sm text-gray-400 mt-4">Redirection vers la connexion...</p>
-          </>
-        ) : (
-          <>
-            <div className="text-red-500 text-5xl mb-4">❌</div>
-            <h1 className="text-2xl font-bold text-red-600">Vérification échouée</h1>
-            <p className="text-gray-600 mt-2">{message}</p>
-            <button
-              onClick={() => navigate('/login')}
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-            >
-              Retour à la connexion
-            </button>
-          </>
-        )}
+    <div className="relative min-h-screen overflow-hidden bg-[#0A1526] text-white">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-32 top-10 h-[420px] w-[420px] rounded-full bg-mint/10 blur-[120px]" />
       </div>
+
+      <main className="relative z-10 mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-6 py-16">
+        <div className="w-full rounded-xl2 border border-white/10 bg-white/[0.04] p-8 shadow-pop backdrop-blur-xl text-center sm:p-10">
+          {status === 'success' ? (
+            <>
+              <div className="flex justify-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-xl2 bg-mint/15 text-mint">
+                  <CheckCircle size={28} strokeWidth={1.5} />
+                </div>
+              </div>
+              <h1 className="mt-6 text-2xl font-bold text-white">Email vérifié !</h1>
+              <p className="mt-2 text-sm text-slate-400">{message}</p>
+              <p className="mt-4 text-xs text-slate-500">Redirection vers la connexion...</p>
+            </>
+          ) : (
+            <>
+              <div className="flex justify-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-xl2 bg-rose-500/15 text-rose-400">
+                  <AlertCircle size={28} strokeWidth={1.5} />
+                </div>
+              </div>
+              <h1 className="mt-6 text-2xl font-bold text-white">Vérification échouée</h1>
+              <p className="mt-2 text-sm text-slate-400">{message}</p>
+              <Link
+                to="/login"
+                className="mt-6 inline-block rounded-xl2 bg-mint px-5 py-2.5 text-sm font-bold text-navy-900 transition hover:bg-mint-light"
+              >
+                Retour à la connexion
+              </Link>
+            </>
+          )}
+        </div>
+      </main>
     </div>
   );
 };

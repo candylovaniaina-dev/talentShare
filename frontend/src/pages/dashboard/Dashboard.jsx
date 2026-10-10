@@ -37,27 +37,23 @@ export default function Dashboard() {
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-white">Mon activité</h1>
+            <h1 className="text-2xl font-bold text-[var(--text-app)]">Mon activité</h1>
             {stats?.proposals_pending > 0 && (
-              <span className="relative inline-flex h-6 min-w-[24px] items-center justify-center rounded-full bg-emerald-500 px-2 text-xs font-bold text-[#0A1229]">
+              <span className="relative inline-flex h-6 min-w-[24px] items-center justify-center rounded-lg bg-mint px-2 text-xs font-bold text-navy-900">
                 {stats.proposals_pending}
-                <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-300" />
-                </span>
               </span>
             )}
           </div>
-          <p className="mt-1 text-sm text-slate-400">
+          <p className="mt-1 text-sm text-[var(--text-muted)]">
             Suivez vos propositions et missions en un seul endroit.
           </p>
         </div>
 
         <Link
           to="/proposals/new"
-          className="flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400"
+          className="flex items-center gap-2 rounded-xl2 bg-navy-800 px-4 py-2 text-sm font-bold text-white transition hover:bg-navy-700"
         >
-          <Plus size={15} /> Nouvelle proposition
+          <Plus size={15} strokeWidth={2} /> Nouvelle proposition
         </Link>
       </div>
 
@@ -67,7 +63,7 @@ export default function Dashboard() {
       )}
 
       {error && (
-        <div className="mb-6 mt-6 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-300">
+        <div className="mb-6 mt-6 rounded-xl2 border border-rose-500/25 bg-rose-500/10 p-4 text-sm text-rose-600 dark:text-rose-400">
           {error}
         </div>
       )}
@@ -76,39 +72,39 @@ export default function Dashboard() {
       {!stats && !error && (
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-32 animate-pulse rounded-2xl bg-white/5" />
+            <div key={i} className="h-32 animate-pulse rounded-xl2 bg-[var(--bg-surface-hover)]" />
           ))}
         </div>
       )}
 
       {/* ===== BANDEAU D'ACTION ===== */}
       {stats?.pending_missions > 0 && (
-        <div className="mb-6 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
+        <div className="mb-6 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl2 border border-amber-500/25 bg-amber-50 dark:bg-amber-500/10 p-4">
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/20 text-amber-300">
-              <AlertCircle size={20} />
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl2 bg-amber-500/15 text-amber-600 dark:text-amber-400">
+              <AlertCircle size={20} strokeWidth={1.5} />
             </span>
             <div>
-              <p className="font-semibold text-amber-200">
+              <p className="font-semibold text-amber-700 dark:text-amber-300">
                 {stats.pending_missions} mission{stats.pending_missions > 1 ? "s" : ""} en attente d'action
               </p>
-              <p className="text-xs text-amber-300/80">
+              <p className="text-xs text-amber-600/80 dark:text-amber-400/80">
                 Accepter ou démarrer les missions en cours.
               </p>
             </div>
           </div>
           <Link
             to="/missions"
-            className="flex items-center gap-1.5 rounded-full bg-amber-500 px-4 py-2 text-sm font-semibold text-[#0A1229] transition hover:bg-amber-400"
+            className="flex items-center gap-1.5 rounded-xl2 bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-400"
           >
-            Voir les missions <ArrowRight size={14} />
+            Voir les missions <ArrowRight size={14} strokeWidth={1.75} />
           </Link>
         </div>
       )}
 
       {/* ===== ONGLETS ===== */}
       {stats && (user?.role === "employee" || user?.role === "student") && (
-        <div className="mt-6 flex items-center gap-6 border-b border-white/10">
+        <div className="mt-6 flex items-center gap-6 border-b border-[var(--border-app)]">
           <TabButton
             active={tab === "all"}
             onClick={() => setTab("all")}
@@ -168,24 +164,24 @@ function TabButton({ active, onClick, icon: Icon, label, count = 0, accent = fal
     <button
       onClick={onClick}
       className={`group relative flex items-center gap-2 pb-3 text-sm font-semibold transition ${
-        active ? "text-white" : "text-slate-400 hover:text-slate-200"
+        active ? "text-[var(--text-app)]" : "text-[var(--text-muted)] hover:text-[var(--text-app)]"
       }`}
     >
-      <Icon size={15} className={active ? "text-emerald-400" : ""} />
+      <Icon size={15} strokeWidth={1.75} className={active ? "text-mint" : ""} />
       {label}
       {count > 0 && (
         <span
-          className={`flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold ${
+          className={`flex h-5 min-w-[20px] items-center justify-center rounded-md px-1.5 text-[10px] font-bold ${
             accent
-              ? "bg-emerald-500 text-[#0A1229]"
-              : "bg-white/10 text-slate-300"
+              ? "bg-mint text-navy-900"
+              : "bg-[var(--bg-surface-hover)] text-[var(--text-muted)]"
           }`}
         >
           {count}
         </span>
       )}
       {active && (
-        <span className="absolute -bottom-px left-0 right-0 h-0.5 rounded-full bg-emerald-400" />
+        <span className="absolute -bottom-px left-0 right-0 h-0.5 rounded-full bg-mint" />
       )}
     </button>
   );
@@ -203,34 +199,34 @@ function ProfileCard({ user, profile, hasProfile }) {
     : null;
 
   return (
-    <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl">
+    <div className="flex flex-wrap items-center gap-4 rounded-xl2 border border-[var(--border-app)] bg-[var(--bg-surface)] p-5 shadow-card">
       {profile?.avatar_path ? (
         <img
           src={`http://localhost:8000/storage/${profile.avatar_path}`}
           alt={user.name}
-          className="h-16 w-16 rounded-full border-2 border-emerald-400/40 object-cover"
+          className="h-16 w-16 rounded-xl2 border-2 border-mint/30 object-cover"
         />
       ) : (
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-xl font-bold text-white">
+        <div className="flex h-16 w-16 items-center justify-center rounded-xl2 bg-navy-800 text-xl font-bold text-white">
           {initials}
         </div>
       )}
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          <p className="truncate text-lg font-bold text-white">{user.name}</p>
-          <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs font-semibold text-slate-300">
-            {isStudent ? "🎓 Jeune talent" : "💼 Talent"}
+          <p className="truncate text-lg font-bold text-[var(--text-app)]">{user.name}</p>
+          <span className="flex items-center gap-1.5 rounded-md border border-[var(--border-app)] bg-[var(--bg-surface-2)] px-2.5 py-0.5 text-xs font-semibold text-[var(--text-muted)]">
+            {isStudent ? "Jeune talent" : "Talent"}
           </span>
         </div>
-        <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
+        <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--text-muted)]">
           <span className="flex items-center gap-1.5">
-            <span className={`h-2 w-2 rounded-full ${hasProfile ? "bg-emerald-400" : "bg-slate-500"}`} />
+            <span className={`h-2 w-2 rounded-full ${hasProfile ? "bg-mint" : "bg-[var(--text-faint)]"}`} />
             {hasProfile ? "Profil actif" : "Profil à compléter"}
           </span>
           {location && (
             <span className="flex items-center gap-1.5">
-              <MapPin size={12} /> {location}
+              <MapPin size={12} strokeWidth={1.5} /> {location}
             </span>
           )}
         </div>
@@ -238,7 +234,7 @@ function ProfileCard({ user, profile, hasProfile }) {
 
       <Link
         to="/profile"
-        className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-slate-200 transition hover:border-emerald-500/40 hover:text-emerald-300"
+        className="rounded-xl2 border border-[var(--border-app)] bg-[var(--bg-surface-2)] px-4 py-2 text-xs font-semibold text-[var(--text-muted)] transition hover:border-mint hover:text-mint"
       >
         Voir mon profil
       </Link>
@@ -266,23 +262,23 @@ function CardMenu() {
     <div ref={ref} className="relative" onClick={(e) => e.stopPropagation()}>
       <button
         onClick={() => setOpen((o) => !o)}
-        className="rounded-lg p-1 text-slate-600 transition hover:bg-white/10 hover:text-slate-300"
+        className="rounded-lg p-1 text-[var(--text-faint)] transition hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-muted)]"
       >
-        <MoreVertical size={16} />
+        <MoreVertical size={16} strokeWidth={1.5} />
       </button>
       {open && (
-        <div className="absolute right-0 z-20 mt-1 w-40 overflow-hidden rounded-xl border border-white/10 bg-[#0F1E45] py-1 shadow-2xl">
+        <div className="absolute right-0 z-20 mt-1 w-40 overflow-hidden rounded-xl2 border border-[var(--border-app)] bg-[var(--bg-surface)] py-1 shadow-pop">
           <button
             onClick={() => setOpen(false)}
-            className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-slate-300 transition hover:bg-white/5"
+            className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-[var(--text-muted)] transition hover:bg-[var(--bg-surface-hover)]"
           >
-            <RefreshCw size={13} /> Actualiser
+            <RefreshCw size={13} strokeWidth={1.5} /> Actualiser
           </button>
           <button
             onClick={() => setOpen(false)}
-            className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-slate-300 transition hover:bg-white/5"
+            className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-[var(--text-muted)] transition hover:bg-[var(--bg-surface-hover)]"
           >
-            <EyeOff size={13} /> Masquer la carte
+            <EyeOff size={13} strokeWidth={1.5} /> Masquer la carte
           </button>
         </div>
       )}
@@ -295,51 +291,47 @@ function StatCard({ icon: Icon, label, value, trend, to, color = "mint", badge =
   const wrapperProps = to ? { to } : {};
 
   const colorMap = {
-    mint:   { bg: "bg-emerald-500/15", text: "text-emerald-400" },
-    violet: { bg: "bg-violet-500/15",  text: "text-violet-400" },
-    blue:   { bg: "bg-blue-500/15",    text: "text-blue-400" },
-    amber:  { bg: "bg-amber-500/15",   text: "text-amber-400" },
-    rose:   { bg: "bg-rose-500/15",    text: "text-rose-400" },
+    mint:   { bg: "bg-mint/10",     text: "text-mint" },
+    violet: { bg: "bg-violet-500/10",  text: "text-violet-600 dark:text-violet-400" },
+    blue:   { bg: "bg-blue-500/10",    text: "text-blue-600 dark:text-blue-400" },
+    amber:  { bg: "bg-amber-500/10",   text: "text-amber-600 dark:text-amber-400" },
+    rose:   { bg: "bg-rose-500/10",    text: "text-rose-600 dark:text-rose-400" },
   };
   const c = colorMap[color] || colorMap.mint;
 
   return (
     <Wrapper
       {...wrapperProps}
-      className={`group relative block rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl transition ${
-        to ? "hover:border-emerald-500/40 hover:bg-white/[0.06] cursor-pointer" : ""
+      className={`group relative block rounded-xl2 border border-[var(--border-app)] bg-[var(--bg-surface)] p-5 shadow-card transition ${
+        to ? "hover:border-mint/40 hover:shadow-cardHover cursor-pointer" : ""
       }`}
     >
-      {/* Badge nouvelle activité */}
       {badge > 0 && (
-        <span className="absolute -top-1.5 -right-1.5 flex h-6 min-w-[24px] items-center justify-center rounded-full bg-emerald-500 px-1.5 text-[11px] font-bold text-[#0A1229] shadow-lg">
+        <span className="absolute -top-1.5 -right-1.5 flex h-6 min-w-[24px] items-center justify-center rounded-lg bg-mint px-1.5 text-[11px] font-bold text-navy-900 shadow-card">
           {badge}
-          <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-300" />
-          </span>
         </span>
       )}
 
       <div className="flex items-start justify-between">
-        <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${c.bg} ${c.text}`}>
-          <Icon size={18} />
+        <span className={`flex h-10 w-10 items-center justify-center rounded-xl2 ${c.bg} ${c.text}`}>
+          <Icon size={18} strokeWidth={1.5} />
         </span>
         <div className="flex items-center gap-1">
           {to && (
             <ArrowRightCircle
               size={16}
-              className="text-slate-600 transition group-hover:text-emerald-400"
+              strokeWidth={1.5}
+              className="text-[var(--text-faint)] transition group-hover:text-mint"
             />
           )}
           <CardMenu />
         </div>
       </div>
-      <p className="mt-4 text-3xl font-bold text-white">{value}</p>
-      <p className="mt-1 text-sm text-slate-400">{label}</p>
+      <p className="mt-4 text-3xl font-bold text-[var(--text-app)]">{value}</p>
+      <p className="mt-1 text-sm text-[var(--text-muted)]">{label}</p>
       {trend && (
-        <p className="mt-2 flex items-center gap-1 text-xs font-semibold text-emerald-400">
-          <TrendingUp size={12} /> {trend}
+        <p className="mt-2 flex items-center gap-1 text-xs font-semibold text-mint">
+          <TrendingUp size={12} strokeWidth={2} /> {trend}
         </p>
       )}
     </Wrapper>
@@ -351,13 +343,13 @@ function SectionTitle({ icon: Icon, title, subtitle, action }) {
     <div className="mb-4 flex items-start justify-between gap-3">
       <div className="flex items-start gap-3">
         {Icon && (
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">
-            <Icon size={18} />
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl2 bg-mint/10 text-mint">
+            <Icon size={18} strokeWidth={1.5} />
           </span>
         )}
         <div>
-          <h2 className="text-lg font-bold text-white">{title}</h2>
-          {subtitle && <p className="text-sm text-slate-400">{subtitle}</p>}
+          <h2 className="text-lg font-bold text-[var(--text-app)]">{title}</h2>
+          {subtitle && <p className="text-sm text-[var(--text-muted)]">{subtitle}</p>}
         </div>
       </div>
       {action}
@@ -388,8 +380,8 @@ function LineChart({ data, labels }) {
     <svg viewBox={`0 0 ${width} ${height}`} className="mt-4 h-48 w-full">
       <defs>
         <linearGradient id="dashLineFill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#34d399" stopOpacity="0.35" />
-          <stop offset="100%" stopColor="#34d399" stopOpacity="0" />
+          <stop offset="0%" stopColor="#14B8A6" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="#14B8A6" stopOpacity="0" />
         </linearGradient>
       </defs>
 
@@ -400,15 +392,15 @@ function LineChart({ data, labels }) {
           x2={width - padding}
           y1={height - padding - f * (height - padding * 2)}
           y2={height - padding - f * (height - padding * 2)}
-          stroke="rgba(255,255,255,0.06)"
+          stroke="var(--border-app)"
         />
       ))}
 
       <path d={areaPath} fill="url(#dashLineFill)" />
-      <path d={linePath} fill="none" stroke="#34d399" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d={linePath} fill="none" stroke="#14B8A6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
 
       {points.map(([x, y], i) => (
-        <circle key={i} cx={x} cy={y} r="4" fill="#0A1229" stroke="#34d399" strokeWidth="2.5" />
+        <circle key={i} cx={x} cy={y} r="4" fill="var(--bg-surface)" stroke="#14B8A6" strokeWidth="2.5" />
       ))}
 
       {labels.map((l, i) => (
@@ -418,7 +410,7 @@ function LineChart({ data, labels }) {
           y={height - 4}
           textAnchor="middle"
           fontSize="11"
-          fill="rgba(148,163,184,0.8)"
+          fill="var(--text-faint)"
         >
           {l}
         </text>
@@ -451,7 +443,7 @@ function GaugeChart({ percent, label }) {
   const clamped = Math.max(0, Math.min(100, percent));
   const sweep = (clamped / 100) * 180;
 
-  const color = clamped >= 80 ? "#34d399" : clamped >= 40 ? "#fbbf24" : "#64748b";
+  const color = clamped >= 80 ? "#14B8A6" : clamped >= 40 ? "#fbbf24" : "#64748b";
 
   return (
     <div className="flex flex-col items-center">
@@ -459,7 +451,7 @@ function GaugeChart({ percent, label }) {
         <path
           d={describeArc(cx, cy, r, -90, 90)}
           fill="none"
-          stroke="rgba(255,255,255,0.08)"
+          stroke="var(--border-app)"
           strokeWidth={strokeWidth}
           strokeLinecap="round"
         />
@@ -473,10 +465,10 @@ function GaugeChart({ percent, label }) {
             style={{ transition: "all 0.6s ease" }}
           />
         )}
-        <text x={cx} y={cy - 6} textAnchor="middle" fontSize="30" fontWeight="800" fill="#ffffff">
+        <text x={cx} y={cy - 6} textAnchor="middle" fontSize="30" fontWeight="800" fill="var(--text-app)">
           {clamped}%
         </text>
-        <text x={cx} y={cy + 16} textAnchor="middle" fontSize="11" fill="rgba(148,163,184,0.9)">
+        <text x={cx} y={cy + 16} textAnchor="middle" fontSize="11" fill="var(--text-muted)">
           {label}
         </text>
       </svg>
@@ -494,19 +486,19 @@ function ProgressList({ items }) {
       {items.map((item, i) => (
         <div key={item.label}>
           <div className="mb-1 flex items-center justify-between text-xs">
-            <span className="flex items-center gap-1.5 font-medium text-slate-300">
-              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-white/10 text-[9px] font-bold text-slate-400">
+            <span className="flex items-center gap-1.5 font-medium text-[var(--text-muted)]">
+              <span className="flex h-4 w-4 items-center justify-center rounded-md bg-[var(--bg-surface-hover)] text-[9px] font-bold text-[var(--text-faint)]">
                 {i + 1}
               </span>
               {item.label}
             </span>
-            <span className={`font-bold ${item.done ? "text-emerald-400" : "text-slate-500"}`}>
+            <span className={`font-bold ${item.done ? "text-mint" : "text-[var(--text-faint)]"}`}>
               {item.percent}%
             </span>
           </div>
-          <div className="h-1.5 rounded-full bg-white/10">
+          <div className="h-1.5 rounded-full bg-[var(--bg-surface-hover)]">
             <div
-              className={`h-1.5 rounded-full transition-all ${item.done ? "bg-emerald-400" : "bg-slate-600"}`}
+              className={`h-1.5 rounded-full transition-all ${item.done ? "bg-mint" : "bg-[var(--text-faint)]"}`}
               style={{ width: `${item.percent}%` }}
             />
           </div>
@@ -522,10 +514,10 @@ function ProgressList({ items }) {
 
 function ActivitySummary({ completion, breakdown, applications, pendingProposals, activeMissions, skillsCount }) {
   const kpis = [
-    { label: "Candidatures", value: applications, color: "border-blue-500/30 bg-blue-500/10 text-blue-300" },
-    { label: "Missions actives", value: activeMissions, color: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" },
-    { label: "Propositions en attente", value: pendingProposals, color: "border-amber-500/30 bg-amber-500/10 text-amber-300" },
-    { label: "Compétences", value: skillsCount, color: "border-violet-500/30 bg-violet-500/10 text-violet-300" },
+    { label: "Candidatures", value: applications, color: "border-blue-500/25 bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400" },
+    { label: "Missions actives", value: activeMissions, color: "border-mint/25 bg-mint/5 text-mint" },
+    { label: "Propositions en attente", value: pendingProposals, color: "border-amber-500/25 bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400" },
+    { label: "Compétences", value: skillsCount, color: "border-violet-500/25 bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-400" },
   ];
 
   const progressItems = (breakdown.length > 0 ? breakdown : []).map((item) => ({
@@ -535,7 +527,7 @@ function ActivitySummary({ completion, breakdown, applications, pendingProposals
   }));
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl">
+    <div className="rounded-xl2 border border-[var(--border-app)] bg-[var(--bg-surface)] p-6 shadow-card">
       <SectionTitle
         icon={Gauge}
         title="Résumé de votre activité"
@@ -546,7 +538,7 @@ function ActivitySummary({ completion, breakdown, applications, pendingProposals
         {kpis.map((k) => (
           <span
             key={k.label}
-            className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold ${k.color}`}
+            className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold ${k.color}`}
           >
             <span className="text-sm font-bold">{k.value}</span> {k.label}
           </span>
@@ -554,16 +546,16 @@ function ActivitySummary({ completion, breakdown, applications, pendingProposals
       </div>
 
       <div className="grid gap-6 md:grid-cols-[220px_1fr]">
-        <div className="flex items-center justify-center rounded-xl border border-white/5 bg-white/[0.02] py-4">
+        <div className="flex items-center justify-center rounded-xl2 border border-[var(--border-app)] bg-[var(--bg-surface-2)] py-4">
           <GaugeChart percent={completion} label="Taux de complétion" />
         </div>
 
-        <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
-          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-500">Progression</p>
+        <div className="rounded-xl2 border border-[var(--border-app)] bg-[var(--bg-surface-2)] p-4">
+          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--text-faint)]">Progression</p>
           {progressItems.length > 0 ? (
             <ProgressList items={progressItems} />
           ) : (
-            <p className="text-sm text-slate-500">Aucune donnée de progression disponible.</p>
+            <p className="text-sm text-[var(--text-faint)]">Aucune donnée de progression disponible.</p>
           )}
         </div>
       </div>
@@ -586,7 +578,7 @@ function CompanyDashboard({ stats, user }) {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl">
+        <div className="rounded-xl2 border border-[var(--border-app)] bg-[var(--bg-surface)] p-6 shadow-card">
           <SectionTitle
             icon={Sparkles}
             title="Mon activité récente"
@@ -595,13 +587,13 @@ function CompanyDashboard({ stats, user }) {
           <ul className="space-y-3">
             <ActivityItem icon={Handshake} label="Proposition reçue" status="En attente" tone="amber" time="il y a 2 h" />
             <ActivityItem icon={FileText} label="Nouvelle candidature" status="À suivre" tone="blue" time="il y a 5 h" />
-            <ActivityItem icon={Briefcase} label="Mission démarrée" status="Nouveau" tone="emerald" time="hier" />
+            <ActivityItem icon={Briefcase} label="Mission démarrée" status="Nouveau" tone="mint" time="hier" />
           </ul>
         </div>
 
-        <div className="rounded-2xl bg-gradient-to-br from-[#0B1633] to-[#0A1229] p-6 text-white">
-          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-emerald-400">
-            <Target size={14} /> Prochaine action
+        <div className="rounded-xl2 bg-navy-900 p-6 text-white shadow-card">
+          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-mint">
+            <Target size={14} strokeWidth={2} /> Prochaine action
           </p>
           <h3 className="mt-3 text-xl font-bold">Publiez une nouvelle demande de ressource.</h3>
           <p className="mt-2 text-sm text-slate-300">
@@ -609,9 +601,9 @@ function CompanyDashboard({ stats, user }) {
           </p>
           <Link
             to="/resource-requests"
-            className="mt-5 inline-flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400"
+            className="mt-5 inline-flex items-center gap-2 rounded-xl2 bg-mint px-5 py-2.5 text-sm font-bold text-navy-900 transition hover:bg-mint-light"
           >
-            <Plus size={15} /> Créer une demande
+            <Plus size={15} strokeWidth={2} /> Créer une demande
           </Link>
         </div>
       </div>
@@ -630,7 +622,6 @@ function CompanyDashboard({ stats, user }) {
 
 /* ============================================================
    DASHBOARD TALENT (employee + student)
-   ✅ Filtré par onglet
 ============================================================ */
 
 function TalentDashboard({ stats, user, profile, hasProfile, tab = "all" }) {
@@ -651,7 +642,6 @@ function TalentDashboard({ stats, user, profile, hasProfile, tab = "all" }) {
 
   return (
     <div className="space-y-6">
-      {/* Résumé activité — seulement onglet "Tout" */}
       {showProfileBlocks && (
         <ActivitySummary
           completion={completion}
@@ -663,7 +653,6 @@ function TalentDashboard({ stats, user, profile, hasProfile, tab = "all" }) {
         />
       )}
 
-      {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {showProposals && (
           <StatCard
@@ -705,11 +694,10 @@ function TalentDashboard({ stats, user, profile, hasProfile, tab = "all" }) {
         )}
       </div>
 
-      {/* Bloc complétion — seulement onglet "Tout" */}
       {showProfileBlocks && (
         <>
           <div className="grid gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2 rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl">
+            <div className="lg:col-span-2 rounded-xl2 border border-[var(--border-app)] bg-[var(--bg-surface)] p-6 shadow-card">
               <SectionTitle
                 icon={TrendingUp}
                 title="Votre visibilité progresse"
@@ -717,9 +705,9 @@ function TalentDashboard({ stats, user, profile, hasProfile, tab = "all" }) {
                 action={
                   <Link
                     to="/profile"
-                    className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-slate-200 transition hover:border-emerald-500/40 hover:text-emerald-300"
+                    className="rounded-xl2 border border-[var(--border-app)] bg-[var(--bg-surface-2)] px-4 py-2 text-xs font-semibold text-[var(--text-muted)] transition hover:border-mint hover:text-mint"
                   >
-                    Voir le portfolio →
+                    Voir le portfolio
                   </Link>
                 }
               />
@@ -729,9 +717,9 @@ function TalentDashboard({ stats, user, profile, hasProfile, tab = "all" }) {
               />
             </div>
 
-            <div className="rounded-2xl bg-gradient-to-br from-[#0B1633] to-[#0A1229] p-6 text-white">
-              <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-emerald-400">
-                <Target size={14} /> Prochaine action
+            <div className="rounded-xl2 bg-navy-900 p-6 text-white shadow-card">
+              <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-mint">
+                <Target size={14} strokeWidth={2} /> Prochaine action
               </p>
               <h3 className="mt-3 text-xl font-bold">{nextStep}</h3>
               <p className="mt-2 text-sm text-slate-300">
@@ -744,28 +732,28 @@ function TalentDashboard({ stats, user, profile, hasProfile, tab = "all" }) {
                 </div>
                 <div className="mt-2 h-1.5 rounded-full bg-white/10">
                   <div
-                    className="h-1.5 rounded-full bg-emerald-400 transition-all"
+                    className="h-1.5 rounded-full bg-mint transition-all"
                     style={{ width: `${completion}%` }}
                   />
                 </div>
               </div>
               <Link
                 to="/profile"
-                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400"
+                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl2 bg-mint px-5 py-2.5 text-sm font-bold text-navy-900 transition hover:bg-mint-light"
               >
-                Compléter mon profil <ArrowRight size={15} />
+                Compléter mon profil <ArrowRight size={15} strokeWidth={1.75} />
               </Link>
             </div>
           </div>
 
           {breakdown.length > 0 && (
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl">
+            <div className="rounded-xl2 border border-[var(--border-app)] bg-[var(--bg-surface)] p-6 shadow-card">
               <SectionTitle
                 icon={CheckCircle2}
                 title="Complétion du profil"
                 subtitle="Cochez chaque étape pour atteindre 100%."
                 action={
-                  <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-bold text-emerald-400">
+                  <span className="rounded-lg bg-mint/10 px-3 py-1 text-xs font-bold text-mint">
                     {completion}%
                   </span>
                 }
@@ -776,28 +764,28 @@ function TalentDashboard({ stats, user, profile, hasProfile, tab = "all" }) {
                     key={item.key}
                     className={`flex items-start gap-3 rounded-lg border p-3 transition ${
                       item.done
-                        ? "border-emerald-500/20 bg-emerald-500/5"
-                        : "border-white/5 bg-white/[0.02]"
+                        ? "border-mint/20 bg-mint/5"
+                        : "border-[var(--border-app)] bg-[var(--bg-surface-2)]"
                     }`}
                   >
                     <span
-                      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
+                      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md ${
                         item.done
-                          ? "bg-emerald-500 text-white"
-                          : "border-2 border-slate-600 bg-transparent"
+                          ? "bg-mint text-white"
+                          : "border-2 border-[var(--border-app)] bg-transparent"
                       }`}
                     >
-                      {item.done && <CheckCircle2 size={12} />}
+                      {item.done && <CheckCircle2 size={12} strokeWidth={2} />}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className={`text-xs font-semibold ${item.done ? "text-emerald-300" : "text-white"}`}>
+                      <p className={`text-xs font-semibold ${item.done ? "text-mint" : "text-[var(--text-app)]"}`}>
                         {item.label}
                       </p>
                       {!item.done && (
-                        <p className="mt-0.5 text-[10px] text-slate-500">{item.action}</p>
+                        <p className="mt-0.5 text-[10px] text-[var(--text-faint)]">{item.action}</p>
                       )}
                     </div>
-                    <span className="shrink-0 text-[10px] text-slate-500">{item.weight}%</span>
+                    <span className="shrink-0 text-[10px] text-[var(--text-faint)]">{item.weight}%</span>
                   </div>
                 ))}
               </div>
@@ -830,16 +818,15 @@ function TalentDashboard({ stats, user, profile, hasProfile, tab = "all" }) {
         </>
       )}
 
-      {/* Activité + Opportunités */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl">
+        <div className="rounded-xl2 border border-[var(--border-app)] bg-[var(--bg-surface)] p-6 shadow-card">
           <SectionTitle
             icon={Sparkles}
             title="Mon activité récente"
             subtitle="Les derniers mouvements de votre parcours."
             action={
-              <Link to="/missions" className="text-xs font-semibold text-emerald-400 hover:text-emerald-300">
-                Tout voir →
+              <Link to="/missions" className="text-xs font-semibold text-mint hover:text-mint-light">
+                Tout voir
               </Link>
             }
           />
@@ -864,7 +851,7 @@ function TalentDashboard({ stats, user, profile, hasProfile, tab = "all" }) {
                   icon={Briefcase}
                   label={`${activeMissions} mission${activeMissions > 1 ? "s" : ""} active${activeMissions > 1 ? "s" : ""}`}
                   status="En cours"
-                  tone="emerald"
+                  tone="mint"
                   time="maintenant"
                 />
               ) : (
@@ -876,7 +863,7 @@ function TalentDashboard({ stats, user, profile, hasProfile, tab = "all" }) {
                 icon={CheckCircle2}
                 label={`${skillsCount} compétence${skillsCount > 1 ? "s" : ""} renseignée${skillsCount > 1 ? "s" : ""}`}
                 status="À jour"
-                tone="emerald"
+                tone="mint"
                 time="profil"
               />
             ) : (
@@ -885,7 +872,7 @@ function TalentDashboard({ stats, user, profile, hasProfile, tab = "all" }) {
           </ul>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl">
+        <div className="rounded-xl2 border border-[var(--border-app)] bg-[var(--bg-surface)] p-6 shadow-card">
           <SectionTitle
             icon={Target}
             title="Opportunités suggérées"
@@ -908,24 +895,24 @@ function TalentDashboard({ stats, user, profile, hasProfile, tab = "all" }) {
         ]}
       />
 
-      <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-6">
+      <div className="rounded-xl2 border border-mint/20 bg-mint/5 p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-400">
-              <Plus size={20} />
+            <span className="flex h-12 w-12 items-center justify-center rounded-xl2 bg-mint/10 text-mint">
+              <Plus size={20} strokeWidth={1.75} />
             </span>
             <div>
-              <p className="font-semibold text-white">Vous avez un projet en tête ?</p>
-              <p className="text-sm text-slate-400">
+              <p className="font-semibold text-[var(--text-app)]">Vous avez un projet en tête ?</p>
+              <p className="text-sm text-[var(--text-muted)]">
                 Explorez les ressources disponibles pour trouver le bon point de départ.
               </p>
             </div>
           </div>
           <Link
             to="/explore"
-            className="flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400"
+            className="flex items-center gap-2 rounded-xl2 bg-mint px-5 py-2.5 text-sm font-bold text-navy-900 transition hover:bg-mint-light"
           >
-            Explorer le réseau <ArrowRight size={15} />
+            Explorer le réseau <ArrowRight size={15} strokeWidth={1.75} />
           </Link>
         </div>
       </div>
@@ -939,27 +926,27 @@ function TalentDashboard({ stats, user, profile, hasProfile, tab = "all" }) {
 
 function MiniWidget({ icon: Icon, color, label, value, action }) {
   const colorMap = {
-    mint:  { bg: "bg-emerald-500/15", text: "text-emerald-400" },
-    blue:  { bg: "bg-blue-500/15",    text: "text-blue-400" },
-    amber: { bg: "bg-amber-500/15",   text: "text-amber-400" },
+    mint:  { bg: "bg-mint/10",        text: "text-mint" },
+    blue:  { bg: "bg-blue-500/10",    text: "text-blue-600 dark:text-blue-400" },
+    amber: { bg: "bg-amber-500/10",   text: "text-amber-600 dark:text-amber-400" },
   };
   const c = colorMap[color] || colorMap.mint;
 
   return (
-    <div className="flex flex-col justify-between rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl">
+    <div className="flex flex-col justify-between rounded-xl2 border border-[var(--border-app)] bg-[var(--bg-surface)] p-5 shadow-card">
       <div className="flex items-center gap-3">
-        <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${c.bg} ${c.text}`}>
-          <Icon size={16} />
+        <span className={`flex h-9 w-9 items-center justify-center rounded-xl2 ${c.bg} ${c.text}`}>
+          <Icon size={16} strokeWidth={1.5} />
         </span>
-        <p className="text-sm text-slate-400">{label}</p>
+        <p className="text-sm text-[var(--text-muted)]">{label}</p>
       </div>
-      <p className="mt-3 truncate text-xl font-bold text-white">{value}</p>
+      <p className="mt-3 truncate text-xl font-bold text-[var(--text-app)]">{value}</p>
       {action && (
         <Link
           to={action.to}
-          className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-emerald-400 hover:text-emerald-300"
+          className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-mint hover:text-mint-light"
         >
-          {action.label} <ArrowRight size={12} />
+          {action.label} <ArrowRight size={12} strokeWidth={2} />
         </Link>
       )}
     </div>
@@ -968,19 +955,19 @@ function MiniWidget({ icon: Icon, color, label, value, action }) {
 
 function QuickActions({ actions }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl">
+    <div className="rounded-xl2 border border-[var(--border-app)] bg-[var(--bg-surface)] p-6 shadow-card">
       <SectionTitle icon={Zap} title="Raccourcis rapides" subtitle="Les actions les plus utiles, en un clic." />
       <div className="grid gap-3 sm:grid-cols-3">
         {actions.map(({ icon: Icon, label, to }) => (
           <Link
             key={label}
             to={to}
-            className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/5 p-3.5 transition hover:border-emerald-500/40 hover:bg-white/[0.08]"
+            className="flex items-center gap-3 rounded-xl2 border border-[var(--border-app)] bg-[var(--bg-surface-2)] p-3.5 transition hover:border-mint/40 hover:bg-[var(--bg-surface-hover)]"
           >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
-              <Icon size={16} />
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl2 bg-mint/10 text-mint">
+              <Icon size={16} strokeWidth={1.5} />
             </span>
-            <span className="text-sm font-semibold text-white">{label}</span>
+            <span className="text-sm font-semibold text-[var(--text-app)]">{label}</span>
           </Link>
         ))}
       </div>
@@ -1029,30 +1016,30 @@ function AdminDashboard({ stats }) {
    PETITS COMPOSANTS D'ACTIVITÉ
 ============================================================ */
 
-function ActivityItem({ icon: Icon, label, status, tone = "emerald", time, badge = 0 }) {
+function ActivityItem({ icon: Icon, label, status, tone = "mint", time, badge = 0 }) {
   const toneMap = {
-    emerald: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30",
-    amber:   "bg-amber-500/10 text-amber-300 border-amber-500/30",
-    blue:    "bg-blue-500/10 text-blue-300 border-blue-500/30",
-    rose:    "bg-rose-500/10 text-rose-300 border-rose-500/30",
+    mint:    "bg-mint/10 text-mint border-mint/25",
+    amber:   "bg-amber-50 text-amber-700 border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-400",
+    blue:    "bg-blue-50 text-blue-700 border-blue-500/25 dark:bg-blue-500/10 dark:text-blue-400",
+    rose:    "bg-rose-50 text-rose-700 border-rose-500/25 dark:bg-rose-500/10 dark:text-rose-400",
   };
   return (
-    <li className="flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/5 p-3">
+    <li className="flex items-center justify-between gap-3 rounded-xl2 border border-[var(--border-app)] bg-[var(--bg-surface-2)] p-3">
       <div className="flex items-center gap-3 min-w-0">
-        <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
-          <Icon size={16} />
+        <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl2 bg-mint/10 text-mint">
+          <Icon size={16} strokeWidth={1.5} />
           {badge > 0 && (
-            <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[9px] font-bold text-[#0A1229]">
+            <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-md bg-mint px-1 text-[9px] font-bold text-navy-900">
               {badge}
             </span>
           )}
         </span>
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-white">{label}</p>
-          <p className="text-xs text-slate-500">{time}</p>
+          <p className="truncate text-sm font-semibold text-[var(--text-app)]">{label}</p>
+          <p className="text-xs text-[var(--text-faint)]">{time}</p>
         </div>
       </div>
-      <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase ${toneMap[tone]}`}>
+      <span className={`shrink-0 rounded-md border px-2.5 py-0.5 text-[10px] font-bold uppercase ${toneMap[tone]}`}>
         {status}
       </span>
     </li>
@@ -1061,8 +1048,8 @@ function ActivityItem({ icon: Icon, label, status, tone = "emerald", time, badge
 
 function EmptyActivity({ label }) {
   return (
-    <li className="flex items-center gap-3 rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-3 text-sm text-slate-500">
-      <Circle size={16} className="text-slate-600" />
+    <li className="flex items-center gap-3 rounded-xl2 border border-dashed border-[var(--border-app)] bg-[var(--bg-surface-2)] p-3 text-sm text-[var(--text-faint)]">
+      <Circle size={16} strokeWidth={1.5} className="text-[var(--text-faint)]" />
       {label}
     </li>
   );
@@ -1073,18 +1060,18 @@ function OpportunityItem({ icon: Icon, title, company, match, to }) {
     <li>
       <Link
         to={to}
-        className="flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/5 p-3 transition hover:border-emerald-500/40 hover:bg-white/[0.08]"
+        className="flex items-center justify-between gap-3 rounded-xl2 border border-[var(--border-app)] bg-[var(--bg-surface-2)] p-3 transition hover:border-mint/40 hover:bg-[var(--bg-surface-hover)]"
       >
         <div className="flex items-center gap-3 min-w-0">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
-            <Icon size={16} />
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl2 bg-mint/10 text-mint">
+            <Icon size={16} strokeWidth={1.5} />
           </span>
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-white">{title}</p>
-            <p className="text-xs text-slate-500">{company}</p>
+            <p className="truncate text-sm font-semibold text-[var(--text-app)]">{title}</p>
+            <p className="text-xs text-[var(--text-faint)]">{company}</p>
           </div>
         </div>
-        <span className="shrink-0 text-xs font-bold text-emerald-400">{match}</span>
+        <span className="shrink-0 text-xs font-bold text-mint">{match}</span>
       </Link>
     </li>
   );

@@ -21,7 +21,6 @@ const roles = [
   { value: "university", icon: Sparkles, title: "Université", subtitle: "Connecter les filières" },
 ];
 
-// Force du mot de passe (0 à 4)
 const getStrength = (pwd) => {
   let score = 0;
   if (pwd.length >= 8) score++;
@@ -31,10 +30,10 @@ const getStrength = (pwd) => {
   return score;
 };
 const STRENGTH_LABELS = ["Très faible", "Faible", "Moyen", "Bon", "Excellent"];
-const STRENGTH_COLORS = ["bg-rose-500", "bg-rose-500", "bg-amber-400", "bg-emerald-300", "bg-emerald-400"];
+const STRENGTH_COLORS = ["bg-rose-500", "bg-rose-500", "bg-amber-400", "bg-mint-light", "bg-mint"];
 
 const inputClass =
-  "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-600 transition focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20";
+  "mt-2 w-full rounded-xl2 border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-600 transition focus:border-mint/50 focus:outline-none focus:ring-2 focus:ring-mint/20";
 const labelClass = "text-xs font-semibold uppercase tracking-wider text-slate-400";
 
 export default function Register() {
@@ -46,8 +45,7 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // États pour le robot
-  const [focus, setFocus] = useState(null); // "name" | "email" | "password" | "confirm" | null
+  const [focus, setFocus] = useState(null);
   const [robotError, setRobotError] = useState(false);
   const errorTimer = useRef(null);
 
@@ -73,13 +71,11 @@ export default function Register() {
     }
   };
 
-  // Correspondance des mots de passe
   const confirmFilled = form.password_confirmation.length > 0;
   const isMatch = confirmFilled && form.password === form.password_confirmation;
   const isMismatch =
     confirmFilled && !isMatch && form.password_confirmation.length >= form.password.length;
 
-  // Mode du robot
   let robotMode = "idle";
   if (loading) robotMode = "loading";
   else if (robotError) robotMode = "error";
@@ -92,11 +88,10 @@ export default function Register() {
   const strength = getStrength(form.password);
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#0A1229] text-white">
-      {/* ===== Fond : glows + grille de points ===== */}
+    <div className="relative min-h-screen overflow-hidden bg-[#0A1526] text-white">
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-32 top-10 h-[420px] w-[420px] rounded-full bg-emerald-500/10 blur-[120px]" />
-        <div className="absolute -right-32 bottom-0 h-[420px] w-[420px] rounded-full bg-blue-500/10 blur-[120px]" />
+        <div className="absolute -left-32 top-10 h-[420px] w-[420px] rounded-full bg-mint/10 blur-[120px]" />
+        <div className="absolute -right-32 bottom-0 h-[420px] w-[420px] rounded-full bg-navy-500/15 blur-[120px]" />
         <div
           className="absolute inset-0 opacity-[0.04]"
           style={{
@@ -106,26 +101,22 @@ export default function Register() {
         />
       </div>
 
-      {/* ===== Lien retour ===== */}
       <Link
         to="/"
-        className="absolute left-6 top-6 z-20 flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 backdrop-blur-md transition hover:bg-white/10"
+        className="absolute left-6 top-6 z-20 flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 backdrop-blur-md transition hover:bg-white/10"
       >
-        <ArrowLeft size={15} />
+        <ArrowLeft size={15} strokeWidth={1.75} />
         Accueil
       </Link>
 
       <main className="relative z-10 mx-auto grid min-h-screen max-w-7xl items-center gap-10 px-6 py-20 lg:grid-cols-[0.85fr_1.15fr] lg:py-8">
-        {/* ---------- Gauche : message + robot ---------- */}
         <section className="hidden lg:block">
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-400">
+          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-mint">
             Rejoindre l'écosystème
           </p>
           <h2 className="mt-3 text-4xl font-bold leading-[1.1] xl:text-5xl">
             Une place pour votre{" "}
-            <span className="bg-gradient-to-r from-emerald-400 to-emerald-300 bg-clip-text text-transparent">
-              prochain chapitre
-            </span>{" "}
+            <span className="text-mint">prochain chapitre</span>{" "}
             professionnel.
           </h2>
           <p className="mt-4 max-w-md text-base leading-relaxed text-slate-400">
@@ -138,17 +129,15 @@ export default function Register() {
           </div>
         </section>
 
-        {/* ---------- Droite : formulaire ---------- */}
         <section className="flex justify-center lg:justify-end">
-          <div className="w-full max-w-xl rounded-3xl border border-white/10 bg-white/[0.04] p-7 shadow-2xl shadow-black/30 backdrop-blur-xl sm:p-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400">
+          <div className="w-full max-w-xl rounded-xl2 border border-white/10 bg-white/[0.04] p-7 shadow-pop backdrop-blur-xl sm:p-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-mint">
               Créer mon accès
             </p>
             <h1 className="mt-2 text-2xl font-bold text-white">
               Bienvenue dans TalentShare.
             </h1>
 
-            {/* Choix du rôle */}
             <div className="mt-5 grid grid-cols-2 gap-2.5">
               {roles.map(({ value, icon: Icon, title, subtitle }) => {
                 const active = role === value;
@@ -157,18 +146,18 @@ export default function Register() {
                     key={value}
                     type="button"
                     onClick={() => setRole(value)}
-                    className={`flex items-center gap-3 rounded-2xl border p-3 text-left transition ${
+                    className={`flex items-center gap-3 rounded-xl2 border p-3 text-left transition ${
                       active
-                        ? "border-emerald-400/60 bg-emerald-500/10"
+                        ? "border-mint/60 bg-mint/10"
                         : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10"
                     }`}
                   >
                     <span
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
-                        active ? "bg-emerald-500/20 text-emerald-300" : "bg-white/5 text-slate-400"
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                        active ? "bg-mint/20 text-mint" : "bg-white/5 text-slate-400"
                       }`}
                     >
-                      <Icon size={18} />
+                      <Icon size={18} strokeWidth={1.5} />
                     </span>
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-semibold text-white">{title}</span>
@@ -180,7 +169,6 @@ export default function Register() {
             </div>
 
             <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-              {/* Nom + Email */}
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className={labelClass}>Nom ou raison sociale</label>
@@ -212,7 +200,6 @@ export default function Register() {
                 </div>
               </div>
 
-              {/* Mot de passe + Confirmation */}
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className={labelClass}>Mot de passe</label>
@@ -234,7 +221,7 @@ export default function Register() {
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-4 top-1/2 mt-1 -translate-y-1/2 text-slate-500 transition hover:text-white"
                     >
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      {showPassword ? <EyeOff size={18} strokeWidth={1.5} /> : <Eye size={18} strokeWidth={1.5} />}
                     </button>
                   </div>
                 </div>
@@ -259,13 +246,12 @@ export default function Register() {
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                       className="absolute right-4 top-1/2 mt-1 -translate-y-1/2 text-slate-500 transition hover:text-white"
                     >
-                      {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      {showConfirmPassword ? <EyeOff size={18} strokeWidth={1.5} /> : <Eye size={18} strokeWidth={1.5} />}
                     </button>
                   </div>
                 </div>
               </div>
 
-              {/* Force du mot de passe */}
               {form.password && (
                 <div className="flex items-center gap-3">
                   <div className="flex flex-1 gap-1.5">
@@ -285,24 +271,24 @@ export default function Register() {
               )}
 
               {error && (
-                <div className="flex items-center gap-2 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-3.5 text-sm text-rose-300">
-                  <X size={16} /> {error}
+                <div className="flex items-center gap-2 rounded-xl2 border border-rose-500/30 bg-rose-500/10 p-3.5 text-sm text-rose-400">
+                  <X size={16} strokeWidth={1.75} /> {error}
                 </div>
               )}
 
               <button
                 type="submit"
                 disabled={loading}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-500 py-3.5 text-sm font-bold text-[#0A1229] transition-all hover:scale-[1.01] hover:bg-emerald-400 disabled:opacity-60 disabled:hover:scale-100"
+                className="flex w-full items-center justify-center gap-2 rounded-xl2 bg-mint py-3.5 text-sm font-bold text-navy-900 transition-all hover:bg-mint-light disabled:opacity-60"
               >
                 {loading ? (
                   <>
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#0A1229] border-t-transparent" />
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-navy-900 border-t-transparent" />
                     Création en cours...
                   </>
                 ) : (
                   <>
-                    Créer mon compte <ArrowRight size={16} />
+                    Créer mon compte <ArrowRight size={16} strokeWidth={1.75} />
                   </>
                 )}
               </button>
@@ -310,7 +296,7 @@ export default function Register() {
 
             <p className="mt-5 text-center text-sm text-slate-400">
               Déjà un compte ?{" "}
-              <Link to="/login" className="font-semibold text-emerald-400 hover:text-emerald-300">
+              <Link to="/login" className="font-semibold text-mint hover:text-mint-light">
                 Se connecter
               </Link>
             </p>
