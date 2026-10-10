@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Circle, Moon, Sun, LayoutDashboard } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { useAuth } from "../../context/AuthContext";
@@ -13,7 +12,6 @@ export default function PublicNavbar({ variant = "dark" }) {
   const isDark = variant === "dark";
   const currentPath = location.pathname;
 
-  // ✅ Détecte l'ancre active
   const [activeAnchor, setActiveAnchor] = useState("");
   useEffect(() => {
     const handleHashChange = () => setActiveAnchor(window.location.hash);
@@ -28,7 +26,6 @@ export default function PublicNavbar({ variant = "dark" }) {
     return currentPath === path || currentPath.startsWith(path + "/");
   };
 
-  // ✅ Scroll smooth vers les ancres
   const scrollToAnchor = (e, anchor) => {
     e.preventDefault();
     if (currentPath !== "/") {
@@ -46,28 +43,28 @@ export default function PublicNavbar({ variant = "dark" }) {
   };
 
   const linkClass = (active) =>
-    `px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+    `px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
       active
         ? isDark
-          ? "bg-mint/15 text-mint font-semibold"
-          : "bg-navy/10 text-navy font-semibold"
+          ? "bg-mint/10 text-mint font-semibold"
+          : "bg-navy-50 text-navy-800 font-semibold"
         : isDark
           ? "text-slate-300 hover:text-white hover:bg-white/5"
-          : "text-slate-600 hover:text-navy hover:bg-slate-100"
+          : "text-slate-600 hover:text-navy-800 hover:bg-slate-100"
     }`;
 
   return (
     <header
-      className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 flex w-[calc(100%-3rem)] max-w-6xl items-center justify-between gap-4 rounded-2xl border px-5 py-3 backdrop-blur-xl shadow-lg ${
+      className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 flex w-[calc(100%-2rem)] max-w-6xl items-center justify-between gap-4 rounded-xl2 border px-5 py-3 backdrop-blur-xl shadow-card ${
         isDark
-          ? "border-white/10 bg-navy-light/90 text-white"
-          : "border-slate-200 bg-white/90 text-navy"
+          ? "border-white/10 bg-navy-900/90 text-white"
+          : "border-slate-200 bg-white/90 text-navy-800"
       }`}
     >
       {/* Logo */}
-      <Link to="/" className="flex items-center gap-2 font-bold shrink-0">
-        <span className="flex h-8 w-8 items-center justify-center rounded-full border border-mint/40 bg-mint/10 text-mint">
-          <Circle size={14} strokeWidth={3} />
+      <Link to="/" className="flex items-center gap-2.5 font-bold shrink-0">
+        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-navy-800 text-white">
+          <span className="text-sm font-extrabold">T</span>
         </span>
         <span className="hidden sm:inline whitespace-nowrap">TalentShare</span>
       </Link>
@@ -115,15 +112,16 @@ export default function PublicNavbar({ variant = "dark" }) {
       <div className="flex items-center gap-2 shrink-0">
         <button
           onClick={toggleTheme}
-          className={`hidden sm:flex rounded-full p-2 transition-colors ${
+          className={`hidden sm:flex rounded-lg p-2 text-xs font-medium transition-colors ${
             isDark ? "text-slate-300 hover:bg-white/10" : "text-slate-500 hover:bg-slate-100"
           }`}
+          aria-label="Changer de thème"
         >
-          {theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}
+          {theme === "dark" ? "Clair" : "Sombre"}
         </button>
 
         <div
-          className={`hidden sm:flex items-center rounded-full border p-0.5 text-xs font-semibold ${
+          className={`hidden sm:flex items-center rounded-lg border p-0.5 text-xs font-semibold ${
             isDark ? "border-white/15" : "border-slate-200"
           }`}
         >
@@ -131,14 +129,14 @@ export default function PublicNavbar({ variant = "dark" }) {
             <button
               key={l}
               onClick={() => setLang(l)}
-              className={`rounded-full px-2.5 py-1 transition-colors ${
+              className={`rounded-md px-2.5 py-1 transition-colors ${
                 lang === l
                   ? isDark
-                    ? "bg-white text-navy font-bold"
-                    : "bg-navy text-white font-bold"
+                    ? "bg-white text-navy-900 font-bold"
+                    : "bg-navy-800 text-white font-bold"
                   : isDark
                     ? "text-slate-400 hover:text-white"
-                    : "text-slate-500 hover:text-navy"
+                    : "text-slate-500 hover:text-navy-800"
               }`}
             >
               {l}
@@ -147,32 +145,32 @@ export default function PublicNavbar({ variant = "dark" }) {
         </div>
 
         {loading ? (
-          <div className="hidden h-9 w-20 animate-pulse rounded-full bg-slate-500/20 sm:block" />
+          <div className="hidden h-9 w-20 animate-pulse rounded-lg bg-slate-500/20 sm:block" />
         ) : user ? (
           <>
             <Link
               to="/dashboard"
-              className={`hidden sm:flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold whitespace-nowrap ${
+              className={`hidden sm:flex items-center rounded-lg px-3 py-2 text-sm font-semibold whitespace-nowrap ${
                 isDark ? "text-slate-200 hover:bg-white/10" : "text-slate-600 hover:bg-slate-100"
               }`}
             >
-              <LayoutDashboard size={14} /> Mon espace
+              Mon espace
             </Link>
             <div
-              className={`flex items-center gap-2 rounded-full border pl-1 pr-3 py-1 ${
+              className={`flex items-center gap-2 rounded-lg border pl-1 pr-3 py-1 ${
                 isDark ? "border-white/15 bg-white/5" : "border-slate-200 bg-white"
               }`}
             >
               <span
-                className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold shrink-0 ${
-                  isDark ? "bg-mint text-navy" : "bg-navy text-white"
+                className={`flex h-7 w-7 items-center justify-center rounded-md text-xs font-bold shrink-0 ${
+                  isDark ? "bg-mint text-navy-900" : "bg-navy-800 text-white"
                 }`}
               >
                 {user.name?.charAt(0)?.toUpperCase() || "?"}
               </span>
               <span
                 className={`hidden sm:inline text-xs font-semibold whitespace-nowrap ${
-                  isDark ? "text-white" : "text-navy"
+                  isDark ? "text-white" : "text-navy-800"
                 }`}
               >
                 {user.name?.split(" ")[0] || user.email}
@@ -184,14 +182,14 @@ export default function PublicNavbar({ variant = "dark" }) {
             <Link
               to="/login"
               className={`hidden sm:block text-sm font-medium whitespace-nowrap ${
-                isDark ? "text-slate-200 hover:text-white" : "text-slate-600 hover:text-navy"
+                isDark ? "text-slate-200 hover:text-white" : "text-slate-600 hover:text-navy-800"
               }`}
             >
               Se connecter
             </Link>
             <Link
               to="/register"
-              className="rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-[#0A1229] whitespace-nowrap transition-all hover:bg-emerald-400"
+              className="rounded-lg bg-navy-800 px-4 py-2 text-sm font-semibold text-white whitespace-nowrap transition-all hover:bg-navy-700"
             >
               Rejoindre
             </Link>

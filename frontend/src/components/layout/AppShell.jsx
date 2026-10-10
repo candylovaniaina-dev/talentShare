@@ -1,9 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import {
-  LayoutDashboard, User, Briefcase, Search, MessageSquare,
-  Circle, Building2, Layers,
-} from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import NotificationBell from "./NotificationBell";
 import DropdownMenu from "./DropdownMenu";
@@ -11,34 +7,34 @@ import api from "../../services/api";
 
 const navByRole = {
   company: [
-    { to: "/dashboard",             label: "Tableau de bord",       icon: LayoutDashboard },
-    { to: "/company",               label: "Mon entreprise",        icon: Building2 },
-    { to: "/my-publications",       label: "Mes publications",      icon: Briefcase },
-    { to: "/resource-offers/browse",label: "Ressources disponibles",icon: Search },
-    { to: "/my-activity",           label: "Mon activité",          icon: Layers },
-    { to: "/messages",              label: "Messagerie",            icon: MessageSquare, badge: "messages" },
+    { to: "/dashboard",              label: "Tableau de bord" },
+    { to: "/company",                label: "Mon entreprise" },
+    { to: "/my-publications",        label: "Mes publications" },
+    { to: "/resource-offers/browse", label: "Ressources disponibles" },
+    { to: "/my-activity",            label: "Mon activité" },
+    { to: "/messages",               label: "Messagerie", badge: "messages" },
   ],
   employee: [
-    { to: "/dashboard",             label: "Tableau de bord",       icon: LayoutDashboard },
-    { to: "/profile",               label: "Mon profil",            icon: User },
-    { to: "/explore-dashboard",     label: "Explorer",              icon: Search },
-    { to: "/my-activity",           label: "Mon activité",          icon: Layers },
-    { to: "/messages",              label: "Messagerie",            icon: MessageSquare, badge: "messages" },
+    { to: "/dashboard",              label: "Tableau de bord" },
+    { to: "/profile",                label: "Mon profil" },
+    { to: "/explore-dashboard",      label: "Explorer" },
+    { to: "/my-activity",            label: "Mon activité" },
+    { to: "/messages",               label: "Messagerie", badge: "messages" },
   ],
   student: [
-    { to: "/dashboard",             label: "Tableau de bord",       icon: LayoutDashboard },
-    { to: "/profile",               label: "Mon profil",            icon: User },
-    { to: "/explore-dashboard",     label: "Explorer",              icon: Search },
-    { to: "/my-activity",           label: "Mon activité",          icon: Layers },
-    { to: "/messages",              label: "Messagerie",            icon: MessageSquare, badge: "messages" },
+    { to: "/dashboard",              label: "Tableau de bord" },
+    { to: "/profile",                label: "Mon profil" },
+    { to: "/explore-dashboard",      label: "Explorer" },
+    { to: "/my-activity",            label: "Mon activité" },
+    { to: "/messages",               label: "Messagerie", badge: "messages" },
   ],
   university: [
-    { to: "/dashboard",             label: "Tableau de bord",       icon: LayoutDashboard },
-    { to: "/messages",              label: "Messagerie",            icon: MessageSquare, badge: "messages" },
+    { to: "/dashboard",              label: "Tableau de bord" },
+    { to: "/messages",               label: "Messagerie", badge: "messages" },
   ],
   admin: [
-    { to: "/dashboard",             label: "Tableau de bord",       icon: LayoutDashboard },
-    { to: "/admin/verifications",   label: "Vérifications",         icon: User },
+    { to: "/dashboard",              label: "Tableau de bord" },
+    { to: "/admin/verifications",    label: "Vérifications" },
   ],
 };
 
@@ -49,6 +45,7 @@ export default function AppShell({ children }) {
 
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [unreadNotifs, setUnreadNotifs] = useState(0);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const isOnMessagesPage = location.pathname.startsWith("/messages");
 
@@ -84,6 +81,10 @@ export default function AppShell({ children }) {
     }
   }, [location.pathname, isOnMessagesPage]);
 
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
+
   const getBadgeCount = (badgeType) => {
     if (badgeType === "messages") return isOnMessagesPage ? 0 : unreadMessages;
     if (badgeType === "notifications") return unreadNotifs;
@@ -92,73 +93,128 @@ export default function AppShell({ children }) {
 
   return (
     <div className="min-h-screen bg-[var(--bg-app)] font-sans text-[var(--text-app)] transition-colors">
-      <div className="flex">
-        <aside className="hidden w-64 shrink-0 flex-col border-r border-[var(--border-app)] bg-[var(--bg-app)] p-5 md:flex">
-          <Link to="/" className="mb-8 flex items-center gap-2 font-bold text-[var(--text-app)]">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
-              <Circle size={14} strokeWidth={3} />
-            </span>
-            TalentShare
-          </Link>
+      {/* Sidebar — desktop */}
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 shrink-0 flex-col border-r border-[var(--border-app)] bg-[var(--bg-surface)] md:flex">
+        <Link to="/" className="flex items-center gap-2.5 px-6 py-5 text-base font-bold text-[var(--text-app)]">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-navy-800 text-white">
+            <span className="text-sm font-extrabold">T</span>
+          </span>
+          TalentShare
+        </Link>
 
-          <nav className="flex-1 space-y-1">
-            {nav.map(({ to, label, icon: Icon, badge }) => {
-              const active = location.pathname === to || location.pathname.startsWith(to + "/");
-              const badgeCount = badge ? getBadgeCount(badge) : 0;
+        <nav className="flex-1 space-y-0.5 px-3 py-2">
+          {nav.map(({ to, label, badge }) => {
+            const active = location.pathname === to || location.pathname.startsWith(to + "/");
+            const badgeCount = badge ? getBadgeCount(badge) : 0;
 
-              return (
-                <Link
-                  key={to}
-                  to={to}
-                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
-                    active
-                      ? "bg-emerald-500 text-[#0A1229] shadow-lg shadow-emerald-500/20"
-                      : "text-[var(--text-muted)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-app)]"
-                  }`}
-                >
-                  <Icon size={18} />
-                  <span className="flex-1">{label}</span>
-                  {badgeCount > 0 && (
-                    <span className={`flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold ${
-                      active ? "bg-[#0A1229] text-emerald-400" : "bg-emerald-500 text-[#0A1229]"
-                    }`}>
-                      {badgeCount > 99 ? "99+" : badgeCount}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
-          </nav>
+            return (
+              <Link
+                key={to}
+                to={to}
+                className={`flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
+                  active
+                    ? "bg-navy-800 text-white"
+                    : "text-[var(--text-muted)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-app)]"
+                }`}
+              >
+                <span>{label}</span>
+                {badgeCount > 0 && (
+                  <span className={`flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold ${
+                    active ? "bg-white/20 text-white" : "bg-[var(--accent)] text-white"
+                  }`}>
+                    {badgeCount > 99 ? "99+" : badgeCount}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </nav>
 
-          <div className="mt-4 rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-3">
+        <div className="px-3 pb-4">
+          <div className="rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-2)] px-3 py-2.5">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-faint)]">
               Version Beta
             </p>
-            <p className="mt-1 text-xs text-[var(--text-muted)]">
+            <p className="mt-0.5 text-xs text-[var(--text-muted)]">
               Vos données sont protégées.
             </p>
           </div>
-        </aside>
-
-        <div className="flex-1 min-w-0">
-          <header className="flex items-center justify-between border-b border-[var(--border-app)] bg-[var(--bg-app)]/80 backdrop-blur-xl px-6 py-4 sticky top-0 z-30">
-            <div>
-              <p className="text-xs text-[var(--text-faint)]">Bienvenue</p>
-              <p className="font-semibold text-[var(--text-app)]">{user?.name}</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <NotificationBell />
-              <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400">
-                {roleLabel(user?.role)}
-              </span>
-              <DropdownMenu />
-            </div>
-          </header>
-
-          <main className="p-6">
-            {children}
-          </main>
         </div>
+      </aside>
+
+      {/* Sidebar — mobile drawer */}
+      {mobileOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/40 md:hidden"
+            onClick={() => setMobileOpen(false)}
+          />
+          <aside className="fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-[var(--border-app)] bg-[var(--bg-surface)] md:hidden">
+            <Link to="/" className="flex items-center gap-2.5 px-6 py-5 text-base font-bold text-[var(--text-app)]">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-navy-800 text-white">
+                <span className="text-sm font-extrabold">T</span>
+              </span>
+              TalentShare
+            </Link>
+            <nav className="flex-1 space-y-0.5 px-3 py-2">
+              {nav.map(({ to, label, badge }) => {
+                const active = location.pathname === to || location.pathname.startsWith(to + "/");
+                const badgeCount = badge ? getBadgeCount(badge) : 0;
+                return (
+                  <Link
+                    key={to}
+                    to={to}
+                    className={`flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
+                      active
+                        ? "bg-navy-800 text-white"
+                        : "text-[var(--text-muted)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-app)]"
+                    }`}
+                  >
+                    <span>{label}</span>
+                    {badgeCount > 0 && (
+                      <span className={`flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold ${
+                        active ? "bg-white/20 text-white" : "bg-[var(--accent)] text-white"
+                      }`}>
+                        {badgeCount > 99 ? "99+" : badgeCount}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </nav>
+          </aside>
+        </>
+      )}
+
+      {/* Main content */}
+      <div className="md:pl-60">
+        <header className="flex items-center justify-between border-b border-[var(--border-app)] bg-[var(--bg-surface)] px-4 py-3.5 md:px-8 md:py-4 sticky top-0 z-30">
+          {/* Mobile menu button */}
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border-app)] text-[var(--text-muted)] md:hidden"
+            aria-label="Ouvrir le menu"
+          >
+            <span className="text-lg leading-none">≡</span>
+          </button>
+
+          <div className="hidden md:block">
+            <p className="text-xs text-[var(--text-faint)]">Bienvenue</p>
+            <p className="font-semibold text-[var(--text-app)]">{user?.name}</p>
+          </div>
+
+          <div className="flex items-center gap-3 ml-auto">
+            <NotificationBell />
+            <span className="hidden sm:inline-flex rounded-md border border-[var(--border-app)] bg-[var(--bg-surface-2)] px-2.5 py-1 text-xs font-semibold text-[var(--text-muted)]">
+              {roleLabel(user?.role)}
+            </span>
+            <DropdownMenu />
+          </div>
+        </header>
+
+        <main className="p-4 md:p-8">
+          {children}
+        </main>
       </div>
     </div>
   );

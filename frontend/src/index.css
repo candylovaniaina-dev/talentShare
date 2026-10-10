@@ -18,56 +18,72 @@ html {
    SCROLLBAR CUSTOM
 ============================================================ */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-app);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(110, 231, 200, 0.2);
-  border-radius: 5px;
+  background: rgba(15, 23, 42, 0.12);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(110, 231, 200, 0.4);
+  background: rgba(15, 23, 42, 0.22);
 }
 
-html.light ::-webkit-scrollbar-track {
-  background: #F1F5F9;
+html.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.10);
 }
 
-html.light ::-webkit-scrollbar-thumb {
-  background: rgba(11, 22, 51, 0.2);
-}
-
-html.light ::-webkit-scrollbar-thumb:hover {
-  background: rgba(11, 22, 51, 0.4);
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.18);
 }
 
 /* ============================================================
    VARIABLES DE THÈME
 ============================================================ */
 html.dark {
-  --bg-app: #0A1229;
-  --bg-surface: rgba(255, 255, 255, 0.04);
-  --bg-surface-hover: rgba(255, 255, 255, 0.08);
-  --border-app: rgba(255, 255, 255, 0.1);
-  --text-app: #ffffff;
-  --text-muted: #94a3b8;
-  --text-faint: #64748b;
+  --bg-app: #0A1526;
+  --bg-surface: #101F38;
+  --bg-surface-2: #162A4A;
+  --bg-surface-hover: #1B3255;
+  --border-app: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --text-app: #F1F5F9;
+  --text-muted: #94A3B8;
+  --text-faint: #64748B;
+  --accent: #14B8A6;
+  --accent-light: #5EEAD4;
+  --accent-bg: rgba(20, 184, 166, 0.10);
+  --accent-text: #5EEAD4;
+  --primary: #2A5BA8;
+  --primary-light: #4D77BF;
+  --shadow-card: 0 1px 3px 0 rgba(0,0,0,0.20), 0 1px 2px 0 rgba(0,0,0,0.14);
+  --shadow-pop: 0 8px 24px 0 rgba(0,0,0,0.30), 0 2px 8px 0 rgba(0,0,0,0.18);
 }
 
 html.light {
-  --bg-app: #F8FAFC;
+  --bg-app: #F7F8FB;
   --bg-surface: #FFFFFF;
-  --bg-surface-hover: #F1F5F9;
-  --border-app: rgba(15, 23, 42, 0.1);
+  --bg-surface-2: #F4F6F9;
+  --bg-surface-hover: #EEF1F6;
+  --border-app: rgba(15, 23, 42, 0.08);
+  --border-strong: rgba(15, 23, 42, 0.14);
   --text-app: #0F172A;
   --text-muted: #475569;
   --text-faint: #94A3B8;
+  --accent: #14B8A6;
+  --accent-light: #5EEAD4;
+  --accent-bg: rgba(20, 184, 166, 0.08);
+  --accent-text: #0D9488;
+  --primary: #0B1F3A;
+  --primary-light: #2A5BA8;
+  --shadow-card: 0 1px 3px 0 rgba(15,23,42,0.06), 0 1px 2px 0 rgba(15,23,42,0.04);
+  --shadow-pop: 0 8px 24px 0 rgba(15,23,42,0.10), 0 2px 8px 0 rgba(15,23,42,0.06);
 }
 
 body {
@@ -87,10 +103,12 @@ html.font-large { font-size: 18px; }
    CONTRASTE ÉLEVÉ
 ============================================================ */
 html.high-contrast {
-  --border-app: rgba(255, 255, 255, 0.35);
+  --border-app: rgba(255, 255, 255, 0.25);
+  --border-strong: rgba(255, 255, 255, 0.40);
 }
 html.high-contrast.light {
-  --border-app: rgba(15, 23, 42, 0.4);
+  --border-app: rgba(15, 23, 42, 0.25);
+  --border-strong: rgba(15, 23, 42, 0.40);
   --text-muted: #1e293b;
 }
 html.high-contrast * {
@@ -111,14 +129,13 @@ html.reduce-motion *::after {
 
 /* ============================================================
    MENUS DÉROULANTS NATIFS — CORRECTION NAVIGATEUR
-   (les <option> ne peuvent pas utiliser var() sur certains navigateurs)
 ============================================================ */
 
 /* ---- MODE CLAIR ---- */
 html.light select {
   background-color: #FFFFFF !important;
   color: #0F172A !important;
-  border-color: rgba(15, 23, 42, 0.15) !important;
+  border-color: rgba(15, 23, 42, 0.12) !important;
 }
 
 html.light select option {
@@ -129,7 +146,7 @@ html.light select option {
 
 html.light select option:checked,
 html.light select option:hover {
-  background-color: #10B981 !important;
+  background-color: #0B1F3A !important;
   color: #FFFFFF !important;
 }
 
@@ -137,7 +154,7 @@ html.light select {
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
   background-repeat: no-repeat !important;
   background-position: right 10px center !important;
   background-size: 12px !important;
@@ -146,18 +163,19 @@ html.light select {
 
 /* ---- MODE SOMBRE ---- */
 html.dark select {
-  background-color: rgba(255, 255, 255, 0.05);
-  color: #FFFFFF;
+  background-color: var(--bg-surface);
+  color: var(--text-app);
+  border-color: var(--border-app);
 }
 
 html.dark select option {
-  background-color: #0F1E45 !important;
-  color: #FFFFFF !important;
+  background-color: #101F38 !important;
+  color: #F1F5F9 !important;
 }
 
 html.dark select option:checked,
 html.dark select option:hover {
-  background-color: #10B981 !important;
+  background-color: #0B1F3A !important;
   color: #FFFFFF !important;
 }
 
@@ -186,6 +204,7 @@ html.light select:focus option {
   background-color: #FFFFFF !important;
   color: #0F172A !important;
 }
+
 /* ============================================================
    ANIMATION DES TOASTS
 ============================================================ */
@@ -199,6 +218,7 @@ html.light select:focus option {
     transform: translateX(0);
   }
 }
+
 /* ============================================================
    ANIMATION DES MODALS
 ============================================================ */
