@@ -40,10 +40,10 @@ const MISSION_STATUS = {
 };
 
 const TONE_STYLES = {
-  emerald: "border-emerald-500/40 bg-emerald-500/10 text-emerald-400",
-  amber:   "border-amber-500/40 bg-amber-500/10 text-amber-400",
-  rose:    "border-rose-500/40 bg-rose-500/10 text-rose-400",
-  blue:    "border-blue-500/40 bg-blue-500/10 text-blue-400",
+  emerald: "border-mint/25 bg-mint/10 text-mint",
+  amber:   "border-amber-500/25 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-600 dark:text-amber-400",
+  rose:    "border-rose-500/25 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400",
+  blue:    "border-blue-500/25 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-600 dark:text-blue-400",
   slate:   "border-[var(--border-app)] bg-[var(--bg-surface-hover)] text-[var(--text-muted)]",
 };
 
@@ -258,19 +258,19 @@ export default function MyActivity() {
   };
 
   const stats = [
-    { label: "Propositions", count: counts.proposals, icon: Handshake, color: "text-amber-400" },
-    { label: "Missions",     count: counts.missions,  icon: Briefcase, color: "text-emerald-400" },
+    { label: "Propositions", count: counts.proposals, icon: Handshake, color: "text-amber-600 dark:text-amber-400" },
+    { label: "Missions",     count: counts.missions,  icon: Briefcase, color: "text-mint" },
     {
       label: "En cours",
       count: missions.filter((m) => ["planned", "active"].includes(m.status)).length,
       icon: PlayCircle,
-      color: "text-blue-400",
+      color: "text-blue-600 dark:text-blue-400",
     },
     {
       label: "Terminées",
       count: missions.filter((m) => m.status === "completed").length,
       icon: CheckCircle,
-      color: "text-emerald-400",
+      color: "text-mint",
     },
   ];
 
@@ -279,14 +279,14 @@ export default function MyActivity() {
       <div className="mx-auto max-w-5xl">
 
         {/* ===== HEADER ===== */}
-        <div className="mb-6 rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-6">
+        <div className="mb-6 rounded-xl22 border border-[var(--border-app)] bg-[var(--bg-surface)] p-6">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl2 bg-mint/15 text-mint">
                 <Sparkles size={18} />
               </span>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-400">
+                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-mint">
                   Espace personnel
                 </p>
                 <h1 className="text-xl font-bold text-[var(--text-app)]">
@@ -299,7 +299,7 @@ export default function MyActivity() {
             {user?.role === "company" && (
     <Link
       to="/proposals/new"
-      className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-xs font-bold text-[#0A1229] transition hover:bg-emerald-400"
+      className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-xs font-bold text-[#0A1229] transition hover:bg-mint-light"
     >
       <Plus size={14} /> Publier une proposition
     </Link>
@@ -310,7 +310,7 @@ export default function MyActivity() {
           </p>
 
           {/* ✅ Barre de recherche + Filtres */}
-          <div className="mt-4 flex items-center gap-2 rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-4 py-2.5 focus-within:border-emerald-500/40 transition">
+          <div className="mt-4 flex items-center gap-2 rounded-xl2 border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-4 py-2.5 focus-within:border-emerald-500/40 transition">
             <Search size={16} className="text-[var(--text-muted)] shrink-0" />
             <input
               type="text"
@@ -346,14 +346,14 @@ export default function MyActivity() {
                   key={t.id}
                   onClick={() => setTab(t.id)}
                   className={`relative flex items-center gap-2 px-4 py-3 text-sm font-semibold transition ${
-                    active ? "text-emerald-400" : "text-[var(--text-muted)] hover:text-[var(--text-app)]"
+                    active ? "text-mint" : "text-[var(--text-muted)] hover:text-[var(--text-app)]"
                   }`}
                 >
                   <Icon size={14} />
                   {t.label}
                   <span
                     className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-                      active ? "bg-emerald-500/20 text-emerald-400" : "bg-[var(--bg-surface-hover)] text-[var(--text-faint)]"
+                      active ? "bg-emerald-500/20 text-mint" : "bg-[var(--bg-surface-hover)] text-[var(--text-faint)]"
                     }`}
                   >
                     {counts[t.id]}
@@ -389,7 +389,7 @@ export default function MyActivity() {
         {loading ? (
           <div className="space-y-3">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-28 animate-pulse rounded-2xl bg-[var(--bg-surface)]" />
+              <div key={i} className="h-28 animate-pulse rounded-xl22 bg-[var(--bg-surface)]" />
             ))}
           </div>
         ) : filtered.length === 0 ? (
@@ -408,7 +408,7 @@ export default function MyActivity() {
               !query && tab !== "missions" && (
                 <Link
                   to="/proposals/new"
-                  className="text-xs font-medium text-emerald-400 hover:text-emerald-300"
+                  className="text-xs font-medium text-mint hover:text-emerald-300"
                 >
                   Publier une proposition
                 </Link>
@@ -477,10 +477,10 @@ function ProposalRow({
   const isDraft = p.status === "draft";
 
   return (
-    <div className="group rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-5 transition hover:border-emerald-500/40">
+    <div className="group rounded-xl22 border border-[var(--border-app)] bg-[var(--bg-surface)] p-5 transition hover:border-emerald-500/40">
       <div className="flex items-start gap-4">
         <div className="shrink-0">
-          <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400">
+          <span className="flex h-12 w-12 items-center justify-center rounded-xl2 bg-amber-500/10 text-amber-600 dark:text-amber-400">
             <Handshake size={20} />
           </span>
         </div>
@@ -494,7 +494,7 @@ function ProposalRow({
               {direction === "received" ? "Reçue" : "Envoyée"}
             </span>
             {p.match_score != null && (
-              <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
+              <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-mint">
                 <Target size={9} className="mr-1 inline" />
                 {p.match_score}%
               </span>
@@ -556,7 +556,7 @@ function ProposalRow({
                 <button
                   onClick={() => onAccept(p.id)}
                   disabled={actionLoading === p.id}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3.5 py-1.5 text-xs font-bold text-[#0A1229] transition hover:bg-emerald-400 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3.5 py-1.5 text-xs font-bold text-[#0A1229] transition hover:bg-mint-light disabled:opacity-50"
                 >
                   <Check size={12} /> Accepter
                 </button>
@@ -575,7 +575,7 @@ function ProposalRow({
                 <button
                   onClick={() => onSubmit(p.id)}
                   disabled={actionLoading === p.id}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3.5 py-1.5 text-xs font-bold text-[#0A1229] transition hover:bg-emerald-400 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3.5 py-1.5 text-xs font-bold text-[#0A1229] transition hover:bg-mint-light disabled:opacity-50"
                 >
                   <Send size={12} /> Envoyer
                 </button>
@@ -629,10 +629,10 @@ function MissionRow({ mission, user, onAccept, onDecline, onUpdateStatus, action
   const isRequesting = myCompanyIds.includes(mission.requesting_company_id);
 
   return (
-    <div className="group rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-5 transition hover:border-emerald-500/40">
+    <div className="group rounded-xl22 border border-[var(--border-app)] bg-[var(--bg-surface)] p-5 transition hover:border-emerald-500/40">
       <div className="flex items-start gap-4">
         <div className="shrink-0">
-          <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
+          <span className="flex h-12 w-12 items-center justify-center rounded-xl2 bg-emerald-500/10 text-mint">
             <Briefcase size={20} />
           </span>
         </div>
@@ -651,12 +651,12 @@ function MissionRow({ mission, user, onAccept, onDecline, onUpdateStatus, action
               </span>
             )}
             {isSupplying && !isEmployee && (
-              <span className="rounded-md border border-blue-500/30 bg-blue-500/10 px-2 py-0.5 text-[10px] font-bold text-blue-400">
+              <span className="rounded-md border border-blue-500/30 bg-blue-500/10 px-2 py-0.5 text-[10px] font-bold text-blue-600 dark:text-blue-400">
                 Prêteur
               </span>
             )}
             {isRequesting && !isSupplying && (
-              <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
+              <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-mint">
                 Emprunteur
               </span>
             )}
@@ -695,7 +695,7 @@ function MissionRow({ mission, user, onAccept, onDecline, onUpdateStatus, action
                 <button
                   onClick={() => onAccept(mission.id)}
                   disabled={actionLoading === mission.id}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3.5 py-1.5 text-xs font-bold text-[#0A1229] transition hover:bg-emerald-400 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3.5 py-1.5 text-xs font-bold text-[#0A1229] transition hover:bg-mint-light disabled:opacity-50"
                 >
                   <Check size={12} /> Accepter
                 </button>
@@ -765,17 +765,17 @@ function MissionDetailModal({ mission, user, onClose, onAccept, onDecline, onUpd
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)]"
+        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl22 border border-[var(--border-app)] bg-[var(--bg-surface)]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 z-10 border-b border-[var(--border-app)] bg-[var(--bg-surface)] p-6">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-3">
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 shrink-0">
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl2 bg-emerald-500/10 text-mint shrink-0">
                 <Briefcase size={18} />
               </span>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-400">
+                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-mint">
                   Mission #{mission.id}
                 </p>
                 <h2 className="mt-1 text-lg font-bold text-[var(--text-app)]">
@@ -791,12 +791,12 @@ function MissionDetailModal({ mission, user, onClose, onAccept, onDecline, onUpd
                     </span>
                   )}
                   {isSupplying && !isEmployee && (
-                    <span className="rounded-md border border-blue-500/30 bg-blue-500/10 px-2 py-0.5 text-[10px] font-bold text-blue-400">
+                    <span className="rounded-md border border-blue-500/30 bg-blue-500/10 px-2 py-0.5 text-[10px] font-bold text-blue-600 dark:text-blue-400">
                       Prêteur
                     </span>
                   )}
                   {isRequesting && !isSupplying && (
-                    <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
+                    <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-mint">
                       Emprunteur
                     </span>
                   )}
@@ -820,7 +820,7 @@ function MissionDetailModal({ mission, user, onClose, onAccept, onDecline, onUpd
             <InfoCard icon={Building2} label="Emprunteur" value={mission.requesting_company?.name || "—"} />
           </div>
 
-          <div className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface-hover)] p-4">
+          <div className="rounded-xl2 border border-[var(--border-app)] bg-[var(--bg-surface-hover)] p-4">
             <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">
               Période
             </p>
@@ -836,17 +836,17 @@ function MissionDetailModal({ mission, user, onClose, onAccept, onDecline, onUpd
           </div>
 
           {timeline && ["planned", "active"].includes(mission.status) && (
-            <div className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface-hover)] p-4">
+            <div className="rounded-xl2 border border-[var(--border-app)] bg-[var(--bg-surface-hover)] p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Timer size={14} className="text-emerald-400" />
+                  <Timer size={14} className="text-mint" />
                   <p className="text-xs font-bold text-[var(--text-app)]">Progression</p>
                 </div>
                 <span className="text-xs text-[var(--text-muted)]">
                   {timeline.notStarted ? (
-                    <>Démarre dans <b className="text-emerald-400">{Math.abs(timeline.remainingDays)}j</b></>
+                    <>Démarre dans <b className="text-mint">{Math.abs(timeline.remainingDays)}j</b></>
                   ) : (
-                    <><b className="text-emerald-400">{timeline.remainingDays}</b> jours restants</>
+                    <><b className="text-mint">{timeline.remainingDays}</b> jours restants</>
                   )}
                 </span>
               </div>
@@ -863,7 +863,7 @@ function MissionDetailModal({ mission, user, onClose, onAccept, onDecline, onUpd
           )}
 
           {mission.notes && (
-            <div className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface-hover)] p-4">
+            <div className="rounded-xl2 border border-[var(--border-app)] bg-[var(--bg-surface-hover)] p-4">
               <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">
                 Notes
               </p>
@@ -888,7 +888,7 @@ function MissionDetailModal({ mission, user, onClose, onAccept, onDecline, onUpd
               <button
                 onClick={() => onAccept(mission.id)}
                 disabled={actionLoading === mission.id}
-                className="flex-1 min-w-[140px] rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] hover:bg-emerald-400 disabled:opacity-60 inline-flex items-center justify-center gap-2"
+                className="flex-1 min-w-[140px] rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] hover:bg-mint-light disabled:opacity-60 inline-flex items-center justify-center gap-2"
               >
                 <Check size={16} /> Accepter
               </button>
@@ -906,7 +906,7 @@ function MissionDetailModal({ mission, user, onClose, onAccept, onDecline, onUpd
             <button
               onClick={() => onUpdateStatus(mission.id, "active")}
               disabled={actionLoading === mission.id}
-              className="flex-1 min-w-[180px] rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] hover:bg-emerald-400 disabled:opacity-60 inline-flex items-center justify-center gap-2"
+              className="flex-1 min-w-[180px] rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] hover:bg-mint-light disabled:opacity-60 inline-flex items-center justify-center gap-2"
             >
               <PlayCircle size={16} /> Démarrer la mission
             </button>
@@ -916,7 +916,7 @@ function MissionDetailModal({ mission, user, onClose, onAccept, onDecline, onUpd
             <button
               onClick={() => onUpdateStatus(mission.id, "completed")}
               disabled={actionLoading === mission.id}
-              className="flex-1 min-w-[180px] rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] hover:bg-emerald-400 disabled:opacity-60 inline-flex items-center justify-center gap-2"
+              className="flex-1 min-w-[180px] rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] hover:bg-mint-light disabled:opacity-60 inline-flex items-center justify-center gap-2"
             >
               <CheckCircle size={16} /> Terminer
             </button>
@@ -939,7 +939,7 @@ function MissionDetailModal({ mission, user, onClose, onAccept, onDecline, onUpd
 ============================================================ */
 function InfoCard({ icon: Icon, label, value, sub }) {
   return (
-    <div className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface-hover)] p-3.5">
+    <div className="rounded-xl2 border border-[var(--border-app)] bg-[var(--bg-surface-hover)] p-3.5">
       <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
         <Icon size={11} /> {label}
       </div>
@@ -951,14 +951,14 @@ function InfoCard({ icon: Icon, label, value, sub }) {
 
 function ActionBanner({ tone, icon: Icon, title, subtitle }) {
   const toneMap = {
-    amber:   "border-amber-500/30 bg-amber-500/10 text-amber-400",
-    blue:    "border-blue-500/30 bg-blue-500/10 text-blue-400",
-    emerald: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
+    amber:   "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400",
+    blue:    "border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400",
+    emerald: "border-emerald-500/30 bg-emerald-500/10 text-mint",
   };
   const c = toneMap[tone] || toneMap.amber;
 
   return (
-    <div className={`rounded-xl border p-4 flex items-start gap-3 ${c}`}>
+    <div className={`rounded-xl2 border p-4 flex items-start gap-3 ${c}`}>
       <Icon size={16} className="shrink-0 mt-0.5" />
       <div>
         <p className="text-sm font-bold">{title}</p>

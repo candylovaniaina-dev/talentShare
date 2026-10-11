@@ -73,7 +73,7 @@ export default function BrowseResourceOffers() {
           <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
             Trouvez la perle rare prête à emprunter.
           </h1>
-          <p className="mt-2 max-w-xl text-slate-500">
+          <p className="mt-2 max-w-xl text-[var(--text-muted)]">
             Parcourez les salariés que d'autres entreprises proposent en mise à disposition.
             Contactez directement le prêteur.
           </p>
@@ -82,10 +82,10 @@ export default function BrowseResourceOffers() {
         {/* Recherche */}
         <form
           onSubmit={(e) => { e.preventDefault(); load(); }}
-          className="mt-8 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4"
+          className="mt-8 flex flex-wrap items-center gap-3 rounded-xl22 border border-[var(--border-app)] bg-[var(--bg-surface)] p-4"
         >
-          <div className="flex flex-1 min-w-[220px] items-center gap-2 rounded-xl border border-slate-200 px-3 py-2">
-            <Search size={16} className="text-slate-400" />
+          <div className="flex flex-1 min-w-[220px] items-center gap-2 rounded-xl2 border border-[var(--border-app)] px-3 py-2">
+            <Search size={16} className="text-[var(--text-muted)]" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -96,27 +96,27 @@ export default function BrowseResourceOffers() {
           <button
             type="button"
             onClick={() => setShowFilters(!showFilters)}
-            className={`relative flex items-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-semibold ${
-              showFilters ? "border-navy bg-navy text-white" : "border-slate-200 text-slate-600"
+            className={`relative flex items-center gap-1.5 rounded-xl2 border px-3 py-2 text-sm font-semibold ${
+              showFilters ? "border-navy-800 bg-navy-800 text-white" : "border-[var(--border-app)] text-[var(--text-muted)]"
             }`}
           >
             <Sliders size={14} /> Filtres
             {activeFilters > 0 && (
-              <span className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-mint text-[10px] font-bold text-navy">
+              <span className="ml-1 flex h-4 w-4 items-center justify-center rounded-xl2 bg-mint text-[10px] font-bold text-[var(--text-app)]">
                 {activeFilters}
               </span>
             )}
           </button>
-          <button className="rounded-xl bg-navy px-5 py-2.5 text-sm font-semibold text-white">
+          <button className="rounded-xl2 bg-navy-800 px-5 py-2.5 text-sm font-semibold text-white hover:bg-navy-700">
             Rechercher
           </button>
         </form>
 
         {/* Filtres avancés */}
         {showFilters && (
-          <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-4 space-y-4">
+          <div className="mt-3 rounded-xl22 border border-[var(--border-app)] bg-[var(--bg-surface)] p-4 space-y-4">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Filtres avancés</p>
+              <p className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)]">Filtres avancés</p>
               {activeFilters > 0 && (
                 <button
                   onClick={clearFilters}
@@ -129,11 +129,11 @@ export default function BrowseResourceOffers() {
 
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <label className="text-xs font-semibold text-slate-500">Type de mission</label>
+                <label className="text-xs font-semibold text-[var(--text-muted)]">Type de mission</label>
                 <select
                   value={missionType}
                   onChange={(e) => setMissionType(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-xl2 border border-[var(--border-app)] px-3 py-2 text-sm"
                 >
                   <option value="">Tous</option>
                   {Object.entries(MISSION_TYPES).map(([v, l]) => (
@@ -142,11 +142,11 @@ export default function BrowseResourceOffers() {
                 </select>
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-500">Localisation</label>
+                <label className="text-xs font-semibold text-[var(--text-muted)]">Localisation</label>
                 <select
                   value={locationType}
                   onChange={(e) => setLocationType(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-xl2 border border-[var(--border-app)] px-3 py-2 text-sm"
                 >
                   <option value="">Toutes</option>
                   <option value="onsite">🏢 Sur site</option>
@@ -155,21 +155,21 @@ export default function BrowseResourceOffers() {
                 </select>
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-500">Disponible à partir du</label>
+                <label className="text-xs font-semibold text-[var(--text-muted)]">Disponible à partir du</label>
                 <input
                   type="date"
                   value={startAt}
                   onChange={(e) => setStartAt(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-xl2 border border-[var(--border-app)] px-3 py-2 text-sm"
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-500">Jusqu'au</label>
+                <label className="text-xs font-semibold text-[var(--text-muted)]">Jusqu'au</label>
                 <input
                   type="date"
                   value={endAt}
                   onChange={(e) => setEndAt(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-xl2 border border-[var(--border-app)] px-3 py-2 text-sm"
                 />
               </div>
             </div>
@@ -177,13 +177,13 @@ export default function BrowseResourceOffers() {
             <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
               <button
                 onClick={clearFilters}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold hover:bg-slate-50"
+                className="rounded-xl2 border border-[var(--border-app)] px-4 py-2 text-sm font-semibold hover:bg-slate-50"
               >
                 Réinitialiser
               </button>
               <button
                 onClick={() => { load(); setShowFilters(false); }}
-                className="rounded-xl bg-navy px-4 py-2 text-sm font-semibold text-white hover:bg-navy-light"
+                className="rounded-xl2 bg-navy px-4 py-2 text-sm font-semibold text-white hover:bg-navy-light"
               >
                 Appliquer
               </button>
@@ -191,23 +191,23 @@ export default function BrowseResourceOffers() {
           </div>
         )}
 
-        <p className="mt-6 text-sm font-semibold text-slate-500">
+        <p className="mt-6 text-sm font-semibold text-[var(--text-muted)]">
           {loading ? "Recherche..." : `${offers.length} offre${offers.length > 1 ? "s" : ""}`}
         </p>
 
         <div className="mt-3 grid gap-4 sm:grid-cols-2">
           {offers.map((offer) => (
-            <div key={offer.id} className="rounded-2xl border border-slate-200 bg-white p-5">
+            <div key={offer.id} className="rounded-xl22 border border-[var(--border-app)] bg-[var(--bg-surface)] p-5">
               <div className="flex items-start gap-3">
                 {offer.profile?.user && (
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-mint/20 font-bold text-navy">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl2 bg-mint/20 font-bold text-[var(--text-app)]">
                     {offer.profile.user.name?.split(" ").map((n) => n[0]).join("").slice(0, 2)}
                   </div>
                 )}
                 <div className="flex-1">
                   <h3 className="font-bold">{offer.title}</h3>
                   {offer.profile?.user && (
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-[var(--text-muted)]">
                       {offer.profile.user.name}
                       {offer.profile.headline && ` · ${offer.profile.headline}`}
                     </p>
@@ -216,26 +216,26 @@ export default function BrowseResourceOffers() {
               </div>
 
               {offer.description && (
-                <p className="mt-2 text-sm text-slate-500 line-clamp-2">{offer.description}</p>
+                <p className="mt-2 text-sm text-[var(--text-muted)] line-clamp-2">{offer.description}</p>
               )}
 
               <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 font-semibold text-slate-600">
+                <span className="rounded-xl2 bg-slate-100 px-2 py-0.5 font-semibold text-[var(--text-muted)]">
                   {MISSION_TYPES[offer.mission_type] || offer.mission_type}
                 </span>
                 {offer.location_type === "remote" && (
-                  <span className="rounded-full bg-blue-100 px-2 py-0.5 font-semibold text-blue-700">
+                  <span className="rounded-xl2 bg-blue-100 px-2 py-0.5 font-semibold text-blue-700">
                     🏠 Télétravail
                   </span>
                 )}
                 {offer.daily_rate && (
-                  <span className="rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-700">
+                  <span className="rounded-xl2 bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-700">
                     💰 {offer.daily_rate}€/j
                   </span>
                 )}
               </div>
 
-              <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-500">
+              <div className="mt-3 flex flex-wrap gap-3 text-xs text-[var(--text-muted)]">
                 <span className="flex items-center gap-1">
                   <Calendar size={12} />
                   {new Date(offer.start_at).toLocaleDateString("fr-FR")} → {new Date(offer.end_at).toLocaleDateString("fr-FR")}
@@ -254,14 +254,14 @@ export default function BrowseResourceOffers() {
               </div>
 
               {offer.company && (
-                <p className="mt-3 flex items-center gap-1 text-xs text-slate-400">
+                <p className="mt-3 flex items-center gap-1 text-xs text-[var(--text-muted)]">
                   <Building2 size={12} /> Proposé par {offer.company.name}
                 </p>
               )}
 
               <Link
                 to={`/resource-offers/${offer.id}`}
-                className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white hover:bg-navy-light"
+                className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl2 bg-navy px-4 py-2 text-sm font-semibold text-white hover:bg-navy-light"
               >
                 <Eye size={14} /> Voir le détail
               </Link>
@@ -269,9 +269,9 @@ export default function BrowseResourceOffers() {
           ))}
 
           {!loading && offers.length === 0 && (
-            <div className="col-span-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center">
-              <p className="font-semibold text-slate-600">Aucune offre disponible</p>
-              <p className="mt-1 text-sm text-slate-400">Essayez d'élargir vos filtres.</p>
+            <div className="col-span-full rounded-xl22 border border-dashed border-slate-300 bg-slate-50 p-10 text-center">
+              <p className="font-semibold text-[var(--text-muted)]">Aucune offre disponible</p>
+              <p className="mt-1 text-sm text-[var(--text-muted)]">Essayez d'élargir vos filtres.</p>
             </div>
           )}
         </div>
@@ -282,5 +282,5 @@ export default function BrowseResourceOffers() {
 
 // Layout simple pour les visiteurs non connectés
 function PublicOnlyLayout({ children }) {
-  return <div className="min-h-screen bg-slate-50 font-sans text-navy">{children}</div>;
+  return <div className="min-h-screen bg-slate-50 font-sans text-[var(--text-app)]">{children}</div>;
 }

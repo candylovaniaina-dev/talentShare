@@ -11,14 +11,13 @@ import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 
 const STATUS_CONFIG = {
-  pending_employee: { label: "En attente du salarié", badge: "bg-amber-100 text-amber-700",     icon: AlertCircle },
-  planned:          { label: "Acceptée",              badge: "bg-blue-100 text-blue-700",       icon: CheckCircle },
-  active:           { label: "En cours",              badge: "bg-emerald-100 text-emerald-700", icon: PlayCircle },
-  completed:        { label: "Terminée",              badge: "bg-slate-100 text-slate-600",     icon: CheckCircle },
-  cancelled:        { label: "Annulée",               badge: "bg-rose-100 text-rose-700",       icon: XCircle },
+  pending_employee: { label: "En attente du salarié", badge: "bg-amber-50 text-amber-700 border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-400", icon: AlertCircle },
+  planned:          { label: "Acceptée",              badge: "bg-blue-50 text-blue-700 border-blue-500/25 dark:bg-blue-500/10 dark:text-blue-400",       icon: CheckCircle },
+  active:           { label: "En cours",              badge: "bg-mint/10 text-mint border-mint/25",     icon: PlayCircle },
+  completed:        { label: "Terminée",              badge: "bg-slate-100 text-slate-600 border-slate-300 dark:bg-white/5 dark:text-slate-400",     icon: CheckCircle },
+  cancelled:        { label: "Annulée",               badge: "bg-rose-50 text-rose-700 border-rose-500/25 dark:bg-rose-500/10 dark:text-rose-400",   icon: XCircle },
 };
 
-// ✅ Onglets de filtre
 const TABS = [
   { id: "all",       label: "Toutes" },
   { id: "pending",   label: "En attente",  statuses: ["pending_employee"] },
@@ -61,7 +60,7 @@ export default function Missions() {
     setActionLoading(id);
     try {
       await api.post(`/missions/${id}/accept`);
-      showToast("✅ Mission acceptée !", "success");
+      showToast("Mission acceptée !", "success");
       load();
     } catch (err) {
       showToast(err.response?.data?.message || "Erreur serveur", "error");
@@ -88,7 +87,7 @@ export default function Missions() {
     setActionLoading(id);
     try {
       await api.patch(`/missions/${id}/status`, { status });
-      showToast(status === "active" ? "▶️ Mission démarrée" : "✅ Mission terminée", "success");
+      showToast(status === "active" ? "Mission démarrée" : "Mission terminée", "success");
       load();
     } catch (err) {
       showToast(err.response?.data?.message || "Erreur serveur", "error");
@@ -97,12 +96,10 @@ export default function Missions() {
     }
   };
 
-  // ✅ Filtrer les missions selon l'onglet actif
   const filteredMissions = activeTab === "all"
     ? missions
     : missions.filter((m) => (TABS.find((t) => t.id === activeTab)?.statuses || []).includes(m.status));
 
-  // ✅ Compter les missions par onglet
   const countByTab = (tabId) => {
     if (tabId === "all") return missions.length;
     const tab = TABS.find((t) => t.id === tabId);
@@ -110,20 +107,19 @@ export default function Missions() {
   };
 
   if (loading && missions.length === 0) {
-    return <AppShell><p className="text-slate-400">Chargement...</p></AppShell>;
+    return <AppShell><p className="text-[var(--text-muted)]">Chargement...</p></AppShell>;
   }
 
   return (
     <AppShell>
       <div>
-        <h1 className="text-2xl font-bold">Missions</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-2xl font-bold text-[var(--text-app)]">Missions</h1>
+        <p className="mt-1 text-sm text-[var(--text-muted)]">
           Gérez les missions de mise à disposition en cours et passées.
         </p>
       </div>
 
-      {/* ✅ Onglets de filtre */}
-      <div className="mt-6 flex gap-2 overflow-x-auto border-b border-slate-200 pb-1">
+      <div className="mt-6 flex gap-2 overflow-x-auto border-b border-[var(--border-app)] pb-1">
         {TABS.map((tab) => {
           const count = countByTab(tab.id);
           const isActive = activeTab === tab.id;
@@ -131,15 +127,15 @@ export default function Missions() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 whitespace-nowrap rounded-t-xl px-4 py-2.5 text-sm font-semibold transition ${
+              className={`flex items-center gap-2 whitespace-nowrap rounded-t-xl2 px-4 py-2.5 text-sm font-semibold transition ${
                 isActive
-                  ? "border-b-2 border-navy text-navy"
-                  : "border-b-2 border-transparent text-slate-500 hover:text-slate-700"
+                  ? "border-b-2 border-mint text-[var(--text-app)]"
+                  : "border-b-2 border-transparent text-[var(--text-muted)] hover:text-[var(--text-app)]"
               }`}
             >
               {tab.label}
-              <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
-                isActive ? "bg-navy text-white" : "bg-slate-100 text-slate-500"
+              <span className={`rounded-md px-2 py-0.5 text-[11px] font-bold ${
+                isActive ? "bg-mint text-navy-900" : "bg-[var(--bg-surface-hover)] text-[var(--text-muted)]"
               }`}>
                 {count}
               </span>
@@ -149,16 +145,16 @@ export default function Missions() {
       </div>
 
       {error && (
-        <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 p-5 text-sm text-rose-700">
-          ⚠️ {error}
+        <div className="mt-6 rounded-xl2 border border-rose-500/25 bg-rose-50 dark:bg-rose-500/10 p-5 text-sm text-rose-700 dark:text-rose-400">
+          {error}
         </div>
       )}
 
       <div className="mt-6 space-y-4">
         {!error && filteredMissions.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center">
-            <Briefcase size={40} className="mx-auto text-slate-300 mb-3" />
-            <p className="font-semibold text-slate-600">
+          <div className="rounded-xl2 border border-dashed border-[var(--border-app)] bg-[var(--bg-surface-2)] p-10 text-center">
+            <Briefcase size={40} strokeWidth={1.5} className="mx-auto mb-3 text-[var(--text-faint)]" />
+            <p className="font-semibold text-[var(--text-muted)]">
               {activeTab === "all" ? "Aucune mission pour l'instant" : `Aucune mission dans "${TABS.find(t => t.id === activeTab)?.label}"`}
             </p>
           </div>
@@ -171,134 +167,128 @@ export default function Missions() {
           const myProfileId = user?.professional_profile?.id || user?.professionalProfile?.id;
           const isEmployee = myProfileId && mission.professional_profile_id === myProfileId;
           const isSupplier = user?.companies?.some?.((c) => c.id === mission.supplying_company_id);
-         const isRequesting = user?.companies?.some?.((c) => c.id === mission.requesting_company_id);
+          const isRequester = user?.companies?.some?.((c) => c.id === mission.requesting_company_id);
 
           return (
-            <div key={mission.id} className="rounded-2xl border border-slate-200 bg-white p-5">
+            <div key={mission.id} className="rounded-xl2 border border-[var(--border-app)] bg-[var(--bg-surface)] p-5 shadow-card">
               <div className="flex items-start justify-between flex-wrap gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold flex items-center gap-1 ${cfg.badge}`}>
-                      <Icon size={12} /> {cfg.label}
+                    <span className={`rounded-md border px-2 py-0.5 text-[11px] font-semibold flex items-center gap-1 ${cfg.badge}`}>
+                      <Icon size={12} strokeWidth={1.5} /> {cfg.label}
                     </span>
-                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+                    <span className="rounded-md bg-[var(--bg-surface-hover)] px-2 py-0.5 text-[11px] font-semibold text-[var(--text-muted)]">
                       Mission #{mission.id}
                     </span>
                     {isEmployee && (
-                      <span className="rounded-full bg-purple-50 px-2 py-0.5 text-[11px] font-semibold text-purple-700">
-                        👤 Vous êtes le salarié
+                      <span className="rounded-md bg-violet-50 px-2 py-0.5 text-[11px] font-semibold text-violet-700 dark:bg-violet-500/10 dark:text-violet-400">
+                        Vous êtes le salarié
                       </span>
                     )}
                     {isSupplier && !isEmployee && (
-                      <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700">
+                      <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700 dark:bg-blue-500/10 dark:text-blue-400">
                         Prêteur
                       </span>
                     )}
                     {isRequester && (
-                      <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                      <span className="rounded-md bg-mint/10 px-2 py-0.5 text-[11px] font-semibold text-mint">
                         Emprunteur
                       </span>
                     )}
                   </div>
 
                   {mission.profile?.user && (
-                    <p className="mt-2 text-sm font-semibold flex items-center gap-1">
-                      <User size={14} /> {mission.profile.user.name}
+                    <p className="mt-2 text-sm font-semibold flex items-center gap-1 text-[var(--text-app)]">
+                      <User size={14} strokeWidth={1.5} /> {mission.profile.user.name}
                     </p>
                   )}
 
-                  <div className="mt-2 flex flex-wrap gap-3 text-xs text-slate-500">
+                  <div className="mt-2 flex flex-wrap gap-3 text-xs text-[var(--text-muted)]">
                     <span className="flex items-center gap-1">
-                      <Calendar size={12} />
+                      <Calendar size={12} strokeWidth={1.5} />
                       {new Date(mission.start_at).toLocaleDateString("fr-FR")} → {new Date(mission.end_at).toLocaleDateString("fr-FR")}
                     </span>
                     <span className="flex items-center gap-1">
-                      <Clock size={12} /> {mission.workload_percent}%
+                      <Clock size={12} strokeWidth={1.5} /> {mission.workload_percent}%
                     </span>
                     {mission.supplying_company && (
                       <span className="flex items-center gap-1">
-                        <Building2 size={12} /> Prêteur : {mission.supplying_company.name}
+                        <Building2 size={12} strokeWidth={1.5} /> Prêteur : {mission.supplying_company.name}
                       </span>
                     )}
                     {mission.requesting_company && (
                       <span className="flex items-center gap-1">
-                        <Building2 size={12} /> Emprunteur : {mission.requesting_company.name}
+                        <Building2 size={12} strokeWidth={1.5} /> Emprunteur : {mission.requesting_company.name}
                       </span>
                     )}
                   </div>
                 </div>
 
-      <div className="flex gap-2 shrink-0 flex-wrap">
-  {/* ✅ SALARIÉ : accepter/refuser quand pending */}
-  {isEmployee && mission.status === "pending_employee" && (
-    <>
-      <button
-        onClick={() => acceptMission(mission.id)}
-        disabled={actionLoading === mission.id}
-        className="rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60 flex items-center gap-1"
+        <div className="flex gap-2 shrink-0 flex-wrap">
+      {isEmployee && mission.status === "pending_employee" && (
+        <>
+          <button
+            onClick={() => acceptMission(mission.id)}
+            disabled={actionLoading === mission.id}
+            className="rounded-xl2 bg-mint px-3 py-1.5 text-xs font-semibold text-navy-900 hover:bg-mint-light disabled:opacity-60 flex items-center gap-1 transition"
+          >
+            <Check size={12} strokeWidth={2} /> Accepter
+          </button>
+          <button
+            onClick={() => declineMission(mission.id)}
+            disabled={actionLoading === mission.id}
+            className="rounded-xl2 border border-rose-500/30 px-3 py-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 disabled:opacity-60 flex items-center gap-1 transition"
+          >
+            <X size={12} strokeWidth={2} /> Refuser
+          </button>
+        </>
+      )}
+
+      {isEmployee && mission.status === "planned" && (
+        <span className="rounded-xl2 bg-amber-50 dark:bg-amber-500/10 border border-amber-500/25 px-3 py-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1">
+          En attente du démarrage par l'entreprise
+        </span>
+      )}
+
+      {isEmployee && mission.status === "active" && (
+        <span className="rounded-xl2 bg-mint/10 border border-mint/25 px-3 py-1.5 text-xs font-semibold text-mint flex items-center gap-1">
+          Mission en cours
+        </span>
+      )}
+
+      {!isEmployee && isSupplier && mission.status === "planned" && (
+        <button
+          onClick={() => updateStatus(mission.id, "active")}
+          disabled={actionLoading === mission.id}
+          className="rounded-xl2 bg-mint px-3 py-1.5 text-xs font-semibold text-navy-900 hover:bg-mint-light disabled:opacity-60 flex items-center gap-1 transition"
+        >
+          <PlayCircle size={12} strokeWidth={1.5} /> Démarrer la mission
+        </button>
+      )}
+
+      {!isEmployee && isSupplier && mission.status === "active" && (
+        <button
+          onClick={() => updateStatus(mission.id, "completed")}
+          disabled={actionLoading === mission.id}
+          className="rounded-xl2 bg-navy-800 px-3 py-1.5 text-xs font-semibold text-white hover:bg-navy-700 disabled:opacity-60 flex items-center gap-1 transition"
+        >
+          <CheckCircle size={12} strokeWidth={1.5} /> Terminer
+        </button>
+      )}
+
+      {!isEmployee && isRequester && !isSupplier && mission.status === "planned" && (
+        <span className="rounded-xl2 bg-blue-50 dark:bg-blue-500/10 border border-blue-500/25 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:text-blue-400 flex items-center gap-1">
+          En attente du prêteur
+        </span>
+      )}
+
+      <Link
+        to={`/missions/${mission.id}`}
+        className="rounded-xl2 border border-[var(--border-app)] px-3 py-1.5 text-xs font-semibold text-[var(--text-muted)] hover:border-mint hover:text-mint transition"
       >
-        <Check size={12} /> Accepter
-      </button>
-      <button
-        onClick={() => declineMission(mission.id)}
-        disabled={actionLoading === mission.id}
-        className="rounded-full border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-60 flex items-center gap-1"
-      >
-        <X size={12} /> Refuser
-      </button>
-    </>
-  )}
-
-  {/* ✅ SALARIÉ : message d'attente quand planned */}
-  {isEmployee && mission.status === "planned" && (
-    <span className="rounded-full bg-amber-50 border border-amber-200 px-3 py-1.5 text-xs font-semibold text-amber-700 flex items-center gap-1">
-      ⏳ En attente du démarrage par l'entreprise
-    </span>
-  )}
-
-  {/* ✅ SALARIÉ : info quand active */}
-  {isEmployee && mission.status === "active" && (
-    <span className="rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1.5 text-xs font-semibold text-emerald-700 flex items-center gap-1">
-      🚀 Mission en cours
-    </span>
-  )}
-
-  {/* ✅ PRÊTEUR UNIQUEMENT : démarrer quand planned */}
-  {!isEmployee && isSupplier && mission.status === "planned" && (
-    <button
-      onClick={() => updateStatus(mission.id, "active")}
-      disabled={actionLoading === mission.id}
-      className="rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60 flex items-center gap-1"
-    >
-      <PlayCircle size={12} /> Démarrer la mission
-    </button>
-  )}
-
-  {/* ✅ PRÊTEUR : terminer quand active */}
-  {!isEmployee && isSupplier && mission.status === "active" && (
-    <button
-      onClick={() => updateStatus(mission.id, "completed")}
-      disabled={actionLoading === mission.id}
-      className="rounded-full bg-navy px-3 py-1.5 text-xs font-semibold text-white hover:bg-navy-light disabled:opacity-60 flex items-center gap-1"
-    >
-      <CheckCircle size={12} /> Terminer
-    </button>
-  )}
-
-  {/* ✅ EMPRUNTEUR : info d'attente quand planned */}
-  {!isEmployee && isRequesting && !isSupplier && mission.status === "planned" && (
-    <span className="rounded-full bg-blue-50 border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-700 flex items-center gap-1">
-      ⏳ En attente du prêteur
-    </span>
-  )}
-
-  <Link
-    to={`/missions/${mission.id}`}
-    className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold hover:border-navy"
-  >
-    Détails
-  </Link>
-</div>
+        Détails
+      </Link>
+    </div>
               </div>
             </div>
           );
