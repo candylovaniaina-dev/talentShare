@@ -24,11 +24,11 @@ export default function AccountSettings() {
     <AppShell>
       {/* ===== HEADER ===== */}
       <div className="mb-8">
-        <p className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
+        <p className="text-xs font-semibold uppercase tracking-wider text-mint">
           Espace personnel
         </p>
-        <h1 className="mt-1 text-3xl font-bold text-white">Paramètres du compte</h1>
-        <p className="mt-1 text-sm text-slate-400">
+        <h1 className="mt-1 text-3xl font-bold text-[var(--text-app)]">Paramètres du compte</h1>
+        <p className="mt-1 text-sm text-[var(--text-muted)]">
           Gérez vos informations personnelles et la sécurité de votre compte.
         </p>
       </div>
@@ -37,7 +37,7 @@ export default function AccountSettings() {
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
         {/* ===== MENU GAUCHE ===== */}
         <aside className="lg:sticky lg:top-24 self-start">
-          <nav className="rounded-2xl border border-white/10 bg-white/[0.04] p-2 backdrop-blur-xl">
+          <nav className="rounded-xl2 border border-[var(--border-app)] bg-[var(--bg-surface)] p-2 backdrop-blur-xl">
             {SECTIONS.map(({ id, label, icon: Icon, desc, danger }) => {
               const active = section === id;
               return (
@@ -48,8 +48,8 @@ export default function AccountSettings() {
                     active
                       ? danger
                         ? "bg-rose-500/15 border border-rose-500/30"
-                        : "bg-emerald-500/15 border border-emerald-500/30"
-                      : "border border-transparent hover:bg-white/5"
+                        : "bg-mint/15 border border-mint/30"
+                      : "border border-transparent hover:bg-[var(--bg-surface-2)]"
                   }`}
                 >
                   <span
@@ -57,19 +57,19 @@ export default function AccountSettings() {
                       active
                         ? danger
                           ? "bg-rose-500/20 text-rose-300"
-                          : "bg-emerald-500/20 text-emerald-300"
+                          : "bg-mint/20 text-mint"
                         : danger
-                          ? "bg-white/5 text-rose-400"
-                          : "bg-white/5 text-slate-400"
+                          ? "bg-[var(--bg-surface-2)] text-rose-400"
+                          : "bg-[var(--bg-surface-2)] text-[var(--text-muted)]"
                     }`}
                   >
                     <Icon size={16} />
                   </span>
                   <div className="min-w-0">
-                    <p className={`text-sm font-semibold ${active ? "text-white" : "text-slate-200"}`}>
+                    <p className={`text-sm font-semibold ${active ? "text-[var(--text-app)]" : "text-[var(--text-app)]"}`}>
                       {label}
                     </p>
-                    <p className="text-xs text-slate-500 truncate">{desc}</p>
+                    <p className="text-xs text-[var(--text-faint)] truncate">{desc}</p>
                   </div>
                 </button>
               );
@@ -154,14 +154,14 @@ function GeneralSection({ user, refreshUser }) {
             <img
               src={`http://localhost:8000/storage/${user.avatar_path}`}
               alt={user.name}
-              className="h-20 w-20 rounded-2xl border-2 border-white/10 object-cover"
+              className="h-20 w-20 rounded-xl2 border-2 border-[var(--border-app)] object-cover"
             />
           ) : (
-            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-2xl font-bold text-[#0A1229]">
+            <div className="flex h-20 w-20 items-center justify-center rounded-xl2 bg-gradient-to-br from-mint to-mint-dark text-2xl font-bold text-navy-900">
               {user?.name?.charAt(0)?.toUpperCase() || "?"}
             </div>
           )}
-          <label className="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:border-emerald-500/40 hover:text-emerald-300">
+          <label className="cursor-pointer rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface-2)] px-4 py-2.5 text-sm font-semibold text-[var(--text-app)] transition hover:border-emerald-500/40 hover:text-mint">
             {uploadingAvatar ? "Envoi..." : "Changer la photo"}
             <input
               type="file"
@@ -248,7 +248,7 @@ function GeneralSection({ user, refreshUser }) {
             <button
               type="submit"
               disabled={saving}
-              className="flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400 disabled:opacity-60"
+              className="flex items-center gap-2 rounded-xl bg-mint px-5 py-2.5 text-sm font-bold text-navy-900 transition hover:bg-mint-light disabled:opacity-60"
             >
               {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
               {saving ? "Enregistrement..." : "Enregistrer"}
@@ -341,7 +341,7 @@ function SecuritySection() {
             <button
               type="submit"
               disabled={saving}
-              className="flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400 disabled:opacity-60"
+              className="flex items-center gap-2 rounded-xl bg-mint px-5 py-2.5 text-sm font-bold text-navy-900 transition hover:bg-mint-light disabled:opacity-60"
             >
               {saving ? <Loader2 size={15} className="animate-spin" /> : <Lock size={15} />}
               {saving ? "Modification..." : "Changer le mot de passe"}
@@ -355,18 +355,18 @@ function SecuritySection() {
         title="Sessions actives"
         subtitle="Vos appareils connectés à votre compte."
       >
-        <div className="rounded-xl border border-white/5 bg-white/5 p-4">
+        <div className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface-2)] p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-mint/15 text-mint">
                 <Shield size={18} />
               </span>
               <div>
-                <p className="text-sm font-semibold text-white">Session actuelle</p>
-                <p className="text-xs text-slate-500">Navigateur web · Maintenant</p>
+                <p className="text-sm font-semibold text-[var(--text-app)]">Session actuelle</p>
+                <p className="text-xs text-[var(--text-faint)]">Navigateur web · Maintenant</p>
               </div>
             </div>
-            <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-bold text-emerald-300">
+            <span className="rounded-xl2 border border-emerald-500/30 bg-mint/10 px-3 py-1 text-[11px] font-bold text-mint">
               ACTIVE
             </span>
           </div>
@@ -422,7 +422,7 @@ function PrivacySection({ user }) {
             onChange={() => toggle("show_availability")}
           />
         </div>
-        <p className="mt-4 text-xs text-slate-500">
+        <p className="mt-4 text-xs text-[var(--text-faint)]">
           💡 Ces paramètres sont indicatifs pour l'instant. La synchronisation sera ajoutée prochainement.
         </p>
       </Card>
@@ -518,14 +518,14 @@ function DangerSection({ user }) {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-6">
+      <div className="rounded-xl2 border border-amber-500/30 bg-amber-500/5 p-6">
         <div className="flex items-start gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-400">
             <AlertTriangle size={18} />
           </span>
           <div>
-            <h3 className="font-bold text-white">Désactiver le compte</h3>
-            <p className="mt-1 text-sm text-slate-400">
+            <h3 className="font-bold text-[var(--text-app)]">Désactiver le compte</h3>
+            <p className="mt-1 text-sm text-[var(--text-muted)]">
               Votre profil sera masqué. Vos données sont conservées et pourront être restaurées en contactant le support.
             </p>
             <button
@@ -539,20 +539,20 @@ function DangerSection({ user }) {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-rose-500/30 bg-rose-500/5 p-6">
+      <div className="rounded-xl2 border border-rose-500/30 bg-rose-500/5 p-6">
         <div className="flex items-start gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-500/15 text-rose-400">
             <Trash2 size={18} />
           </span>
           <div>
-            <h3 className="font-bold text-white">Supprimer définitivement</h3>
-            <p className="mt-1 text-sm text-slate-400">
+            <h3 className="font-bold text-[var(--text-app)]">Supprimer définitivement</h3>
+            <p className="mt-1 text-sm text-[var(--text-muted)]">
               Toutes vos données seront effacées. Cette action est <strong className="text-rose-300">irréversible</strong>.
             </p>
             <button
               onClick={destroy}
               disabled={deleting}
-              className="mt-4 rounded-xl bg-rose-500 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-rose-600 disabled:opacity-60"
+              className="mt-4 rounded-xl bg-rose-500 px-5 py-2.5 text-sm font-bold text-[var(--text-app)] transition hover:bg-rose-600 disabled:opacity-60"
             >
               {deleting ? "Suppression..." : "Supprimer mon compte"}
             </button>
@@ -568,18 +568,18 @@ function DangerSection({ user }) {
 ============================================================ */
 
 const inputCls =
-  "w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-600 transition focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20";
+  "w-full rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface-2)] px-4 py-3 text-sm text-[var(--text-app)] placeholder:text-[var(--text-faint)] transition focus:border-mint/50 focus:outline-none focus:ring-2 focus:ring-mint/20";
 
 function Card({ icon: Icon, title, subtitle, children }) {
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl">
+    <section className="rounded-xl2 border border-[var(--border-app)] bg-[var(--bg-surface)] p-6 backdrop-blur-xl">
       <div className="mb-5 flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-mint/15 text-mint">
           <Icon size={18} />
         </span>
         <div>
-          <h2 className="text-lg font-bold text-white">{title}</h2>
-          {subtitle && <p className="mt-0.5 text-sm text-slate-400">{subtitle}</p>}
+          <h2 className="text-lg font-bold text-[var(--text-app)]">{title}</h2>
+          {subtitle && <p className="mt-0.5 text-sm text-[var(--text-muted)]">{subtitle}</p>}
         </div>
       </div>
       {children}
@@ -590,11 +590,11 @@ function Card({ icon: Icon, title, subtitle, children }) {
 function Field({ label, hint, icon: Icon, children }) {
   return (
     <div>
-      <label className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400">
+      <label className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
         {Icon && <Icon size={12} />} {label}
       </label>
       {children}
-      {hint && <p className="mt-1.5 text-xs text-slate-500">{hint}</p>}
+      {hint && <p className="mt-1.5 text-xs text-[var(--text-faint)]">{hint}</p>}
     </div>
   );
 }
@@ -612,7 +612,7 @@ function PasswordInput({ value, onChange, visible, toggle, placeholder }) {
       <button
         type="button"
         onClick={toggle}
-        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 transition hover:text-white"
+        className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-faint)] transition hover:text-[var(--text-app)]"
       >
         {visible ? <EyeOff size={16} /> : <Eye size={16} />}
       </button>
@@ -622,20 +622,20 @@ function PasswordInput({ value, onChange, visible, toggle, placeholder }) {
 
 function Toggle({ label, hint, checked, onChange }) {
   return (
-    <div className="flex items-start justify-between gap-4 rounded-xl border border-white/5 bg-white/5 p-4">
+    <div className="flex items-start justify-between gap-4 rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface-2)] p-4">
       <div className="min-w-0">
-        <p className="text-sm font-semibold text-white">{label}</p>
-        {hint && <p className="mt-0.5 text-xs text-slate-500">{hint}</p>}
+        <p className="text-sm font-semibold text-[var(--text-app)]">{label}</p>
+        {hint && <p className="mt-0.5 text-xs text-[var(--text-faint)]">{hint}</p>}
       </div>
       <button
         type="button"
         onClick={onChange}
-        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-          checked ? "bg-emerald-500" : "bg-white/15"
+        className={`relative h-6 w-11 shrink-0 rounded-xl2 transition-colors ${
+          checked ? "bg-mint" : "bg-[var(--border-strong)]"
         }`}
       >
         <span
-          className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+          className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-xl2 bg-[var(--bg-surface)] shadow transition-transform ${
             checked ? "translate-x-5" : "translate-x-0"
           }`}
         />
@@ -647,7 +647,7 @@ function Toggle({ label, hint, checked, onChange }) {
 function Alert({ tone, children }) {
   const cls =
     tone === "success"
-      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+      ? "border-emerald-500/30 bg-mint/10 text-mint"
       : "border-rose-500/30 bg-rose-500/10 text-rose-300";
   const Icon = tone === "success" ? Check : X;
   return (

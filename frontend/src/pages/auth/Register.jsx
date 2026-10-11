@@ -1,15 +1,9 @@
 import React, { useRef, useState, useEffect } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import {
-  Building2,
-  Users,
-  GraduationCap,
-  Sparkles,
-  Eye,
-  EyeOff,
-  ArrowLeft,
-  ArrowRight,
-  X,
+  Building2, Users, GraduationCap, Sparkles,
+  Eye, EyeOff, ArrowLeft, ArrowRight, X,
+  ShieldCheck, Zap, Check,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import RobotBuddy from "../../components/RobotBuddy";
@@ -33,8 +27,8 @@ const STRENGTH_LABELS = ["Très faible", "Faible", "Moyen", "Bon", "Excellent"];
 const STRENGTH_COLORS = ["bg-rose-500", "bg-rose-500", "bg-amber-400", "bg-mint-light", "bg-mint"];
 
 const inputClass =
-  "mt-2 w-full rounded-xl2 border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-600 transition focus:border-mint/50 focus:outline-none focus:ring-2 focus:ring-mint/20";
-const labelClass = "text-xs font-semibold uppercase tracking-wider text-slate-400";
+  "mt-2 w-full rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface-2)] px-4 py-3 text-sm text-[var(--text-app)] placeholder:text-[var(--text-faint)] transition focus:border-mint/50 focus:outline-none focus:ring-2 focus:ring-mint/20";
+const labelClass = "text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]";
 
 export default function Register() {
   const [params] = useSearchParams();
@@ -73,55 +67,50 @@ export default function Register() {
 
   const confirmFilled = form.password_confirmation.length > 0;
   const isMatch = confirmFilled && form.password === form.password_confirmation;
-  const isMismatch =
-    confirmFilled && !isMatch && form.password_confirmation.length >= form.password.length;
+  const isMismatch = confirmFilled && !isMatch && form.password_confirmation.length >= form.password.length;
 
   let robotMode = "idle";
   if (loading) robotMode = "loading";
   else if (robotError) robotMode = "error";
   else if (focus === "password") robotMode = showPassword ? "look" : "closed";
-  else if (focus === "confirm")
-    robotMode = isMatch ? "match" : isMismatch ? "mismatch" : "confirm";
+  else if (focus === "confirm") robotMode = isMatch ? "match" : isMismatch ? "mismatch" : "confirm";
   else if (focus === "name" || focus === "email") robotMode = "look";
   else if (isMatch && form.password) robotMode = "match";
 
   const strength = getStrength(form.password);
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#0A1526] text-white">
+    <div className="relative min-h-screen overflow-hidden bg-[var(--bg-app)]">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -left-32 top-10 h-[420px] w-[420px] rounded-full bg-mint/10 blur-[120px]" />
         <div className="absolute -right-32 bottom-0 h-[420px] w-[420px] rounded-full bg-navy-500/15 blur-[120px]" />
-        <div
-          className="absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)",
-            backgroundSize: "32px 32px",
-          }}
-        />
       </div>
 
       <Link
         to="/"
-        className="absolute left-6 top-6 z-20 flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 backdrop-blur-md transition hover:bg-white/10"
+        className="absolute left-6 top-6 z-20 flex items-center gap-2 rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)] px-4 py-2 text-sm font-semibold text-[var(--text-app)] backdrop-blur-md transition hover:bg-[var(--bg-surface-hover)]"
       >
-        <ArrowLeft size={15} strokeWidth={1.75} />
-        Accueil
+        <ArrowLeft size={15} strokeWidth={1.75} /> Accueil
       </Link>
 
       <main className="relative z-10 mx-auto grid min-h-screen max-w-7xl items-center gap-10 px-6 py-20 lg:grid-cols-[0.85fr_1.15fr] lg:py-8">
-        <section className="hidden lg:block">
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-mint">
-            Rejoindre l'écosystème
-          </p>
-          <h2 className="mt-3 text-4xl font-bold leading-[1.1] xl:text-5xl">
-            Une place pour votre{" "}
-            <span className="text-mint">prochain chapitre</span>{" "}
-            professionnel.
+        {/* Left panel — branding */}
+        <section className="hidden lg:flex lg:flex-col lg:justify-center">
+          <div className="flex items-center gap-3 mb-6">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-navy-800 shadow-lg">
+              <Sparkles size={24} strokeWidth={2} className="text-mint" />
+            </span>
+            <span className="text-2xl font-bold text-[var(--text-app)]">
+              Talent<span className="text-mint">Share</span>
+            </span>
+          </div>
+
+          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-mint">Rejoindre l'écosystème</p>
+          <h2 className="mt-3 text-4xl font-bold leading-[1.1] xl:text-5xl text-[var(--text-app)]">
+            Une place pour votre <span className="text-mint">prochain chapitre</span> professionnel.
           </h2>
-          <p className="mt-4 max-w-md text-base leading-relaxed text-slate-400">
-            Choisissez le parcours qui vous correspond, puis enrichissez votre
-            profil et réglez votre visibilité.
+          <p className="mt-4 max-w-md text-base leading-relaxed text-[var(--text-muted)]">
+            Choisissez le parcours qui vous correspond, puis enrichissez votre profil et réglez votre visibilité.
           </p>
 
           <div className="mt-6 flex justify-center">
@@ -129,15 +118,13 @@ export default function Register() {
           </div>
         </section>
 
+        {/* Right panel — form card */}
         <section className="flex justify-center lg:justify-end">
-          <div className="w-full max-w-xl rounded-xl2 border border-white/10 bg-white/[0.04] p-7 shadow-pop backdrop-blur-xl sm:p-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-mint">
-              Créer mon accès
-            </p>
-            <h1 className="mt-2 text-2xl font-bold text-white">
-              Bienvenue dans TalentShare.
-            </h1>
+          <div className="w-full max-w-xl rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-7 shadow-pop backdrop-blur-xl sm:p-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-mint">Créer mon accès</p>
+            <h1 className="mt-2 text-2xl font-bold text-[var(--text-app)]">Bienvenue dans TalentShare.</h1>
 
+            {/* Role selector cards */}
             <div className="mt-5 grid grid-cols-2 gap-2.5">
               {roles.map(({ value, icon: Icon, title, subtitle }) => {
                 const active = role === value;
@@ -146,23 +133,22 @@ export default function Register() {
                     key={value}
                     type="button"
                     onClick={() => setRole(value)}
-                    className={`flex items-center gap-3 rounded-xl2 border p-3 text-left transition ${
+                    className={`flex items-center gap-3 rounded-xl border p-3 text-left transition ${
                       active
-                        ? "border-mint/60 bg-mint/10"
-                        : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10"
+                        ? "border-mint/60 bg-mint/10 shadow-sm"
+                        : "border-[var(--border-app)] bg-[var(--bg-surface-2)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-surface-hover)]"
                     }`}
                   >
-                    <span
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-                        active ? "bg-mint/20 text-mint" : "bg-white/5 text-slate-400"
-                      }`}
-                    >
+                    <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                      active ? "bg-mint/20 text-mint" : "bg-[var(--bg-surface-hover)] text-[var(--text-muted)]"
+                    }`}>
                       <Icon size={18} strokeWidth={1.5} />
                     </span>
                     <span className="min-w-0">
-                      <span className="block truncate text-sm font-semibold text-white">{title}</span>
-                      <span className="block truncate text-xs text-slate-400">{subtitle}</span>
+                      <span className="block truncate text-sm font-semibold text-[var(--text-app)]">{title}</span>
+                      <span className="block truncate text-xs text-[var(--text-muted)]">{subtitle}</span>
                     </span>
+                    {active && <Check size={14} strokeWidth={2.5} className="ml-auto shrink-0 text-mint" />}
                   </button>
                 );
               })}
@@ -219,7 +205,7 @@ export default function Register() {
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 mt-1 -translate-y-1/2 text-slate-500 transition hover:text-white"
+                      className="absolute right-4 top-1/2 mt-1 -translate-y-1/2 text-[var(--text-faint)] transition hover:text-[var(--text-app)]"
                     >
                       {showPassword ? <EyeOff size={18} strokeWidth={1.5} /> : <Eye size={18} strokeWidth={1.5} />}
                     </button>
@@ -244,7 +230,7 @@ export default function Register() {
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-4 top-1/2 mt-1 -translate-y-1/2 text-slate-500 transition hover:text-white"
+                      className="absolute right-4 top-1/2 mt-1 -translate-y-1/2 text-[var(--text-faint)] transition hover:text-[var(--text-app)]"
                     >
                       {showConfirmPassword ? <EyeOff size={18} strokeWidth={1.5} /> : <Eye size={18} strokeWidth={1.5} />}
                     </button>
@@ -259,19 +245,19 @@ export default function Register() {
                       <span
                         key={i}
                         className={`h-1.5 flex-1 rounded-full transition-colors ${
-                          i <= strength ? STRENGTH_COLORS[strength] : "bg-white/10"
+                          i <= strength ? STRENGTH_COLORS[strength] : "bg-[var(--border-app)]"
                         }`}
                       />
                     ))}
                   </div>
-                  <span className="w-20 text-right text-xs text-slate-400">
+                  <span className="w-20 text-right text-xs text-[var(--text-muted)]">
                     {STRENGTH_LABELS[strength]}
                   </span>
                 </div>
               )}
 
               {error && (
-                <div className="flex items-center gap-2 rounded-xl2 border border-rose-500/30 bg-rose-500/10 p-3.5 text-sm text-rose-400">
+                <div className="flex items-center gap-2 rounded-xl border border-rose-500/25 bg-rose-50 dark:bg-rose-500/10 p-3.5 text-sm text-rose-600 dark:text-rose-400">
                   <X size={16} strokeWidth={1.75} /> {error}
                 </div>
               )}
@@ -279,7 +265,7 @@ export default function Register() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex w-full items-center justify-center gap-2 rounded-xl2 bg-mint py-3.5 text-sm font-bold text-navy-900 transition-all hover:bg-mint-light disabled:opacity-60"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-mint py-3.5 text-sm font-bold text-navy-900 transition-all hover:bg-mint-light disabled:opacity-60"
               >
                 {loading ? (
                   <>
@@ -294,11 +280,9 @@ export default function Register() {
               </button>
             </form>
 
-            <p className="mt-5 text-center text-sm text-slate-400">
+            <p className="mt-5 text-center text-sm text-[var(--text-muted)]">
               Déjà un compte ?{" "}
-              <Link to="/login" className="font-semibold text-mint hover:text-mint-light">
-                Se connecter
-              </Link>
+              <Link to="/login" className="font-semibold text-mint hover:text-mint-light">Se connecter</Link>
             </p>
           </div>
         </section>

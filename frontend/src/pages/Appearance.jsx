@@ -16,11 +16,11 @@ export default function Appearance() {
       <div className="mb-6">
         <Link
           to="/dashboard"
-          className="mb-4 inline-flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-emerald-400"
+          className="mb-4 inline-flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-mint"
         >
           
         </Link>
-        <p className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
+        <p className="text-xs font-semibold uppercase tracking-wider text-mint">
           Préférences
         </p>
         <h1 className="mt-1 text-3xl font-bold text-[var(--text-app)]">Affichage et accessibilité</h1>
@@ -97,9 +97,9 @@ export default function Appearance() {
 
 function Card({ icon: Icon, title, subtitle, children }) {
   return (
-    <section className="rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-6 backdrop-blur-xl">
+    <section className="rounded-xl22 border border-[var(--border-app)] bg-[var(--bg-surface)] p-6 backdrop-blur-xl">
       <div className="mb-5 flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl2 bg-mint/15 text-mint">
           <Icon size={18} />
         </span>
         <div>
@@ -117,15 +117,15 @@ function ThemeOption({ icon: Icon, label, desc, active, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-start gap-4 rounded-2xl border-2 p-4 text-left transition ${
+      className={`flex items-start gap-4 rounded-xl22 border-2 p-4 text-left transition ${
         active
-          ? "border-emerald-500 bg-emerald-500/10"
-          : "border-[var(--border-app)] bg-[var(--bg-surface)] hover:border-emerald-500/30"
+          ? "border-mint bg-mint/10"
+          : "border-[var(--border-app)] bg-[var(--bg-surface)] hover:border-mint/30"
       }`}
     >
       <span
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-          active ? "bg-emerald-500/20 text-emerald-300" : "bg-[var(--bg-surface-hover)] text-[var(--text-muted)]"
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl2 ${
+          active ? "bg-mint/20 text-mint" : "bg-[var(--bg-surface-hover)] text-[var(--text-muted)]"
         }`}
       >
         <Icon size={18} />
@@ -134,7 +134,7 @@ function ThemeOption({ icon: Icon, label, desc, active, onClick }) {
         <p className="font-semibold text-[var(--text-app)]">{label}</p>
         <p className="mt-0.5 text-xs text-[var(--text-muted)]">{desc}</p>
       </div>
-      {active && <Check size={18} className="shrink-0 text-emerald-400" />}
+      {active && <Check size={18} className="shrink-0 text-mint" />}
     </button>
   );
 }
@@ -144,10 +144,10 @@ function SizeOption({ label, size, preview, active, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-2xl border-2 p-4 text-center transition ${
+      className={`rounded-xl22 border-2 p-4 text-center transition ${
         active
-          ? "border-emerald-500 bg-emerald-500/10"
-          : "border-[var(--border-app)] bg-[var(--bg-surface)] hover:border-emerald-500/30"
+          ? "border-mint bg-mint/10"
+          : "border-[var(--border-app)] bg-[var(--bg-surface)] hover:border-mint/30"
       }`}
     >
       <p className="font-bold text-[var(--text-app)]" style={{ fontSize: size }}>
@@ -161,7 +161,7 @@ function SizeOption({ label, size, preview, active, onClick }) {
 
 function Toggle({ label, hint, checked, onChange }) {
   return (
-    <div className="flex items-start justify-between gap-4 rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-4">
+    <div className="flex items-start justify-between gap-4 rounded-xl2 border border-[var(--border-app)] bg-[var(--bg-surface)] p-4">
       <div className="min-w-0">
         <p className="text-sm font-semibold text-[var(--text-app)]">{label}</p>
         {hint && <p className="mt-0.5 text-xs text-[var(--text-muted)]">{hint}</p>}
@@ -169,12 +169,12 @@ function Toggle({ label, hint, checked, onChange }) {
       <button
         type="button"
         onClick={onChange}
-        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-          checked ? "bg-emerald-500" : "bg-[var(--border-app)]"
+        className={`relative h-6 w-11 shrink-0 rounded-xl2 transition-colors ${
+          checked ? "bg-mint" : "bg-[var(--border-app)]"
         }`}
       >
         <span
-          className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+          className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-xl2 bg-white shadow transition-transform ${
             checked ? "translate-x-5" : "translate-x-0"
           }`}
         />
