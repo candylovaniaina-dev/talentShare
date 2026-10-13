@@ -466,7 +466,7 @@ export default function TalentProfile() {
               {profile.avatar_path ? (
                 <div className="h-32 w-32 overflow-hidden rounded-full border-4 border-white/10 ring-2 ring-emerald-400/40 sm:h-40 sm:w-40">
                   <img
-                    src={`http://localhost:8000/storage/${profile.avatar_path}`}
+                    src={`http://localhost:8001/storage/${profile.avatar_path}`}
                     alt={profile.user.name}
                     className="h-full w-full object-cover"
                   />

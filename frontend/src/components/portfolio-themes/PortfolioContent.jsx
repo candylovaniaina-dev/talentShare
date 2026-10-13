@@ -251,7 +251,7 @@ export default function PortfolioContent({ profile, accent = "#6EE7C8", variant 
         <section className={`rounded-2xl border p-6 ${cardBg}`}>
           <h2 className={`font-bold mb-3 ${textPrimary}`}>Curriculum Vitae</h2>
           <a
-            href={`http://localhost:8000/storage/${profile.cv_path}`}
+            href={`http://localhost:8001/storage/${profile.cv_path}`}
             target="_blank"
             rel="noreferrer"
             className={`group flex items-center justify-between gap-4 rounded-2xl border p-4 transition-all hover:shadow-md ${

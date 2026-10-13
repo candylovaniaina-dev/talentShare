@@ -1,8 +1,20 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import {
-  X, Users, Search, MapPin, ShieldCheck, User, Send,
-  Loader2, HelpCircle, Star,
+  X,
+  Users,
+  Search,
+  MapPin,
+  ShieldCheck,
+  User,
+  Send,
+  Loader2,
+  HelpCircle,
+  SlidersHorizontal,
+  Sparkles,
+  AlertCircle,
+  CheckCircle2,
+  TrendingUp,
 } from "lucide-react";
 import api from "../../services/api";
 import MatchScoreBadge from "../MatchScoreBadge";
@@ -16,50 +28,97 @@ const asArray = (data) => {
   return [];
 };
 
-export default function CandidatesModal({ requestId, requestTitle, onClose, embedded = false }) {
+const SCORE_COLORS = {
+  excellent: {
+    text: "text-emerald-700",
+    bg: "bg-emerald-50",
+    border: "border-emerald-100",
+  },
+  good: {
+    text: "text-blue-700",
+    bg: "bg-blue-50",
+    border: "border-blue-100",
+  },
+  medium: {
+    text: "text-amber-700",
+    bg: "bg-amber-50",
+    border: "border-amber-100",
+  },
+  low: {
+    text: "text-slate-600",
+    bg: "bg-slate-100",
+    border: "border-slate-200",
+  },
+};
+
+export default function CandidatesModal({
+  requestId,
+  requestTitle,
+  onClose,
+  embedded = false,
+}) {
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [minScore, setMinScore] = useState("");
   const [sortBy, setSortBy] = useState("score_desc");
 
-  // Modal proposition
   const [showProposeModal, setShowProposeModal] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [message, setMessage] = useState("");
   const [proposing, setProposing] = useState(false);
 
-  // Modal explication
   const [showExplainModal, setShowExplainModal] = useState(false);
   const [explainProfileId, setExplainProfileId] = useState(null);
 
   const { toast, show: showToast, close: closeToast } = useToast();
 
-  /* ============ CHARGEMENT ============ */
-  const loadCandidates = () => {
+  const loadCandidates = useCallback(() => {
+    if (!requestId) {
+      setCandidates([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
-    api.get(`/resource-requests/${requestId}/candidates`)
+
+    api
+      .get(`/resource-requests/${requestId}/candidates`)
       .then((res) => setCandidates(asArray(res.data)))
       .catch(() => setCandidates([]))
       .finally(() => setLoading(false));
-  };
+  }, [requestId]);
 
   useEffect(() => {
     loadCandidates();
-  }, [requestId]);
+  }, [loadCandidates]);
 
-  /* ============ FERMETURE ÉCHAP ============ */
   useEffect(() => {
-    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    if (embedded) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+
+    const onKey = (event) => {
+      if (event.key === "Escape") {
+        if (showExplainModal) {
+          setShowExplainModal(false);
+        } else if (showProposeModal) {
+          setShowProposeModal(false);
+        } else {
+          onClose();
+        }
+      }
+    };
+
     window.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
+
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
+      document.body.style.overflow = previousOverflow;
     };
-  }, [onClose]);
+  }, [onClose, embedded, showExplainModal, showProposeModal]);
 
-  /* ============ ACTIONS ============ */
   const openPropose = (candidate) => {
     setSelectedCandidate(candidate);
     setMessage("");
@@ -71,20 +130,24 @@ export default function CandidatesModal({ requestId, requestTitle, onClose, embe
     setShowExplainModal(true);
   };
 
- const submitProposal = async () => {
-  if (!selectedCandidate) return;
-  setProposing(true);
-  try {
-    const companyRes = await api.get("/companies/me");
-    await api.post("/proposals", {
-  resource_request_id: Number(requestId),
-  professional_profile_id: selectedCandidate.profile_id,
-  proposed_by_company_id: companyRes.data.id,
-  message: message || null,
-  status: "sent",   // ✅ valeur acceptée par le backend
-});
+  const submitProposal = async () => {
+    if (!selectedCandidate || proposing) return;
+
+    setProposing(true);
+
+    try {
+      const companyRes = await api.get("/companies/me");
+
+      await api.post("/proposals", {
+        resource_request_id: Number(requestId),
+        professional_profile_id: selectedCandidate.profile_id,
+        proposed_by_company_id: companyRes.data.id,
+        message: message.trim() || null,
+        status: "sent",
+      });
+
       setShowProposeModal(false);
-      showToast("Proposition envoyée ✅", "success");
+      showToast("Proposition envoyée avec succès.", "success");
       loadCandidates();
     } catch (err) {
       const status = err.response?.status;
@@ -92,261 +155,378 @@ export default function CandidatesModal({ requestId, requestTitle, onClose, embe
       const code = err.response?.data?.code;
 
       if (status === 409 || code === "duplicate_proposal") {
-        showToast("Ce talent a déjà été proposé pour cette demande.", "warning");
+        showToast(
+          "Ce talent a déjà été proposé pour cette demande.",
+          "warning"
+        );
       } else if (code === "mission_overlap") {
-        showToast("Ce talent a déjà une mission sur cette période.", "warning");
+        showToast(
+          "Ce talent a déjà une mission sur cette période.",
+          "warning"
+        );
       } else if (code === "request_closed") {
-        showToast("Cette demande n'accepte plus de propositions.", "warning");
+        showToast(
+          "Cette demande n'accepte plus de propositions.",
+          "warning"
+        );
       } else {
-        showToast(msg || "Erreur serveur", "error");
+        showToast(msg || "Une erreur est survenue lors de l'envoi.", "error");
       }
     } finally {
       setProposing(false);
     }
   };
 
-  /* ============ FILTRES ============ */
-  let filtered = candidates.filter((c) => {
-    const role = c.role || c.user?.role;
-    // ✅ Filtre de sécurité frontend
+  let filtered = candidates.filter((candidate) => {
+    const role = candidate.role || candidate.user?.role;
+
+    // Filtre de sécurité côté interface.
     if (role === "company" || role === "university") return false;
+
     return true;
   });
 
   if (search.trim()) {
-    const q = search.toLowerCase();
-    filtered = filtered.filter((c) =>
-      (c.name || "").toLowerCase().includes(q) ||
-      (c.headline || "").toLowerCase().includes(q)
+    const query = search.trim().toLowerCase();
+
+    filtered = filtered.filter(
+      (candidate) =>
+        (candidate.name || "").toLowerCase().includes(query) ||
+        (candidate.headline || "").toLowerCase().includes(query)
     );
   }
 
   if (minScore) {
-    filtered = filtered.filter((c) => (c.match?.total || 0) >= Number(minScore));
+    filtered = filtered.filter(
+      (candidate) => (candidate.match?.total || 0) >= Number(minScore)
+    );
   }
 
   filtered = [...filtered].sort((a, b) => {
-    const aScore = a.match?.total || 0;
-    const bScore = b.match?.total || 0;
-    if (sortBy === "score_desc") return bScore - aScore;
-    if (sortBy === "score_asc") return aScore - bScore;
-    if (sortBy === "name") return (a.name || "").localeCompare(b.name || "");
+    const scoreA = a.match?.total || 0;
+    const scoreB = b.match?.total || 0;
+
+    if (sortBy === "score_desc") return scoreB - scoreA;
+    if (sortBy === "score_asc") return scoreA - scoreB;
+    if (sortBy === "name") {
+      return (a.name || "").localeCompare(b.name || "");
+    }
+
     return 0;
   });
 
-  /* ============ STATS ============ */
   const stats = {
     excellent: filtered.filter((c) => (c.match?.total || 0) >= 80).length,
-    good: filtered.filter((c) => (c.match?.total || 0) >= 60 && (c.match?.total || 0) < 80).length,
-    medium: filtered.filter((c) => (c.match?.total || 0) >= 40 && (c.match?.total || 0) < 60).length,
+    good: filtered.filter((c) => {
+      const score = c.match?.total || 0;
+      return score >= 60 && score < 80;
+    }).length,
+    medium: filtered.filter((c) => {
+      const score = c.match?.total || 0;
+      return score >= 40 && score < 60;
+    }).length,
     low: filtered.filter((c) => (c.match?.total || 0) < 40).length,
   };
 
-return (
-  <>
-    {/* ===== CONTENEUR (embedded = dans la grille, sinon overlay) ===== */}
+  const content = (
     <div
       className={
         embedded
-          ? "flex max-h-[92vh] flex-col overflow-hidden rounded-2xl border border-[var(--border-app)] bg-[var(--bg-app)]/80 shadow-2xl backdrop-blur-2xl animate-modalContent"
-          : "fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-modalOverlay"
+          ? "flex min-h-0 h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+          : "flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
       }
-      onClick={embedded ? undefined : onClose}
+      onClick={(event) => event.stopPropagation()}
     >
-      <div
-        className={
-          embedded
-            ? "flex h-full flex-col overflow-hidden"
-            : "flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-[var(--border-app)] bg-[var(--bg-app)]/80 shadow-2xl backdrop-blur-2xl animate-modalContent"
-        }
-        onClick={(e) => e.stopPropagation()}
-      >
-
-          {/* ===== HEADER ===== */}
-          <div className="flex items-start justify-between gap-3 border-b border-white/[0.06] px-6 py-5">
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-emerald-400">
-                Candidats potentiels
-              </p>
-              <h2 className="mt-1 truncate text-lg font-semibold text-white">
-                {requestTitle || "Demande"}
-              </h2>
-              <p className="mt-0.5 text-xs text-slate-500">
-                {filtered.length} talent{filtered.length > 1 ? "s" : ""} correspondant{filtered.length > 1 ? "s" : ""} à vos critères
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="rounded-lg p-1.5 text-slate-500 transition hover:bg-white/5 hover:text-white"
-            >
-              <X size={18} />
-            </button>
+      <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-5 sm:px-7">
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-700">
+            <Users size={21} />
           </div>
 
-          {/* ===== STATS ===== */}
-          <div className="grid grid-cols-4 gap-2 border-b border-white/[0.06] px-6 py-3">
-            <StatCard value={stats.excellent} label="Excellents" color="emerald" />
-            <StatCard value={stats.good}      label="Bons"       color="blue" />
-            <StatCard value={stats.medium}    label="Moyens"     color="amber" />
-            <StatCard value={stats.low}       label="Faibles"    color="slate" />
-          </div>
-
-          {/* ===== FILTRES ===== */}
-          <div className="flex flex-wrap items-center gap-2 border-b border-white/[0.06] px-6 py-3">
-            <div className="flex min-w-[200px] flex-1 items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 transition focus-within:border-emerald-500/50">
-              <Search size={14} className="shrink-0 text-slate-500" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Rechercher par nom ou titre..."
-                className="w-full bg-transparent text-sm text-white placeholder:text-slate-500 focus:outline-none"
-              />
-              {search && (
-                <button onClick={() => setSearch("")} className="text-slate-500 hover:text-rose-400">
-                  <X size={13} />
-                </button>
-              )}
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wider text-teal-700">
+                Matching talents
+              </span>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                {filtered.length} résultat{filtered.length !== 1 ? "s" : ""}
+              </span>
             </div>
 
-            <select
-              value={minScore}
-              onChange={(e) => setMinScore(e.target.value)}
-              className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-xs text-white focus:border-emerald-500/50 focus:outline-none"
-            >
-              <option value="">Tous scores</option>
-              <option value="80">≥ 80%</option>
-              <option value="60">≥ 60%</option>
-              <option value="40">≥ 40%</option>
-            </select>
+            <h2 className="mt-1 truncate text-lg font-bold tracking-tight text-slate-900">
+              {requestTitle || "Candidats potentiels"}
+            </h2>
+
+            <p className="mt-1 text-sm text-slate-500">
+              Découvrez les profils qui correspondent à votre demande.
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Fermer"
+          className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+        >
+          <X size={19} />
+        </button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 border-b border-slate-100 bg-slate-50/70 px-5 py-4 sm:grid-cols-4 sm:px-7">
+        <StatCard
+          value={stats.excellent}
+          label="Excellents"
+          color="excellent"
+        />
+        <StatCard value={stats.good} label="Très bons" color="good" />
+        <StatCard value={stats.medium} label="Moyens" color="medium" />
+        <StatCard value={stats.low} label="Faibles" color="low" />
+      </div>
+
+      <div className="space-y-3 border-b border-slate-100 px-5 py-4 sm:px-7">
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="flex min-w-0 flex-1 items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 transition focus-within:border-teal-500 focus-within:ring-4 focus-within:ring-teal-500/10">
+            <Search size={17} className="shrink-0 text-slate-400" />
+
+            <input
+              type="text"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Rechercher un talent ou une spécialité..."
+              className="w-full bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
+            />
+
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                aria-label="Effacer la recherche"
+                className="text-slate-400 hover:text-slate-700"
+              >
+                <X size={15} />
+              </button>
+            )}
+          </div>
+
+          <div className="flex gap-2">
+            <div className="flex flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3">
+              <SlidersHorizontal size={15} className="shrink-0 text-slate-400" />
+              <select
+                value={minScore}
+                onChange={(event) => setMinScore(event.target.value)}
+                aria-label="Filtrer par score minimum"
+                className="w-full bg-transparent py-2.5 text-sm text-slate-700 outline-none"
+              >
+                <option value="">Tous les scores</option>
+                <option value="80">80 % et plus</option>
+                <option value="60">60 % et plus</option>
+                <option value="40">40 % et plus</option>
+              </select>
+            </div>
 
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-xs text-white focus:border-emerald-500/50 focus:outline-none"
+              onChange={(event) => setSortBy(event.target.value)}
+              aria-label="Trier les candidats"
+              className="min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-teal-500"
             >
               <option value="score_desc">Score ↓</option>
               <option value="score_asc">Score ↑</option>
               <option value="name">Nom A-Z</option>
             </select>
           </div>
-
-          {/* ===== LISTE ===== */}
-          <div className="flex-1 overflow-y-auto px-6 py-4">
-            {loading ? (
-              <div className="flex h-40 items-center justify-center">
-                <Loader2 size={24} className="animate-spin text-emerald-400" />
-              </div>
-            ) : filtered.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16">
-                <Users size={32} className="text-slate-600" />
-                <p className="mt-3 text-sm font-medium text-slate-400">
-                  {search || minScore ? "Aucun candidat ne correspond aux filtres" : "Aucun candidat trouvé"}
-                </p>
-                {(search || minScore) && (
-                  <button
-                    onClick={() => { setSearch(""); setMinScore(""); }}
-                    className="mt-3 text-xs font-medium text-emerald-400 hover:text-emerald-300"
-                  >
-                    Effacer les filtres
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {filtered.map((c) => (
-                  <CandidateCard
-                    key={c.profile_id}
-                    candidate={c}
-                    onPropose={() => openPropose(c)}
-                    onExplain={() => openExplain(c)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* ===== FOOTER ===== */}
-          <div className="flex items-center justify-end border-t border-white/[0.06] px-6 py-3">
-            <button
-              onClick={onClose}
-              className="rounded-lg bg-white/[0.06] px-4 py-2 text-xs font-medium text-white transition hover:bg-white/[0.1]"
-            >
-              Fermer
-            </button>
-          </div>
         </div>
       </div>
 
-      {/* ===== MODAL PROPOSITION ===== */}
-      {showProposeModal && selectedCandidate && (
-       <div
-  className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
-  onClick={() => setShowProposeModal(false)}
->
-  <div
-    className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[var(--border-app)] bg-[var(--bg-app)]/80 shadow-2xl backdrop-blur-2xl"
-    onClick={(e) => e.stopPropagation()}
-  >
-           <div className="flex items-center justify-between border-b border-[var(--border-app)] px-6 py-4">
-  <h3 className="text-base font-semibold text-[var(--text-app)]">Proposer ce talent</h3>
-  <button
-    onClick={() => setShowProposeModal(false)}
-    className="rounded-lg p-1.5 text-[var(--text-faint)] transition hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-app)]"
-  >
-    <X size={18} />
-  </button>
-</div>
+      <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50/50 px-5 py-4 sm:px-7">
+        {loading ? (
+          <div className="flex min-h-56 flex-col items-center justify-center gap-3">
+            <Loader2 size={28} className="animate-spin text-teal-600" />
+            <p className="text-sm text-slate-500">
+              Recherche des meilleurs profils...
+            </p>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white px-6 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+              <Users size={25} />
+            </div>
 
-            <div className="flex-1 space-y-4 overflow-y-auto p-6">
-              <div className="rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface)]/50 p-3">
-  <p className="text-sm font-semibold text-[var(--text-app)]">{selectedCandidate.name}</p>
-  {selectedCandidate.headline && (
-    <p className="mt-0.5 text-xs text-[var(--text-muted)]">{selectedCandidate.headline}</p>
-  )}
-  <p className="mt-2 text-xs font-medium text-emerald-400">
-    Score : {selectedCandidate.match?.total || 0}%
-  </p>
-</div>
+            <h3 className="mt-4 text-sm font-semibold text-slate-800">
+              {search || minScore
+                ? "Aucun résultat pour ces filtres"
+                : "Aucun candidat disponible"}
+            </h3>
+
+            <p className="mt-1 max-w-sm text-sm leading-6 text-slate-500">
+              {search || minScore
+                ? "Essayez de modifier votre recherche ou d'élargir les critères."
+                : "Les profils correspondant à cette demande apparaîtront ici."}
+            </p>
+
+            {(search || minScore) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch("");
+                  setMinScore("");
+                }}
+                className="mt-4 rounded-lg px-3 py-2 text-sm font-semibold text-teal-700 transition hover:bg-teal-50"
+              >
+                Réinitialiser les filtres
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filtered.map((candidate) => (
+              <CandidateCard
+                key={candidate.profile_id}
+                candidate={candidate}
+                onPropose={() => openPropose(candidate)}
+                onExplain={() => openExplain(candidate)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between gap-3 border-t border-slate-100 bg-white px-5 py-4 sm:px-7">
+        <p className="hidden text-xs text-slate-400 sm:block">
+          Les scores indiquent la compatibilité estimée avec votre demande.
+        </p>
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="ml-auto rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+        >
+          Fermer
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      {embedded ? (
+        content
+      ) : (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/50 p-3 backdrop-blur-sm sm:p-6"
+          onClick={onClose}
+        >
+          {content}
+        </div>
+      )}
+
+      {showProposeModal && selectedCandidate && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm"
+          onClick={() => !proposing && setShowProposeModal(false)}
+        >
+          <div
+            className="w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-teal-700">
+                  Contacter un talent
+                </p>
+                <h3 className="mt-1 text-lg font-bold text-slate-900">
+                  Envoyer une proposition
+                </h3>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowProposeModal(false)}
+                disabled={proposing}
+                aria-label="Fermer la fenêtre"
+                className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+              >
+                <X size={19} />
+              </button>
+            </div>
+
+            <div className="space-y-5 p-6">
+              <div className="flex items-center gap-3 rounded-xl border border-teal-100 bg-teal-50/60 p-4">
+                <Avatar candidate={selectedCandidate} size="large" />
+
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold text-slate-900">
+                    {selectedCandidate.name}
+                  </p>
+
+                  {selectedCandidate.headline && (
+                    <p className="mt-0.5 line-clamp-2 text-sm text-slate-500">
+                      {selectedCandidate.headline}
+                    </p>
+                  )}
+
+                  <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-teal-800 ring-1 ring-teal-100">
+                    <TrendingUp size={13} />
+                    Compatibilité : {selectedCandidate.match?.total || 0} %
+                  </div>
+                </div>
+              </div>
 
               <div>
-  <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
-    Message d'accompagnement (optionnel)
-  </label>
-<textarea
-  rows={4}
-  value={message}
-  onChange={(e) => setMessage(e.target.value)}
-  placeholder="Pourquoi ce talent correspond à votre besoin..."
-  className="w-full rounded-lg border border-white/[0.08] bg-black/30 px-3 py-2 text-sm text-white placeholder:text-slate-500 transition focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 backdrop-blur-sm"
-/>
-</div>
-</div>
+                <label
+                  htmlFor="proposal-message"
+                  className="mb-2 block text-sm font-semibold text-slate-800"
+                >
+                  Message d'accompagnement
+                  <span className="ml-1 font-normal text-slate-400">
+                    (facultatif)
+                  </span>
+                </label>
 
-{/* ===== FOOTER ===== */}
-<div className="flex items-center justify-end gap-2 border-t border-[var(--border-app)] px-6 py-4">
-  <button
-    type="button"
-    onClick={() => setShowProposeModal(false)}
-    className="rounded-lg px-4 py-2 text-sm text-[var(--text-muted)] transition hover:bg-[var(--bg-surface-hover)]"
-  >
-    Annuler
-  </button>
-  <button
-    type="button"
-    onClick={submitProposal}
-    disabled={proposing}
-    className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400 disabled:opacity-50"
-  >
-    {proposing ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-    {proposing ? "Envoi..." : "Envoyer"}
-  </button>
-</div>
-</div>
-</div>
-)}
+                <textarea
+                  id="proposal-message"
+                  rows={5}
+                  value={message}
+                  onChange={(event) => setMessage(event.target.value)}
+                  placeholder="Présentez brièvement la mission et expliquez pourquoi ce profil vous intéresse..."
+                  className="w-full resize-y rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm leading-6 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10"
+                />
 
-      {/* ===== MODAL EXPLICATION ===== */}
+                <p className="mt-2 text-xs text-slate-400">
+                  Un message personnalisé peut faciliter la prise de contact.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col-reverse gap-2 border-t border-slate-100 bg-slate-50/70 px-6 py-4 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setShowProposeModal(false)}
+                disabled={proposing}
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+              >
+                Annuler
+              </button>
+
+              <button
+                type="button"
+                onClick={submitProposal}
+                disabled={proposing}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-800 focus:outline-none focus:ring-4 focus:ring-teal-600/20 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {proposing ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Send size={16} />
+                )}
+                {proposing ? "Envoi en cours..." : "Envoyer la proposition"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showExplainModal && explainProfileId && (
         <MatchExplanationModal
           open={showExplainModal}
@@ -357,120 +537,175 @@ return (
         />
       )}
 
-      {toast && <Toast message={toast.message} type={toast.type} onClose={closeToast} />}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={closeToast}
+        />
+      )}
     </>
   );
 }
 
-/* ============================================
-   CARTE CANDIDAT
-============================================ */
+function Avatar({ candidate, size = "normal" }) {
+  const [imageError, setImageError] = useState(false);
+  const initials = (candidate?.name || "T")
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  const dimensions =
+    size === "large"
+      ? "h-14 w-14 rounded-xl text-base"
+      : "h-12 w-12 rounded-xl text-sm";
+
+  const avatarUrl = candidate?.avatar_path
+    ? `http://localhost:8001/storage/${candidate.avatar_path}`
+    : null;
+
+  if (avatarUrl && !imageError) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={candidate?.name || "Talent"}
+        onError={() => setImageError(true)}
+        className={`${dimensions} shrink-0 border border-slate-200 object-cover`}
+      />
+    );
+  }
+
+  return (
+    <div
+      className={`${dimensions} flex shrink-0 items-center justify-center bg-gradient-to-br from-slate-800 to-teal-700 font-bold text-white`}
+    >
+      {initials || <User size={20} />}
+    </div>
+  );
+}
+
 function CandidateCard({ candidate, onPropose, onExplain }) {
   const score = candidate.match?.total || 0;
   const breakdown = candidate.match?.breakdown || {};
 
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.015] px-4 py-3 transition hover:border-white/[0.12]">
-      <div className="flex items-start gap-3">
-        {/* Avatar */}
-        {candidate.avatar_path ? (
-          <img
-            src={`http://localhost:8000/storage/${candidate.avatar_path}`}
-            alt={candidate.name}
-            className="h-12 w-12 shrink-0 rounded-full border border-white/[0.08] object-cover"
-          />
-        ) : (
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-sm font-bold text-white">
-            {candidate.name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
-          </div>
-        )}
+    <article className="rounded-2xl border border-slate-200 bg-white p-4 transition duration-200 hover:border-teal-200 hover:shadow-md sm:p-5">
+      <div className="flex items-start gap-3 sm:gap-4">
+        <Avatar candidate={candidate} />
 
-        {/* Infos */}
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            <p className="truncate text-sm font-semibold text-white">{candidate.name}</p>
-            <ShieldCheck size={12} className="shrink-0 text-emerald-400" />
+          <div className="flex flex-wrap items-center gap-1.5">
+            <h3 className="truncate text-sm font-bold text-slate-900 sm:text-base">
+              {candidate.name || "Talent"}
+            </h3>
+
+            <ShieldCheck
+              size={15}
+              className="shrink-0 text-teal-600"
+              aria-label="Profil professionnel"
+            />
           </div>
 
           {candidate.headline && (
-            <p className="truncate text-xs text-slate-500">{candidate.headline}</p>
-          )}
-
-          {candidate.city && (
-            <p className="mt-1 flex items-center gap-1 text-[11px] text-slate-500">
-              <MapPin size={10} /> {candidate.city}
+            <p className="mt-1 line-clamp-2 text-sm leading-5 text-slate-500">
+              {candidate.headline}
             </p>
           )}
 
-          {/* Breakdown */}
-          {breakdown && (
-            <div className="mt-2 flex flex-wrap gap-1.5 text-[10px]">
+          {candidate.city && (
+            <p className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
+              <MapPin size={13} className="shrink-0 text-slate-400" />
+              {candidate.city}
+            </p>
+          )}
+
+          {Object.keys(breakdown).length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-1.5">
               {breakdown.skills !== undefined && (
-                <span className="rounded-md border border-white/[0.06] bg-white/[0.03] px-2 py-0.5 text-slate-400">
-                  Compétences : {breakdown.skills}%
-                </span>
+                <BreakdownTag label="Compétences" value={breakdown.skills} />
               )}
               {breakdown.availability !== undefined && (
-                <span className="rounded-md border border-white/[0.06] bg-white/[0.03] px-2 py-0.5 text-slate-400">
-                  Dispo : {breakdown.availability}%
-                </span>
+                <BreakdownTag
+                  label="Disponibilité"
+                  value={breakdown.availability}
+                />
               )}
               {breakdown.location !== undefined && (
-                <span className="rounded-md border border-white/[0.06] bg-white/[0.03] px-2 py-0.5 text-slate-400">
-                  Lieu : {breakdown.location}%
-                </span>
+                <BreakdownTag label="Localisation" value={breakdown.location} />
               )}
             </div>
           )}
         </div>
 
-        {/* Score */}
-        <MatchScoreBadge score={score} size="sm" showLabel />
+        <div className="shrink-0">
+          <MatchScoreBadge score={score} size="sm" showLabel />
+        </div>
       </div>
 
-      {/* Actions */}
-      <div className="mt-3 flex items-center justify-between gap-2 border-t border-white/[0.04] pt-3">
-        <div className="flex items-center gap-3 text-[11px]">
+      <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <Link
             to={`/talents/${candidate.profile_id}`}
-            className="flex items-center gap-1 text-slate-500 transition hover:text-white"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 transition hover:text-slate-900"
           >
-            <User size={11} /> Voir profil
+            <User size={14} />
+            Voir le profil
           </Link>
+
           <button
+            type="button"
             onClick={onExplain}
-            className="flex items-center gap-1 text-emerald-400 transition hover:text-emerald-300"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-teal-700 transition hover:text-teal-900"
           >
-            <HelpCircle size={11} /> Expliquer
+            <HelpCircle size={14} />
+            Comprendre le score
           </button>
         </div>
 
         <button
+          type="button"
           onClick={onPropose}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-[#0A1229] transition hover:bg-emerald-400"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-teal-800 focus:outline-none focus:ring-4 focus:ring-teal-600/15"
         >
-          <Send size={11} />
-          Proposer
+          <Send size={14} />
+          Proposer ce talent
         </button>
       </div>
-    </div>
+    </article>
   );
 }
 
-/* ============================================
-   STAT CARD
-============================================ */
-function StatCard({ value, label, color }) {
-  const colors = {
-    emerald: "border-emerald-500/20 bg-emerald-500/[0.06] text-emerald-400",
-    blue:    "border-blue-500/20 bg-blue-500/[0.06] text-blue-400",
-    amber:   "border-amber-500/20 bg-amber-500/[0.06] text-amber-400",
-    slate:   "border-slate-500/20 bg-slate-500/[0.06] text-slate-400",
-  };
+function BreakdownTag({ label, value }) {
   return (
-    <div className={`rounded-lg border px-3 py-2 ${colors[color]}`}>
-      <p className="text-lg font-bold">{value}</p>
-      <p className="text-[10px] font-medium opacity-80">{label}</p>
+    <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-1 text-[11px] text-slate-600">
+      <span>{label}</span>
+      <span className="font-bold text-slate-800">{value}%</span>
+    </span>
+  );
+}
+
+function StatCard({ value, label, color }) {
+  const styles = SCORE_COLORS[color] || SCORE_COLORS.low;
+
+  const icons = {
+    excellent: <Sparkles size={15} />,
+    good: <CheckCircle2 size={15} />,
+    medium: <AlertCircle size={15} />,
+    low: <Users size={15} />,
+  };
+
+  return (
+    <div className={`rounded-xl border ${styles.border} ${styles.bg} p-3`}>
+      <div className={`flex items-center gap-2 ${styles.text}`}>
+        {icons[color]}
+        <span className="text-xs font-medium">{label}</span>
+      </div>
+      <p className={`mt-2 text-2xl font-bold tracking-tight ${styles.text}`}>
+        {value}
+      </p>
     </div>
   );
 }

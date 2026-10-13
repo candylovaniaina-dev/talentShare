@@ -1,85 +1,136 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
-import { CheckCircle, AlertCircle, Info, AlertTriangle, X } from "lucide-react";
+import React, {
+  createContext,
+  useState,
+  useContext,
+  useCallback,
+  useEffect,
+  useRef,
+} from "react";
+import {
+  CheckCircle,
+  AlertCircle,
+  Info,
+  AlertTriangle,
+  X,
+} from "lucide-react";
 
-/* ============================================================
-   CONTEXTE
-============================================================ */
 const ToastContext = createContext(null);
 
 export function useToast() {
-  const ctx = useContext(ToastContext);
-  if (!ctx) throw new Error("useToast doit être utilisé dans <ToastProvider>");
-  return ctx;
+  const context = useContext(ToastContext);
+
+  if (!context) {
+    throw new Error("useToast doit être utilisé dans <ToastProvider>");
+  }
+
+  return context;
 }
 
-/* ============================================================
-   PROVIDER
-============================================================ */
+const STYLES = {
+  success: {
+    border: "border-emerald-500/30",
+    bg: "bg-emerald-500/10",
+    text: "text-emerald-500",
+    iconBg: "bg-emerald-500/15",
+    Icon: CheckCircle,
+    title: "Succès",
+  },
+  error: {
+    border: "border-rose-500/30",
+    bg: "bg-rose-500/10",
+    text: "text-rose-500",
+    iconBg: "bg-rose-500/15",
+    Icon: AlertCircle,
+    title: "Erreur",
+  },
+  info: {
+    border: "border-sky-500/30",
+    bg: "bg-sky-500/10",
+    text: "text-sky-500",
+    iconBg: "bg-sky-500/15",
+    Icon: Info,
+    title: "Information",
+  },
+  warning: {
+    border: "border-amber-500/30",
+    bg: "bg-amber-500/10",
+    text: "text-amber-500",
+    iconBg: "bg-amber-500/15",
+    Icon: AlertTriangle,
+    title: "Attention",
+  },
+};
+
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
-
-  const showToast = useCallback((message, type = "success", duration = 4000) => {
-    const id = Date.now() + Math.random();
-    setToasts((prev) => [...prev, { id, message, type, duration }]);
-
-    if (duration > 0) {
-      setTimeout(() => {
-        setToasts((prev) => prev.filter((t) => t.id !== id));
-      }, duration);
-    }
-  }, []);
+  const timers = useRef(new Map());
 
   const dismiss = useCallback((id) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
+    const timer = timers.current.get(id);
+
+    if (timer) {
+      clearTimeout(timer);
+      timers.current.delete(id);
+    }
+
+    setToasts((current) => current.filter((toast) => toast.id !== id));
+  }, []);
+
+  const showToast = useCallback(
+    (message, type = "success", duration = 4000) => {
+      const id =
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random()}`;
+
+      const toast = {
+        id,
+        message: String(message ?? ""),
+        type: STYLES[type] ? type : "info",
+      };
+
+      setToasts((current) => [...current, toast]);
+
+      if (duration > 0) {
+        const timer = setTimeout(() => {
+          dismiss(id);
+        }, duration);
+
+        timers.current.set(id, timer);
+      }
+    },
+    [dismiss]
+  );
+
+  useEffect(() => {
+    const activeTimers = timers.current;
+
+    return () => {
+      activeTimers.forEach((timer) => clearTimeout(timer));
+      activeTimers.clear();
+    };
   }, []);
 
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
 
-      {/* Conteneur des toasts */}
-      <div className="pointer-events-none fixed right-4 top-4 z-[9999] flex flex-col gap-2">
+      <div
+        aria-live="polite"
+        aria-relevant="additions"
+        className="pointer-events-none fixed right-3 top-3 z-[9999] flex w-[calc(100%-1.5rem)] max-w-[380px] flex-col gap-3 sm:right-5 sm:top-5"
+      >
         {toasts.map((toast) => (
-          <ToastItem key={toast.id} {...toast} onClose={() => dismiss(toast.id)} />
+          <ToastItem
+            key={toast.id}
+            {...toast}
+            onClose={() => dismiss(toast.id)}
+          />
         ))}
       </div>
     </ToastContext.Provider>
   );
 }
-
-/* ============================================================
-   ITEM
-============================================================ */
-const STYLES = {
-  success: {
-    border: "border-emerald-500/40",
-    bg: "bg-emerald-500/10",
-    text: "text-emerald-400",
-    iconBg: "bg-emerald-500/20",
-    Icon: CheckCircle,
-  },
-  error: {
-    border: "border-rose-500/40",
-    bg: "bg-rose-500/10",
-    text: "text-rose-400",
-    iconBg: "bg-rose-500/20",
-    Icon: AlertCircle,
-  },
-  info: {
-    border: "border-blue-500/40",
-    bg: "bg-blue-500/10",
-    text: "text-blue-400",
-    iconBg: "bg-blue-500/20",
-    Icon: Info,
-  },
-  warning: {
-    border: "border-amber-500/40",
-    bg: "bg-amber-500/10",
-    text: "text-amber-400",
-    iconBg: "bg-amber-500/20",
-    Icon: AlertTriangle,
-  },
-};
 
 function ToastItem({ message, type = "info", onClose }) {
   const style = STYLES[type] || STYLES.info;
@@ -87,33 +138,44 @@ function ToastItem({ message, type = "info", onClose }) {
 
   return (
     <div
-      className="pointer-events-auto flex w-[380px] max-w-[calc(100vw-2rem)] items-start gap-3 rounded-xl border p-3.5 shadow-2xl backdrop-blur-xl transition-all"
+      role={type === "error" ? "alert" : "status"}
+      className={[
+        "pointer-events-auto flex items-start gap-3 rounded-2xl border p-4",
+        "bg-[var(--bg-surface)] shadow-xl shadow-slate-950/10",
+        "backdrop-blur-xl transition-all duration-200",
+        style.border,
+        style.bg,
+      ].join(" ")}
       style={{
-        backgroundColor: "var(--bg-surface)",
-        borderColor: style.border.replace(/border-|/g, ""),
         animation: "slideIn 0.25s ease-out",
       }}
     >
-      {/* Icône */}
       <span
-        className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${style.iconBg} ${style.text}`}
+        className={[
+          "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+          style.iconBg,
+          style.text,
+        ].join(" ")}
       >
-        <Icon size={14} strokeWidth={2.5} />
+        <Icon size={19} strokeWidth={2.2} aria-hidden="true" />
       </span>
 
-      {/* Message */}
-      <div className="min-w-0 flex-1">
-        <p className="text-xs font-medium leading-relaxed text-[var(--text-app)]">
+      <div className="min-w-0 flex-1 pt-0.5">
+        <p className="text-sm font-semibold text-[var(--text-app)]">
+          {style.title}
+        </p>
+        <p className="mt-1 break-words text-sm leading-relaxed text-[var(--text-muted,var(--text-app))]">
           {message}
         </p>
       </div>
 
-      {/* Bouton fermer */}
       <button
+        type="button"
         onClick={onClose}
-        className="shrink-0 rounded-md p-1 text-[var(--text-faint)] transition hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-app)]"
+        aria-label="Fermer la notification"
+        className="shrink-0 rounded-lg p-1.5 text-[var(--text-faint)] transition-colors hover:bg-black/5 hover:text-[var(--text-app)] focus:outline-none focus:ring-2 focus:ring-emerald-400/60"
       >
-        <X size={14} />
+        <X size={16} aria-hidden="true" />
       </button>
     </div>
   );

@@ -1,12 +1,17 @@
+
 import React, { useEffect, useState } from "react";
-import { X, Loader2, AlertCircle, Check } from "lucide-react";
+import {
+  X, Loader2, AlertCircle, Check, BriefcaseBusiness,
+  UserRound, CalendarDays, MapPin, Sparkles, Euro,
+  Eye, ChevronDown,
+} from "lucide-react";
 import api from "../../services/api";
 import EmployeeSelector from "./EmployeeSelector";
 import EmployeePickerModal from "./EmployeePickerModal";
 
 const MISSION_TYPES = [
-  { value: "mission",   label: "Mission" },
-  { value: "loan",      label: "Mise à disposition" },
+  { value: "mission", label: "Mission" },
+  { value: "loan", label: "Mise à disposition" },
   { value: "freelance", label: "Freelance" },
   { value: "part_time", label: "Temps partiel" },
   { value: "full_time", label: "Temps plein" },
@@ -19,21 +24,27 @@ const LOCATION_TYPES = [
 ];
 
 const VISIBILITY_TYPES = [
-  { value: "public",  label: "Public" },
+  { value: "public", label: "Public" },
   { value: "network", label: "Réseau" },
   { value: "private", label: "Privé" },
 ];
 
-export default function CreateResourceOfferModal({ offerId, onClose, onSuccess }) {
+const inputCls =
+  "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10";
+
+export default function CreateResourceOfferModal({
+  offerId,
+  onClose,
+  onSuccess,
+}) {
   const isEdit = Boolean(offerId);
 
   const [company, setCompany] = useState(null);
   const [employees, setEmployees] = useState([]);
   const [allSkills, setAllSkills] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [loadingOffer, setLoadingOffer] = useState(isEdit);
   const [error, setError] = useState(null);
-
-  // ✅ Picker salarié
   const [showPicker, setShowPicker] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
 
@@ -58,85 +69,161 @@ export default function CreateResourceOfferModal({ offerId, onClose, onSuccess }
     skills: [],
   });
 
+  const update = (key, value) =>
+    setForm((current) => ({ ...current, [key]: value }));
+
   useEffect(() => {
-    api.get("/companies/me").then((res) => setCompany(res.data));
-    api.get("/skills").then((res) => setAllSkills(res.data));
+    let active = true;
+
+    api.get("/companies/me")
+      .then((res) => {
+        if (active) setCompany(res.data);
+      })
+      .catch(() => {
+        if (active) setError("Impossible de charger les informations de l’entreprise.");
+      });
+
+    api.get("/skills")
+      .then((res) => {
+        if (active) {
+          const data = res.data;
+          setAllSkills(Array.isArray(data) ? data : data?.data || []);
+        }
+      })
+      .catch(() => {
+        if (active) setAllSkills([]);
+      });
 
     if (isEdit) {
-      api.get(`/resource-offers/${offerId}`).then((res) => {
-        const o = res.data;
-        setForm({
-          professional_profile_id: o.professional_profile_id,
-          title: o.title || "",
-          description: o.description || "",
-          mission_type: o.mission_type || "loan",
-          start_at: o.start_at?.slice(0, 10) || "",
-          end_at: o.end_at?.slice(0, 10) || "",
-          workload_unit: o.workload_unit || "days_per_week",
-          workload_value: o.workload_value ?? 5,
-          location_type: o.location_type || "hybrid",
-          location_city: o.location_city || "",
-          country: o.country || "Madagascar",
-          city: o.city || "",
-          visibility: o.visibility || "public",
-          status: o.status || "published",
-          conditions: o.conditions || "",
-          daily_rate: o.daily_rate || "",
-          hourly_rate: o.hourly_rate || "",
-          skills: (o.skills || []).map((s) => ({
-            skill_id: s.id,
-            name: s.name,
-            level: s.pivot?.level || "intermediate",
-          })),
+      api.get(`/resource-offers/${offerId}`)
+        .then((res) => {
+          if (!active) return;
+          const o = res.data;
+
+          setForm({
+            professional_profile_id: o.professional_profile_id,
+            title: o.title || "",
+            description: o.description || "",
+            mission_type: o.mission_type || "loan",
+            start_at: o.start_at?.slice(0, 10) || "",
+            end_at: o.end_at?.slice(0, 10) || "",
+            workload_unit: o.workload_unit || "days_per_week",
+            workload_value: o.workload_value ?? 5,
+            location_type: o.location_type || "hybrid",
+            location_city: o.location_city || "",
+            country: o.country || "Madagascar",
+            city: o.city || "",
+            visibility: o.visibility || "public",
+            status: o.status || "published",
+            conditions: o.conditions || "",
+            daily_rate: o.daily_rate ?? "",
+            hourly_rate: o.hourly_rate ?? "",
+            skills: (o.skills || []).map((s) => ({
+              skill_id: s.id,
+              name: s.name,
+              level: s.pivot?.level || "intermediate",
+            })),
+          });
+        })
+        .catch(() => {
+          if (active) setError("Impossible de charger cette offre.");
+        })
+        .finally(() => {
+          if (active) setLoadingOffer(false);
         });
-      });
     }
+
+    return () => {
+      active = false;
+    };
   }, [offerId, isEdit]);
 
   useEffect(() => {
-    if (company) {
-      api.get(`/companies/${company.id}/employees`)
-        .then((res) => setEmployees(res.data.data || []));
-    }
+    if (!company?.id) return;
+
+    api.get(`/companies/${company.id}/employees`)
+      .then((res) => setEmployees(res.data.data || []))
+      .catch(() => setEmployees([]));
   }, [company]);
 
-  // ✅ Hydrate selectedEmployee quand form.professional_profile_id change
   useEffect(() => {
     if (!form.professional_profile_id || employees.length === 0) return;
+
     const found = employees.find(
-      (e) => String(e.user?.professional_profile?.id) === String(form.professional_profile_id)
+      (e) =>
+        String(e.user?.professional_profile?.id) ===
+        String(form.professional_profile_id)
     );
+
     if (found) setSelectedEmployee(found);
   }, [form.professional_profile_id, employees]);
 
   useEffect(() => {
-    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        if (showPicker) setShowPicker(false);
+        else onClose();
+      }
+    };
+
     window.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
+
     return () => {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
     };
-  }, [onClose]);
+  }, [onClose, showPicker]);
 
   const addSkill = (skillId) => {
     const skill = allSkills.find((s) => s.id === Number(skillId));
-    if (!skill || form.skills.some((s) => s.skill_id === skill.id)) return;
-    setForm({ ...form, skills: [...form.skills, { skill_id: skill.id, name: skill.name, level: "intermediate" }] });
+
+    if (
+      !skill ||
+      form.skills.some((s) => Number(s.skill_id) === Number(skill.id))
+    ) return;
+
+    setForm((current) => ({
+      ...current,
+      skills: [
+        ...current.skills,
+        {
+          skill_id: skill.id,
+          name: skill.name,
+          level: "intermediate",
+        },
+      ],
+    }));
   };
 
   const removeSkill = (skillId) => {
-    setForm({ ...form, skills: form.skills.filter((s) => s.skill_id !== skillId) });
+    setForm((current) => ({
+      ...current,
+      skills: current.skills.filter(
+        (s) => Number(s.skill_id) !== Number(skillId)
+      ),
+    }));
   };
 
   const submit = async (status) => {
     setError(null);
 
     if (!form.title.trim()) return setError("Le titre est requis.");
-    if (!form.professional_profile_id) return setError("Sélectionnez un salarié.");
-    if (!form.start_at || !form.end_at) return setError("Les dates sont requises.");
+    if (!form.professional_profile_id) {
+      return setError("Sélectionnez un salarié.");
+    }
+    if (!form.start_at || !form.end_at) {
+      return setError("Les dates sont requises.");
+    }
+    if (form.end_at < form.start_at) {
+      return setError("La date de fin doit être postérieure à la date de début.");
+    }
+    if (!company?.id) {
+      return setError("Les informations de votre entreprise ne sont pas disponibles.");
+    }
 
     setSubmitting(true);
+
     try {
       const payload = {
         ...form,
@@ -144,7 +231,10 @@ export default function CreateResourceOfferModal({ offerId, onClose, onSuccess }
         status,
         daily_rate: form.daily_rate === "" ? null : Number(form.daily_rate),
         hourly_rate: form.hourly_rate === "" ? null : Number(form.hourly_rate),
-        skills: form.skills.map(({ skill_id, level }) => ({ skill_id, level })),
+        skills: form.skills.map(({ skill_id, level }) => ({
+          skill_id,
+          level,
+        })),
       };
 
       if (isEdit) {
@@ -152,9 +242,13 @@ export default function CreateResourceOfferModal({ offerId, onClose, onSuccess }
       } else {
         await api.post("/resource-offers", payload);
       }
+
       onSuccess();
     } catch (err) {
-      setError(err.response?.data?.message || "Erreur lors de l'enregistrement.");
+      setError(
+        err.response?.data?.message ||
+        "Une erreur est survenue lors de l’enregistrement."
+      );
     } finally {
       setSubmitting(false);
     }
@@ -163,295 +257,245 @@ export default function CreateResourceOfferModal({ offerId, onClose, onSuccess }
   return (
     <>
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm animate-modalOverlay"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-3 backdrop-blur-sm sm:p-6"
         onClick={onClose}
       >
         <div
-          className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] shadow-2xl animate-modalContent"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="resource-offer-title"
           onClick={(e) => e.stopPropagation()}
+          className="flex max-h-[94vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-white/70 bg-slate-50 shadow-2xl shadow-slate-950/20"
         >
+          <header className="relative overflow-hidden border-b border-slate-200 bg-white px-5 py-5 sm:px-7">
+            <div className="absolute right-0 top-0 h-28 w-28 translate-x-8 -translate-y-8 rounded-full bg-teal-100/70 blur-2xl" />
 
-          {/* ===== HEADER ===== */}
-          <div className="flex items-start justify-between gap-3 border-b border-[var(--border-app)] px-6 py-5">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
-                {isEdit ? "Modifier" : "Nouvelle offre"}
-              </p>
-              <h2 className="mt-0.5 text-xl font-bold text-[var(--text-app)]">
-                {isEdit ? "Modifier l'offre de ressource" : "Proposer un talent"}
-              </h2>
-              <p className="mt-1 text-xs text-[var(--text-muted)]">
-                Proposez un de vos talents disponibles à d'autres entreprises.
-              </p>
+            <div className="relative flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-teal-50 text-teal-700 ring-1 ring-teal-100">
+                  <BriefcaseBusiness size={21} />
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-teal-700">
+                    Espace entreprise
+                  </p>
+                  <h2 id="resource-offer-title" className="mt-1 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
+                    {isEdit ? "Modifier l’offre" : "Proposer un talent"}
+                  </h2>
+                  <p className="mt-1 max-w-xl text-sm leading-relaxed text-slate-500">
+                    Présentez un collaborateur disponible pour une nouvelle opportunité.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                aria-label="Fermer"
+                onClick={onClose}
+                className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+              >
+                <X size={19} />
+              </button>
             </div>
-            <button
-              onClick={onClose}
-              className="rounded-lg p-1.5 text-[var(--text-faint)] transition hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-app)]"
-            >
-              <X size={18} />
-            </button>
-          </div>
+          </header>
 
-          {/* ===== BODY ===== */}
-          <div className="flex-1 space-y-6 overflow-y-auto p-6">
-
+          <main className="flex-1 space-y-7 overflow-y-auto px-5 py-6 sm:px-7">
             {error && (
-              <div className="flex items-start gap-2 rounded-lg border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-400">
-                <AlertCircle size={14} className="mt-0.5 shrink-0" />
-                {error}
+              <div role="alert" className="flex items-start gap-2.5 rounded-2xl border border-rose-200 bg-rose-50 p-3.5 text-sm text-rose-700">
+                <AlertCircle size={18} className="mt-0.5 shrink-0" />
+                <span>{error}</span>
               </div>
             )}
 
-            {/* ---- ① SALARIÉ ---- */}
-            <Section title="Salarié concerné" step="1">
-              {employees.length === 0 ? (
-                <p className="text-sm text-[var(--text-muted)]">
-                  Aucun salarié dans votre entreprise. Ajoutez-en dans "Mon entreprise".
-                </p>
-              ) : (
-                <EmployeeSelector
-                  employee={selectedEmployee}
-                  onOpenPicker={() => setShowPicker(true)}
-                />
-              )}
-            </Section>
-
-            {/* ---- ② INFORMATIONS ---- */}
-            <Section title="Informations générales" step="2">
-              <Field label="Titre de l'offre *">
-                <input
-                  value={form.title}
-                  onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  placeholder="Ex: Développeur Laravel senior disponible"
-                  className={inputCls}
-                />
-              </Field>
-
-              <Field label="Description">
-                <textarea
-                  rows={4}
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  placeholder="Décrivez le profil, ses compétences, son contexte..."
-                  className={inputCls}
-                />
-              </Field>
-
-              <Field label="Type de mission *">
-                <select
-                  value={form.mission_type}
-                  onChange={(e) => setForm({ ...form, mission_type: e.target.value })}
-                  className={inputCls}
-                >
-                  {MISSION_TYPES.map((t) => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
-                  ))}
-                </select>
-              </Field>
-            </Section>
-
-            {/* ---- ③ PÉRIODE & CHARGE ---- */}
-            <Section title="Période et charge" step="3">
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Début *">
-                  <input
-                    type="date"
-                    value={form.start_at}
-                    onChange={(e) => setForm({ ...form, start_at: e.target.value })}
-                    className={inputCls}
-                  />
-                </Field>
-                <Field label="Fin *">
-                  <input
-                    type="date"
-                    value={form.end_at}
-                    min={form.start_at}
-                    onChange={(e) => setForm({ ...form, end_at: e.target.value })}
-                    className={inputCls}
-                  />
-                </Field>
+            {loadingOffer ? (
+              <div className="flex min-h-48 flex-col items-center justify-center gap-3 text-slate-500">
+                <Loader2 className="animate-spin text-teal-600" size={28} />
+                <p className="text-sm">Chargement de l’offre…</p>
               </div>
+            ) : (
+              <>
+                <Section number="01" title="Collaborateur" description="Choisissez le talent proposé par votre entreprise." icon={UserRound}>
+                  {employees.length === 0 ? (
+                    <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-5 text-sm leading-relaxed text-slate-500">
+                      Aucun salarié n’est disponible dans votre entreprise. Vous pourrez en ajouter depuis la rubrique « Mon entreprise ».
+                    </div>
+                  ) : (
+                    <EmployeeSelector
+                      employee={selectedEmployee}
+                      onOpenPicker={() => setShowPicker(true)}
+                    />
+                  )}
+                </Section>
 
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Charge *">
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={form.workload_value}
-                    onChange={(e) => setForm({ ...form, workload_value: Number(e.target.value) })}
-                    className={inputCls}
-                  />
-                </Field>
-                <Field label="Unité">
+                <Section number="02" title="Informations de l’offre" description="Donnez les informations essentielles de votre proposition." icon={BriefcaseBusiness}>
+                  <div className="space-y-4">
+                    <Field label="Titre de l’offre *">
+                      <input
+                        value={form.title}
+                        onChange={(e) => update("title", e.target.value)}
+                        placeholder="Ex. Développeur Laravel senior disponible"
+                        className={inputCls}
+                      />
+                    </Field>
+
+                    <Field label="Description">
+                      <textarea
+                        rows={4}
+                        value={form.description}
+                        onChange={(e) => update("description", e.target.value)}
+                        placeholder="Présentez le profil, son expertise et le contexte de la mission…"
+                        className={`${inputCls} resize-y`}
+                      />
+                    </Field>
+
+                    <Field label="Type de mission *">
+                      <select value={form.mission_type} onChange={(e) => update("mission_type", e.target.value)} className={inputCls}>
+                        {MISSION_TYPES.map((t) => (
+                          <option key={t.value} value={t.value}>{t.label}</option>
+                        ))}
+                      </select>
+                    </Field>
+                  </div>
+                </Section>
+
+                <Section number="03" title="Période et disponibilité" description="Précisez les dates et la charge de travail souhaitée." icon={CalendarDays}>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <Field label="Date de début *">
+                      <input type="date" value={form.start_at} onChange={(e) => update("start_at", e.target.value)} className={inputCls} />
+                    </Field>
+                    <Field label="Date de fin *">
+                      <input type="date" min={form.start_at || undefined} value={form.end_at} onChange={(e) => update("end_at", e.target.value)} className={inputCls} />
+                    </Field>
+                    <Field label="Charge de travail">
+                      <input type="number" min="0" max="100" value={form.workload_value} onChange={(e) => update("workload_value", Number(e.target.value))} className={inputCls} />
+                    </Field>
+                    <Field label="Unité de charge">
+                      <select value={form.workload_unit} onChange={(e) => update("workload_unit", e.target.value)} className={inputCls}>
+                        <option value="percentage">Pourcentage (%)</option>
+                        <option value="hours_per_week">Heures / semaine</option>
+                        <option value="days_per_week">Jours / semaine</option>
+                      </select>
+                    </Field>
+                  </div>
+                </Section>
+
+                <Section number="04" title="Localisation" description="Définissez le mode de travail et le lieu de la mission." icon={MapPin}>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    {LOCATION_TYPES.map((item) => (
+                      <Choice
+                        key={item.value}
+                        active={form.location_type === item.value}
+                        onClick={() => update("location_type", item.value)}
+                        label={item.label}
+                      />
+                    ))}
+                  </div>
+
+                  {(form.location_type === "onsite" || form.location_type === "hybrid") && (
+                    <div className="mt-4">
+                      <Field label="Ville de la mission">
+                        <input value={form.location_city} onChange={(e) => update("location_city", e.target.value)} placeholder="Ex. Antananarivo" className={inputCls} />
+                      </Field>
+                    </div>
+                  )}
+
+                  <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <Field label="Pays">
+                      <input value={form.country} onChange={(e) => update("country", e.target.value)} className={inputCls} />
+                    </Field>
+                    <Field label="Ville complémentaire">
+                      <input value={form.city} onChange={(e) => update("city", e.target.value)} placeholder="Ville, si nécessaire" className={inputCls} />
+                    </Field>
+                  </div>
+                </Section>
+
+                <Section number="05" title="Compétences clés" description="Mettez en avant les compétences pertinentes pour cette offre." icon={Sparkles}>
                   <select
-                    value={form.workload_unit}
-                    onChange={(e) => setForm({ ...form, workload_unit: e.target.value })}
+                    value=""
+                    onChange={(e) => addSkill(e.target.value)}
                     className={inputCls}
                   >
-                    <option value="percentage">%</option>
-                    <option value="hours_per_week">heures / semaine</option>
-                    <option value="days_per_week">jours / semaine</option>
+                    <option value="">Ajouter une compétence…</option>
+                    {allSkills
+                      .filter((s) => !form.skills.some((fs) => Number(fs.skill_id) === Number(s.id)))
+                      .map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
-                </Field>
-              </div>
-            </Section>
 
-            {/* ---- ④ LOCALISATION ---- */}
-            <Section title="Localisation" step="4">
-              <div className="grid grid-cols-3 gap-2">
-                {LOCATION_TYPES.map((l) => (
-                  <Pill
-                    key={l.value}
-                    active={form.location_type === l.value}
-                    onClick={() => setForm({ ...form, location_type: l.value })}
-                  >
-                    {l.label}
-                  </Pill>
-                ))}
-              </div>
+                  {form.skills.length > 0 ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {form.skills.map((skill) => (
+                        <span key={skill.skill_id} className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3 py-1.5 text-sm font-medium text-teal-800">
+                          {skill.name}
+                          <button type="button" aria-label={`Retirer ${skill.name}`} onClick={() => removeSkill(skill.skill_id)} className="rounded-full p-0.5 text-teal-700/60 transition hover:bg-rose-100 hover:text-rose-600">
+                            <X size={13} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-3 text-xs text-slate-400">Aucune compétence ajoutée pour le moment.</p>
+                  )}
+                </Section>
 
-              {(form.location_type === "onsite" || form.location_type === "hybrid") && (
-                <Field label="Ville">
-                  <input
-                    placeholder="Ex: Antananarivo"
-                    value={form.location_city}
-                    onChange={(e) => setForm({ ...form, location_city: e.target.value })}
-                    className={inputCls}
-                  />
-                </Field>
-              )}
-            </Section>
+                <Section number="06" title="Conditions et tarifs" description="Ajoutez les conditions particulières et les tarifs indicatifs." icon={Euro}>
+                  <div className="space-y-4">
+                    <Field label="Conditions particulières">
+                      <textarea rows={3} value={form.conditions} onChange={(e) => update("conditions", e.target.value)} placeholder="Ex. NDA requis, durée minimale, conditions de collaboration…" className={`${inputCls} resize-y`} />
+                    </Field>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <Field label="Tarif journalier (€)">
+                        <input type="number" min="0" value={form.daily_rate} onChange={(e) => update("daily_rate", e.target.value)} placeholder="Ex. 300" className={inputCls} />
+                      </Field>
+                      <Field label="Tarif horaire (€)">
+                        <input type="number" min="0" value={form.hourly_rate} onChange={(e) => update("hourly_rate", e.target.value)} placeholder="Ex. 40" className={inputCls} />
+                      </Field>
+                    </div>
+                  </div>
+                </Section>
 
-            {/* ---- ⑤ COMPÉTENCES ---- */}
-            <Section title="Compétences mises en avant" step="5">
-              <select
-                onChange={(e) => { addSkill(e.target.value); e.target.value = ""; }}
-                className={inputCls}
-                defaultValue=""
-              >
-                <option value="" disabled>Ajouter une compétence...</option>
-                {allSkills
-                  .filter((s) => !form.skills.some((fs) => fs.skill_id === s.id))
-                  .map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-              </select>
+                <Section number="07" title="Visibilité de l’offre" description="Choisissez qui peut consulter cette proposition." icon={Eye}>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    {VISIBILITY_TYPES.map((item) => (
+                      <Choice
+                        key={item.value}
+                        active={form.visibility === item.value}
+                        onClick={() => update("visibility", item.value)}
+                        label={item.label}
+                      />
+                    ))}
+                  </div>
+                </Section>
+              </>
+            )}
+          </main>
 
-              {form.skills.length > 0 && (
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {form.skills.map((s) => (
-                    <span
-                      key={s.skill_id}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-400"
-                    >
-                      {s.name}
-                      <button
-                        onClick={() => removeSkill(s.skill_id)}
-                        className="text-emerald-400/70 transition hover:text-rose-400"
-                      >
-                        <X size={12} />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-            </Section>
-
-            {/* ---- ⑥ CONDITIONS & TARIF ---- */}
-            <Section title="Conditions et tarif" step="6">
-              <Field label="Conditions (optionnel)">
-                <textarea
-                  rows={3}
-                  value={form.conditions}
-                  onChange={(e) => setForm({ ...form, conditions: e.target.value })}
-                  placeholder="Ex: NDA requis, pas de concurrence, 3 mois minimum..."
-                  className={inputCls}
-                />
-              </Field>
-
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Tarif / jour (€)">
-                  <input
-                    type="number"
-                    min="0"
-                    value={form.daily_rate}
-                    onChange={(e) => setForm({ ...form, daily_rate: e.target.value })}
-                    placeholder="Ex: 300"
-                    className={inputCls}
-                  />
-                </Field>
-                <Field label="Tarif / heure (€)">
-                  <input
-                    type="number"
-                    min="0"
-                    value={form.hourly_rate}
-                    onChange={(e) => setForm({ ...form, hourly_rate: e.target.value })}
-                    placeholder="Ex: 40"
-                    className={inputCls}
-                  />
-                </Field>
-              </div>
-            </Section>
-
-            {/* ---- ⑦ VISIBILITÉ ---- */}
-            <Section title="Visibilité" step="7">
-              <div className="grid grid-cols-3 gap-2">
-                {VISIBILITY_TYPES.map((o) => (
-                  <Pill
-                    key={o.value}
-                    active={form.visibility === o.value}
-                    onClick={() => setForm({ ...form, visibility: o.value })}
-                  >
-                    {o.label}
-                  </Pill>
-                ))}
-              </div>
-            </Section>
-
-          </div>
-
-          {/* ===== FOOTER ===== */}
-          <div className="flex items-center justify-end gap-2 border-t border-[var(--border-app)] px-6 py-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg px-4 py-2 text-sm text-[var(--text-muted)] transition hover:bg-[var(--bg-surface-hover)]"
-            >
-              Annuler
-            </button>
-            <button
-              type="button"
-              onClick={() => submit("draft")}
-              disabled={submitting}
-              className="rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-4 py-2 text-sm font-semibold text-[var(--text-app)] transition hover:bg-[var(--bg-surface)] disabled:opacity-50"
-            >
-              Brouillon
-            </button>
-            <button
-              type="button"
-              onClick={() => submit("published")}
-              disabled={submitting}
-              className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400 disabled:opacity-50"
-            >
-              {submitting ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} strokeWidth={3} />}
-              {submitting ? "Publication..." : isEdit ? "Enregistrer" : "Publier l'offre"}
-            </button>
-          </div>
+          <footer className="flex flex-col-reverse gap-3 border-t border-slate-200 bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+            <p className="text-xs text-slate-400">
+              <span className="font-semibold text-slate-600">*</span> Champs obligatoires
+            </p>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row">
+              <button type="button" onClick={onClose} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100">
+                Annuler
+              </button>
+              <button type="button" onClick={() => submit("draft")} disabled={submitting || loadingOffer} className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50">
+                Enregistrer en brouillon
+              </button>
+              <button type="button" onClick={() => submit("published")} disabled={submitting || loadingOffer} className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700 disabled:opacity-50">
+                {submitting ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                {submitting ? "Enregistrement…" : isEdit ? "Enregistrer" : "Publier l’offre"}
+              </button>
+            </div>
+          </footer>
         </div>
       </div>
 
-      {/* ✅ PICKER MODAL (empilé, au-dessus du modal principal) */}
       {showPicker && (
         <EmployeePickerModal
           employees={employees.filter((e) => e.user)}
           selectedId={form.professional_profile_id}
           onSelect={(emp) => {
             setSelectedEmployee(emp);
-            setForm({
-              ...form,
-              professional_profile_id: emp.user?.professional_profile?.id || "",
-            });
+            update("professional_profile_id", emp.user?.professional_profile?.id || "");
           }}
           onClose={() => setShowPicker(false)}
         />
@@ -460,51 +504,51 @@ export default function CreateResourceOfferModal({ offerId, onClose, onSuccess }
   );
 }
 
-/* ============================================
-   UI HELPERS
-============================================ */
-const inputCls =
-  "w-full rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-3 py-2 text-sm text-[var(--text-app)] placeholder:text-[var(--text-faint)] transition focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20";
-
-function Section({ title, step, children }) {
+function Section({ number, title, description, icon: Icon, children }) {
   return (
-    <section className="space-y-3">
-      <div className="flex items-center gap-2">
-        <span className="flex h-5 w-5 items-center justify-center rounded-md bg-emerald-500/15 text-[10px] font-bold text-emerald-400">
-          {step}
-        </span>
-        <h3 className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
-          {title}
-        </h3>
+    <section className="space-y-4">
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-teal-100 bg-teal-50 text-teal-700">
+          <Icon size={18} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[10px] font-bold tracking-widest text-teal-700">{number}</span>
+            <h3 className="text-sm font-bold text-slate-900">{title}</h3>
+          </div>
+          <p className="mt-1 text-xs leading-relaxed text-slate-500">{description}</p>
+        </div>
       </div>
-      {children}
+      <div className="space-y-4 sm:pl-[52px]">{children}</div>
     </section>
   );
 }
 
 function Field({ label, children }) {
   return (
-    <div>
-      <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)]">
-        {label}
-      </label>
+    <div className="min-w-0">
+      <label className="mb-1.5 block text-xs font-semibold text-slate-700">{label}</label>
       {children}
     </div>
   );
 }
 
-function Pill({ active, onClick, children }) {
+function Choice({ active, onClick, label }) {
   return (
     <button
       type="button"
+      aria-pressed={active}
       onClick={onClick}
-      className={`rounded-lg border px-3 py-2 text-xs font-semibold transition ${
+      className={`rounded-xl border px-3 py-3 text-sm font-semibold transition ${
         active
-          ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
-          : "border-[var(--border-app)] bg-[var(--bg-surface-hover)] text-[var(--text-muted)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-app)]"
+          ? "border-teal-500 bg-teal-50 text-teal-800 ring-2 ring-teal-500/10"
+          : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
       }`}
     >
-      {children}
+      <span className="flex items-center justify-center gap-2">
+        {active && <Check size={15} />}
+        {label}
+      </span>
     </button>
   );
 }

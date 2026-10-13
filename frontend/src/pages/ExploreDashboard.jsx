@@ -144,7 +144,7 @@ export default function ExploreDashboard() {
             <div className="flex justify-center">
               {profile?.avatar_path ? (
                 <img
-                  src={`http://localhost:8000/storage/${profile.avatar_path}`}
+                  src={`http://localhost:8001/storage/${profile.avatar_path}`}
                   alt={profile?.user?.name || user?.name}
                   className="h-20 w-20 rounded-full border-4 border-[var(--bg-surface)] object-cover shadow-lg"
                 />
@@ -463,7 +463,7 @@ function JobCard({ job, onApply, onDetails }) {
       <div className="flex items-start gap-3">
         {job.company?.logo_path ? (
           <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[var(--border-app)] bg-white">
-            <img src={`http://localhost:8000/storage/${job.company.logo_path}`} alt={job.company.name} className="h-full w-full object-contain" />
+            <img src={`http://localhost:8001/storage/${job.company.logo_path}`} alt={job.company.name} className="h-full w-full object-contain" />
           </div>
         ) : (
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-[var(--border-app)] bg-gradient-to-br from-emerald-400 to-blue-500 text-sm font-bold text-white">
@@ -545,7 +545,7 @@ function RequestCard({ request }) {
       <div className="flex items-start gap-3">
         {request.company?.logo_path ? (
           <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[var(--border-app)] bg-white">
-            <img src={`http://localhost:8000/storage/${request.company.logo_path}`} alt={request.company.name} className="h-full w-full object-contain" />
+            <img src={`http://localhost:8001/storage/${request.company.logo_path}`} alt={request.company.name} className="h-full w-full object-contain" />
           </div>
         ) : (
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-[var(--border-app)] bg-gradient-to-br from-amber-400 to-orange-500 text-sm font-bold text-white">
@@ -621,7 +621,7 @@ function OfferDetailModal({ offer, onClose, onApply }) {
           <div className="flex items-start gap-3 min-w-0">
             {offer.company?.logo_path ? (
               <img
-                src={`http://localhost:8000/storage/${offer.company.logo_path}`}
+                src={`http://localhost:8001/storage/${offer.company.logo_path}`}
                 alt={offer.company.name}
                 className="h-12 w-12 shrink-0 rounded-lg border border-[var(--border-app)] object-cover"
               />

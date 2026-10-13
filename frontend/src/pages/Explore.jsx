@@ -334,7 +334,7 @@ function TalentCard({ profile: p }) {
           <div className="relative shrink-0">
             {p.avatar_path ? (
               <img
-                src={`http://localhost:8000/storage/${p.avatar_path}`}
+                src={`http://localhost:8001/storage/${p.avatar_path}`}
                 alt={p.user?.name}
                 className={`h-16 w-16 rounded-2xl object-cover border border-white/10 ${isPrivate ? "opacity-60" : ""}`}
               />

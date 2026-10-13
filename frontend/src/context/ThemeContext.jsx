@@ -1,77 +1,125 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
 import api from "../services/api";
 
-const ThemeContext = createContext();
+const ThemeContext = createContext(null);
+
+const getStoredValue = (key, fallback) => {
+  try {
+    return localStorage.getItem(key) ?? fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const getStoredBoolean = (key) => getStoredValue(key, "false") === "true";
 
 export const ThemeProvider = ({ children }) => {
-  // Récupère depuis localStorage en fallback, mais sera remplacé par la préférence user
-  const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "dark");
-  const [fontSize, setFontSize] = useState(() => localStorage.getItem("font_size") || "normal");
-  const [highContrast, setHighContrast] = useState(() => localStorage.getItem("high_contrast") === "true");
-  const [reduceMotion, setReduceMotion] = useState(() => localStorage.getItem("reduce_motion") === "true");
+  const [theme, setTheme] = useState(() =>
+    getStoredValue("theme", "dark")
+  );
+  const [fontSize, setFontSize] = useState(() =>
+    getStoredValue("font_size", "normal")
+  );
+  const [highContrast, setHighContrast] = useState(() =>
+    getStoredBoolean("high_contrast")
+  );
+  const [reduceMotion, setReduceMotion] = useState(() =>
+    getStoredBoolean("reduce_motion")
+  );
 
-  // Applique les classes sur <html>
   useEffect(() => {
     const root = document.documentElement;
 
-    // Thème
     root.classList.toggle("dark", theme === "dark");
     root.classList.toggle("light", theme === "light");
 
-    // Taille de police
     root.classList.remove("font-small", "font-normal", "font-large");
     root.classList.add(`font-${fontSize}`);
 
-    // Contraste élevé
     root.classList.toggle("high-contrast", highContrast);
-
-    // Réduction des animations
     root.classList.toggle("reduce-motion", reduceMotion);
 
-    // Persistance locale
-    localStorage.setItem("theme", theme);
-    localStorage.setItem("font_size", fontSize);
-    localStorage.setItem("high_contrast", String(highContrast));
-    localStorage.setItem("reduce_motion", String(reduceMotion));
+    try {
+      localStorage.setItem("theme", theme);
+      localStorage.setItem("font_size", fontSize);
+      localStorage.setItem("high_contrast", String(highContrast));
+      localStorage.setItem("reduce_motion", String(reduceMotion));
+    } catch (error) {
+      console.error("Erreur de sauvegarde des préférences locales :", error);
+    }
   }, [theme, fontSize, highContrast, reduceMotion]);
 
-  /**
-   * ✅ Synchronise avec la préférence de l'utilisateur connecté
-   * Appelé depuis AuthContext ou App.jsx après login
-   */
-const syncFromUser = (user) => {
-  if (!user) return;
-  if (user.theme_preference && user.theme_preference !== "system") {
-    setTheme(user.theme_preference);
-  }
-  if (user.font_size) setFontSize(user.font_size);
-  if (typeof user.high_contrast === "boolean") setHighContrast(user.high_contrast);
-  if (typeof user.reduce_motion === "boolean") setReduceMotion(user.reduce_motion);
-};
+  const syncFromUser = useCallback((user) => {
+    if (!user) return;
 
-  /**
-   * ✅ Change une préférence ET la sauvegarde côté backend
-   */
-  const updatePreference = async (key, value) => {
-    // 1. Change localement (effet immédiat)
-    if (key === "theme_preference") setTheme(value);
-    if (key === "font_size") setFontSize(value);
-    if (key === "high_contrast") setHighContrast(value);
-    if (key === "reduce_motion") setReduceMotion(value);
+    if (
+      user.theme_preference === "dark" ||
+      user.theme_preference === "light"
+    ) {
+      setTheme(user.theme_preference);
+    }
 
-    // 2. Sauvegarde côté backend
+    if (["small", "normal", "large"].includes(user.font_size)) {
+      setFontSize(user.font_size);
+    }
+
+    if (typeof user.high_contrast === "boolean") {
+      setHighContrast(user.high_contrast);
+    }
+
+    if (typeof user.reduce_motion === "boolean") {
+      setReduceMotion(user.reduce_motion);
+    }
+  }, []);
+
+  const updatePreference = useCallback(async (key, value) => {
+    const setters = {
+      theme_preference: setTheme,
+      font_size: setFontSize,
+      high_contrast: setHighContrast,
+      reduce_motion: setReduceMotion,
+    };
+
+    const isValid = {
+      theme_preference: ["dark", "light", "system"].includes(value),
+      font_size: ["small", "normal", "large"].includes(value),
+      high_contrast: typeof value === "boolean",
+      reduce_motion: typeof value === "boolean",
+    };
+
+    if (!setters[key] || !isValid[key]) {
+      console.warn("Préférence invalide :", key, value);
+      return;
+    }
+
+    // Applique immédiatement la préférence à l'interface.
+    // "system" reste accepté pour compatibilité avec le backend.
+    if (key === "theme_preference" && value === "system") {
+      const prefersDark =
+        window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? true;
+
+      setTheme(prefersDark ? "dark" : "light");
+    } else {
+      setters[key](value);
+    }
+
     try {
       await api.patch("/account/preferences", { [key]: value });
-    } catch (err) {
-      console.error("Erreur sauvegarde préférence :", err);
+    } catch (error) {
+      console.error("Erreur sauvegarde préférence :", error);
     }
-  };
+  }, []);
 
-  // Compat ancien code : toggleTheme
-  const toggleTheme = () => {
-    const next = theme === "dark" ? "light" : "dark";
-    updatePreference("theme_preference", next);
-  };
+  const toggleTheme = useCallback(() => {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    updatePreference("theme_preference", nextTheme);
+  }, [theme, updatePreference]);
 
   return (
     <ThemeContext.Provider
@@ -90,4 +138,14 @@ const syncFromUser = (user) => {
   );
 };
 
-export const useTheme = () => useContext(ThemeContext);
+export const useTheme = () => {
+  const context = useContext(ThemeContext);
+
+  if (!context) {
+    throw new Error(
+      "useTheme doit être utilisé dans un composant enveloppé par ThemeProvider."
+    );
+  }
+
+  return context;
+};

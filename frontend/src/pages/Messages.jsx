@@ -486,7 +486,7 @@ export default function Messages() {
                         <Users size={20} />
                       </div>
                     ) : avatarPath ? (
-                      <img src={`http://localhost:8000/storage/${avatarPath}`}
+                      <img src={`http://localhost:8001/storage/${avatarPath}`}
                         className="h-12 w-12 rounded-full object-cover"
                         alt={other?.name} />
                     ) : (
@@ -559,7 +559,7 @@ export default function Messages() {
                       </div>
                     ) : getAvatarPath(otherUser) ? (
                       <img
-                        src={`http://localhost:8000/storage/${getAvatarPath(otherUser)}`}
+                        src={`http://localhost:8001/storage/${getAvatarPath(otherUser)}`}
                         className="h-10 w-10 rounded-full object-cover"
                         alt={otherUser?.name}
                       />
@@ -642,7 +642,7 @@ export default function Messages() {
                           <div className="w-7 shrink-0">
                             {showAvatar && (
                               senderAvatar ? (
-                                <img src={`http://localhost:8000/storage/${senderAvatar}`}
+                                <img src={`http://localhost:8001/storage/${senderAvatar}`}
                                   className="h-7 w-7 rounded-full object-cover" alt="" />
                               ) : (
                                 <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/20 text-[10px] font-bold text-emerald-300">
@@ -990,7 +990,7 @@ function NewConversationModal({ onClose, onCreated }) {
                 className="flex w-full items-center gap-3 px-4 py-2 text-left transition hover:bg-white/5 disabled:opacity-50"
               >
                 {avatarPath ? (
-                  <img src={`http://localhost:8000/storage/${avatarPath}`}
+                  <img src={`http://localhost:8001/storage/${avatarPath}`}
                     className="h-10 w-10 rounded-full object-cover" alt="" />
                 ) : (
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20 font-bold text-emerald-300">

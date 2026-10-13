@@ -1,10 +1,31 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  ArrowLeft, Loader2, Mail, Phone, Briefcase, Calendar,
-  Check, X, Video, UserCheck, Eye, FileText, Download, ExternalLink,
-  Building2, Users, Send,
+  ArrowLeft,
+  Loader2,
+  Mail,
+  Phone,
+  Briefcase,
+  Calendar,
+  Check,
+  X,
+  Video,
+  UserCheck,
+  Eye,
+  FileText,
+  Download,
+  ExternalLink,
+  Building2,
+  Users,
+  Send,
+  RefreshCw,
+  Search,
+  SlidersHorizontal,
+  Clock,
+  StickyNote,
+  MessageSquare,
 } from "lucide-react";
+
 import AppShell from "../../components/layout/AppShell";
 import ScheduleInterviewModal from "../../components/ScheduleInterviewModal";
 import api from "../../services/api";
@@ -12,429 +33,1002 @@ import { useToast } from "../../hooks/useToast";
 import Toast from "../../components/ui/Toast";
 
 const STATUS_CFG = {
-  sent:        { label: "Envoyée",         icon: Send,      color: "text-slate-400",   bg: "bg-slate-500/10 border-slate-500/30" },
-  viewed:      { label: "Consultée",       icon: Eye,       color: "text-blue-400",    bg: "bg-blue-500/10 border-blue-500/30" },
-  shortlisted: { label: "Présélectionnée", icon: UserCheck, color: "text-violet-400",  bg: "bg-violet-500/10 border-violet-500/30" },
-  interview:   { label: "Entretien",       icon: Video,     color: "text-amber-400",   bg: "bg-amber-500/10 border-amber-500/30" },
-  accepted:    { label: "Acceptée",        icon: Check,     color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/30" },
-  rejected:    { label: "Refusée",         icon: X,         color: "text-rose-400",    bg: "bg-rose-500/10 border-rose-500/30" },
+  sent: {
+    label: "Envoyée",
+    icon: Send,
+    color: "text-slate-300",
+    bg: "bg-slate-500/10 border-slate-500/30",
+    dot: "bg-slate-400",
+  },
+  viewed: {
+    label: "Consultée",
+    icon: Eye,
+    color: "text-blue-300",
+    bg: "bg-blue-500/10 border-blue-500/30",
+    dot: "bg-blue-400",
+  },
+  shortlisted: {
+    label: "Présélectionnée",
+    icon: UserCheck,
+    color: "text-violet-300",
+    bg: "bg-violet-500/10 border-violet-500/30",
+    dot: "bg-violet-400",
+  },
+  interview: {
+    label: "Entretien",
+    icon: Video,
+    color: "text-amber-300",
+    bg: "bg-amber-500/10 border-amber-500/30",
+    dot: "bg-amber-400",
+  },
+  accepted: {
+    label: "Acceptée",
+    icon: Check,
+    color: "text-emerald-300",
+    bg: "bg-emerald-500/10 border-emerald-500/30",
+    dot: "bg-emerald-400",
+  },
+  rejected: {
+    label: "Refusée",
+    icon: X,
+    color: "text-rose-300",
+    bg: "bg-rose-500/10 border-rose-500/30",
+    dot: "bg-rose-400",
+  },
 };
+
+const FILTERS = [
+  { key: "all", label: "Toutes" },
+  { key: "sent", label: "Envoyées" },
+  { key: "viewed", label: "Consultées" },
+  { key: "shortlisted", label: "Présélectionnées" },
+  { key: "interview", label: "Entretiens" },
+  { key: "accepted", label: "Acceptées" },
+  { key: "rejected", label: "Refusées" },
+];
+
+const STAT_ITEMS = [
+  { key: "total", label: "Total", color: "text-white" },
+  { key: "sent", label: "Envoyées", color: "text-slate-300" },
+  { key: "viewed", label: "Consultées", color: "text-blue-300" },
+  {
+    key: "shortlisted",
+    label: "Présélectionnées",
+    color: "text-violet-300",
+  },
+  { key: "interview", label: "Entretiens", color: "text-amber-300" },
+  { key: "accepted", label: "Acceptées", color: "text-emerald-300" },
+];
+
+const formatDate = (date, options = {}) => {
+  if (!date) return "Date inconnue";
+
+  const parsed = new Date(date);
+
+  if (Number.isNaN(parsed.getTime())) return "Date inconnue";
+
+  return parsed.toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    ...options,
+  });
+};
+
+const getInitial = (name) => {
+  return name?.trim()?.charAt(0)?.toUpperCase() || "?";
+};
+
+function StatusBadge({ status }) {
+  const config = STATUS_CFG[status] || STATUS_CFG.sent;
+  const Icon = config.icon;
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold ${config.bg} ${config.color}`}
+    >
+      <Icon size={12} />
+      {config.label}
+    </span>
+  );
+}
+
+function StatCard({ item, value }) {
+  return (
+    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.035] p-4 transition hover:border-white/15 hover:bg-white/[0.06]">
+      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+        {item.label}
+      </p>
+      <p className={`mt-2 text-2xl font-bold tracking-tight ${item.color}`}>
+        {Number(value || 0).toLocaleString("fr-FR")}
+      </p>
+    </div>
+  );
+}
+
+function ApplicationCard({ application, onClick }) {
+  const user = application.profile?.user;
+  const config = STATUS_CFG[application.status] || STATUS_CFG.sent;
+  const Icon = config.icon;
+
+  const fullName = user?.name || "Candidat";
+  const headline = application.profile?.headline;
+  const company = application.profile?.company_name;
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group w-full rounded-2xl border border-white/[0.08] bg-[#101D3A] p-4 text-left transition duration-200 hover:-translate-y-0.5 hover:border-emerald-400/30 hover:bg-[#142344] hover:shadow-lg hover:shadow-black/10 sm:p-5"
+    >
+      <div className="flex items-start gap-3 sm:gap-4">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-300/20 bg-emerald-400/10 text-lg font-bold text-emerald-300 transition group-hover:bg-emerald-400 group-hover:text-[#0A1229]">
+          {getInitial(fullName)}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="break-words font-bold text-white transition group-hover:text-emerald-300">
+              {fullName}
+            </h3>
+            <StatusBadge status={application.status} />
+          </div>
+
+          {headline && (
+            <p className="mt-1 line-clamp-2 text-sm text-slate-400">
+              {headline}
+            </p>
+          )}
+
+          {company && (
+            <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
+              <Building2 size={12} />
+              {company}
+            </p>
+          )}
+
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500">
+            <span className="inline-flex items-center gap-1.5">
+              <Calendar size={13} />
+              {formatDate(application.created_at, {
+                year: undefined,
+              })}
+            </span>
+
+            {application.portfolio && (
+              <span className="inline-flex items-center gap-1.5">
+                <Briefcase size={13} />
+                Portfolio joint
+              </span>
+            )}
+
+            {application.cv_path && (
+              <span className="inline-flex items-center gap-1.5">
+                <FileText size={13} />
+                CV joint
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/[0.06] text-slate-500 transition group-hover:border-emerald-400/20 group-hover:bg-emerald-400/10 group-hover:text-emerald-300">
+          <Icon size={17} className="hidden sm:block" />
+          <ArrowLeft
+            size={17}
+            className="rotate-180 sm:hidden"
+          />
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function EmptyState({ filter, search }) {
+  const searching = Boolean(search.trim());
+  const filtered = filter !== "all";
+
+  return (
+    <div className="rounded-3xl border border-dashed border-white/10 bg-white/[0.025] px-5 py-14 text-center">
+      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-slate-400">
+        {searching ? <Search size={27} /> : <Users size={27} />}
+      </div>
+
+      <h3 className="mt-5 text-lg font-bold text-white">
+        {searching
+          ? "Aucun résultat trouvé"
+          : filtered
+            ? "Aucune candidature dans cette catégorie"
+            : "Aucune candidature pour le moment"}
+      </h3>
+
+      <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-400">
+        {searching
+          ? "Essaie un autre nom ou vérifie les termes de ta recherche."
+          : filtered
+            ? "Les candidatures correspondant à ce statut apparaîtront ici."
+            : "Les candidatures reçues pour cette offre apparaîtront ici."}
+      </p>
+    </div>
+  );
+}
+
+function LoadingState() {
+  return (
+    <AppShell>
+      <main className="min-h-screen bg-[#0A1229] px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-6xl animate-pulse space-y-6">
+          <div className="h-10 w-40 rounded-xl bg-white/5" />
+          <div className="h-64 rounded-3xl border border-white/5 bg-[#101D3A]" />
+
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {STAT_ITEMS.map((item) => (
+              <div
+                key={item.key}
+                className="h-24 rounded-2xl border border-white/5 bg-[#101D3A]"
+              />
+            ))}
+          </div>
+
+          <div className="space-y-3">
+            {[1, 2, 3].map((item) => (
+              <div
+                key={item}
+                className="h-28 rounded-2xl border border-white/5 bg-[#101D3A]"
+              />
+            ))}
+          </div>
+
+          <div className="flex items-center justify-center gap-2 py-3 text-sm text-slate-500">
+            <Loader2 size={17} className="animate-spin" />
+            Chargement des candidatures...
+          </div>
+        </div>
+      </main>
+    </AppShell>
+  );
+}
 
 export default function OfferApplications() {
   const { id } = useParams();
   const navigate = useNavigate();
+
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [selected, setSelected] = useState(null);
-  const [interviewModal, setInterviewModal] = useState(null); // ✅ NOUVEAU
+  const [interviewModal, setInterviewModal] = useState(null);
   const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
+
   const { toast, show: showToast, close: closeToast } = useToast();
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get(`/job-offers/${id}/applications`);
-      setData(res.data);
-    } catch {
-      showToast("Impossible de charger les candidatures", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const load = useCallback(
+    async (showRefresh = false) => {
+      if (showRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
 
-  useEffect(() => { load(); }, [id]);
+      try {
+        const res = await api.get(`/job-offers/${id}/applications`);
+        setData(res.data);
+      } catch (err) {
+        console.error("Erreur de chargement des candidatures :", err);
+        showToast("Impossible de charger les candidatures", "error");
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [id, showToast]
+  );
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const updateStatus = async (applicationId, newStatus) => {
     try {
-      await api.patch(`/applications/${applicationId}/status`, { status: newStatus });
-      showToast("Statut mis à jour ✅", "success");
-      load();
+      await api.patch(`/applications/${applicationId}/status`, {
+        status: newStatus,
+      });
+
+      showToast("Statut mis à jour avec succès", "success");
       setSelected(null);
+      await load(true);
     } catch (err) {
-      showToast(err.response?.data?.message || "Erreur", "error");
+      showToast(
+        err.response?.data?.message || "Impossible de modifier le statut",
+        "error"
+      );
     }
   };
 
   if (loading) {
+    return <LoadingState />;
+  }
+
+  if (!data) {
     return (
       <AppShell>
-        <div className="flex h-64 items-center justify-center">
-          <Loader2 className="animate-spin text-emerald-400" size={32} />
-        </div>
+        <main className="min-h-screen bg-[#0A1229] px-4 py-10 text-white sm:px-6">
+          <div className="mx-auto max-w-3xl rounded-3xl border border-white/10 bg-[#101D3A] p-8 text-center">
+            <Users size={34} className="mx-auto text-slate-500" />
+            <h1 className="mt-4 text-xl font-bold">
+              Impossible de charger les candidatures
+            </h1>
+            <p className="mt-2 text-sm text-slate-400">
+              Réessaie de charger les informations de cette offre.
+            </p>
+            <button
+              type="button"
+              onClick={() => load()}
+              className="mt-5 inline-flex items-center gap-2 rounded-xl bg-emerald-400 px-4 py-2.5 text-sm font-bold text-[#0A1229] hover:bg-emerald-300"
+            >
+              <RefreshCw size={15} />
+              Réessayer
+            </button>
+          </div>
+        </main>
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={closeToast}
+          />
+        )}
       </AppShell>
     );
   }
 
-  if (!data) return null;
+  const offer = data.job_offer || {};
+  const applications = Array.isArray(data.applications)
+    ? data.applications
+    : [];
+  const stats = data.stats || {};
 
-  const { job_offer: offer, applications, stats } = data;
+  const filtered = applications.filter((application) => {
+    const matchesStatus =
+      filter === "all" || application.status === filter;
 
-  const filtered = filter === "all"
-    ? applications
-    : applications.filter((a) => a.status === filter);
+    const name = application.profile?.user?.name || "";
+    const headline = application.profile?.headline || "";
+    const company = application.profile?.company_name || "";
+
+    const matchesSearch = [name, headline, company]
+      .join(" ")
+      .toLowerCase()
+      .includes(search.trim().toLowerCase());
+
+    return matchesStatus && matchesSearch;
+  });
 
   return (
     <AppShell>
-      <div className="mx-auto max-w-6xl">
+      <main className="min-h-screen bg-[#0A1229] px-4 py-6 text-white sm:px-6 sm:py-8 lg:px-8">
+        <div className="mx-auto max-w-6xl space-y-6">
+          {/* Navigation */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => navigate("/my-offers")}
+              className="inline-flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3.5 py-2.5 text-sm font-medium text-slate-300 transition hover:border-white/15 hover:bg-white/[0.06] hover:text-white"
+            >
+              <ArrowLeft size={16} />
+              Retour à mes offres
+            </button>
 
-        <button
-          onClick={() => navigate("/my-offers")}
-          className="mb-4 inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white"
-        >
-          <ArrowLeft size={15} /> Retour à mes offres
-        </button>
+            <button
+              type="button"
+              onClick={() => load(true)}
+              disabled={refreshing}
+              className="inline-flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3.5 py-2.5 text-sm font-semibold text-slate-300 transition hover:border-emerald-400/30 hover:text-emerald-300 disabled:opacity-50"
+            >
+              <RefreshCw
+                size={15}
+                className={refreshing ? "animate-spin" : ""}
+              />
+              Actualiser
+            </button>
+          </div>
 
-        {/* Header offre */}
-        <div className="mb-6 rounded-2xl border border-white/10 bg-white/[0.04] p-6">
-          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-400">
-            Candidatures reçues
-          </p>
-          <h1 className="mt-1 text-2xl font-bold text-white">{offer.title}</h1>
-          {offer.company && (
-            <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-400">
-              <Building2 size={13} /> {offer.company.name}
-            </p>
-          )}
+          {/* Header de l'offre */}
+          <section className="relative overflow-hidden rounded-3xl border border-white/[0.08] bg-[#101D3A] p-6 shadow-xl shadow-black/10 sm:p-8">
+            <div className="pointer-events-none absolute -right-16 -top-24 h-72 w-72 rounded-full bg-emerald-400/[0.08] blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-24 right-1/3 h-48 w-48 rounded-full bg-blue-400/[0.06] blur-3xl" />
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            {[
-              { key: "total",       label: "Total",           color: "text-white" },
-              { key: "sent",        label: "Envoyées",        color: "text-slate-300" },
-              { key: "viewed",      label: "Consultées",      color: "text-blue-400" },
-              { key: "shortlisted", label: "Présélectionnées", color: "text-violet-400" },
-              { key: "interview",   label: "Entretiens",      color: "text-amber-400" },
-              { key: "accepted",    label: "Acceptées",       color: "text-emerald-400" },
-            ].map((s) => (
-              <div key={s.key} className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
-                <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">{s.label}</p>
-                <p className={`mt-1 text-2xl font-bold ${s.color}`}>{stats[s.key] || 0}</p>
+            <div className="relative">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-xs font-bold text-emerald-300">
+                  <Users size={13} />
+                  Recrutement
+                </span>
+
+                <span className="text-xs text-slate-500">
+                  {applications.length} candidature(s) reçue(s)
+                </span>
               </div>
-            ))}
-          </div>
-        </div>
 
-        {/* Filtres */}
-        <div className="mb-5 flex flex-wrap gap-2">
-          {[
-            { key: "all", label: "Toutes" },
-            { key: "viewed", label: "Consultées" },
-            { key: "shortlisted", label: "Présélectionnées" },
-            { key: "interview", label: "Entretiens" },
-            { key: "accepted", label: "Acceptées" },
-            { key: "rejected", label: "Refusées" },
-          ].map((f) => {
-            const count = f.key === "all" ? applications.length : applications.filter((a) => a.status === f.key).length;
-            const active = filter === f.key;
-            return (
-              <button
-                key={f.key}
-                onClick={() => setFilter(f.key)}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-                  active
-                    ? "border-emerald-500 bg-emerald-500 text-[#0A1229]"
-                    : "border-white/10 bg-white/5 text-slate-300 hover:border-white/25 hover:text-white"
-                }`}
-              >
-                {f.label}
-                {count > 0 && (
-                  <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${
-                    active ? "bg-black/20 text-[#0A1229]" : "bg-white/10 text-slate-400"
-                  }`}>{count}</span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+              <h1 className="mt-4 break-words text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl">
+                {offer.title || "Candidatures de l'offre"}
+              </h1>
 
-        {/* Liste */}
-        {filtered.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.02] p-14 text-center">
-            <Users size={40} className="mx-auto text-slate-500" />
-            <p className="mt-3 font-semibold text-white">Aucune candidature</p>
-            <p className="mt-1 text-sm text-slate-500">
-              {filter === "all" ? "Les candidats apparaîtront ici." : "Aucune candidature dans cette catégorie."}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {filtered.map((app) => {
-              const cfg = STATUS_CFG[app.status] || STATUS_CFG.sent;
-              const Icon = cfg.icon;
-              const user = app.profile?.user;
+              {offer.company && (
+                <p className="mt-3 flex items-center gap-2 text-sm text-slate-400">
+                  <Building2 size={15} className="text-emerald-400" />
+                  {offer.company.name}
+                </p>
+              )}
 
-              return (
+              <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                {STAT_ITEMS.map((item) => (
+                  <StatCard
+                    key={item.key}
+                    item={item}
+                    value={
+                      stats[item.key] ??
+                      (item.key === "total"
+                        ? applications.length
+                        : applications.filter(
+                            (application) =>
+                              application.status === item.key
+                          ).length)
+                    }
+                  />
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* Section candidatures */}
+          <section className="space-y-4">
+            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+              <div>
+                <h2 className="text-xl font-bold text-white">
+                  Candidatures reçues
+                </h2>
+                <p className="mt-1 text-sm text-slate-400">
+                  Consulte les profils et mets à jour leur statut.
+                </p>
+              </div>
+
+              <div className="relative w-full sm:max-w-xs">
+                <Search
+                  size={17}
+                  className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500"
+                />
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Rechercher un candidat..."
+                  aria-label="Rechercher un candidat"
+                  className="h-11 w-full rounded-xl border border-white/10 bg-[#101D3A] pl-10 pr-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-emerald-400/50 focus:ring-4 focus:ring-emerald-400/10"
+                />
+              </div>
+            </div>
+
+            {/* Filtres */}
+            <div className="rounded-2xl border border-white/[0.08] bg-[#101D3A] p-4">
+              <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <SlidersHorizontal size={13} />
+                Filtrer par statut
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {FILTERS.map((item) => {
+                  const count =
+                    item.key === "all"
+                      ? applications.length
+                      : applications.filter(
+                          (application) =>
+                            application.status === item.key
+                        ).length;
+
+                  const active = filter === item.key;
+
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => setFilter(item.key)}
+                      aria-pressed={active}
+                      className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition sm:text-sm ${
+                        active
+                          ? "border-emerald-400 bg-emerald-400 text-[#0A1229]"
+                          : "border-white/[0.08] bg-white/[0.025] text-slate-300 hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
+                      }`}
+                    >
+                      {item.label}
+                      <span
+                        className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
+                          active
+                            ? "bg-black/10 text-[#0A1229]"
+                            : "bg-white/[0.06] text-slate-400"
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm text-slate-400">
+                <span className="font-bold text-white">{filtered.length}</span>{" "}
+                résultat(s)
+              </p>
+
+              {(filter !== "all" || search) && (
                 <button
-                  key={app.id}
-                  onClick={() => setSelected(app)}
-                  className="group flex w-full items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:border-emerald-500/40 hover:bg-white/[0.06]"
+                  type="button"
+                  onClick={() => {
+                    setFilter("all");
+                    setSearch("");
+                  }}
+                  className="text-xs font-semibold text-emerald-300 transition hover:text-emerald-200"
                 >
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-lg font-bold text-white">
-                    {user?.name?.charAt(0)?.toUpperCase() || "?"}
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-bold text-white">{user?.name || "Candidat"}</h3>
-                      <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold ${cfg.bg} ${cfg.color}`}>
-                        <Icon size={10} /> {cfg.label}
-                      </span>
-                    </div>
-                    {app.profile?.headline && (
-                      <p className="mt-0.5 text-sm text-slate-400">{app.profile.headline}</p>
-                    )}
-                    <div className="mt-1 flex flex-wrap gap-3 text-xs text-slate-500">
-                      <span className="flex items-center gap-1">
-                        <Calendar size={11} />
-                        {new Date(app.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
-                      </span>
-                      {app.portfolio && (
-                        <span className="flex items-center gap-1"><Briefcase size={11} /> Portfolio joint</span>
-                      )}
-                      {app.cv_path && (
-                        <span className="flex items-center gap-1"><FileText size={11} /> CV joint</span>
-                      )}
-                    </div>
-                  </div>
-
-                  <span className="text-xs text-emerald-400 opacity-0 transition group-hover:opacity-100">
-                    Voir →
-                  </span>
+                  Réinitialiser les filtres
                 </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
+              )}
+            </div>
 
-      {/* Modal détail candidature */}
+            {filtered.length === 0 ? (
+              <EmptyState filter={filter} search={search} />
+            ) : (
+              <div className="space-y-3">
+                {filtered.map((application) => (
+                  <ApplicationCard
+                    key={application.id}
+                    application={application}
+                    onClick={() => setSelected(application)}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Note */}
+          <div className="flex items-start gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-400/10 text-blue-300">
+              <MessageSquare size={17} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-slate-200">
+                Gère tes candidatures en un seul endroit
+              </p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Sélectionne un candidat pour consulter ses informations,
+                examiner ses documents et gérer les prochaines étapes du
+                recrutement.
+              </p>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* Détail de candidature */}
       {selected && (
         <ApplicationDetailModal
           application={selected}
           onClose={() => setSelected(null)}
           onUpdateStatus={updateStatus}
-          onOpenInterviewModal={(app) => {
+          onOpenInterviewModal={(application) => {
             setSelected(null);
-            setInterviewModal(app);
+            setInterviewModal(application);
           }}
         />
       )}
 
-      {/* ✅ Modal Programmer entretien */}
+      {/* Programmer un entretien */}
       {interviewModal && (
         <ScheduleInterviewModal
           application={interviewModal}
           onClose={() => setInterviewModal(null)}
           onSuccess={() => {
             setInterviewModal(null);
-            showToast("Entretien programmé et invitation envoyée", "success");
-            load();
+            showToast(
+              "Entretien programmé et invitation envoyée",
+              "success"
+            );
+            load(true);
           }}
         />
       )}
 
-      {toast && <Toast message={toast.message} type={toast.type} onClose={closeToast} />}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={closeToast}
+        />
+      )}
     </AppShell>
   );
 }
 
-// ============================================
-// MODAL DÉTAIL CANDIDATURE
-// ============================================
-function ApplicationDetailModal({ application, onClose, onUpdateStatus, onOpenInterviewModal }) {
+function ApplicationDetailModal({
+  application,
+  onClose,
+  onUpdateStatus,
+  onOpenInterviewModal,
+}) {
   const user = application.profile?.user;
+
   const [notes, setNotes] = useState(application.recruiter_notes || "");
   const [saving, setSaving] = useState(false);
+  const [notesError, setNotesError] = useState("");
+
+  const config = STATUS_CFG[application.status] || STATUS_CFG.sent;
+  const StatusIcon = config.icon;
 
   const handleStatus = async (newStatus) => {
-    // ✅ Si c'est "interview" → ouvrir le modal de programmation
     if (newStatus === "interview") {
       onOpenInterviewModal(application);
       return;
     }
-    // Sinon, appel API classique
+
     await onUpdateStatus(application.id, newStatus);
   };
 
   const saveNotes = async () => {
     setSaving(true);
+    setNotesError("");
+
     try {
       await api.patch(`/applications/${application.id}/status`, {
         status: application.status,
         recruiter_notes: notes,
       });
+    } catch (err) {
+      setNotesError(
+        err.response?.data?.message ||
+          "Impossible d'enregistrer les notes."
+      );
     } finally {
       setSaving(false);
     }
   };
 
-  const cfg = STATUS_CFG[application.status] || STATUS_CFG.sent;
+  const hasInterviewDate = Boolean(application.interview_at);
+  const interviewDate = hasInterviewDate
+    ? new Date(application.interview_at)
+    : null;
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
-      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3 backdrop-blur-sm sm:p-5"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+      role="presentation"
     >
-      <div
-        className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0F1E45] shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="application-detail-title"
+        className="flex max-h-[94vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#0F1E45] shadow-2xl shadow-black/40"
       >
-        {/* Header */}
-        <div className="flex items-start justify-between gap-3 border-b border-white/10 bg-[#0F1E45] p-6">
-          <div className="flex items-center gap-4 min-w-0 flex-1">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-xl font-bold text-white">
-              {user?.name?.charAt(0)?.toUpperCase() || "?"}
+        {/* En-tête de la modale */}
+        <header className="flex items-start justify-between gap-4 border-b border-white/[0.08] bg-[#101D3A] p-5 sm:p-6">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-300/20 bg-emerald-400/10 text-lg font-bold text-emerald-300 sm:h-14 sm:w-14">
+              {getInitial(user?.name)}
             </div>
+
             <div className="min-w-0">
-              <h2 className="truncate text-xl font-bold text-white">{user?.name || "Candidat"}</h2>
+              <h2
+                id="application-detail-title"
+                className="break-words text-lg font-bold text-white sm:text-xl"
+              >
+                {user?.name || "Candidat"}
+              </h2>
+
               {application.profile?.headline && (
-                <p className="truncate text-sm text-slate-400">{application.profile.headline}</p>
+                <p className="mt-1 break-words text-sm text-slate-400">
+                  {application.profile.headline}
+                </p>
               )}
-              <span className={`mt-2 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold ${cfg.bg} ${cfg.color}`}>
-                <cfg.icon size={10} /> {cfg.label}
-              </span>
+
+              <div className="mt-2">
+                <StatusBadge status={application.status} />
+              </div>
             </div>
           </div>
+
           <button
+            type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-500 hover:bg-white/5 hover:text-white"
+            aria-label="Fermer les détails"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] text-slate-400 transition hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
           >
             <X size={18} />
           </button>
-        </div>
+        </header>
 
-        {/* Body */}
-        <div className="flex-1 space-y-5 overflow-y-auto p-6">
-
+        {/* Contenu */}
+        <div className="flex-1 space-y-6 overflow-y-auto p-5 sm:p-6">
+          {/* Contact */}
           <section>
-            <h3 className="mb-2 text-[10px] font-bold uppercase tracking-wide text-slate-500">Contact</h3>
-            <div className="flex flex-wrap gap-3">
+            <SectionLabel icon={Users} label="Informations de contact" />
+
+            <div className="mt-3 flex flex-wrap gap-2">
               {user?.email && (
-                <a href={`mailto:${user.email}`} className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-300 hover:border-emerald-500/40 hover:text-emerald-300">
-                  <Mail size={13} /> {user.email}
+                <a
+                  href={`mailto:${user.email}`}
+                  className="inline-flex max-w-full items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-sm text-slate-300 transition hover:border-emerald-400/30 hover:bg-emerald-400/[0.06] hover:text-emerald-300"
+                >
+                  <Mail size={14} className="shrink-0" />
+                  <span className="break-all">{user.email}</span>
                 </a>
               )}
+
               {user?.phone && (
-                <a href={`tel:${user.phone}`} className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-300 hover:border-emerald-500/40 hover:text-emerald-300">
-                  <Phone size={13} /> {user.phone}
+                <a
+                  href={`tel:${user.phone}`}
+                  className="inline-flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-sm text-slate-300 transition hover:border-emerald-400/30 hover:bg-emerald-400/[0.06] hover:text-emerald-300"
+                >
+                  <Phone size={14} />
+                  {user.phone}
                 </a>
+              )}
+
+              {!user?.email && !user?.phone && (
+                <p className="text-sm text-slate-500">
+                  Aucune information de contact disponible.
+                </p>
               )}
             </div>
           </section>
 
+          {/* Lettre de motivation */}
           {application.cover_letter && (
             <section>
-              <h3 className="mb-2 text-[10px] font-bold uppercase tracking-wide text-slate-500">Lettre de motivation</h3>
-              <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-                <p className="whitespace-pre-line text-sm leading-relaxed text-slate-300">
+              <SectionLabel
+                icon={FileText}
+                label="Lettre de motivation"
+              />
+
+              <div className="mt-3 rounded-2xl border border-white/[0.08] bg-white/[0.025] p-4 sm:p-5">
+                <p className="whitespace-pre-line text-sm leading-7 text-slate-300">
                   {application.cover_letter}
                 </p>
               </div>
             </section>
           )}
 
+          {/* Documents */}
           <section>
-            <h3 className="mb-2 text-[10px] font-bold uppercase tracking-wide text-slate-500">Documents joints</h3>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <SectionLabel icon={Briefcase} label="Documents joints" />
+
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
               {application.portfolio && (
                 <a
                   href={`/portfolio/${application.portfolio.public_slug}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 transition hover:bg-emerald-500/20"
+                  className="group flex min-w-0 items-center gap-3 rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.05] p-4 transition hover:border-emerald-400/40 hover:bg-emerald-400/[0.09]"
                 >
-                  <Briefcase size={18} className="text-emerald-400" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-white">Portfolio</p>
-                    <p className="truncate text-xs text-slate-400">{application.portfolio.title}</p>
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-400/10 text-emerald-300">
+                    <Briefcase size={20} />
                   </div>
-                  <ExternalLink size={13} className="text-emerald-400" />
+
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-white">
+                      Portfolio
+                    </p>
+                    <p className="mt-1 truncate text-xs text-slate-400">
+                      {application.portfolio.title || "Voir le portfolio"}
+                    </p>
+                  </div>
+
+                  <ExternalLink
+                    size={15}
+                    className="shrink-0 text-emerald-300"
+                  />
                 </a>
               )}
+
               {application.cv_path && (
                 <a
-                  href={`http://localhost:8000/storage/${application.cv_path}`}
+                  href={`http://localhost:8001/storage/${application.cv_path}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center gap-3 rounded-lg border border-rose-500/30 bg-rose-500/10 p-3 transition hover:bg-rose-500/20"
+                  className="group flex min-w-0 items-center gap-3 rounded-2xl border border-rose-400/20 bg-rose-400/[0.05] p-4 transition hover:border-rose-400/40 hover:bg-rose-400/[0.09]"
                 >
-                  <FileText size={18} className="text-rose-400" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-white">CV</p>
-                    <p className="text-xs text-slate-400">Cliquez pour télécharger</p>
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-rose-400/10 text-rose-300">
+                    <FileText size={20} />
                   </div>
-                  <Download size={13} className="text-rose-400" />
+
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-white">CV</p>
+                    <p className="mt-1 text-xs text-slate-400">
+                      Consulter le document
+                    </p>
+                  </div>
+
+                  <Download
+                    size={15}
+                    className="shrink-0 text-rose-300"
+                  />
                 </a>
+              )}
+
+              {!application.portfolio && !application.cv_path && (
+                <div className="rounded-2xl border border-dashed border-white/10 p-5 text-center sm:col-span-2">
+                  <FileText
+                    size={24}
+                    className="mx-auto text-slate-600"
+                  />
+                  <p className="mt-2 text-sm text-slate-400">
+                    Aucun document joint à cette candidature.
+                  </p>
+                </div>
               )}
             </div>
           </section>
 
+          {/* Notes internes */}
           <section>
-            <h3 className="mb-2 text-[10px] font-bold uppercase tracking-wide text-slate-500">Notes internes</h3>
-            <textarea
-              rows={3}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Vos notes sur ce candidat (visible uniquement par votre équipe)..."
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+            <SectionLabel
+              icon={StickyNote}
+              label="Notes internes"
             />
+
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              Ces notes sont destinées au suivi du recrutement.
+            </p>
+
+            <textarea
+              rows={4}
+              value={notes}
+              onChange={(event) => setNotes(event.target.value)}
+              placeholder="Ajoute tes observations sur ce candidat..."
+              className="mt-3 w-full resize-y rounded-2xl border border-white/[0.08] bg-[#0A1229]/60 px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-slate-600 focus:border-emerald-400/40 focus:ring-4 focus:ring-emerald-400/[0.06]"
+            />
+
+            {notesError && (
+              <p className="mt-2 text-xs text-rose-300">{notesError}</p>
+            )}
+
             {notes !== (application.recruiter_notes || "") && (
               <button
+                type="button"
                 onClick={saveNotes}
                 disabled={saving}
-                className="mt-2 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/20"
+                className="mt-3 inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10 disabled:opacity-50"
               >
+                {saving ? (
+                  <Loader2 size={15} className="animate-spin" />
+                ) : (
+                  <Check size={15} />
+                )}
                 {saving ? "Enregistrement..." : "Enregistrer les notes"}
               </button>
             )}
           </section>
+
+          {/* Entretien programmé */}
+          {application.status === "interview" && hasInterviewDate && (
+            <section className="rounded-2xl border border-amber-400/20 bg-amber-400/[0.05] p-4 sm:p-5">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-400/10 text-amber-300">
+                  <Calendar size={19} />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-bold text-amber-200">
+                    Entretien programmé
+                  </h3>
+
+                  <p className="mt-2 text-sm text-slate-300">
+                    {Number.isNaN(interviewDate.getTime())
+                      ? "Date indisponible"
+                      : interviewDate.toLocaleDateString("fr-FR", {
+                          weekday: "long",
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })}
+                  </p>
+
+                  {!Number.isNaN(interviewDate.getTime()) && (
+                    <p className="mt-1 text-sm text-slate-400">
+                      À{" "}
+                      {interviewDate.toLocaleTimeString("fr-FR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  )}
+
+                  {application.interview_link && (
+                    <a
+                      href={application.interview_link}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-amber-300 transition hover:text-amber-200"
+                    >
+                      Rejoindre l'entretien
+                      <ExternalLink size={14} />
+                    </a>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
         </div>
 
-        {/* Actions statut */}
-        <div className="border-t border-white/10 bg-[#0F1E45] p-6">
-          <p className="mb-3 text-[10px] font-bold uppercase tracking-wide text-slate-500">
-            Actions — changer le statut
+        {/* Actions */}
+        <footer className="border-t border-white/[0.08] bg-[#101D3A] p-5 sm:p-6">
+          <p className="mb-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+            Actions de recrutement
           </p>
+
           <div className="flex flex-wrap gap-2">
             {[
-              { key: "viewed",      label: "Consultée",        icon: Eye,       color: "border-blue-500/30 bg-blue-500/10 text-blue-300 hover:bg-blue-500/20" },
-              { key: "shortlisted", label: "Présélectionner",  icon: UserCheck, color: "border-violet-500/30 bg-violet-500/10 text-violet-300 hover:bg-violet-500/20" },
-              { key: "interview",   label: "Inviter à un entretien", icon: Video, color: "border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20" },
-              { key: "accepted",    label: "Accepter",         icon: Check,     color: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20" },
-              { key: "rejected",    label: "Refuser",          icon: X,         color: "border-rose-500/30 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20" },
-            ].map(({ key, label, icon: Icon, color }) => (
+              {
+                key: "viewed",
+                label: "Consultée",
+                icon: Eye,
+                style:
+                  "border-blue-400/20 bg-blue-400/[0.06] text-blue-300 hover:bg-blue-400/15",
+              },
+              {
+                key: "shortlisted",
+                label: "Présélectionner",
+                icon: UserCheck,
+                style:
+                  "border-violet-400/20 bg-violet-400/[0.06] text-violet-300 hover:bg-violet-400/15",
+              },
+              {
+                key: "interview",
+                label: "Programmer un entretien",
+                icon: Video,
+                style:
+                  "border-amber-400/20 bg-amber-400/[0.06] text-amber-300 hover:bg-amber-400/15",
+              },
+              {
+                key: "accepted",
+                label: "Accepter",
+                icon: Check,
+                style:
+                  "border-emerald-400/20 bg-emerald-400/[0.06] text-emerald-300 hover:bg-emerald-400/15",
+              },
+              {
+                key: "rejected",
+                label: "Refuser",
+                icon: X,
+                style:
+                  "border-rose-400/20 bg-rose-400/[0.06] text-rose-300 hover:bg-rose-400/15",
+              },
+            ].map(({ key, label, icon: Icon, style }) => (
               <button
                 key={key}
+                type="button"
                 onClick={() => handleStatus(key)}
                 disabled={application.status === key}
-                className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition disabled:opacity-40 ${color}`}
+                className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-35 sm:text-sm ${style}`}
               >
-                <Icon size={13} /> {label}
+                <Icon size={14} />
+                {label}
               </button>
             ))}
           </div>
-
-          {application.status === "interview" && application.interview_at && (
-            <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
-              <p className="font-semibold">📅 Entretien programmé</p>
-              <p className="mt-1 text-amber-300/80">
-                {new Date(application.interview_at).toLocaleDateString("fr-FR", {
-                  weekday: "long", day: "numeric", month: "long", year: "numeric",
-                })} à {new Date(application.interview_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
-              </p>
-              {application.interview_link && (
-                <a
-                  href={application.interview_link}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-2 inline-flex items-center gap-1 font-semibold text-amber-300 underline"
-                >
-                  Rejoindre le lien visio <ExternalLink size={11} />
-                </a>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
+        </footer>
+      </section>
     </div>
+  );
+}
+
+function SectionLabel({ icon: Icon, label }) {
+  return (
+    <h3 className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+      <Icon size={14} />
+      {label}
+    </h3>
   );
 }

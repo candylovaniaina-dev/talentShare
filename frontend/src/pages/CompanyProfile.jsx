@@ -79,7 +79,7 @@ function Avatar({ path, name, size = "md", rounded = "full" }) {
   if (path) {
     return (
       <img
-        src={`http://localhost:8000/storage/${path}`}
+        src={`http://localhost:8001/storage/${path}`}
         alt={name}
         className={`${sizes[size]} shrink-0 ${roundedCls} border border-[var(--border-app)] object-cover`}
       />
@@ -580,7 +580,7 @@ export default function CompanyProfile() {
                 {company.logo_path ? (
                   <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg border-4 border-[var(--bg-surface)] bg-white shadow-lg">
                     <img
-                      src={`http://localhost:8000/storage/${company.logo_path}`}
+                      src={`http://localhost:8001/storage/${company.logo_path}`}
                       alt={company.name}
                       className="h-full w-full object-contain"
                     />
@@ -2049,7 +2049,7 @@ function AddMemberModal({ companyId, onClose, onSuccess }) {
         .then((res) => {
           const u = res.data;
           setSuggestedUser(u);
-          if (u.avatar_path) setAvatarPreview(`http://localhost:8000/storage/${u.avatar_path}`);
+          if (u.avatar_path) setAvatarPreview(`http://localhost:8001/storage/${u.avatar_path}`);
         })
         .catch(() => setSuggestedUser(null))
         .finally(() => setSearching(false));
@@ -2199,7 +2199,7 @@ function AddEmployeeModal({ companyId, onClose, onSuccess }) {
             phone: prev.phone || u.phone || "",
             position: prev.position || u.headline || "",
           }));
-          if (u.avatar_path) setAvatarPreview(`http://localhost:8000/storage/${u.avatar_path}`);
+          if (u.avatar_path) setAvatarPreview(`http://localhost:8001/storage/${u.avatar_path}`);
         })
         .catch(() => setSuggestedUser(null))
         .finally(() => setSearching(false));

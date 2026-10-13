@@ -1,99 +1,166 @@
-import React, { createContext, useState, useContext, useEffect } from "react";
+import React, {
+  createContext,
+  useState,
+  useContext,
+  useEffect,
+  useCallback,
+  useRef,
+} from "react";
 import api from "../services/api";
 import { useTheme } from "./ThemeContext";
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState(localStorage.getItem("token"));
+  const [token, setToken] = useState(() => localStorage.getItem("token"));
+  const requestId = useRef(0);
   const { syncFromUser } = useTheme();
+
+  const saveLastUser = useCallback((currentUser, email) => {
+    if (!currentUser) return;
+
+    try {
+      localStorage.setItem(
+        "last_user",
+        JSON.stringify({
+          id: currentUser.id,
+          email: email || currentUser.email,
+          name: currentUser.name,
+          avatar_path:
+            currentUser.avatar_path ||
+            currentUser.professional_profile?.avatar_path ||
+            null,
+          role: currentUser.role,
+          timestamp: Date.now(),
+        })
+      );
+    } catch (error) {
+      console.error("Erreur saveLastUser:", error);
+    }
+  }, []);
+
+  const fetchUser = useCallback(async () => {
+    const currentRequest = ++requestId.current;
+
+    try {
+      const response = await api.get("/me");
+
+      if (currentRequest !== requestId.current) return null;
+
+      setUser(response.data);
+      syncFromUser(response.data);
+      return response.data;
+    } catch (error) {
+      if (currentRequest === requestId.current) {
+        console.error("Erreur fetch user:", error);
+
+        localStorage.removeItem("token");
+        setToken(null);
+        setUser(null);
+      }
+
+      return null;
+    } finally {
+      if (currentRequest === requestId.current) {
+        setLoading(false);
+      }
+    }
+  }, [syncFromUser]);
 
   useEffect(() => {
     if (token) {
+      setLoading(true);
       fetchUser();
     } else {
+      requestId.current += 1;
+      setUser(null);
       setLoading(false);
     }
-  }, [token]);
-
-  const fetchUser = async () => {
-    try {
-      const response = await api.get("/me");
-      setUser(response.data);
-      syncFromUser(response.data); // ✅ applique le thème propre à cet utilisateur
-    } catch (error) {
-      console.error("Erreur fetch user:", error);
-      logout();
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const saveLastUser = (user, email) => {
-    try {
-      localStorage.setItem("last_user", JSON.stringify({
-        id: user.id,
-        email: email || user.email,
-        name: user.name,
-        avatar_path: user.avatar_path || user.professional_profile?.avatar_path || null,
-        role: user.role,
-        timestamp: Date.now(),
-      }));
-    } catch (e) {
-      console.error("Erreur saveLastUser:", e);
-    }
-  };
+  }, [token, fetchUser]);
 
   const login = async (email, password) => {
     const response = await api.post("/login", { email, password });
-    const { token, user } = response.data;
+    const { token: newToken, user: loggedInUser } = response.data;
 
-    localStorage.setItem("token", token);
-    setToken(token);
-    setUser(user);
-    syncFromUser(user); // ✅ thème de CET utilisateur, pas celui du précédent
+    if (!newToken || !loggedInUser) {
+      throw new Error("Réponse de connexion invalide.");
+    }
 
-    saveLastUser(user, email);
+    requestId.current += 1;
+    localStorage.setItem("token", newToken);
+    setToken(newToken);
+    setUser(loggedInUser);
+    setLoading(false);
+    syncFromUser(loggedInUser);
+    saveLastUser(loggedInUser, email);
 
-    return user;
+    return loggedInUser;
   };
 
   const register = async (userData) => {
     const response = await api.post("/register", userData);
-    const { token, user } = response.data;
+    const { token: newToken, user: registeredUser } = response.data;
 
-    localStorage.setItem("token", token);
-    setToken(token);
-    setUser(user);
-    syncFromUser(user);
+    if (!newToken || !registeredUser) {
+      throw new Error("Réponse d'inscription invalide.");
+    }
 
-    saveLastUser(user, userData.email);
+    requestId.current += 1;
+    localStorage.setItem("token", newToken);
+    setToken(newToken);
+    setUser(registeredUser);
+    setLoading(false);
+    syncFromUser(registeredUser);
+    saveLastUser(registeredUser, userData.email);
 
-    return user;
+    return registeredUser;
   };
 
   const logout = () => {
+    requestId.current += 1;
+
+    // Conserve le token pour que l'intercepteur API puisse authentifier /logout.
+    const logoutRequest = api.post("/logout").catch((error) => {
+      console.error("Erreur logout:", error);
+    });
+
     localStorage.removeItem("token");
     setToken(null);
     setUser(null);
-    api.post("/logout").catch(console.error);
+    setLoading(false);
+
+    return logoutRequest;
   };
 
   const refreshUser = async () => {
-    await fetchUser();
+    if (!localStorage.getItem("token")) {
+      setUser(null);
+      setToken(null);
+      setLoading(false);
+      return null;
+    }
+
+    setLoading(true);
+    return fetchUser();
   };
 
   const getLastUser = () => {
     try {
       const stored = localStorage.getItem("last_user");
       if (!stored) return null;
+
       const data = JSON.parse(stored);
-      if (Date.now() - data.timestamp > 30 * 24 * 60 * 60 * 1000) {
+
+      if (
+        !data.timestamp ||
+        Date.now() - data.timestamp > 30 * 24 * 60 * 60 * 1000
+      ) {
         localStorage.removeItem("last_user");
         return null;
       }
+
       return data;
     } catch {
       return null;
@@ -105,16 +172,18 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      loading,
-      login,
-      register,
-      logout,
-      refreshUser,
-      getLastUser,
-      clearLastUser,
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        register,
+        logout,
+        refreshUser,
+        getLastUser,
+        clearLastUser,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -1,20 +1,42 @@
-// frontend/src/pages/dashboard/AccountSettings.jsx
-import React, { useState, useEffect } from "react";
+
+import React, { useState, useEffect, useRef } from "react";
 import {
-  User, Lock, Shield, AlertTriangle, Mail, Phone, Globe,
-  Eye, EyeOff, Check, X, Loader2, Camera, Save, Key, Bell, Trash2,
+  User,
+  Lock,
+  Shield,
+  AlertTriangle,
+  Mail,
+  Phone,
+  Globe,
+  Eye,
+  EyeOff,
+  Check,
+  X,
+  Loader2,
+  Camera,
+  Save,
+  Key,
+  Bell,
+  Trash2,
+  Monitor,
+  ChevronRight,
+  Sparkles,
 } from "lucide-react";
+
 import AppShell from "../../components/layout/AppShell";
 import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 
 const SECTIONS = [
-  { id: "general",        label: "Général",          icon: User,          desc: "Nom, email, téléphone" },
-  { id: "security",       label: "Sécurité",         icon: Lock,          desc: "Mot de passe, sessions" },
-  { id: "privacy",        label: "Confidentialité",  icon: Shield,        desc: "Visibilité, données" },
-  { id: "notifications",  label: "Notifications",    icon: Bell,          desc: "Emails et alertes" },
-  { id: "danger",         label: "Zone dangereuse",  icon: AlertTriangle, desc: "Désactiver, supprimer", danger: true },
+  { id: "general", label: "Général", icon: User, desc: "Informations personnelles" },
+  { id: "security", label: "Sécurité", icon: Lock, desc: "Mot de passe et session" },
+  { id: "privacy", label: "Confidentialité", icon: Shield, desc: "Visibilité du profil" },
+  { id: "notifications", label: "Notifications", icon: Bell, desc: "Alertes et emails" },
+  { id: "danger", label: "Zone dangereuse", icon: AlertTriangle, desc: "Actions irréversibles", danger: true },
 ];
+
+const inputCls =
+  "w-full rounded-xl border border-white/10 bg-[#09142e]/80 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition duration-200 focus:border-emerald-400/60 focus:ring-2 focus:ring-emerald-400/10 disabled:cursor-not-allowed disabled:opacity-50";
 
 export default function AccountSettings() {
   const { user, refreshUser } = useAuth();
@@ -22,68 +44,115 @@ export default function AccountSettings() {
 
   return (
     <AppShell>
-      {/* ===== HEADER ===== */}
-      <div className="mb-8">
-        <p className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
-          Espace personnel
-        </p>
-        <h1 className="mt-1 text-3xl font-bold text-white">Paramètres du compte</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          Gérez vos informations personnelles et la sécurité de votre compte.
-        </p>
-      </div>
+      <div className="mx-auto max-w-7xl space-y-6 sm:space-y-8">
+        <header className="relative isolate overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#172a50] via-[#0F1E45] to-[#0A1229] p-6 sm:p-8 lg:p-10">
+          <div className="pointer-events-none absolute -right-12 -top-16 -z-10 h-64 w-64 rounded-full bg-emerald-400/10 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-24 left-1/3 -z-10 h-48 w-48 rounded-full bg-blue-500/10 blur-3xl" />
 
-      {/* ===== LAYOUT 2 COLONNES ===== */}
-      <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-        {/* ===== MENU GAUCHE ===== */}
-        <aside className="lg:sticky lg:top-24 self-start">
-          <nav className="rounded-2xl border border-white/10 bg-white/[0.04] p-2 backdrop-blur-xl">
-            {SECTIONS.map(({ id, label, icon: Icon, desc, danger }) => {
-              const active = section === id;
-              return (
-                <button
-                  key={id}
-                  onClick={() => setSection(id)}
-                  className={`group flex w-full items-start gap-3 rounded-xl p-3 text-left transition ${
-                    active
-                      ? danger
-                        ? "bg-rose-500/15 border border-rose-500/30"
-                        : "bg-emerald-500/15 border border-emerald-500/30"
-                      : "border border-transparent hover:bg-white/5"
-                  }`}
-                >
-                  <span
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
-                      active
-                        ? danger
-                          ? "bg-rose-500/20 text-rose-300"
-                          : "bg-emerald-500/20 text-emerald-300"
-                        : danger
-                          ? "bg-white/5 text-rose-400"
-                          : "bg-white/5 text-slate-400"
-                    }`}
-                  >
-                    <Icon size={16} />
-                  </span>
-                  <div className="min-w-0">
-                    <p className={`text-sm font-semibold ${active ? "text-white" : "text-slate-200"}`}>
-                      {label}
-                    </p>
-                    <p className="text-xs text-slate-500 truncate">{desc}</p>
-                  </div>
-                </button>
-              );
-            })}
-          </nav>
-        </aside>
+          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-300">
+            <Sparkles size={14} />
+            Espace personnel
+          </div>
 
-        {/* ===== CONTENU DROITE ===== */}
-        <div className="min-w-0">
-          {section === "general"       && <GeneralSection user={user} refreshUser={refreshUser} />}
-          {section === "security"      && <SecuritySection />}
-          {section === "privacy"       && <PrivacySection user={user} />}
-          {section === "notifications" && <NotificationsSection />}
-          {section === "danger"        && <DangerSection user={user} />}
+          <h1 className="mt-4 text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl">
+            Paramètres du compte
+          </h1>
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-400 sm:text-base">
+            Gérez vos informations personnelles, votre sécurité et vos
+            préférences depuis un espace centralisé.
+          </p>
+        </header>
+
+        <div className="grid items-start gap-5 lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-6">
+          <aside className="min-w-0 lg:sticky lg:top-24">
+            <nav
+              aria-label="Sections des paramètres"
+              className="rounded-2xl border border-white/10 bg-[#0F1E45]/70 p-2 shadow-xl shadow-black/10 backdrop-blur-xl"
+            >
+              <p className="px-3 pb-2 pt-2 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                Paramètres du compte
+              </p>
+
+              <div className="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
+                {SECTIONS.map(({ id, label, icon: Icon, desc, danger }) => {
+                  const active = section === id;
+
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setSection(id)}
+                      aria-current={active ? "page" : undefined}
+                      className={`group flex min-w-[150px] flex-1 items-center gap-3 rounded-xl border p-3 text-left transition duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50 lg:min-w-0 lg:flex-none ${
+                        active
+                          ? danger
+                            ? "border-rose-500/30 bg-rose-500/10"
+                            : "border-emerald-500/30 bg-emerald-500/10"
+                          : "border-transparent hover:bg-white/[0.04]"
+                      }`}
+                    >
+                      <span
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition sm:h-10 sm:w-10 ${
+                          active
+                            ? danger
+                              ? "bg-rose-500/15 text-rose-300"
+                              : "bg-emerald-500/15 text-emerald-300"
+                            : danger
+                              ? "bg-white/5 text-rose-400"
+                              : "bg-white/5 text-slate-400 group-hover:text-white"
+                        }`}
+                      >
+                        <Icon size={17} />
+                      </span>
+
+                      <span className="min-w-0 flex-1">
+                        <span
+                          className={`block text-sm font-semibold ${
+                            active ? "text-white" : "text-slate-300"
+                          }`}
+                        >
+                          {label}
+                        </span>
+                        <span className="mt-0.5 hidden truncate text-xs text-slate-500 lg:block">
+                          {desc}
+                        </span>
+                      </span>
+
+                      <ChevronRight
+                        size={15}
+                        className={`hidden shrink-0 transition lg:block ${
+                          active
+                            ? "text-emerald-400"
+                            : "text-slate-600 group-hover:text-slate-300"
+                        }`}
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+            </nav>
+
+            <div className="mt-4 hidden rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:block">
+              <div className="flex items-center gap-2 text-emerald-300">
+                <Shield size={16} />
+                <p className="text-xs font-semibold">Votre sécurité compte</p>
+              </div>
+              <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                Utilisez un mot de passe unique et gardez vos informations de
+                connexion confidentielles.
+              </p>
+            </div>
+          </aside>
+
+          <main className="min-w-0">
+            {section === "general" && (
+              <GeneralSection user={user} refreshUser={refreshUser} />
+            )}
+            {section === "security" && <SecuritySection />}
+            {section === "privacy" && <PrivacySection />}
+            {section === "notifications" && <NotificationsSection />}
+            {section === "danger" && <DangerSection />}
+          </main>
         </div>
       </div>
     </AppShell>
@@ -91,167 +160,291 @@ export default function AccountSettings() {
 }
 
 /* ============================================================
-   SECTION : GÉNÉRAL
+   SECTION GÉNÉRALE
 ============================================================ */
+
 function GeneralSection({ user, refreshUser }) {
   const [form, setForm] = useState({
     first_name: user?.first_name || "",
-    last_name:  user?.last_name  || "",
-    name:       user?.name       || "",
-    phone:      user?.phone      || "",
-    country:    user?.country    || "",
+    last_name: user?.last_name || "",
+    name: user?.name || "",
+    phone: user?.phone || "",
+    country: user?.country || "",
   });
+
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef(null);
 
-  const save = async (e) => {
-    e.preventDefault();
+  useEffect(() => {
+    setForm({
+      first_name: user?.first_name || "",
+      last_name: user?.last_name || "",
+      name: user?.name || "",
+      phone: user?.phone || "",
+      country: user?.country || "",
+    });
+  }, [
+    user?.first_name,
+    user?.last_name,
+    user?.name,
+    user?.phone,
+    user?.country,
+  ]);
+
+  const updateField = (field, value) => {
+    setForm((previous) => ({ ...previous, [field]: value }));
+  };
+
+  const save = async (event) => {
+    event.preventDefault();
     setSaving(true);
     setMessage(null);
+
     try {
       await api.patch("/account/profile", form);
       await refreshUser?.();
-      setMessage({ type: "success", text: "Informations mises à jour ✅" });
+
+      setMessage({
+        type: "success",
+        text: "Vos informations ont été mises à jour.",
+      });
     } catch (err) {
-      setMessage({ type: "error", text: err.response?.data?.message || "Erreur serveur" });
+      setMessage({
+        type: "error",
+        text:
+          err.response?.data?.message ||
+          "Impossible de mettre à jour vos informations.",
+      });
     } finally {
       setSaving(false);
     }
   };
 
-  const uploadAvatar = async (e) => {
-    const file = e.target.files[0];
+  const uploadAvatar = async (event) => {
+    const input = event.target;
+    const file = input.files?.[0];
+
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      setMessage({ type: "error", text: "Photo trop lourde (max 5 Mo)" });
+
+    if (!file.type.startsWith("image/")) {
+      setMessage({
+        type: "error",
+        text: "Veuillez sélectionner un fichier image.",
+      });
+      input.value = "";
       return;
     }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage({
+        type: "error",
+        text: "La photo est trop volumineuse. Maximum : 5 Mo.",
+      });
+      input.value = "";
+      return;
+    }
+
     setUploadingAvatar(true);
-    const fd = new FormData();
-    fd.append("avatar", file);
+    setMessage(null);
+
+    const formData = new FormData();
+    formData.append("avatar", file);
+
     try {
-      await api.post("/profile/avatar", fd);
+      await api.post("/profile/avatar", formData);
       await refreshUser?.();
-      setMessage({ type: "success", text: "Photo mise à jour ✅" });
+
+      setMessage({
+        type: "success",
+        text: "Votre photo de profil a été mise à jour.",
+      });
     } catch (err) {
-      setMessage({ type: "error", text: err.response?.data?.message || "Erreur upload" });
+      setMessage({
+        type: "error",
+        text:
+          err.response?.data?.message ||
+          "Impossible de téléverser votre photo.",
+      });
     } finally {
       setUploadingAvatar(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
+  const avatarUrl = user?.avatar_path
+    ? `http://localhost:8001/storage/${user.avatar_path}`
+    : null;
+
+  const initials =
+    user?.name
+      ?.trim()
+      .split(/\s+/)
+      .map((part) => part[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "?";
+
   return (
-    <div className="space-y-6">
-      {/* Carte photo */}
+    <div className="space-y-5 sm:space-y-6">
       <Card
         icon={Camera}
         title="Photo de profil"
-        subtitle="Elle apparaît sur vos propositions et votre portfolio."
+        subtitle="Ajoutez une photo pour personnaliser votre compte."
       >
-        <div className="flex flex-wrap items-center gap-4">
-          {user?.avatar_path ? (
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
+          {avatarUrl ? (
             <img
-              src={`http://localhost:8000/storage/${user.avatar_path}`}
-              alt={user.name}
-              className="h-20 w-20 rounded-2xl border-2 border-white/10 object-cover"
+              src={avatarUrl}
+              alt={user?.name || "Photo de profil"}
+              className="h-20 w-20 shrink-0 rounded-2xl border border-white/10 object-cover shadow-lg"
             />
           ) : (
-            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-2xl font-bold text-[#0A1229]">
-              {user?.name?.charAt(0)?.toUpperCase() || "?"}
+            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-300 to-emerald-600 text-2xl font-bold text-[#0A1229] shadow-lg shadow-emerald-900/20">
+              {initials}
             </div>
           )}
-          <label className="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:border-emerald-500/40 hover:text-emerald-300">
-            {uploadingAvatar ? "Envoi..." : "Changer la photo"}
+
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-white">
+              Votre photo personnelle
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-slate-500">
+              Formats image acceptés. Taille maximale : 5 Mo.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingAvatar}
+              className="mt-3 inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:border-emerald-400/40 hover:bg-emerald-400/5 hover:text-emerald-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {uploadingAvatar ? (
+                <Loader2 size={15} className="animate-spin" />
+              ) : (
+                <Camera size={15} />
+              )}
+              {uploadingAvatar ? "Envoi en cours..." : "Changer la photo"}
+            </button>
+
             <input
+              ref={fileInputRef}
               type="file"
               accept="image/*"
               className="hidden"
               onChange={uploadAvatar}
               disabled={uploadingAvatar}
+              aria-label="Sélectionner une photo de profil"
             />
-          </label>
+          </div>
         </div>
       </Card>
 
-      {/* Carte infos */}
       <Card
         icon={User}
         title="Informations personnelles"
-        subtitle="Ces informations restent privées et ne sont jamais partagées sans votre accord."
+        subtitle="Maintenez vos informations à jour."
       >
         {message && <Alert tone={message.type}>{message.text}</Alert>}
 
-        <form onSubmit={save} className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
+        <form onSubmit={save} className="space-y-5">
+          <div className="grid gap-5 sm:grid-cols-2">
             <Field label="Prénom">
               <input
                 type="text"
                 value={form.first_name}
-                onChange={(e) => setForm({ ...form, first_name: e.target.value })}
+                onChange={(event) =>
+                  updateField("first_name", event.target.value)
+                }
                 className={inputCls}
-                placeholder="Sarah"
+                placeholder="Votre prénom"
+                autoComplete="given-name"
               />
             </Field>
+
             <Field label="Nom">
               <input
                 type="text"
                 value={form.last_name}
-                onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+                onChange={(event) =>
+                  updateField("last_name", event.target.value)
+                }
                 className={inputCls}
-                placeholder="Andrianina"
+                placeholder="Votre nom"
+                autoComplete="family-name"
               />
             </Field>
           </div>
 
-          <Field label="Nom d'affichage" hint="Visible par les autres utilisateurs">
+          <Field
+            label="Nom d'affichage"
+            hint="Ce nom peut être visible par les autres utilisateurs."
+          >
             <input
               type="text"
               value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              onChange={(event) => updateField("name", event.target.value)}
               className={inputCls}
-              placeholder="Sarah Andrianina"
+              placeholder="Votre nom d'affichage"
+              autoComplete="name"
             />
           </Field>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-5 sm:grid-cols-2">
             <Field label="Téléphone" icon={Phone}>
               <input
-                type="text"
+                type="tel"
                 value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                onChange={(event) => updateField("phone", event.target.value)}
                 className={inputCls}
                 placeholder="+261 34 12 345 67"
+                autoComplete="tel"
               />
             </Field>
+
             <Field label="Pays" icon={Globe}>
               <input
                 type="text"
                 value={form.country}
-                onChange={(e) => setForm({ ...form, country: e.target.value })}
+                onChange={(event) => updateField("country", event.target.value)}
                 className={inputCls}
                 placeholder="Madagascar"
+                autoComplete="country-name"
               />
             </Field>
           </div>
 
-          <Field label="Email" icon={Mail} hint="Non modifiable — contactez le support">
+          <Field
+            label="Adresse email"
+            icon={Mail}
+            hint="Pour modifier votre adresse email, contactez le support."
+          >
             <input
               type="email"
               value={user?.email || ""}
               disabled
-              className={`${inputCls} opacity-60 cursor-not-allowed`}
+              className={inputCls}
+              autoComplete="email"
             />
           </Field>
 
-          <div className="pt-2">
+          <div className="flex flex-col gap-3 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-slate-500">
+              Enregistrez vos modifications avant de quitter cette page.
+            </p>
+
             <button
               type="submit"
               disabled={saving}
-              className="flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400 disabled:opacity-60"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-400 px-5 py-3 text-sm font-bold text-[#0A1229] shadow-lg shadow-emerald-900/10 transition hover:bg-emerald-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/70 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             >
-              {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
-              {saving ? "Enregistrement..." : "Enregistrer"}
+              {saving ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Save size={16} />
+              )}
+              {saving ? "Enregistrement..." : "Enregistrer les modifications"}
             </button>
           </div>
         </form>
@@ -261,169 +454,201 @@ function GeneralSection({ user, refreshUser }) {
 }
 
 /* ============================================================
-   SECTION : SÉCURITÉ
+   SECTION SÉCURITÉ
 ============================================================ */
+
 function SecuritySection() {
   const [form, setForm] = useState({
     current_password: "",
     password: "",
     password_confirmation: "",
   });
-  const [show, setShow] = useState({ current: false, next: false, confirm: false });
+
+  const [show, setShow] = useState({
+    current: false,
+    next: false,
+    confirm: false,
+  });
+
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
 
-  const save = async (e) => {
-    e.preventDefault();
+  const updateField = (field, value) => {
+    setForm((previous) => ({ ...previous, [field]: value }));
+  };
+
+  const save = async (event) => {
+    event.preventDefault();
     setMessage(null);
-    if (form.password !== form.password_confirmation) {
-      setMessage({ type: "error", text: "Les mots de passe ne correspondent pas." });
+
+    if (!form.current_password) {
+      setMessage({
+        type: "error",
+        text: "Veuillez saisir votre mot de passe actuel.",
+      });
       return;
     }
+
     if (form.password.length < 8) {
-      setMessage({ type: "error", text: "Le mot de passe doit contenir au moins 8 caractères." });
+      setMessage({
+        type: "error",
+        text: "Le nouveau mot de passe doit contenir au moins 8 caractères.",
+      });
       return;
     }
+
+    if (form.password !== form.password_confirmation) {
+      setMessage({
+        type: "error",
+        text: "Les nouveaux mots de passe ne correspondent pas.",
+      });
+      return;
+    }
+
     setSaving(true);
+
     try {
       await api.patch("/account/password", form);
-      setMessage({ type: "success", text: "Mot de passe modifié ✅" });
-      setForm({ current_password: "", password: "", password_confirmation: "" });
+      setForm({
+        current_password: "",
+        password: "",
+        password_confirmation: "",
+      });
+      setShow({ current: false, next: false, confirm: false });
+
+      setMessage({
+        type: "success",
+        text: "Votre mot de passe a été modifié.",
+      });
     } catch (err) {
-      setMessage({ type: "error", text: err.response?.data?.message || "Erreur serveur" });
+      setMessage({
+        type: "error",
+        text:
+          err.response?.data?.message ||
+          "Impossible de modifier le mot de passe.",
+      });
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       <Card
         icon={Key}
         title="Changer le mot de passe"
-        subtitle="Utilisez un mot de passe fort : 8+ caractères, majuscules, chiffres."
+        subtitle="Choisissez un mot de passe difficile à deviner."
       >
         {message && <Alert tone={message.type}>{message.text}</Alert>}
 
-        <form onSubmit={save} className="space-y-4">
+        <form onSubmit={save} className="space-y-5">
           <Field label="Mot de passe actuel">
             <PasswordInput
               value={form.current_password}
-              onChange={(v) => setForm({ ...form, current_password: v })}
+              onChange={(value) => updateField("current_password", value)}
               visible={show.current}
-              toggle={() => setShow({ ...show, current: !show.current })}
-              placeholder="••••••••"
+              toggle={() =>
+                setShow((previous) => ({
+                  ...previous,
+                  current: !previous.current,
+                }))
+              }
+              autoComplete="current-password"
             />
           </Field>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Nouveau mot de passe">
+          <div className="grid gap-5 sm:grid-cols-2">
+            <Field label="Nouveau mot de passe" hint="8 caractères minimum.">
               <PasswordInput
                 value={form.password}
-                onChange={(v) => setForm({ ...form, password: v })}
+                onChange={(value) => updateField("password", value)}
                 visible={show.next}
-                toggle={() => setShow({ ...show, next: !show.next })}
-                placeholder="••••••••"
+                toggle={() =>
+                  setShow((previous) => ({
+                    ...previous,
+                    next: !previous.next,
+                  }))
+                }
+                autoComplete="new-password"
               />
             </Field>
+
             <Field label="Confirmer le mot de passe">
               <PasswordInput
                 value={form.password_confirmation}
-                onChange={(v) => setForm({ ...form, password_confirmation: v })}
+                onChange={(value) =>
+                  updateField("password_confirmation", value)
+                }
                 visible={show.confirm}
-                toggle={() => setShow({ ...show, confirm: !show.confirm })}
-                placeholder="••••••••"
+                toggle={() =>
+                  setShow((previous) => ({
+                    ...previous,
+                    confirm: !previous.confirm,
+                  }))
+                }
+                autoComplete="new-password"
               />
             </Field>
           </div>
 
-          <div className="pt-2">
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400 disabled:opacity-60"
-            >
-              {saving ? <Loader2 size={15} className="animate-spin" /> : <Lock size={15} />}
-              {saving ? "Modification..." : "Changer le mot de passe"}
-            </button>
+          <div className="rounded-xl border border-white/5 bg-white/[0.03] p-4">
+            <p className="text-xs font-semibold text-slate-300">
+              Conseils de sécurité
+            </p>
+            <ul className="mt-3 space-y-2 text-xs text-slate-500">
+              {[
+                "Au moins 8 caractères",
+                "Évitez les mots de passe déjà utilisés ailleurs",
+                "Ne partagez jamais votre mot de passe",
+              ].map((tip) => (
+                <li key={tip} className="flex items-center gap-2">
+                  <Check size={13} className="shrink-0 text-emerald-400" />
+                  {tip}
+                </li>
+              ))}
+            </ul>
           </div>
+
+          <button
+            type="submit"
+            disabled={saving}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-400 px-5 py-3 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/70 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+          >
+            {saving ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Lock size={16} />
+            )}
+            {saving ? "Modification..." : "Modifier le mot de passe"}
+          </button>
         </form>
       </Card>
 
       <Card
-        icon={Shield}
-        title="Sessions actives"
-        subtitle="Vos appareils connectés à votre compte."
+        icon={Monitor}
+        title="Sessions"
+        subtitle="Informations sur votre session actuelle."
       >
-        <div className="rounded-xl border border-white/5 bg-white/5 p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">
-                <Shield size={18} />
-              </span>
-              <div>
-                <p className="text-sm font-semibold text-white">Session actuelle</p>
-                <p className="text-xs text-slate-500">Navigateur web · Maintenant</p>
-              </div>
-            </div>
-            <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-bold text-emerald-300">
-              ACTIVE
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-white/10 bg-white/[0.03] p-4">
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-300">
+              <Monitor size={19} />
             </span>
+            <div>
+              <p className="text-sm font-semibold text-white">Session actuelle</p>
+              <p className="mt-1 text-xs text-slate-500">Navigateur web</p>
+            </div>
           </div>
+
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-[11px] font-bold text-emerald-300">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            ACTIVE
+          </span>
         </div>
-      </Card>
-    </div>
-  );
-}
 
-/* ============================================================
-   SECTION : CONFIDENTIALITÉ
-============================================================ */
-function PrivacySection({ user }) {
-  const [settings, setSettings] = useState({
-    profile_public: true,
-    show_email: false,
-    show_phone: false,
-    show_availability: true,
-  });
-
-  const toggle = (key) => setSettings({ ...settings, [key]: !settings[key] });
-
-  return (
-    <div className="space-y-6">
-      <Card
-        icon={Shield}
-        title="Visibilité du profil"
-        subtitle="Contrôlez ce que les autres utilisateurs peuvent voir."
-      >
-        <div className="space-y-3">
-          <Toggle
-            label="Profil public"
-            hint="Votre profil est visible par tous les utilisateurs connectés."
-            checked={settings.profile_public}
-            onChange={() => toggle("profile_public")}
-          />
-          <Toggle
-            label="Afficher mon email"
-            hint="Les recruteurs pourront voir votre adresse email."
-            checked={settings.show_email}
-            onChange={() => toggle("show_email")}
-          />
-          <Toggle
-            label="Afficher mon téléphone"
-            hint="Visible uniquement par les entreprises vérifiées."
-            checked={settings.show_phone}
-            onChange={() => toggle("show_phone")}
-          />
-          <Toggle
-            label="Afficher mes disponibilités"
-            hint="Les entreprises peuvent voir quand vous êtes disponible."
-            checked={settings.show_availability}
-            onChange={() => toggle("show_availability")}
-          />
-        </div>
-        <p className="mt-4 text-xs text-slate-500">
-          💡 Ces paramètres sont indicatifs pour l'instant. La synchronisation sera ajoutée prochainement.
+        <p className="mt-3 text-xs leading-relaxed text-slate-500">
+          La gestion détaillée des sessions dépend des fonctionnalités prises
+          en charge par le serveur.
         </p>
       </Card>
     </div>
@@ -431,8 +656,72 @@ function PrivacySection({ user }) {
 }
 
 /* ============================================================
-   SECTION : NOTIFICATIONS
+   SECTION CONFIDENTIALITÉ
 ============================================================ */
+
+function PrivacySection() {
+  const [settings, setSettings] = useState({
+    profile_public: true,
+    show_email: false,
+    show_phone: false,
+    show_availability: true,
+  });
+
+  const toggle = (key) => {
+    setSettings((previous) => ({
+      ...previous,
+      [key]: !previous[key],
+    }));
+  };
+
+  return (
+    <div className="space-y-5 sm:space-y-6">
+      <Card
+        icon={Shield}
+        title="Confidentialité du profil"
+        subtitle="Prévisualisez vos préférences de visibilité."
+      >
+        <div className="space-y-3">
+          <Toggle
+            label="Profil public"
+            hint="Préférence de visibilité du profil sur la plateforme."
+            checked={settings.profile_public}
+            onChange={() => toggle("profile_public")}
+          />
+          <Toggle
+            label="Afficher mon email"
+            hint="Préférence d'affichage de votre adresse email."
+            checked={settings.show_email}
+            onChange={() => toggle("show_email")}
+          />
+          <Toggle
+            label="Afficher mon téléphone"
+            hint="Préférence d'affichage de votre numéro de téléphone."
+            checked={settings.show_phone}
+            onChange={() => toggle("show_phone")}
+          />
+          <Toggle
+            label="Afficher mes disponibilités"
+            hint="Préférence de visibilité de vos disponibilités."
+            checked={settings.show_availability}
+            onChange={() => toggle("show_availability")}
+          />
+        </div>
+
+        <Notice title="Préférences non enregistrées" tone="warning">
+          Ces choix sont conservés uniquement dans l'état de cette page. Ils
+          ne sont pas sauvegardés sur le serveur et ne modifient pas la
+          visibilité réelle de votre profil.
+        </Notice>
+      </Card>
+    </div>
+  );
+}
+
+/* ============================================================
+   SECTION NOTIFICATIONS
+============================================================ */
+
 function NotificationsSection() {
   const [settings, setSettings] = useState({
     email_proposals: true,
@@ -441,145 +730,161 @@ function NotificationsSection() {
     email_marketing: false,
   });
 
-  const toggle = (key) => setSettings({ ...settings, [key]: !settings[key] });
+  const toggle = (key) => {
+    setSettings((previous) => ({
+      ...previous,
+      [key]: !previous[key],
+    }));
+  };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       <Card
         icon={Bell}
-        title="Notifications par email"
-        subtitle="Choisissez les emails que vous souhaitez recevoir."
+        title="Préférences de notification"
+        subtitle="Choisissez les types de notifications que vous souhaitez recevoir."
       >
         <div className="space-y-3">
           <Toggle
             label="Nouvelles propositions"
-            hint="Recevoir un email à chaque nouvelle proposition."
+            hint="Notifications concernant les nouvelles propositions."
             checked={settings.email_proposals}
             onChange={() => toggle("email_proposals")}
           />
           <Toggle
             label="Missions"
-            hint="Acceptations, refus, changements de statut."
+            hint="Acceptations, refus et changements de statut."
             checked={settings.email_missions}
             onChange={() => toggle("email_missions")}
           />
           <Toggle
             label="Messages"
-            hint="Nouveaux messages dans la messagerie."
+            hint="Notifications concernant les nouveaux messages."
             checked={settings.email_messages}
             onChange={() => toggle("email_messages")}
           />
           <Toggle
             label="Actualités et nouveautés"
-            hint="Nouveautés de la plateforme, événements."
+            hint="Informations générales et nouveautés de la plateforme."
             checked={settings.email_marketing}
             onChange={() => toggle("email_marketing")}
           />
         </div>
+
+        <Notice title="Préférences temporaires" tone="warning">
+          Les choix effectués ici ne sont pas encore enregistrés sur le
+          serveur. Ils seront réinitialisés lorsque vous quitterez cette page.
+        </Notice>
       </Card>
     </div>
   );
 }
 
 /* ============================================================
-   SECTION : DANGER
+   SECTION ZONE DANGEREUSE
 ============================================================ */
-function DangerSection({ user }) {
+
+function DangerSection() {
   const [deactivating, setDeactivating] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   const deactivate = async () => {
-    if (!confirm("Désactiver votre compte ? Vous pourrez le réactiver en contactant le support.")) return;
+    const confirmed = window.confirm(
+      "Voulez-vous vraiment désactiver votre compte ?"
+    );
+
+    if (!confirmed) return;
+
     setDeactivating(true);
+
     try {
       await api.post("/account/deactivate");
       localStorage.removeItem("token");
       window.location.href = "/login";
     } catch (err) {
-      alert("Erreur : " + (err.response?.data?.message || "Erreur serveur"));
+      window.alert(
+        err.response?.data?.message ||
+          "Impossible de désactiver le compte."
+      );
       setDeactivating(false);
     }
   };
 
   const destroy = async () => {
-    const pwd = prompt("Tapez votre mot de passe pour confirmer la suppression :");
-    if (!pwd) return;
-    if (!confirm("⚠️ Suppression définitive. Cette action est irréversible. Continuer ?")) return;
+    const password = window.prompt(
+      "Saisissez votre mot de passe pour confirmer la suppression."
+    );
+
+    if (!password) return;
+
+    const confirmed = window.confirm(
+      "ATTENTION : la suppression du compte est définitive. Voulez-vous continuer ?"
+    );
+
+    if (!confirmed) return;
+
     setDeleting(true);
+
     try {
-      await api.delete("/account", { data: { password: pwd } });
+      await api.delete("/account", { data: { password } });
       localStorage.removeItem("token");
       window.location.href = "/login";
     } catch (err) {
-      alert("Erreur : " + (err.response?.data?.message || "Mot de passe incorrect."));
+      window.alert(
+        err.response?.data?.message ||
+          "Impossible de supprimer le compte. Vérifiez votre mot de passe."
+      );
       setDeleting(false);
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-6">
-        <div className="flex items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-400">
-            <AlertTriangle size={18} />
-          </span>
-          <div>
-            <h3 className="font-bold text-white">Désactiver le compte</h3>
-            <p className="mt-1 text-sm text-slate-400">
-              Votre profil sera masqué. Vos données sont conservées et pourront être restaurées en contactant le support.
-            </p>
-            <button
-              onClick={deactivate}
-              disabled={deactivating}
-              className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-5 py-2.5 text-sm font-bold text-amber-300 transition hover:bg-amber-500/20 disabled:opacity-60"
-            >
-              {deactivating ? "Désactivation..." : "Désactiver mon compte"}
-            </button>
-          </div>
-        </div>
-      </div>
+    <div className="space-y-5 sm:space-y-6">
+      <DangerCard
+        icon={AlertTriangle}
+        title="Désactiver mon compte"
+        description="Cette action envoie une demande de désactivation au serveur. Vérifiez les conditions de réactivation applicables à votre compte avant de continuer."
+        buttonLabel="Désactiver mon compte"
+        loadingLabel="Désactivation..."
+        loading={deactivating}
+        disabled={deleting}
+        onClick={deactivate}
+        tone="amber"
+      />
 
-      <div className="rounded-2xl border border-rose-500/30 bg-rose-500/5 p-6">
-        <div className="flex items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-500/15 text-rose-400">
-            <Trash2 size={18} />
-          </span>
-          <div>
-            <h3 className="font-bold text-white">Supprimer définitivement</h3>
-            <p className="mt-1 text-sm text-slate-400">
-              Toutes vos données seront effacées. Cette action est <strong className="text-rose-300">irréversible</strong>.
-            </p>
-            <button
-              onClick={destroy}
-              disabled={deleting}
-              className="mt-4 rounded-xl bg-rose-500 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-rose-600 disabled:opacity-60"
-            >
-              {deleting ? "Suppression..." : "Supprimer mon compte"}
-            </button>
-          </div>
-        </div>
-      </div>
+      <DangerCard
+        icon={Trash2}
+        title="Supprimer définitivement"
+        description="Cette opération demande la suppression du compte au serveur. Elle peut entraîner la perte définitive des données associées."
+        buttonLabel="Supprimer mon compte"
+        loadingLabel="Suppression..."
+        loading={deleting}
+        disabled={deactivating}
+        onClick={destroy}
+        tone="rose"
+      />
     </div>
   );
 }
 
 /* ============================================================
-   PETITS COMPOSANTS UI
+   COMPOSANTS UI RÉUTILISABLES
 ============================================================ */
-
-const inputCls =
-  "w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-600 transition focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20";
 
 function Card({ icon: Icon, title, subtitle, children }) {
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl">
-      <div className="mb-5 flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">
+    <section className="overflow-hidden rounded-2xl border border-white/10 bg-[#0F1E45]/50 p-4 shadow-lg shadow-black/5 backdrop-blur-xl sm:p-6">
+      <div className="mb-5 flex items-start gap-3 sm:mb-6">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-emerald-400/10 bg-emerald-400/10 text-emerald-300">
           <Icon size={18} />
         </span>
-        <div>
-          <h2 className="text-lg font-bold text-white">{title}</h2>
-          {subtitle && <p className="mt-0.5 text-sm text-slate-400">{subtitle}</p>}
+        <div className="min-w-0">
+          <h2 className="text-base font-bold text-white sm:text-lg">{title}</h2>
+          {subtitle && (
+            <p className="mt-1 text-sm leading-relaxed text-slate-400">
+              {subtitle}
+            </p>
+          )}
         </div>
       </div>
       {children}
@@ -589,30 +894,37 @@ function Card({ icon: Icon, title, subtitle, children }) {
 
 function Field({ label, hint, icon: Icon, children }) {
   return (
-    <div>
+    <div className="min-w-0">
       <label className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400">
-        {Icon && <Icon size={12} />} {label}
+        {Icon && <Icon size={13} />}
+        {label}
       </label>
       {children}
-      {hint && <p className="mt-1.5 text-xs text-slate-500">{hint}</p>}
+      {hint && (
+        <p className="mt-1.5 text-xs leading-relaxed text-slate-500">{hint}</p>
+      )}
     </div>
   );
 }
 
-function PasswordInput({ value, onChange, visible, toggle, placeholder }) {
+function PasswordInput({ value, onChange, visible, toggle, autoComplete }) {
   return (
     <div className="relative">
       <input
         type={visible ? "text" : "password"}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder="••••••••••"
+        autoComplete={autoComplete}
+        required
         className={`${inputCls} pr-12`}
       />
       <button
         type="button"
         onClick={toggle}
-        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 transition hover:text-white"
+        aria-label={visible ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+        aria-pressed={visible}
+        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-500 transition hover:bg-white/5 hover:text-emerald-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50"
       >
         {visible ? <EyeOff size={16} /> : <Eye size={16} />}
       </button>
@@ -622,20 +934,26 @@ function PasswordInput({ value, onChange, visible, toggle, placeholder }) {
 
 function Toggle({ label, hint, checked, onChange }) {
   return (
-    <div className="flex items-start justify-between gap-4 rounded-xl border border-white/5 bg-white/5 p-4">
-      <div className="min-w-0">
-        <p className="text-sm font-semibold text-white">{label}</p>
-        {hint && <p className="mt-0.5 text-xs text-slate-500">{hint}</p>}
+    <div className="flex items-center justify-between gap-4 rounded-xl border border-white/5 bg-white/[0.025] p-3 transition hover:border-white/10 hover:bg-white/[0.04] sm:p-4">
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-slate-200">{label}</p>
+        {hint && (
+          <p className="mt-1 text-xs leading-relaxed text-slate-500">{hint}</p>
+        )}
       </div>
+
       <button
         type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-label={label}
         onClick={onChange}
-        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-          checked ? "bg-emerald-500" : "bg-white/15"
+        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F1E45] ${
+          checked ? "bg-emerald-400" : "bg-slate-700"
         }`}
       >
         <span
-          className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+          className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
             checked ? "translate-x-5" : "translate-x-0"
           }`}
         />
@@ -645,14 +963,86 @@ function Toggle({ label, hint, checked, onChange }) {
 }
 
 function Alert({ tone, children }) {
-  const cls =
-    tone === "success"
-      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-      : "border-rose-500/30 bg-rose-500/10 text-rose-300";
-  const Icon = tone === "success" ? Check : X;
+  const isSuccess = tone === "success";
+  const Icon = isSuccess ? Check : X;
+  const styles = isSuccess
+    ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
+    : "border-rose-500/20 bg-rose-500/10 text-rose-300";
+
   return (
-    <div className={`mb-4 flex items-center gap-2 rounded-xl border px-4 py-3 text-sm ${cls}`}>
-      <Icon size={16} /> {children}
+    <div
+      role={isSuccess ? "status" : "alert"}
+      className={`mb-5 flex items-start gap-2.5 rounded-xl border px-4 py-3 text-sm ${styles}`}
+    >
+      <Icon size={17} className="mt-0.5 shrink-0" />
+      <span>{children}</span>
     </div>
+  );
+}
+
+function Notice({ title, tone = "warning", children }) {
+  const styles =
+    tone === "warning"
+      ? "border-amber-500/20 bg-amber-500/5 text-amber-200"
+      : "border-blue-500/20 bg-blue-500/5 text-blue-200";
+
+  return (
+    <div className={`mt-5 rounded-xl border p-4 ${styles}`}>
+      <p className="text-sm font-semibold">{title}</p>
+      <p className="mt-1 text-xs leading-relaxed text-slate-400">{children}</p>
+    </div>
+  );
+}
+
+function DangerCard({
+  icon: Icon,
+  title,
+  description,
+  buttonLabel,
+  loadingLabel,
+  loading,
+  disabled,
+  onClick,
+  tone,
+}) {
+  const isRose = tone === "rose";
+
+  const cardStyle = isRose
+    ? "border-rose-500/25 bg-rose-500/[0.04]"
+    : "border-amber-500/20 bg-amber-500/[0.04]";
+
+  const iconStyle = isRose
+    ? "bg-rose-500/10 text-rose-300"
+    : "bg-amber-500/10 text-amber-300";
+
+  const buttonStyle = isRose
+    ? "bg-rose-500 text-white hover:bg-rose-600"
+    : "border border-amber-500/30 bg-amber-500/10 text-amber-200 hover:bg-amber-500/20";
+
+  return (
+    <section className={`rounded-2xl border p-5 sm:p-6 ${cardStyle}`}>
+      <div className="flex items-start gap-3 sm:gap-4">
+        <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${iconStyle}`}>
+          <Icon size={20} />
+        </span>
+
+        <div className="min-w-0 flex-1">
+          <h2 className="text-lg font-bold text-white">{title}</h2>
+          <p className="mt-2 text-sm leading-relaxed text-slate-400">
+            {description}
+          </p>
+
+          <button
+            type="button"
+            onClick={onClick}
+            disabled={loading || disabled}
+            className={`mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto ${buttonStyle}`}
+          >
+            {loading && <Loader2 size={15} className="animate-spin" />}
+            {loading ? loadingLabel : buttonLabel}
+          </button>
+        </div>
+      </div>
+    </section>
   );
 }

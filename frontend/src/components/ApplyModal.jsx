@@ -1,7 +1,17 @@
+
 import React, { useEffect, useState } from "react";
 import {
-  X, FileText, Briefcase, Send, Check, Loader2, ExternalLink,
-  AlertCircle, Upload, Sparkles,
+  X,
+  FileText,
+  Briefcase,
+  Send,
+  Check,
+  Loader2,
+  ExternalLink,
+  AlertCircle,
+  Upload,
+  Sparkles,
+  ArrowUpRight,
 } from "lucide-react";
 import api from "../services/api";
 import { useToast } from "../hooks/useToast";
@@ -16,9 +26,9 @@ export default function ApplyModal({ offer, onClose, onSuccess }) {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
+
   const { toast, show: showToast, close: closeToast } = useToast();
 
-  // ✅ Charge profil + portfolio en parallèle
   useEffect(() => {
     Promise.all([
       api.get("/profile/me").catch(() => ({ data: null })),
@@ -27,7 +37,6 @@ export default function ApplyModal({ offer, onClose, onSuccess }) {
       .then(([profileRes, portfolioRes]) => {
         setProfile(profileRes.data);
 
-        // ✅ Un portfolio est valide seulement s'il a un slug (pas juste un enregistrement vide)
         const p = portfolioRes.data;
         const hasPortfolio = p?.public_slug && (p?.title || p?.id);
         setPortfolio(hasPortfolio ? p : null);
@@ -45,19 +54,55 @@ export default function ApplyModal({ offer, onClose, onSuccess }) {
       return;
     }
 
+    if (coverLetter.length > 5000) {
+      setError("La lettre de motivation ne peut pas dépasser 5 000 caractères.");
+      return;
+    }
+
+    if (!useExistingCv && cvFile) {
+      const allowedTypes = [
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ];
+
+      const validExtension = /\.(pdf|doc|docx)$/i.test(cvFile.name);
+
+      if (
+        !validExtension ||
+        (cvFile.type && !allowedTypes.includes(cvFile.type))
+      ) {
+        setError("Format invalide. Choisissez un fichier PDF, DOC ou DOCX.");
+        return;
+      }
+
+      if (cvFile.size > 5 * 1024 * 1024) {
+        setError("Le CV ne doit pas dépasser 5 Mo.");
+        return;
+      }
+    }
+
     setSending(true);
+
     try {
       const formData = new FormData();
       formData.append("job_offer_id", offer.id);
       formData.append("cover_letter", coverLetter);
-      if (portfolio?.id) formData.append("portfolio_id", portfolio.id);
-      if (!useExistingCv && cvFile) formData.append("cv", cvFile);
+
+      if (portfolio?.id) {
+        formData.append("portfolio_id", portfolio.id);
+      }
+
+      if (!useExistingCv && cvFile) {
+        formData.append("cv", cvFile);
+      }
 
       await api.post("/applications", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      showToast("✅ Candidature envoyée !", "success");
+      showToast("Candidature envoyée !", "success");
+
       setTimeout(() => {
         onClose();
         onSuccess?.();
@@ -73,236 +118,373 @@ export default function ApplyModal({ offer, onClose, onSuccess }) {
     }
   };
 
+  const hasCv = !!profile?.cv_path;
+
+  const canSubmit =
+    coverLetter.trim().length >= 50 &&
+    coverLetter.length <= 5000 &&
+    !sending &&
+    !loading;
+
+  const fieldLabel =
+    "mb-3 flex items-center gap-2 text-sm font-semibold text-[#102344]";
+
+  const selectedOption =
+    "border-[#6EE7C8] bg-[#F0FCF8] ring-2 ring-[#6EE7C8]/20";
+
+  const normalOption =
+    "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50";
+
   if (loading) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-        <div className="rounded-2xl bg-white p-8">
-          <Loader2 className="animate-spin text-emerald-500" size={32} />
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A1229]/65 p-4 backdrop-blur-sm">
+        <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white px-6 py-5 shadow-2xl">
+          <Loader2 className="animate-spin text-teal-600" size={22} />
+          <span className="text-sm font-medium text-slate-600">
+            Préparation de votre candidature...
+          </span>
         </div>
       </div>
     );
   }
 
-  const hasCv = !!profile?.cv_path;
-  const canSubmit = coverLetter.length >= 50 && !sending;
-
   return (
     <>
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A1229]/65 p-3 backdrop-blur-sm sm:p-6"
         onClick={onClose}
       >
         <div
-          className="max-h-[92vh] w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl flex flex-col"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="apply-modal-title"
+          className="flex max-h-[94vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-white/80 bg-white shadow-[0_28px_100px_rgba(10,18,41,0.30)]"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* ==================== HEADER ==================== */}
-          <div className="flex items-start justify-between gap-3 border-b border-slate-200 bg-gradient-to-br from-emerald-50 to-white px-6 py-5">
-            <div className="min-w-0 flex-1">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700">
-                <Sparkles size={10} /> Postuler
-              </span>
-              <h2 className="mt-2 truncate text-xl font-bold text-slate-900">
-                {offer.title}
-              </h2>
-              {offer.company?.name && (
-                <p className="mt-0.5 text-sm text-slate-500">{offer.company.name}</p>
-              )}
+          {/* En-tête */}
+          <div className="relative overflow-hidden border-b border-slate-100 bg-gradient-to-br from-[#F0FCF8] via-white to-[#F1F5FC] px-5 py-6 sm:px-8 sm:py-7">
+            <div className="absolute -right-12 -top-16 h-44 w-44 rounded-full bg-[#6EE7C8]/30 blur-3xl" />
+            <div className="absolute -bottom-16 left-1/3 h-32 w-32 rounded-full bg-blue-100/60 blur-3xl" />
+
+            <div className="relative flex items-start justify-between gap-4">
+              <div className="min-w-0 flex-1">
+                <span className="inline-flex items-center gap-2 rounded-full border border-[#6EE7C8]/50 bg-white/90 px-3 py-1.5 text-xs font-semibold text-[#087F70] shadow-sm">
+                  <Sparkles size={14} />
+                  Votre prochaine opportunité
+                </span>
+
+                <h2
+                  id="apply-modal-title"
+                  className="mt-4 text-xl font-bold tracking-tight text-[#0F1E45] sm:text-2xl"
+                >
+                  Envoyer ma candidature
+                </h2>
+
+                <p className="mt-2 text-sm leading-relaxed text-slate-500">
+                  Préparez vos documents et présentez votre motivation.
+                </p>
+
+                <div className="mt-5 flex items-center gap-3 rounded-2xl border border-white/80 bg-white/80 p-3 shadow-sm">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#0F1E45] text-[#6EE7C8]">
+                    <Briefcase size={19} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-bold text-[#0F1E45]">
+                      {offer.title}
+                    </p>
+                    {offer.company?.name && (
+                      <p className="mt-1 truncate text-xs text-slate-500">
+                        {offer.company.name}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Fermer"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-[#6EE7C8] hover:bg-[#F0FCF8] hover:text-[#0F1E45]"
+              >
+                <X size={18} />
+              </button>
             </div>
-            <button
-              onClick={onClose}
-              className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-900"
-            >
-              <X size={18} />
-            </button>
           </div>
 
-          {/* ==================== BODY ==================== */}
-          <form onSubmit={submit} className="flex-1 overflow-y-auto p-6 space-y-6">
-
+          {/* Formulaire */}
+          <form
+            id="application-form"
+            onSubmit={submit}
+            className="flex-1 space-y-7 overflow-y-auto px-5 py-6 sm:px-8"
+          >
             {error && (
-              <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
-                <AlertCircle size={15} className="mt-0.5 shrink-0" />
-                <p>{error}</p>
+              <div
+                role="alert"
+                className="flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800"
+              >
+                <AlertCircle
+                  size={18}
+                  className="mt-0.5 shrink-0 text-rose-500"
+                />
+                <p className="leading-relaxed">{error}</p>
               </div>
             )}
 
-            {/* ---------- PORTFOLIO ---------- */}
+            {/* Portfolio */}
             <section>
-              <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-500">
-                <Briefcase size={12} /> Portfolio à joindre
-              </label>
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <label className={fieldLabel}>
+                  <Briefcase size={17} className="text-teal-600" />
+                  Portfolio
+                </label>
+                <span className="text-xs text-slate-400">Facultatif</span>
+              </div>
 
               {portfolio ? (
-                <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-500 text-white">
-                    <Check size={18} />
-                  </span>
+                <div className="flex items-center gap-3 rounded-2xl border border-[#6EE7C8] bg-[#F0FCF8] p-4 sm:p-5">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#0F1E45] text-[#6EE7C8]">
+                    <Check size={20} />
+                  </div>
+
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-emerald-900">
+                    <p className="truncate text-sm font-bold text-[#0F1E45]">
                       {portfolio.title || "Mon portfolio"}
                     </p>
-                    <p className="text-xs text-emerald-700">
-                      Ce portfolio sera joint à votre candidature
+                    <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                      Votre portfolio sera associé à cette candidature.
                     </p>
                   </div>
+
                   <a
                     href={`/portfolio/${portfolio.public_slug}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="shrink-0 rounded-lg border border-emerald-300 bg-white p-2 text-emerald-600 transition hover:bg-emerald-100"
-                    title="Voir le portfolio"
+                    aria-label="Voir mon portfolio"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#6EE7C8] bg-white text-[#087F70] transition hover:bg-[#E5FAF3]"
                   >
-                    <ExternalLink size={14} />
+                    <ArrowUpRight size={18} />
                   </a>
                 </div>
               ) : (
-                <div className="flex items-start gap-3 rounded-xl border border-dashed border-amber-300 bg-amber-50 p-4">
-                  <AlertCircle size={16} className="mt-0.5 shrink-0 text-amber-500" />
-                  <div className="min-w-0 flex-1 text-sm text-amber-900">
-                    <p className="font-semibold">Aucun portfolio à joindre</p>
-                    <p className="mt-0.5 text-xs text-amber-700">
-                      Votre candidature partira sans portfolio.
+                <div className="flex items-start gap-3 rounded-2xl border border-dashed border-amber-200 bg-amber-50/70 p-4">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                    <AlertCircle size={17} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-[#0F1E45]">
+                      Aucun portfolio disponible
+                    </p>
+                    <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                      Vous pouvez tout de même envoyer votre candidature sans portfolio.
                     </p>
                     <a
                       href="/profile"
-                      className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-amber-700 underline hover:text-amber-900"
+                      className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-teal-700 hover:text-teal-900"
                     >
-                      Créer mon portfolio <ExternalLink size={10} />
+                      Créer mon portfolio <ExternalLink size={13} />
                     </a>
                   </div>
                 </div>
               )}
             </section>
 
-            {/* ---------- CV ---------- */}
+            {/* CV */}
             <section>
-              <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-500">
-                <FileText size={12} /> CV à joindre
-              </label>
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <label className={fieldLabel}>
+                  <FileText size={17} className="text-teal-600" />
+                  Curriculum vitæ
+                </label>
+                <span className="text-xs text-slate-400">PDF, DOC, DOCX</span>
+              </div>
 
-              <div className="space-y-2">
-                {/* Option 1 : CV actuel */}
+              <div className="space-y-3">
                 {hasCv && (
-                  <label className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition ${
-                    useExistingCv
-                      ? "border-emerald-500 bg-emerald-50"
-                      : "border-slate-200 bg-white hover:border-slate-300"
-                  }`}>
+                  <label
+                    className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition ${
+                      useExistingCv ? selectedOption : normalOption
+                    }`}
+                  >
                     <input
                       type="radio"
+                      name="cv-choice"
                       checked={useExistingCv}
                       onChange={() => setUseExistingCv(true)}
-                      className="h-4 w-4 accent-emerald-500"
+                      className="mt-1 h-4 w-4 accent-teal-600"
                     />
+
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-teal-700 shadow-sm ring-1 ring-slate-100">
+                      <FileText size={19} />
+                    </div>
+
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-slate-900">
+                      <p className="text-sm font-semibold text-[#0F1E45]">
                         Utiliser mon CV actuel
                       </p>
-                      <p className="mt-0.5 text-xs text-slate-500">
-                        Le CV enregistré dans votre profil sera joint
+                      <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                        Le document déjà enregistré dans votre profil.
                       </p>
                     </div>
-                    <span className="shrink-0 rounded-md bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">
-                      PDF
-                    </span>
+
+                    {useExistingCv && (
+                      <Check size={17} className="mt-0.5 shrink-0 text-teal-600" />
+                    )}
                   </label>
                 )}
 
-                {/* Option 2 : Nouveau CV */}
-                <label className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition ${
-                  !useExistingCv
-                    ? "border-emerald-500 bg-emerald-50"
-                    : "border-slate-200 bg-white hover:border-slate-300"
-                }`}>
+                <label
+                  className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition ${
+                    !useExistingCv ? selectedOption : normalOption
+                  }`}
+                >
                   <input
                     type="radio"
+                    name="cv-choice"
                     checked={!useExistingCv}
                     onChange={() => setUseExistingCv(false)}
-                    className="mt-1 h-4 w-4 accent-emerald-500"
+                    className="mt-1 h-4 w-4 accent-teal-600"
                   />
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-slate-900">
-                      Téléverser un autre CV
+
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-teal-700 shadow-sm ring-1 ring-slate-100">
+                    <Upload size={19} />
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-[#0F1E45]">
+                      Utiliser un autre CV
                     </p>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                      {cvFile ? cvFile.name : "PDF, DOC ou DOCX · 5 Mo max"}
+                    <p className="mt-1 break-words text-xs leading-relaxed text-slate-500">
+                      {cvFile
+                        ? cvFile.name
+                        : "Choisissez un fichier sur votre appareil (5 Mo maximum)."}
                     </p>
+
                     {!useExistingCv && (
-                      <label className="mt-2 inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-emerald-400 hover:text-emerald-600">
-                        <Upload size={12} />
+                      <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-[#6EE7C8] bg-white px-3.5 py-2 text-xs font-semibold text-[#087F70] transition hover:bg-[#E5FAF3]">
+                        <Upload size={14} />
                         {cvFile ? "Changer de fichier" : "Choisir un fichier"}
                         <input
                           type="file"
                           accept=".pdf,.doc,.docx"
-                          onChange={(e) => setCvFile(e.target.files[0])}
                           className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setCvFile(file);
+                              setError(null);
+                            }
+                            e.target.value = "";
+                          }}
                         />
                       </label>
                     )}
                   </div>
                 </label>
 
-                {!hasCv && !cvFile && (
-                  <p className="flex items-center gap-1.5 text-xs text-amber-600">
-                    <AlertCircle size={11} /> Aucun CV disponible. Téléversez-en un ci-dessus.
+                {!hasCv && (
+                  <p className="flex items-center gap-2 text-xs leading-relaxed text-slate-500">
+                    <AlertCircle size={14} className="shrink-0 text-amber-500" />
+                    Aucun CV n'est enregistré dans votre profil.
                   </p>
                 )}
               </div>
             </section>
 
-            {/* ---------- LETTRE DE MOTIVATION ---------- */}
+            {/* Lettre de motivation */}
             <section>
-              <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-500">
-                <Send size={12} /> Lettre de motivation *
-              </label>
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <label htmlFor="cover-letter" className={fieldLabel}>
+                  <Send size={17} className="text-teal-600" />
+                  Lettre de motivation
+                  <span className="text-rose-500">*</span>
+                </label>
+                <span className="text-xs text-slate-400">Obligatoire</span>
+              </div>
+
               <textarea
+                id="cover-letter"
                 required
                 rows={7}
+                maxLength={5000}
                 value={coverLetter}
                 onChange={(e) => setCoverLetter(e.target.value)}
-                placeholder="Expliquez pourquoi cette offre vous intéresse, ce que vous pouvez apporter, et vos motivations..."
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 transition focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                placeholder="Présentez votre intérêt pour cette offre, vos compétences et ce que vous pourriez apporter à l'équipe..."
+                className="w-full resize-y rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-4 text-sm leading-6 text-[#0F1E45] outline-none transition placeholder:text-slate-400 focus:border-[#6EE7C8] focus:bg-white focus:ring-4 focus:ring-[#6EE7C8]/20"
               />
-              <div className="mt-2 flex items-center justify-between text-xs">
-                <span className={coverLetter.length < 50 ? "text-amber-600" : "text-emerald-600"}>
-                  {coverLetter.length < 50
-                    ? `Encore ${50 - coverLetter.length} caractères minimum`
-                    : "✓ Longueur validée"}
+
+              <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
+                <span
+                  className={`inline-flex items-center gap-1.5 text-xs font-medium ${
+                    coverLetter.trim().length < 50
+                      ? "text-amber-600"
+                      : "text-teal-700"
+                  }`}
+                >
+                  {coverLetter.trim().length >= 50 && <Check size={13} />}
+                  {coverLetter.trim().length < 50
+                    ? `Encore ${50 - coverLetter.trim().length} caractères minimum`
+                    : "Votre lettre est prête"}
                 </span>
-                <span className="text-slate-400">
-                  {coverLetter.length} / 5000
+
+                <span
+                  className={`text-xs tabular-nums ${
+                    coverLetter.length >= 5000
+                      ? "font-semibold text-rose-600"
+                      : "text-slate-400"
+                  }`}
+                >
+                  {coverLetter.length.toLocaleString("fr-FR")} / 5 000
                 </span>
               </div>
             </section>
           </form>
 
-          {/* ==================== FOOTER ==================== */}
-          <div className="flex items-center justify-end gap-2 border-t border-slate-200 bg-slate-50 px-6 py-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-200"
-            >
-              Annuler
-            </button>
-            <button
-              type="button"
-              onClick={submit}
-              disabled={!canSubmit}
-              className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {sending ? (
-                <><Loader2 size={14} className="animate-spin" /> Envoi...</>
-              ) : (
-                <><Send size={14} /> Envoyer ma candidature</>
-              )}
-            </button>
+          {/* Pied de fenêtre */}
+          <div className="flex flex-col-reverse gap-3 border-t border-slate-100 bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+            <p className="hidden text-xs text-slate-400 sm:block">
+              Vérifiez vos informations avant l'envoi.
+            </p>
+
+            <div className="flex flex-col-reverse gap-2 sm:flex-row">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-[#0F1E45]"
+              >
+                Annuler
+              </button>
+
+              <button
+                type="submit"
+                form="application-form"
+                disabled={!canSubmit}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0F1E45] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1A3266] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:shadow-none"
+              >
+                {sending ? (
+                  <>
+                    <Loader2 size={17} className="animate-spin" />
+                    Envoi en cours...
+                  </>
+                ) : (
+                  <>
+                    Envoyer ma candidature
+                    <Send size={16} className="text-[#6EE7C8]" />
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {toast && <Toast message={toast.message} type={toast.type} onClose={closeToast} />}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={closeToast}
+        />
+      )}
     </>
   );
 }

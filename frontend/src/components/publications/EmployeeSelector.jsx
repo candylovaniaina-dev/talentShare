@@ -1,14 +1,13 @@
+
 import React from "react";
 import { Plus, ChevronRight } from "lucide-react";
 
-/* ============================================
-   AVATAR LOCAL
-============================================ */
 function Avatar({ path, name, size = "md" }) {
   const sizes = {
     sm: "h-9 w-9 text-xs",
     md: "h-11 w-11 text-sm",
   };
+
   const initials = (name || "?")
     .split(" ")
     .map((n) => n[0])
@@ -19,80 +18,96 @@ function Avatar({ path, name, size = "md" }) {
   if (path) {
     return (
       <img
-        src={`http://localhost:8000/storage/${path}`}
+        src={`http://localhost:8001/storage/${path}`}
         alt={name}
-        className={`${sizes[size]} shrink-0 rounded-full border border-[var(--border-app)] object-cover`}
+        className={`${sizes[size]} shrink-0 rounded-full border border-slate-200 object-cover`}
       />
     );
   }
 
   return (
-    <div className={`${sizes[size]} flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 font-bold text-white`}>
+    <div
+      className={`${sizes[size]} flex shrink-0 items-center justify-center rounded-full bg-teal-700 font-semibold text-white`}
+      aria-label={name}
+    >
       {initials}
     </div>
   );
 }
 
-/* ============================================
-   COMPOSANT
-============================================ */
 export default function EmployeeSelector({ employee, onOpenPicker }) {
-  // Fonction utilitaire pour extraire nom + avatar + poste
   const getInfo = (emp) => {
     if (!emp) return null;
-    const name = emp.user?.name || `${emp.first_name || ""} ${emp.last_name || ""}`.trim() || "Salarié";
-    const position = emp.position || emp.user?.professional_profile?.headline || "Poste non défini";
+
+    const name =
+      emp.user?.name ||
+      `${emp.first_name || ""} ${emp.last_name || ""}`.trim() ||
+      "Salarié";
+
+    const position =
+      emp.position ||
+      emp.user?.professional_profile?.headline ||
+      emp.user?.professionalProfile?.headline ||
+      "Poste non défini";
+
     const avatar =
       emp.photo_path ||
       emp.user?.professional_profile?.avatar_path ||
       emp.user?.professionalProfile?.avatar_path;
+
     return { name, position, avatar };
   };
 
   const info = getInfo(employee);
 
-  // ===== ÉTAT VIDE =====
   if (!employee) {
     return (
       <button
         type="button"
         onClick={onOpenPicker}
-        className="group flex w-full items-center gap-3 rounded-xl border border-dashed border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-4 py-3.5 text-left transition hover:border-emerald-500/40 hover:bg-[var(--bg-surface)]"
+        className="group flex w-full items-center gap-4 rounded-xl border border-dashed border-slate-300 bg-white p-4 text-left transition-all duration-200 hover:border-teal-500 hover:bg-teal-50/40 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
       >
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 transition group-hover:bg-emerald-500/20">
-          <Plus size={16} />
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-teal-100 bg-teal-50 text-teal-700 transition group-hover:bg-teal-100">
+          <Plus size={19} strokeWidth={1.8} />
         </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-[var(--text-app)]">
+
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold text-slate-900">
             Sélectionner un salarié
-          </p>
-          <p className="text-[11px] text-[var(--text-faint)]">
+          </span>
+          <span className="mt-1 block text-xs text-slate-500">
             Choisissez un talent à proposer
-          </p>
-        </div>
-        <ChevronRight size={16} className="shrink-0 text-[var(--text-faint)] transition group-hover:translate-x-0.5 group-hover:text-emerald-400" />
+          </span>
+        </span>
+
+        <ChevronRight
+          size={18}
+          className="shrink-0 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-teal-700"
+        />
       </button>
     );
   }
 
-  // ===== ÉTAT REMPLI =====
   return (
     <button
       type="button"
       onClick={onOpenPicker}
-      className="group flex w-full items-center gap-3 rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-4 py-3.5 text-left transition hover:border-emerald-500/40 hover:bg-[var(--bg-surface)]"
+      className="group flex w-full items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 text-left transition-all duration-200 hover:border-teal-300 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
     >
       <Avatar path={info.avatar} name={info.name} size="md" />
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-bold text-[var(--text-app)]">
+
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-semibold text-slate-900">
           {info.name}
-        </p>
-        <p className="truncate text-[11px] text-[var(--text-muted)]">
+        </span>
+        <span className="mt-1 block truncate text-xs text-slate-500">
           {info.position}
-        </p>
-      </div>
-      <span className="shrink-0 text-[11px] font-semibold text-emerald-400 transition group-hover:text-emerald-300">
-        Changer →
+        </span>
+      </span>
+
+      <span className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-teal-700 transition group-hover:text-teal-900">
+        Changer
+        <ChevronRight size={14} />
       </span>
     </button>
   );

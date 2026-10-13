@@ -313,7 +313,7 @@ export default function Profile() {
   >
     {profile.cover_path && (
       <img
-        src={`http://localhost:8000/storage/${profile.cover_path}`}
+        src={`http://localhost:8001/storage/${profile.cover_path}`}
         alt="cover"
         className="h-full w-full object-cover"
       />
@@ -344,7 +344,7 @@ export default function Profile() {
       >
         {profile.avatar_path ? (
           <img
-            src={`http://localhost:8000/storage/${profile.avatar_path}`}
+            src={`http://localhost:8001/storage/${profile.avatar_path}`}
             alt="avatar"
             className="h-28 w-28 rounded-full border-4 border-[var(--bg-surface)] object-cover shadow-xl"
           />
@@ -462,7 +462,7 @@ export default function Profile() {
 
       {profile.cv_path && (
         <a
-          href={`http://localhost:8000/storage/${profile.cv_path}`}
+          href={`http://localhost:8001/storage/${profile.cv_path}`}
           target="_blank"
           rel="noreferrer"
           className="inline-flex items-center gap-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-1.5 text-xs font-medium text-rose-400 transition hover:bg-rose-500/20"
