@@ -1,42 +1,98 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-    <meta charset="utf-8">
-    <style>
-        body { font-family: -apple-system, Arial, sans-serif; background: #0A1229; padding: 24px; color: #fff; margin: 0; }
-        .card { max-width: 480px; margin: 0 auto; background: #0F1E45; border-radius: 16px; padding: 32px; }
-        .badge { display: inline-block; background: rgba(16,185,129,0.15); color: #34d399; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 4px 10px; border-radius: 999px; }
-        h1 { font-size: 20px; margin: 16px 0 4px; color: #fff; }
-        p { color: #cbd5e1; font-size: 14px; line-height: 1.6; }
-        .box { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 16px; margin: 20px 0; }
-        .box p { margin: 4px 0; color: #e2e8f0; }
-        .btn { display: inline-block; background: #34d399; color: #0A1229 !important; text-decoration: none; font-weight: 700; padding: 12px 24px; border-radius: 999px; margin-top: 16px; font-size: 14px; }
-        .footer { text-align: center; color: #64748b; font-size: 11px; margin-top: 24px; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entretien confirmé</title>
 </head>
-<body>
-    <div class="card">
-        <span class="badge">Entretien confirmé</span>
-        <h1>Bonjour {{ $recruiterName }},</h1>
-        <p>
-            Vous avez programmé un entretien avec <strong>{{ $candidate->name }}</strong>
-            pour le poste <strong>« {{ $offer->title }} »</strong>.
-        </p>
+<body style="margin:0; padding:0; background:#0A1229; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#0A1229; padding:40px 16px;">
+  <tr>
+    <td align="center">
+      <table width="520" cellpadding="0" cellspacing="0" style="background:#0F1E45; border-radius:16px; overflow:hidden; border:1px solid rgba(255,255,255,0.06);">
 
-        <div class="box">
-            <p><strong>Candidat :</strong> {{ $candidate->name }} ({{ $candidate->email }})</p>
-            <p><strong>Date :</strong> {{ $application->interview_at->locale('fr')->isoFormat('dddd D MMMM YYYY') }}</p>
-            <p><strong>Heure :</strong> {{ $application->interview_at->format('H:i') }} (heure de Madagascar)</p>
-        </div>
+        <tr>
+          <td style="padding:40px 40px 32px 40px;">
 
-        <a href="{{ $application->interview_link }}" class="btn">Rejoindre l'entretien</a>
+            <p style="margin:0 0 20px 0;">
+              <span style="display:inline-block; background:rgba(52,211,153,0.12); color:#34D399; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; padding:6px 12px; border-radius:999px;">
+                Entretien confirmé
+              </span>
+            </p>
 
-        <p style="margin-top:20px;">
-            Un fichier joint vous permet d'ajouter ce rendez-vous à votre calendrier.
-            Le candidat a reçu le même lien de visioconférence : vous serez dans la même salle.
-        </p>
+            <h1 style="margin:0 0 16px 0; color:#FFFFFF; font-size:22px; font-weight:700; line-height:1.35; letter-spacing:-0.3px;">
+              Bonjour {{ $recruiterName }},
+            </h1>
 
-        <div class="footer">TalentShare — notification automatique.</div>
-    </div>
+            <p style="margin:0 0 28px 0; color:#CBD5E1; font-size:15px; line-height:1.7;">
+              Vous avez programmé un entretien avec <strong style="color:#FFFFFF;">{{ $candidate->name }}</strong>
+              pour le poste <strong style="color:#FFFFFF;">«&nbsp;{{ $offer->title }}&nbsp;»</strong>.
+            </p>
+
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; margin-bottom:28px;">
+              <tr>
+                <td style="padding:20px 22px;">
+                  <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="padding:6px 0; color:#94A3B8; font-size:13px; font-weight:600; width:100px;">
+                        Candidat
+                      </td>
+                      <td style="padding:6px 0; color:#E2E8F0; font-size:14px; font-weight:500;">
+                        {{ $candidate->name }}
+                        <span style="color:#94A3B8; font-weight:400;">&lt;{{ $candidate->email }}&gt;</span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:6px 0; color:#94A3B8; font-size:13px; font-weight:600;">
+                        Date
+                      </td>
+                      <td style="padding:6px 0; color:#E2E8F0; font-size:14px; font-weight:500;">
+                        {{ $application->interview_at->locale('fr')->isoFormat('dddd D MMMM YYYY') }}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:6px 0; color:#94A3B8; font-size:13px; font-weight:600;">
+                        Heure
+                      </td>
+                      <td style="padding:6px 0; color:#E2E8F0; font-size:14px; font-weight:500;">
+                        {{ $application->interview_at->format('H:i') }} <span style="color:#94A3B8; font-weight:400;">(heure de Madagascar)</span>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+
+            <table cellpadding="0" cellspacing="0" style="margin:0 0 32px 0;">
+              <tr>
+                <td align="center" style="border-radius:999px; background:#34D399;">
+                  <a href="{{ $application->interview_link }}"
+                     style="display:inline-block; padding:14px 36px; color:#0A1229; text-decoration:none; font-weight:700; font-size:14px; letter-spacing:0.2px; border-radius:999px;">
+                    Rejoindre l'entretien
+                  </a>
+                </td>
+              </tr>
+            </table>
+
+            <p style="margin:0; color:#94A3B8; font-size:13px; line-height:1.7;">
+              Un fichier joint vous permet d'ajouter ce rendez-vous à votre calendrier.
+              Le candidat a reçu le même lien de visioconférence : vous serez dans la même salle.
+            </p>
+
+          </td>
+        </tr>
+
+        <tr>
+          <td style="background:rgba(0,0,0,0.2); padding:20px 40px; text-align:center; border-top:1px solid rgba(255,255,255,0.05);">
+            <p style="margin:0; color:#64748B; font-size:11px; line-height:1.6;">
+              TalentShare — notification automatique.
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
 </body>
 </html>

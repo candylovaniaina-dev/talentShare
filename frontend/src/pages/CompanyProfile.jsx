@@ -41,6 +41,8 @@ const TABS = [
   { id: "feed",     label: "Actualité", icon: Sparkles, color: "text-blue-400" },
 ];
 
+const API_BASE = "http://localhost:8001";
+
 /* ============================================
    UI HELPERS
 ============================================ */
@@ -58,7 +60,16 @@ function Field({ label, icon: Icon, children }) {
 }
 
 /* ============================================
-   AVATAR
+   HELPERS : construit une URL d'image absolue
+============================================ */
+function buildImageUrl(pathOrUrl, fallback = null) {
+  if (!pathOrUrl) return fallback;
+  if (pathOrUrl.startsWith("http")) return pathOrUrl;
+  return `${API_BASE}/storage/${pathOrUrl}`;
+}
+
+/* ============================================
+   AVATAR — accepte un chemin OU une URL complète
 ============================================ */
 function Avatar({ path, name, size = "md", rounded = "full" }) {
   const sizes = {
@@ -76,20 +87,23 @@ function Avatar({ path, name, size = "md", rounded = "full" }) {
     .slice(0, 2)
     .toUpperCase();
 
-  if (path) {
+  const [error, setError] = React.useState(false);
+
+  if (!path || error) {
     return (
-      <img
-        src={`http://localhost:8001/storage/${path}`}
-        alt={name}
-        className={`${sizes[size]} shrink-0 ${roundedCls} border border-[var(--border-app)] object-cover`}
-      />
+      <div className={`${sizes[size]} ${roundedCls} flex shrink-0 items-center justify-center bg-gradient-to-br from-emerald-400 to-emerald-600 font-bold text-white`}>
+        {initials}
+      </div>
     );
   }
 
   return (
-    <div className={`${sizes[size]} ${roundedCls} flex shrink-0 items-center justify-center bg-gradient-to-br from-emerald-400 to-emerald-600 font-bold text-white`}>
-      {initials}
-    </div>
+    <img
+      src={buildImageUrl(path)}
+      alt={name}
+      onError={() => setError(true)}
+      className={`${sizes[size]} shrink-0 ${roundedCls} border border-[var(--border-app)] object-cover`}
+    />
   );
 }
 
@@ -218,30 +232,15 @@ function AddTestimonialModal({ onClose, onSuccess }) {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-3 border-b border-[var(--border-app)] px-6 py-5">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
-              Nouveau témoignage
-            </p>
-            <h2 className="mt-0.5 text-xl font-bold text-[var(--text-app)]">
-              Ajouter un témoignage
-            </h2>
-            <p className="mt-1 text-xs text-[var(--text-muted)]">
-              Partagez votre expérience avec cette entreprise.
-            </p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Nouveau témoignage</p>
+            <h2 className="mt-0.5 text-xl font-bold text-[var(--text-app)]">Ajouter un témoignage</h2>
+            <p className="mt-1 text-xs text-[var(--text-muted)]">Partagez votre expérience avec cette entreprise.</p>
           </div>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-1.5 text-[var(--text-faint)] transition hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-app)]"
-          >
+          <button onClick={onClose} className="rounded-lg p-1.5 text-[var(--text-faint)] transition hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-app)]">
             <X size={18} />
           </button>
         </div>
@@ -256,47 +255,22 @@ function AddTestimonialModal({ onClose, onSuccess }) {
 
           <div className="grid grid-cols-2 gap-3">
             <Field icon={Users} label="Nom de la personne *">
-              <input
-                required
-                value={author}
-                onChange={(e) => setAuthor(e.target.value)}
-                placeholder="Ex: Jean Dupont"
-                className={inputCls}
-              />
+              <input required value={author} onChange={(e) => setAuthor(e.target.value)} placeholder="Ex: Jean Dupont" className={inputCls} />
             </Field>
             <Field icon={Briefcase} label="Poste / relation">
-              <input
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                placeholder="Ex: Directeur RH"
-                className={inputCls}
-              />
+              <input value={role} onChange={(e) => setRole(e.target.value)} placeholder="Ex: Directeur RH" className={inputCls} />
             </Field>
           </div>
 
           <Field icon={Quote} label="Témoignage *">
-            <textarea
-              required
-              rows={5}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder="Décrivez votre expérience avec cette entreprise..."
-              className={inputCls}
-            />
-            <p className="mt-1 text-[10px] text-[var(--text-faint)]">
-              {text.length} caractère{text.length > 1 ? "s" : ""}
-            </p>
+            <textarea required rows={5} value={text} onChange={(e) => setText(e.target.value)} placeholder="Décrivez votre expérience avec cette entreprise..." className={inputCls} />
+            <p className="mt-1 text-[10px] text-[var(--text-faint)]">{text.length} caractère{text.length > 1 ? "s" : ""}</p>
           </Field>
 
           <Field icon={Star} label="Note">
             <div className="flex items-center gap-2 pt-1">
               {[1, 2, 3, 4, 5].map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  onClick={() => setRating(n)}
-                  className="text-amber-400 transition hover:scale-110"
-                >
+                <button key={n} type="button" onClick={() => setRating(n)} className="text-amber-400 transition hover:scale-110">
                   <Star size={22} fill={n <= rating ? "currentColor" : "none"} />
                 </button>
               ))}
@@ -306,18 +280,10 @@ function AddTestimonialModal({ onClose, onSuccess }) {
         </form>
 
         <div className="flex items-center justify-end gap-2 border-t border-[var(--border-app)] px-6 py-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg px-4 py-2 text-sm text-[var(--text-muted)] transition hover:bg-[var(--bg-surface-hover)]"
-          >
+          <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-[var(--text-muted)] transition hover:bg-[var(--bg-surface-hover)]">
             Annuler
           </button>
-          <button
-            type="button"
-            onClick={submit}
-            className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400"
-          >
+          <button type="button" onClick={submit} className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400">
             <CheckCircle size={14} />
             Publier le témoignage
           </button>
@@ -369,7 +335,6 @@ export default function CompanyProfile() {
     if (activeTab === "requests") loadOtherRequests();
   }, [company, activeTab]);
 
-  // ✅ Accueil → uniquement mes offres
   const loadHome = async () => {
     try {
       setLoadingFeed(true);
@@ -384,7 +349,6 @@ export default function CompanyProfile() {
     }
   };
 
-  // ✅ Demandes des autres entreprises
   const loadOtherRequests = async () => {
     try {
       setLoadingRequests(true);
@@ -402,7 +366,6 @@ export default function CompanyProfile() {
     }
   };
 
-  // ✅ Actualité → tout (offres + demandes, entreprises + talents)
   const loadActualite = async () => {
     try {
       setLoadingFeed(true);
@@ -550,7 +513,7 @@ export default function CompanyProfile() {
             </p>
             <button
               onClick={() => setShowFormModal(true)}
-              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400"
+              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400"
             >
               <Plus size={15} /> Créer mon entreprise
             </button>
@@ -577,11 +540,15 @@ export default function CompanyProfile() {
                 className="group relative inline-block cursor-pointer"
                 onClick={() => fileInputRef.current?.click()}
               >
-                {company.logo_path ? (
+                {/* ✅ LOGO : utilise logo_url, fallback logo_path, sinon initiale */}
+                {company.logo_url || company.logo_path ? (
                   <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg border-4 border-[var(--bg-surface)] bg-white shadow-lg">
                     <img
-                      src={`http://localhost:8001/storage/${company.logo_path}`}
+                      src={buildImageUrl(company.logo_url || company.logo_path)}
                       alt={company.name}
+                      onError={(e) => {
+                        e.target.style.display = "none";
+                      }}
                       className="h-full w-full object-contain"
                     />
                   </div>
@@ -698,10 +665,9 @@ export default function CompanyProfile() {
         {/* ============ COLONNE CENTRALE ============ */}
         <div className="min-w-0 space-y-4">
 
-          {/* Composer + onglets */}
           <div className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-4">
             <div className="flex items-center gap-3">
-              <Avatar path={company.logo_path} name={company.name} size="md" rounded="lg" />
+              <Avatar path={company.logo_url || company.logo_path} name={company.name} size="md" rounded="lg" />
               <button
                 onClick={() => setShowCreateOffer(true)}
                 className="flex-1 rounded-full border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-4 py-2.5 text-left text-sm text-[var(--text-muted)] transition hover:bg-[var(--bg-surface)] hover:border-emerald-500/40"
@@ -738,7 +704,7 @@ export default function CompanyProfile() {
             </div>
           </div>
 
-          {/* ============ ONGLET ACCUEIL ============ */}
+          {/* ONGLET ACCUEIL */}
           {activeTab === "home" && (
             <>
               {company.description && (
@@ -752,16 +718,12 @@ export default function CompanyProfile() {
                 </div>
               )}
 
-              {/* MES OFFRES PUBLIÉES */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between px-1">
                   <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
                     <Briefcase size={12} /> Mes offres publiées
                   </p>
-                  <button
-                    onClick={loadHome}
-                    className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300"
-                  >
+                  <button onClick={loadHome} className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300">
                     Rafraîchir
                   </button>
                 </div>
@@ -798,7 +760,6 @@ export default function CompanyProfile() {
 
               <TestimonialsSection companyId={company.id} />
 
-              {/* ACTIVITÉ RÉCENTE */}
               <div className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-5">
                 <p className="mb-4 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
                   <TrendingUp size={12} /> Activité récente
@@ -861,7 +822,7 @@ export default function CompanyProfile() {
             </>
           )}
 
-          {/* ============ ONGLET ÉQUIPE ============ */}
+          {/* ONGLET ÉQUIPE */}
           {activeTab === "team" && (
             <>
               <div className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-5">
@@ -887,12 +848,7 @@ export default function CompanyProfile() {
                 ) : (
                   <div className="grid gap-3 sm:grid-cols-2">
                     {members.map((member) => (
-                      <MemberCard
-                        key={member.id}
-                        member={member}
-                        onRemove={handleRemoveMember}
-                        onClick={(m) => setSelectedMember(m)}
-                      />
+                      <MemberCard key={member.id} member={member} onRemove={handleRemoveMember} onClick={(m) => setSelectedMember(m)} />
                     ))}
                   </div>
                 )}
@@ -921,12 +877,7 @@ export default function CompanyProfile() {
                 ) : (
                   <div className="grid gap-3 sm:grid-cols-2">
                     {employees.map((emp) => (
-                      <EmployeeCard
-                        key={emp.id}
-                        employee={emp}
-                        onRemove={handleRemoveEmployee}
-                        onClick={(e) => setSelectedEmployee(e)}
-                      />
+                      <EmployeeCard key={emp.id} employee={emp} onRemove={handleRemoveEmployee} onClick={(e) => setSelectedEmployee(e)} />
                     ))}
                   </div>
                 )}
@@ -934,17 +885,14 @@ export default function CompanyProfile() {
             </>
           )}
 
-          {/* ============ ONGLET DEMANDE ============ */}
+          {/* ONGLET DEMANDE */}
           {activeTab === "requests" && (
             <div className="space-y-4">
               <div className="flex items-center justify-between px-1">
                 <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
                   <Layers size={12} /> Demandes des autres entreprises
                 </p>
-                <button
-                  onClick={loadOtherRequests}
-                  className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300"
-                >
+                <button onClick={loadOtherRequests} className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300">
                   Rafraîchir
                 </button>
               </div>
@@ -958,12 +906,8 @@ export default function CompanyProfile() {
                   <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--bg-surface-hover)] text-[var(--text-faint)]">
                     <Layers size={22} />
                   </span>
-                  <p className="mt-3 text-sm font-semibold text-[var(--text-app)]">
-                    Aucune demande pour le moment
-                  </p>
-                  <p className="mt-1 text-xs text-[var(--text-muted)]">
-                    Les autres entreprises n'ont pas encore publié de besoins.
-                  </p>
+                  <p className="mt-3 text-sm font-semibold text-[var(--text-app)]">Aucune demande pour le moment</p>
+                  <p className="mt-1 text-xs text-[var(--text-muted)]">Les autres entreprises n'ont pas encore publié de besoins.</p>
                 </div>
               ) : (
                 otherRequests.map((r) => (
@@ -973,17 +917,14 @@ export default function CompanyProfile() {
             </div>
           )}
 
-          {/* ============ ONGLET ACTUALITÉ ============ */}
+          {/* ONGLET ACTUALITÉ */}
           {activeTab === "feed" && (
             <div className="space-y-4">
               <div className="flex items-center justify-between px-1">
                 <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
                   <Sparkles size={12} /> Actualité du réseau
                 </p>
-                <button
-                  onClick={loadActualite}
-                  className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300"
-                >
+                <button onClick={loadActualite} className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300">
                   Rafraîchir
                 </button>
               </div>
@@ -997,12 +938,8 @@ export default function CompanyProfile() {
                   <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--bg-surface-hover)] text-[var(--text-faint)]">
                     <Sparkles size={22} />
                   </span>
-                  <p className="mt-3 text-sm font-semibold text-[var(--text-app)]">
-                    Aucune actualité pour le moment
-                  </p>
-                  <p className="mt-1 text-xs text-[var(--text-muted)]">
-                    Revenez plus tard pour voir les publications du réseau.
-                  </p>
+                  <p className="mt-3 text-sm font-semibold text-[var(--text-app)]">Aucune actualité pour le moment</p>
+                  <p className="mt-1 text-xs text-[var(--text-muted)]">Revenez plus tard pour voir les publications du réseau.</p>
                 </div>
               ) : (
                 <>
@@ -1048,9 +985,7 @@ export default function CompanyProfile() {
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400">
               <Sparkles size={14} />
             </span>
-            <p className="mt-3 text-sm font-bold text-[var(--text-app)]">
-              Complétez votre profil
-            </p>
+            <p className="mt-3 text-sm font-bold text-[var(--text-app)]">Complétez votre profil</p>
             <p className="mt-1 text-xs leading-relaxed text-[var(--text-muted)]">
               Une entreprise complète attire 3x plus de candidatures.
             </p>
@@ -1138,10 +1073,7 @@ export default function CompanyProfile() {
       )}
 
       {selectedEmployee && (
-        <EmployeeDetailModal
-          employee={selectedEmployee}
-          onClose={() => setSelectedEmployee(null)}
-        />
+        <EmployeeDetailModal employee={selectedEmployee} onClose={() => setSelectedEmployee(null)} />
       )}
 
       {selectedMember && (
@@ -1179,7 +1111,7 @@ export default function CompanyProfile() {
 }
 
 /* ============================================
-   CARTE DEMANDE — adaptatif talent / entreprise
+   CARTE DEMANDE
 ============================================ */
 function RequestFeedCard({ request, currentUser }) {
   const { showToast } = useToast();
@@ -1270,10 +1202,7 @@ function RequestFeedCard({ request, currentUser }) {
       setCommentText("");
       showToast("Commentaire ajouté ✅", "success");
     } catch (err) {
-      showToast(
-        err.response?.data?.message || `Erreur ${err.response?.status || ""}`,
-        "error"
-      );
+      showToast(err.response?.data?.message || `Erreur ${err.response?.status || ""}`, "error");
     } finally {
       setPostingComment(false);
     }
@@ -1301,19 +1230,18 @@ function RequestFeedCard({ request, currentUser }) {
       <span className={`absolute inset-y-0 left-0 w-[3px] ${isUrgent ? "bg-rose-500" : "bg-amber-500"}`} />
 
       <div className="p-5 pl-6">
-        {/* Header : auteur (talent OU entreprise) */}
         <div className="flex items-start gap-3">
           {isTalent ? (
             <>
-             <Avatar
-  path={
-    author?.professional_profile?.avatar_path ||   // ✅ On cherche dans le profil pro
-    author?.professionalProfile?.avatar_path ||
-    author?.avatar_path                             // Fallback users.avatar_path
-  }
-  name={author?.name || "Talent"}
-  size="md"
-/>
+              <Avatar
+                path={
+                  author?.professional_profile?.avatar_path ||
+                  author?.professionalProfile?.avatar_path ||
+                  author?.avatar_path
+                }
+                name={author?.name || "Talent"}
+                size="md"
+              />
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="truncate text-sm font-semibold text-[var(--text-app)]">
@@ -1346,7 +1274,7 @@ function RequestFeedCard({ request, currentUser }) {
             </>
           ) : (
             <>
-              <Avatar path={company?.logo_path} name={company?.name || "Entreprise"} size="md" rounded="lg" />
+              <Avatar path={company?.logo_url || company?.logo_path} name={company?.name || "Entreprise"} size="md" rounded="lg" />
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="truncate text-sm font-semibold text-[var(--text-app)]">
@@ -1377,7 +1305,6 @@ function RequestFeedCard({ request, currentUser }) {
           )}
         </div>
 
-        {/* Titre + description */}
         <div className="mt-4">
           <h3 className="text-base font-bold leading-snug text-[var(--text-app)] transition group-hover:text-amber-400">
             {request.title}
@@ -1389,7 +1316,6 @@ function RequestFeedCard({ request, currentUser }) {
           )}
         </div>
 
-        {/* Meta */}
         <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs">
           {hasBudget && (
             <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 font-semibold text-emerald-400">
@@ -1409,7 +1335,6 @@ function RequestFeedCard({ request, currentUser }) {
           )}
         </div>
 
-        {/* Compétences */}
         {hasSkills && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {request.skills.slice(0, 5).map((s) => (
@@ -1428,7 +1353,6 @@ function RequestFeedCard({ request, currentUser }) {
           </div>
         )}
 
-        {/* Compteur likes */}
         {likesCount > 0 && (
           <div className="mt-3 flex items-center gap-1.5 text-[11px] text-[var(--text-faint)]">
             <span className="flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-white">
@@ -1438,7 +1362,6 @@ function RequestFeedCard({ request, currentUser }) {
           </div>
         )}
 
-        {/* ✅ Actions : J'aime · Commenter · Partager · Proposer/Contacter */}
         <div className="mt-2 flex items-center gap-1 border-t border-[var(--border-app)] pt-3">
           <button
             onClick={handleLike}
@@ -1471,7 +1394,6 @@ function RequestFeedCard({ request, currentUser }) {
 
           {!isOwner && (
             <>
-              {/* ✅ TALENT → Proposer (candidater) */}
               {(currentUser?.role === "employee" || currentUser?.role === "student") && (
                 <Link
                   to={`/resource-requests/${request.id}`}
@@ -1482,7 +1404,6 @@ function RequestFeedCard({ request, currentUser }) {
                 </Link>
               )}
 
-              {/* ✅ ENTREPRISE → Contacter */}
               {currentUser?.role === "company" && (
                 <button
                   onClick={() => {
@@ -1501,7 +1422,6 @@ function RequestFeedCard({ request, currentUser }) {
           )}
         </div>
 
-        {/* ✅ Zone commentaires inline */}
         {showComments && (
           <div className="mt-3 border-t border-[var(--border-app)] pt-3">
             <form onSubmit={submitComment} className="flex items-center gap-2">
@@ -1516,7 +1436,7 @@ function RequestFeedCard({ request, currentUser }) {
               <button
                 type="submit"
                 disabled={postingComment || !commentText.trim()}
-                className="rounded-full bg-amber-500 p-1.5 text-[#0A1229] transition hover:bg-amber-400 disabled:opacity-40"
+                className="rounded-full bg-amber-500 p-1.5 text-[#0B1F33] transition hover:bg-amber-400 disabled:opacity-40"
               >
                 {postingComment ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
               </button>
@@ -1528,21 +1448,15 @@ function RequestFeedCard({ request, currentUser }) {
                   <Loader2 size={16} className="animate-spin text-amber-400" />
                 </div>
               ) : comments.length === 0 ? (
-                <p className="py-2 text-center text-[11px] text-[var(--text-faint)]">
-                  Aucun commentaire pour le moment
-                </p>
+                <p className="py-2 text-center text-[11px] text-[var(--text-faint)]">Aucun commentaire pour le moment</p>
               ) : (
                 comments.map((c) => (
                   <div key={c.id} className="flex gap-2">
                     <Avatar path={c.user?.avatar_path} name={c.user?.name || "?"} size="xs" />
                     <div className="flex-1 rounded-2xl bg-[var(--bg-surface-hover)] px-3 py-2">
-                      <p className="text-[11px] font-bold text-[var(--text-app)]">
-                        {c.user?.name || "Utilisateur"}
-                      </p>
+                      <p className="text-[11px] font-bold text-[var(--text-app)]">{c.user?.name || "Utilisateur"}</p>
                       <p className="mt-0.5 text-xs text-[var(--text-muted)]">{c.content}</p>
-                      <p className="mt-1 text-[10px] text-[var(--text-faint)]">
-                        {timeAgo(c.created_at)}
-                      </p>
+                      <p className="mt-1 text-[10px] text-[var(--text-faint)]">{timeAgo(c.created_at)}</p>
                     </div>
                   </div>
                 ))
@@ -1640,10 +1554,7 @@ function EmployeeDetailModal({ employee, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
-      <div
-        className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-[var(--border-app)] px-6 py-4">
           <p className="text-sm font-bold text-[var(--text-app)]">Détails du salarié</p>
           <button onClick={onClose} className="rounded-lg p-1.5 text-[var(--text-faint)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-app)]">
@@ -1733,10 +1644,7 @@ function MemberDetailModal({ member, companyId, onClose, onPhotoUpdated }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
-      <div
-        className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-[var(--border-app)] px-6 py-4">
           <p className="text-sm font-bold text-[var(--text-app)]">Détails du membre</p>
           <button onClick={onClose} className="rounded-lg p-1.5 text-[var(--text-faint)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-app)]">
@@ -1746,10 +1654,7 @@ function MemberDetailModal({ member, companyId, onClose, onPhotoUpdated }) {
 
         <div className="flex-1 overflow-y-auto p-6">
           <div className="flex flex-col items-center text-center">
-            <div
-              className="group relative cursor-pointer"
-              onClick={() => photoInputRef.current?.click()}
-            >
+            <div className="group relative cursor-pointer" onClick={() => photoInputRef.current?.click()}>
               <Avatar path={avatar} name={name} size="xl" />
               <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 transition group-hover:opacity-100">
                 {uploading ? <Loader2 size={20} className="animate-spin text-white" /> : <Camera size={20} className="text-white" />}
@@ -1775,9 +1680,7 @@ function MemberDetailModal({ member, companyId, onClose, onPhotoUpdated }) {
             </div>
           )}
 
-          <p className="mt-4 text-center text-[10px] text-[var(--text-faint)]">
-            Cliquez sur la photo pour la modifier
-          </p>
+          <p className="mt-4 text-center text-[10px] text-[var(--text-faint)]">Cliquez sur la photo pour la modifier</p>
         </div>
       </div>
     </div>
@@ -1816,10 +1719,7 @@ function AllPeopleModal({ title, subtitle, icon: Icon, people, type, onClose, on
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
-      <div
-        className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-3 border-b border-[var(--border-app)] px-6 py-5">
           <div className="flex items-start gap-3">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">
@@ -1877,12 +1777,8 @@ function AllPeopleModal({ title, subtitle, icon: Icon, people, type, onClose, on
                     <div className="flex flex-col items-center text-center">
                       <Avatar path={avatar} name={name} size="lg" />
                       <p className="mt-3 line-clamp-1 text-sm font-bold text-[var(--text-app)]">{name}</p>
-                      {subtitle && (
-                        <p className="mt-0.5 line-clamp-1 text-[11px] text-[var(--text-muted)]">{subtitle}</p>
-                      )}
-                      {email && (
-                        <p className="mt-0.5 line-clamp-1 text-[10px] text-[var(--text-faint)]">{email}</p>
-                      )}
+                      {subtitle && <p className="mt-0.5 line-clamp-1 text-[11px] text-[var(--text-muted)]">{subtitle}</p>}
+                      {email && <p className="mt-0.5 line-clamp-1 text-[10px] text-[var(--text-faint)]">{email}</p>}
                     </div>
                   </div>
                 );
@@ -1899,7 +1795,7 @@ function AllPeopleModal({ title, subtitle, icon: Icon, people, type, onClose, on
             <button onClick={onClose} className="rounded-lg border border-[var(--border-app)] px-4 py-2 text-sm font-medium text-[var(--text-app)] transition hover:bg-[var(--bg-surface-hover)]">
               Fermer
             </button>
-            <button onClick={onAdd} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400">
+            <button onClick={onAdd} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400">
               <Plus size={14} /> Ajouter
             </button>
           </div>
@@ -2013,7 +1909,7 @@ function CompanyFormModal({ company, onClose, onSuccess }) {
             Annuler
           </button>
           <button type="button" onClick={submit} disabled={saving}
-            className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400 disabled:opacity-50">
+            className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400 disabled:opacity-50">
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
             {saving ? "..." : isEditing ? "Enregistrer" : "Créer"}
           </button>
@@ -2049,7 +1945,7 @@ function AddMemberModal({ companyId, onClose, onSuccess }) {
         .then((res) => {
           const u = res.data;
           setSuggestedUser(u);
-          if (u.avatar_path) setAvatarPreview(`http://localhost:8001/storage/${u.avatar_path}`);
+          if (u.avatar_path) setAvatarPreview(`/storage/${u.avatar_path}`);
         })
         .catch(() => setSuggestedUser(null))
         .finally(() => setSearching(false));
@@ -2155,7 +2051,7 @@ function AddMemberModal({ companyId, onClose, onSuccess }) {
           <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-[var(--text-muted)] hover:bg-[var(--bg-surface-hover)]">
             Annuler
           </button>
-          <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400 disabled:opacity-50">
+          <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400 disabled:opacity-50">
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} Ajouter
           </button>
         </div>
@@ -2199,7 +2095,7 @@ function AddEmployeeModal({ companyId, onClose, onSuccess }) {
             phone: prev.phone || u.phone || "",
             position: prev.position || u.headline || "",
           }));
-          if (u.avatar_path) setAvatarPreview(`http://localhost:8001/storage/${u.avatar_path}`);
+          if (u.avatar_path) setAvatarPreview(`/storage/${u.avatar_path}`);
         })
         .catch(() => setSuggestedUser(null))
         .finally(() => setSearching(false));
@@ -2317,7 +2213,7 @@ function AddEmployeeModal({ companyId, onClose, onSuccess }) {
           <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-[var(--text-muted)] hover:bg-[var(--bg-surface-hover)]">
             Annuler
           </button>
-          <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400 disabled:opacity-50">
+          <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400 disabled:opacity-50">
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} Ajouter
           </button>
         </div>
@@ -2327,7 +2223,7 @@ function AddEmployeeModal({ companyId, onClose, onSuccess }) {
 }
 
 /* ============================================
-   MODAL : Créer une offre d'emploi
+   MODAL : Créer une offre
 ============================================ */
 function CreateOfferModal({ company, onClose, onSuccess }) {
   const [form, setForm] = useState({
@@ -2376,12 +2272,8 @@ function CreateOfferModal({ company, onClose, onSuccess }) {
       <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-3 border-b border-[var(--border-app)] px-6 py-5">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
-              Nouvelle offre
-            </p>
-            <h2 className="mt-0.5 text-lg font-bold text-[var(--text-app)]">
-              Publier une offre
-            </h2>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Nouvelle offre</p>
+            <h2 className="mt-0.5 text-lg font-bold text-[var(--text-app)]">Publier une offre</h2>
             <p className="text-xs text-[var(--text-muted)]">pour {company.name}</p>
           </div>
           <button onClick={onClose} className="rounded-lg p-1.5 text-[var(--text-faint)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-app)]">
@@ -2440,7 +2332,7 @@ function CreateOfferModal({ company, onClose, onSuccess }) {
             <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-[var(--text-muted)] hover:bg-[var(--bg-surface-hover)]">
               Annuler
             </button>
-            <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400 disabled:opacity-50">
+            <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400 disabled:opacity-50">
               {saving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
               {saving ? "Publication..." : "Publier l'offre"}
             </button>
@@ -2560,10 +2452,7 @@ function OfferFeedCard({ offer, currentCompanyId, currentUser, onDeleted, onAppl
       showToast("Commentaire ajouté ✅", "success");
     } catch (err) {
       console.error("Erreur comment:", err.response?.status, err.response?.data);
-      showToast(
-        err.response?.data?.message || `Erreur ${err.response?.status || ""}`,
-        "error"
-      );
+      showToast(err.response?.data?.message || `Erreur ${err.response?.status || ""}`, "error");
     } finally {
       setPostingComment(false);
     }
@@ -2583,7 +2472,7 @@ function OfferFeedCard({ offer, currentCompanyId, currentUser, onDeleted, onAppl
   return (
     <div id={`offer-${offer.id}`} className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-4 transition hover:border-emerald-500/30">
       <div className="flex items-start gap-3">
-        <Avatar path={company?.logo_path} name={company?.name || "Entreprise"} size="md" rounded="lg" />
+        <Avatar path={company?.logo_url || company?.logo_path} name={company?.name || "Entreprise"} size="md" rounded="lg" />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <p className="truncate text-sm font-bold text-[var(--text-app)]">
@@ -2714,7 +2603,7 @@ function OfferFeedCard({ offer, currentCompanyId, currentUser, onDeleted, onAppl
             <button
               type="submit"
               disabled={postingComment || !commentText.trim()}
-              className="rounded-full bg-emerald-500 p-1.5 text-[#0A1229] transition hover:bg-emerald-400 disabled:opacity-40"
+              className="rounded-full bg-emerald-500 p-1.5 text-[#0B1F33] transition hover:bg-emerald-400 disabled:opacity-40"
             >
               {postingComment ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
             </button>
@@ -2726,21 +2615,15 @@ function OfferFeedCard({ offer, currentCompanyId, currentUser, onDeleted, onAppl
                 <Loader2 size={16} className="animate-spin text-emerald-400" />
               </div>
             ) : comments.length === 0 ? (
-              <p className="py-2 text-center text-[11px] text-[var(--text-faint)]">
-                Aucun commentaire pour le moment
-              </p>
+              <p className="py-2 text-center text-[11px] text-[var(--text-faint)]">Aucun commentaire pour le moment</p>
             ) : (
               comments.map((c) => (
                 <div key={c.id} className="flex gap-2">
                   <Avatar path={c.user?.avatar_path} name={c.user?.name || "?"} size="xs" />
                   <div className="flex-1 rounded-2xl bg-[var(--bg-surface-hover)] px-3 py-2">
-                    <p className="text-[11px] font-bold text-[var(--text-app)]">
-                      {c.user?.name || "Utilisateur"}
-                    </p>
+                    <p className="text-[11px] font-bold text-[var(--text-app)]">{c.user?.name || "Utilisateur"}</p>
                     <p className="mt-0.5 text-xs text-[var(--text-muted)]">{c.content}</p>
-                    <p className="mt-1 text-[10px] text-[var(--text-faint)]">
-                      {timeAgo(c.created_at)}
-                    </p>
+                    <p className="mt-1 text-[10px] text-[var(--text-faint)]">{timeAgo(c.created_at)}</p>
                   </div>
                 </div>
               ))
@@ -2753,7 +2636,7 @@ function OfferFeedCard({ offer, currentCompanyId, currentUser, onDeleted, onAppl
 }
 
 /* ============================================
-   MODAL : Postuler à une offre
+   MODAL : Postuler
 ============================================ */
 function ApplyOfferModal({ offer, onClose, onSuccess }) {
   const { showToast } = useToast();
@@ -2873,7 +2756,7 @@ function ApplyOfferModal({ offer, onClose, onSuccess }) {
                 <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-[var(--text-muted)] hover:bg-[var(--bg-surface-hover)]">
                   Annuler
                 </button>
-                <button type="submit" disabled={saving || !profile} className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400 disabled:opacity-50">
+                <button type="submit" disabled={saving || !profile} className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400 disabled:opacity-50">
                   {saving ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                   {saving ? "Envoi..." : "Envoyer ma candidature"}
                 </button>

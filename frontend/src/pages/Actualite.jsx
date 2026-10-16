@@ -178,7 +178,7 @@ export default function Actualite() {
 
             <button
               type="submit"
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400"
             >
               <Search size={15} />
               Rechercher
@@ -350,7 +350,7 @@ function OfferCard({ offer, onApply, onComment }) {
       <div className="flex items-start gap-3">
         {company?.logo_path ? (
           <img
-            src={`http://localhost:8001/storage/${company.logo_path}`}
+            src={`/storage/${company.logo_path}`}
             alt={company.name || "Logo de l'entreprise"}
             className="h-12 w-12 shrink-0 rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface-hover)] object-cover"
           />
@@ -463,7 +463,7 @@ function OfferCard({ offer, onApply, onComment }) {
         <button
           type="button"
           onClick={onApply}
-          className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400"
+          className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400"
         >
           Postuler à cette offre
           <ArrowUpRight size={16} />
@@ -663,7 +663,7 @@ function ApplyModal({ offer, onClose, onSuccess }) {
             <button
               type="submit"
               disabled={saving || !profile}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {saving ? (
                 <Loader2 size={15} className="animate-spin" />
@@ -770,7 +770,7 @@ function CommentModal({ offer, onClose, onSuccess }) {
             <button
               type="submit"
               disabled={saving || !content.trim()}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {saving ? (
                 <Loader2 size={15} className="animate-spin" />

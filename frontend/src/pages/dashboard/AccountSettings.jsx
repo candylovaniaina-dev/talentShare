@@ -36,7 +36,7 @@ const SECTIONS = [
 ];
 
 const inputCls =
-  "w-full rounded-xl border border-white/10 bg-[#09142e]/80 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition duration-200 focus:border-emerald-400/60 focus:ring-2 focus:ring-emerald-400/10 disabled:cursor-not-allowed disabled:opacity-50";
+  "w-full rounded-xl border border-white/10 bg-[#0B1F33]/80 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition duration-200 focus:border-emerald-400/60 focus:ring-2 focus:ring-emerald-400/10 disabled:cursor-not-allowed disabled:opacity-50";
 
 export default function AccountSettings() {
   const { user, refreshUser } = useAuth();
@@ -45,7 +45,7 @@ export default function AccountSettings() {
   return (
     <AppShell>
       <div className="mx-auto max-w-7xl space-y-6 sm:space-y-8">
-        <header className="relative isolate overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#172a50] via-[#0F1E45] to-[#0A1229] p-6 sm:p-8 lg:p-10">
+        <header className="relative isolate overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#12364D] via-[#12364D] to-[#0B1F33] p-6 sm:p-8 lg:p-10">
           <div className="pointer-events-none absolute -right-12 -top-16 -z-10 h-64 w-64 rounded-full bg-emerald-400/10 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-24 left-1/3 -z-10 h-48 w-48 rounded-full bg-blue-500/10 blur-3xl" />
 
@@ -67,7 +67,7 @@ export default function AccountSettings() {
           <aside className="min-w-0 lg:sticky lg:top-24">
             <nav
               aria-label="Sections des paramètres"
-              className="rounded-2xl border border-white/10 bg-[#0F1E45]/70 p-2 shadow-xl shadow-black/10 backdrop-blur-xl"
+              className="rounded-2xl border border-white/10 bg-[#12364D]/70 p-2 shadow-xl shadow-black/10 backdrop-blur-xl"
             >
               <p className="px-3 pb-2 pt-2 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
                 Paramètres du compte
@@ -274,7 +274,7 @@ function GeneralSection({ user, refreshUser }) {
   };
 
   const avatarUrl = user?.avatar_path
-    ? `http://localhost:8001/storage/${user.avatar_path}`
+    ? `/storage/${user.avatar_path}`
     : null;
 
   const initials =
@@ -301,7 +301,7 @@ function GeneralSection({ user, refreshUser }) {
               className="h-20 w-20 shrink-0 rounded-2xl border border-white/10 object-cover shadow-lg"
             />
           ) : (
-            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-300 to-emerald-600 text-2xl font-bold text-[#0A1229] shadow-lg shadow-emerald-900/20">
+            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-300 to-emerald-600 text-2xl font-bold text-[#0B1F33] shadow-lg shadow-emerald-900/20">
               {initials}
             </div>
           )}
@@ -437,7 +437,7 @@ function GeneralSection({ user, refreshUser }) {
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-400 px-5 py-3 text-sm font-bold text-[#0A1229] shadow-lg shadow-emerald-900/10 transition hover:bg-emerald-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/70 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-400 px-5 py-3 text-sm font-bold text-[#0B1F33] shadow-lg shadow-emerald-900/10 transition hover:bg-emerald-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/70 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             >
               {saving ? (
                 <Loader2 size={16} className="animate-spin" />
@@ -612,7 +612,7 @@ function SecuritySection() {
           <button
             type="submit"
             disabled={saving}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-400 px-5 py-3 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/70 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-400 px-5 py-3 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/70 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
           >
             {saving ? (
               <Loader2 size={16} className="animate-spin" />
@@ -873,7 +873,7 @@ function DangerSection() {
 
 function Card({ icon: Icon, title, subtitle, children }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-white/10 bg-[#0F1E45]/50 p-4 shadow-lg shadow-black/5 backdrop-blur-xl sm:p-6">
+    <section className="overflow-hidden rounded-2xl border border-white/10 bg-[#12364D]/50 p-4 shadow-lg shadow-black/5 backdrop-blur-xl sm:p-6">
       <div className="mb-5 flex items-start gap-3 sm:mb-6">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-emerald-400/10 bg-emerald-400/10 text-emerald-300">
           <Icon size={18} />
@@ -948,7 +948,7 @@ function Toggle({ label, hint, checked, onChange }) {
         aria-checked={checked}
         aria-label={label}
         onClick={onChange}
-        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F1E45] ${
+        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#12364D] ${
           checked ? "bg-emerald-400" : "bg-slate-700"
         }`}
       >

@@ -273,7 +273,7 @@ export default function MissionDetail() {
                 <button
                   onClick={() => doAction("accept")}
                   disabled={actionLoading}
-                  className="flex-1 min-w-[180px] rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] hover:bg-emerald-400 disabled:opacity-60 inline-flex items-center justify-center gap-2"
+                  className="flex-1 min-w-[180px] rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0B1F33] hover:bg-emerald-400 disabled:opacity-60 inline-flex items-center justify-center gap-2"
                 >
                   <CheckCircle size={16} /> Accepter
                 </button>
@@ -292,7 +292,7 @@ export default function MissionDetail() {
               <button
                 onClick={() => doAction("active")}
                 disabled={actionLoading}
-                className="flex-1 min-w-[180px] rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] hover:bg-emerald-400 disabled:opacity-60 inline-flex items-center justify-center gap-2"
+                className="flex-1 min-w-[180px] rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0B1F33] hover:bg-emerald-400 disabled:opacity-60 inline-flex items-center justify-center gap-2"
               >
                 <PlayCircle size={16} /> Démarrer la mission
               </button>
@@ -303,7 +303,7 @@ export default function MissionDetail() {
               <button
                 onClick={() => doAction("completed")}
                 disabled={actionLoading}
-                className="flex-1 min-w-[180px] rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] hover:bg-emerald-400 disabled:opacity-60 inline-flex items-center justify-center gap-2"
+                className="flex-1 min-w-[180px] rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0B1F33] hover:bg-emerald-400 disabled:opacity-60 inline-flex items-center justify-center gap-2"
               >
                 <Flag size={16} /> Marquer comme terminée
               </button>

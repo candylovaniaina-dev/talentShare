@@ -316,4 +316,37 @@ class JobOfferController extends Controller
 
         return response()->json(['data' => $comments]);
     }
+    /**
+ * ✅ Compte les nouvelles offres depuis la dernière connexion
+ */
+public function countNew(Request $request)
+{
+    $user = $request->user();
+
+    // Si l'utilisateur a un last_login_at, on l'utilise
+    // Sinon, on prend 7 jours en arrière
+    $since = $user->last_login_at ?? now()->subDays(7);
+
+    $count = JobOffer::where('status', 'published')
+        ->where('created_at', '>', $since)
+        ->when($user->role === 'company', function ($q) use ($user) {
+            // Une entreprise ne compte pas ses propres offres
+            $myCompanyIds = $user->companies()->pluck('id')->toArray();
+            if (!empty($myCompanyIds)) {
+                $q->whereNotIn('company_id', $myCompanyIds);
+            }
+        })
+        ->count();
+
+    return response()->json(['count' => $count]);
+}
+
+/**
+ * ✅ Marque toutes les offres comme vues (met à jour last_login_at)
+ */
+public function markSeen(Request $request)
+{
+    $request->user()->update(['last_login_at' => now()]);
+    return response()->json(['message' => 'OK']);
+}
 }

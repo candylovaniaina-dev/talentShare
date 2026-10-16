@@ -63,7 +63,7 @@ export default function Cgu() {
           Retour à l’aide
         </Link>
 
-        <section className="relative mb-8 overflow-hidden rounded-3xl bg-[#0A1229] p-7 text-white shadow-xl sm:p-10">
+        <section className="relative mb-8 overflow-hidden rounded-3xl bg-[#0B1F33] p-7 text-white shadow-xl sm:p-10">
           <div className="pointer-events-none absolute -right-12 -top-16 h-56 w-56 rounded-full bg-emerald-400/10 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-20 left-1/3 h-48 w-48 rounded-full bg-cyan-400/10 blur-3xl" />
 
@@ -149,7 +149,7 @@ export default function Cgu() {
 
         <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
           <div className="flex items-start gap-4">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#0A1229] text-emerald-300">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#0B1F33] text-emerald-300">
               <Mail size={21} />
             </div>
 

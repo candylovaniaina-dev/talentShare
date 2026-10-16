@@ -1,5 +1,6 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from "react-router-dom";
+import { LoaderCircle } from "lucide-react";
 import { useAuth } from "./context/AuthContext";
 
 import Landing from "./pages/Landing";
@@ -8,6 +9,7 @@ import Register from "./pages/auth/Register";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 import VerifyEmail from "./pages/auth/VerifyEmail";
+import OAuthCallback from "./pages/auth/OAuthCallback";        // ✅ AJOUT
 import Dashboard from "./pages/dashboard/Dashboard";
 import Profile from "./pages/Profile";
 import AccountSettings from "./pages/dashboard/AccountSettings";
@@ -15,6 +17,7 @@ import CompanyProfile from "./pages/CompanyProfile";
 import Opportunities from "./pages/Opportunities";
 import ResourceRequestDetail from "./pages/ResourceRequestDetail";
 import BrowseResourceRequests from "./pages/BrowseResourceRequests";
+import CreateResourceRequest from "./pages/CreateResourceRequest";
 import Missions from "./pages/Missions";
 import MissionDetail from "./pages/MissionDetail";
 import JobOffers from "./pages/JobOffers";
@@ -37,27 +40,35 @@ import ProposalDetail from "./pages/ProposalDetail";
 import Appearance from "./pages/Appearance";
 import OfferApplications from "./pages/dashboard/OfferApplications";
 import ApplicationDetail from "./pages/dashboard/ApplicationDetail";
-
 import MyPublications from "./pages/MyPublications";
-
 import Accueil from "./pages/Accueil";
 import Actualite from "./pages/Actualite";
+import JobOfferDetail from "./pages/JobOfferDetail";
 
 /* ============================================================
-   GUARDS
+    GUARDS
 ============================================================ */
 
-// ✅ Auth : utilisateur connecté requis
+function RouteLoading() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-[#F5F8FA] px-4 text-[#102A43]" role="status" aria-live="polite">
+      <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+        <LoaderCircle size={20} className="animate-spin text-[#0F9691]" aria-hidden="true" />
+        <span className="text-sm font-semibold">Chargement de votre espace…</span>
+      </div>
+    </div>
+  );
+}
+
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
+  if (loading) return <RouteLoading />;
   return user ? children : <Navigate to="/login" />;
 };
 
-// ✅ Rôle entreprise requis (pour proposer un salarié)
 function RequireCompany({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
+  if (loading) return <RouteLoading />;
 
   if (user?.role !== "company") {
     return <Navigate to="/my-activity" replace />;
@@ -65,14 +76,13 @@ function RequireCompany({ children }) {
   return children;
 }
 
-// ✅ Redirection dynamique des candidats
 function CandidatesRedirect() {
   const { id } = useParams();
   return <Navigate to={`/resource-requests/${id}`} replace />;
 }
 
 /* ============================================================
-   APP
+    APP
 ============================================================ */
 function App() {
   return (
@@ -85,6 +95,10 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/email/verify" element={<VerifyEmail />} />
+
+        {/* ✅ OAuth callback */}
+        <Route path="/auth/callback" element={<OAuthCallback />} />
+
         <Route path="/explore" element={<Explore />} />
         <Route path="/talents/:id" element={<TalentProfile />} />
         <Route path="/portfolio/:slug" element={<PublicPortfolio />} />
@@ -107,27 +121,24 @@ function App() {
 
         <Route path="/company" element={<ProtectedRoute><CompanyProfile /></ProtectedRoute>} />
 
-        {/* Opportunités */}
         <Route path="/opportunites" element={<ProtectedRoute><Opportunities /></ProtectedRoute>} />
         <Route path="/opportunites/:id" element={<ProtectedRoute><Opportunities /></ProtectedRoute>} />
 
-        {/* Page unifiée */}
         <Route path="/my-publications" element={<ProtectedRoute><MyPublications /></ProtectedRoute>} />
 
-        {/* Redirections anciens liens */}
         <Route path="/my-offers" element={<Navigate to="/my-publications" replace />} />
 
-        {/* ============================================================
-            RESOURCE REQUESTS
-            ⚠️ ORDRE CRITIQUE : /new AVANT /:id
-        ============================================================ */}
+        <Route
+          path="/resource-requests/new"
+          element={
+            <ProtectedRoute>
+              <CreateResourceRequest />
+            </ProtectedRoute>
+          }
+        />
 
-      
-
-        {/* Redirection candidats */}
         <Route path="/resource-requests/:id/candidates" element={<CandidatesRedirect />} />
 
-        {/* Détail */}
         <Route
           path="/resource-requests/:id"
           element={
@@ -137,12 +148,8 @@ function App() {
           }
         />
 
-        {/* ⚠️ Redirection racine en DERNIER */}
         <Route path="/resource-requests" element={<Navigate to="/my-publications" replace />} />
 
-        {/* ============================================================
-            PROPOSITIONS — CRÉATION réservée aux entreprises
-        ============================================================ */}
         <Route
           path="/proposals/new"
           element={
@@ -162,6 +169,7 @@ function App() {
         <Route path="/missions/:id" element={<ProtectedRoute><MissionDetail /></ProtectedRoute>} />
 
         <Route path="/job-offers" element={<ProtectedRoute><JobOffers /></ProtectedRoute>} />
+        <Route path="/job-offers/:id" element={<ProtectedRoute><JobOfferDetail /></ProtectedRoute>} />
         <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
 
         <Route path="/admin/verifications" element={<ProtectedRoute><AdminVerifications /></ProtectedRoute>} />

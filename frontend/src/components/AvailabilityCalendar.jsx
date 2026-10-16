@@ -120,7 +120,7 @@ export default function AvailabilityCalendar({ windows = [], onDayClick }) {
     : null;
 
   return (
-    <div className="space-y-5 text-[#0F1E45]">
+    <div className="space-y-5 text-[#12364D]">
       {/* En-tête du calendrier */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
@@ -129,7 +129,7 @@ export default function AvailabilityCalendar({ windows = [], onDayClick }) {
           </div>
 
           <div>
-            <h4 className="text-lg font-bold tracking-tight text-[#0F1E45]">
+            <h4 className="text-lg font-bold tracking-tight text-[#12364D]">
               {MONTHS_FR[currentMonth]} {currentYear}
             </h4>
             <p className="mt-1 text-xs text-slate-500">
@@ -142,7 +142,7 @@ export default function AvailabilityCalendar({ windows = [], onDayClick }) {
           <button
             type="button"
             onClick={goToToday}
-            className="rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-[#0F1E45] transition hover:border-[#6EE7C8] hover:bg-[#F0FCF8]"
+            className="rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-[#12364D] transition hover:border-[#6EE7C8] hover:bg-[#F0FCF8]"
           >
             Aujourd'hui
           </button>
@@ -212,7 +212,7 @@ export default function AvailabilityCalendar({ windows = [], onDayClick }) {
                     : "text-slate-700 hover:bg-slate-50"
                 } ${
                   selected
-                    ? "z-10 ring-2 ring-[#0F1E45] ring-offset-2"
+                    ? "z-10 ring-2 ring-[#12364D] ring-offset-2"
                     : ""
                 } ${
                   currentDay && !window
@@ -273,7 +273,7 @@ export default function AvailabilityCalendar({ windows = [], onDayClick }) {
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                 Jour sélectionné
               </p>
-              <p className="mt-1 text-sm font-bold capitalize text-[#0F1E45]">
+              <p className="mt-1 text-sm font-bold capitalize text-[#12364D]">
                 {selectedDate.toLocaleDateString("fr-FR", {
                   weekday: "long",
                   day: "numeric",
@@ -299,7 +299,7 @@ export default function AvailabilityCalendar({ windows = [], onDayClick }) {
                     className="mt-0.5 shrink-0 text-[#0F9F87]"
                   />
                   <div>
-                    <p className="text-sm font-bold text-[#0F1E45]">
+                    <p className="text-sm font-bold text-[#12364D]">
                       {STATUS_LABELS[selectedWindow.status] ||
                         selectedWindow.status}
                     </p>
@@ -362,7 +362,7 @@ export default function AvailabilityCalendar({ windows = [], onDayClick }) {
                   <button
                     type="button"
                     onClick={() => onDayClick(selectedWindow)}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#0F1E45] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#1A3266] sm:w-auto"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#12364D] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#1A3266] sm:w-auto"
                   >
                     Modifier cette disponibilité
                     <ChevronRight size={16} className="text-[#6EE7C8]" />
@@ -374,7 +374,7 @@ export default function AvailabilityCalendar({ windows = [], onDayClick }) {
                 <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-slate-400">
                   <CalendarIcon size={19} />
                 </div>
-                <p className="mt-3 text-sm font-semibold text-[#0F1E45]">
+                <p className="mt-3 text-sm font-semibold text-[#12364D]">
                   Aucune disponibilité
                 </p>
                 <p className="mx-auto mt-1 max-w-xs text-xs leading-relaxed text-slate-500">

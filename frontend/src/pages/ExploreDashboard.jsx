@@ -144,7 +144,7 @@ export default function ExploreDashboard() {
             <div className="flex justify-center">
               {profile?.avatar_path ? (
                 <img
-                  src={`http://localhost:8001/storage/${profile.avatar_path}`}
+                  src={`/storage/${profile.avatar_path}`}
                   alt={profile?.user?.name || user?.name}
                   className="h-20 w-20 rounded-full border-4 border-[var(--bg-surface)] object-cover shadow-lg"
                 />
@@ -231,7 +231,7 @@ export default function ExploreDashboard() {
               >
                 <SlidersHorizontal size={12} /> Filtres
                 {activeFiltersCount > 0 && (
-                  <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[10px] font-bold text-[#0A1229]">
+                  <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[10px] font-bold text-[#0B1F33]">
                     {activeFiltersCount}
                   </span>
                 )}
@@ -394,7 +394,7 @@ export default function ExploreDashboard() {
   </p>
   <button
   onClick={() => setShowCreateRequest(true)}
-  className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-emerald-500 px-3 py-2 text-xs font-bold text-[#0A1229] transition hover:bg-emerald-400"
+  className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-emerald-500 px-3 py-2 text-xs font-bold text-[#0B1F33] transition hover:bg-emerald-400"
 >
   Publier un besoin <ArrowUpRight size={12} />
 </button>
@@ -463,7 +463,7 @@ function JobCard({ job, onApply, onDetails }) {
       <div className="flex items-start gap-3">
         {job.company?.logo_path ? (
           <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[var(--border-app)] bg-white">
-            <img src={`http://localhost:8001/storage/${job.company.logo_path}`} alt={job.company.name} className="h-full w-full object-contain" />
+            <img src={`/storage/${job.company.logo_path}`} alt={job.company.name} className="h-full w-full object-contain" />
           </div>
         ) : (
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-[var(--border-app)] bg-gradient-to-br from-emerald-400 to-blue-500 text-sm font-bold text-white">
@@ -516,7 +516,7 @@ function JobCard({ job, onApply, onDetails }) {
           <div className="mt-3 flex items-center gap-2">
             <button
               onClick={() => onApply?.(job)}
-              className="rounded-lg bg-emerald-500 px-3.5 py-1.5 text-xs font-bold text-[#0A1229] transition hover:bg-emerald-400"
+              className="rounded-lg bg-emerald-500 px-3.5 py-1.5 text-xs font-bold text-[#0B1F33] transition hover:bg-emerald-400"
             >
               Postuler
             </button>
@@ -545,7 +545,7 @@ function RequestCard({ request }) {
       <div className="flex items-start gap-3">
         {request.company?.logo_path ? (
           <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[var(--border-app)] bg-white">
-            <img src={`http://localhost:8001/storage/${request.company.logo_path}`} alt={request.company.name} className="h-full w-full object-contain" />
+            <img src={`/storage/${request.company.logo_path}`} alt={request.company.name} className="h-full w-full object-contain" />
           </div>
         ) : (
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-[var(--border-app)] bg-gradient-to-br from-amber-400 to-orange-500 text-sm font-bold text-white">
@@ -592,7 +592,7 @@ function RequestCard({ request }) {
           {request.description && <p className="mt-2 line-clamp-2 text-xs text-[var(--text-muted)]">{request.description}</p>}
 
           <div className="mt-3 flex items-center gap-2">
-            <Link to={`/resource-requests/${request.id}`} className="rounded-lg bg-emerald-500 px-3.5 py-1.5 text-xs font-bold text-[#0A1229] transition hover:bg-emerald-400">
+            <Link to={`/resource-requests/${request.id}`} className="rounded-lg bg-emerald-500 px-3.5 py-1.5 text-xs font-bold text-[#0B1F33] transition hover:bg-emerald-400">
               Proposer un profil
             </Link>
             <Link to={`/resource-requests/${request.id}`} className="rounded-lg border border-[var(--border-app)] px-3 py-1.5 text-xs font-medium text-[var(--text-app)] transition hover:border-emerald-500/40 hover:text-emerald-400">
@@ -621,7 +621,7 @@ function OfferDetailModal({ offer, onClose, onApply }) {
           <div className="flex items-start gap-3 min-w-0">
             {offer.company?.logo_path ? (
               <img
-                src={`http://localhost:8001/storage/${offer.company.logo_path}`}
+                src={`/storage/${offer.company.logo_path}`}
                 alt={offer.company.name}
                 className="h-12 w-12 shrink-0 rounded-lg border border-[var(--border-app)] object-cover"
               />
@@ -700,7 +700,7 @@ function OfferDetailModal({ offer, onClose, onApply }) {
           {!isOwner && user?.role !== "company" && (
             <button
               onClick={onApply}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400"
             >
               Postuler
             </button>
@@ -845,7 +845,7 @@ function ApplyModal({ offer, onClose, onSuccess }) {
                 <button
                   type="submit"
                   disabled={saving || !canSubmit}
-                  className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {saving ? <Loader2 size={14} className="animate-spin" /> : null}
                   {saving ? "Envoi..." : "Envoyer ma candidature"}

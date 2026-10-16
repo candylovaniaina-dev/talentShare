@@ -29,6 +29,7 @@ use App\Http\Controllers\Api\SavedSearchController;
 use App\Http\Controllers\Api\MatchInteractionController;
 use App\Http\Controllers\Api\MatchController;
 use App\Http\Controllers\Api\EducationController;
+use App\Http\Controllers\Api\SocialAuthController;   // ✅ AJOUT
 use Illuminate\Support\Facades\Route;
 
 
@@ -41,6 +42,19 @@ Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:6,
 
 Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])->middleware('throttle:3,1');
 Route::post('/reset-password', [PasswordResetController::class, 'reset']);
+
+// =============================================
+// ✅ OAUTH SOCIAL LOGIN (Google, LinkedIn, Facebook)
+// =============================================
+Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirect'])
+    ->where('provider', 'google|linkedin-openid|facebook');
+
+Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback'])
+    ->where('provider', 'google|linkedin-openid|facebook');
+
+// =============================================
+// ROUTES PUBLIQUES (suite)
+// =============================================
 
 Route::get('/companies', [CompanyController::class, 'index']);
 Route::get('/companies/{company}', [CompanyController::class, 'show'])->where('company', '[0-9]+');
@@ -170,30 +184,33 @@ Route::middleware('auth:sanctum')->group(function () {
         ->where('resourceOffer', '[0-9]+');
 
     // === Resource Requests ===
-   // === Resource Requests ===
-Route::get   ('/resource-requests/my', [ResourceRequestController::class, 'index']);
-Route::post  ('/resource-requests',    [ResourceRequestController::class, 'store']);
+        Route::get   ('/resource-requests/count-new',  [ResourceRequestController::class, 'countNew']);
+    Route::post  ('/resource-requests/mark-seen',  [ResourceRequestController::class, 'markSeen']);
+    Route::get   ('/resource-requests/my', [ResourceRequestController::class, 'index']);
+    Route::post  ('/resource-requests',    [ResourceRequestController::class, 'store']);
 
-Route::get   ('/resource-requests/{resourceRequest}/candidates',   [ResourceRequestController::class, 'candidates'])
-    ->where('resourceRequest', '[0-9]+');
+    Route::get   ('/resource-requests/{resourceRequest}/candidates',   [ResourceRequestController::class, 'candidates'])
+        ->where('resourceRequest', '[0-9]+');
 
-Route::patch ('/resource-requests/{resourceRequest}',              [ResourceRequestController::class, 'update'])
-    ->where('resourceRequest', '[0-9]+');
+    Route::patch ('/resource-requests/{resourceRequest}',              [ResourceRequestController::class, 'update'])
+        ->where('resourceRequest', '[0-9]+');
 
-Route::delete('/resource-requests/{resourceRequest}',              [ResourceRequestController::class, 'destroy'])
-    ->where('resourceRequest', '[0-9]+');
+    Route::delete('/resource-requests/{resourceRequest}',              [ResourceRequestController::class, 'destroy'])
+        ->where('resourceRequest', '[0-9]+');
 
-Route::post  ('/resource-requests/{resourceRequest}/publish',      [ResourceRequestController::class, 'publish'])
-    ->where('resourceRequest', '[0-9]+');
-Route::post  ('/resource-requests/{resourceRequest}/pause',        [ResourceRequestController::class, 'pause'])
-    ->where('resourceRequest', '[0-9]+');
-Route::post  ('/resource-requests/{resourceRequest}/close',        [ResourceRequestController::class, 'close'])
-    ->where('resourceRequest', '[0-9]+');
-Route::post  ('/resource-requests/{resourceRequest}/mark-filled',  [ResourceRequestController::class, 'markFilled'])
-    ->where('resourceRequest', '[0-9]+');
-Route::post  ('/resource-requests/{resourceRequest}/duplicate',    [ResourceRequestController::class, 'duplicate'])
-    ->where('resourceRequest', '[0-9]+');
-        Route::post('/resource-requests/{resourceRequest}/like',     [ResourceRequestController::class, 'toggleLike'])
+    Route::post  ('/resource-requests/{resourceRequest}/publish',      [ResourceRequestController::class, 'publish'])
+        ->where('resourceRequest', '[0-9]+');
+    Route::post  ('/resource-requests/{resourceRequest}/pause',        [ResourceRequestController::class, 'pause'])
+        ->where('resourceRequest', '[0-9]+');
+    Route::post  ('/resource-requests/{resourceRequest}/close',        [ResourceRequestController::class, 'close'])
+        ->where('resourceRequest', '[0-9]+');
+    Route::post  ('/resource-requests/{resourceRequest}/mark-filled',  [ResourceRequestController::class, 'markFilled'])
+        ->where('resourceRequest', '[0-9]+');
+    Route::post  ('/resource-requests/{resourceRequest}/duplicate',    [ResourceRequestController::class, 'duplicate'])
+        ->where('resourceRequest', '[0-9]+');
+
+    // Interactions sociales
+    Route::post('/resource-requests/{resourceRequest}/like',     [ResourceRequestController::class, 'toggleLike'])
         ->where('resourceRequest', '[0-9]+');
     Route::post('/resource-requests/{resourceRequest}/comment',  [ResourceRequestController::class, 'comment'])
         ->where('resourceRequest', '[0-9]+');
@@ -201,6 +218,7 @@ Route::post  ('/resource-requests/{resourceRequest}/duplicate',    [ResourceRequ
         ->where('resourceRequest', '[0-9]+');
     Route::post('/resource-requests/{resourceRequest}/share',    [ResourceRequestController::class, 'share'])
         ->where('resourceRequest', '[0-9]+');
+
     // === Propositions ===
     Route::get   ('/proposals/received',              [ProposalController::class, 'received']);
     Route::get   ('/proposals/sent',                  [ProposalController::class, 'sent']);
@@ -264,6 +282,7 @@ Route::post  ('/resource-requests/{resourceRequest}/duplicate',    [ResourceRequ
 
     // === Notifications ===
     Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::get('/notifications/history', [NotificationController::class, 'history']);
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead']);
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead']);
 

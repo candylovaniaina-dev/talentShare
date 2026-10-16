@@ -231,7 +231,7 @@ export default function BrowseResourceOffers() {
               <SlidersHorizontal size={16} />
               Filtres
               {activeFilters > 0 && (
-                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-emerald-400 px-1 text-[10px] font-bold text-[#0A1229]">
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-emerald-400 px-1 text-[10px] font-bold text-[#0B1F33]">
                   {activeFilters}
                 </span>
               )}
@@ -240,7 +240,7 @@ export default function BrowseResourceOffers() {
             <button
               type="submit"
               disabled={loading}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-400 px-6 py-3 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-300 disabled:opacity-60"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-400 px-6 py-3 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-300 disabled:opacity-60"
             >
               {loading ? (
                 <Loader2 size={16} className="animate-spin" />
@@ -334,7 +334,7 @@ export default function BrowseResourceOffers() {
                     load();
                     setShowFilters(false);
                   }}
-                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-400 px-5 py-2.5 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-300"
+                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-400 px-5 py-2.5 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-300"
                 >
                   Appliquer les filtres
                   <ArrowRight size={15} />
@@ -420,7 +420,7 @@ export default function BrowseResourceOffers() {
             <button
               type="button"
               onClick={clearFilters}
-              className="mt-5 rounded-xl bg-emerald-400 px-5 py-2.5 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-300"
+              className="mt-5 rounded-xl bg-emerald-400 px-5 py-2.5 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-300"
             >
               Effacer les filtres
             </button>
@@ -571,7 +571,7 @@ function ResourceOfferCard({ offer }) {
 
       <Link
         to={`/resource-offers/${offer.id}`}
-        className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-400 px-4 py-3 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-300"
+        className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-400 px-4 py-3 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-300"
       >
         <Eye size={16} />
         Voir le détail
@@ -583,7 +583,7 @@ function ResourceOfferCard({ offer }) {
 
 function PublicOnlyLayout({ children }) {
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-[#0A1229]">
+    <div className="min-h-screen bg-slate-50 font-sans text-[#0B1F33]">
       {children}
     </div>
   );

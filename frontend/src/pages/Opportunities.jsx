@@ -65,7 +65,7 @@ export default function Opportunities() {
             <button className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-white/20 hover:text-white">
               <Filter size={13} /> Filtrer
             </button>
-            <button className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3 py-2 text-xs font-bold text-[#0A1229] transition hover:bg-emerald-400">
+            <button className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3 py-2 text-xs font-bold text-[#0B1F33] transition hover:bg-emerald-400">
               <Sparkles size={13} /> Recommandations
             </button>
           </div>
@@ -150,14 +150,14 @@ function FilterPill({ active, onClick, children, count }) {
       onClick={onClick}
       className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
         active
-          ? "border-emerald-500 bg-emerald-500 text-[#0A1229]"
+          ? "border-emerald-500 bg-emerald-500 text-[#0B1F33]"
           : "border-white/10 bg-white/5 text-slate-300 hover:border-white/25 hover:text-white"
       }`}
     >
       {children}
       {count !== undefined && count > 0 && (
         <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${
-          active ? "bg-black/20 text-[#0A1229]" : "bg-white/10 text-slate-400"
+          active ? "bg-black/20 text-[#0B1F33]" : "bg-white/10 text-slate-400"
         }`}>
           {count}
         </span>
@@ -294,7 +294,7 @@ function OffersTab() {
               {/* Action */}
               <button
                 onClick={() => setApplyModal(o)}
-                className="mt-4 w-full rounded-lg bg-emerald-500 px-4 py-2 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400"
+                className="mt-4 w-full rounded-lg bg-emerald-500 px-4 py-2 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400"
               >
                 Postuler
               </button>

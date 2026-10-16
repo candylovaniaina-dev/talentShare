@@ -159,10 +159,10 @@ function ApplicationCard({ application, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="group w-full rounded-2xl border border-white/[0.08] bg-[#101D3A] p-4 text-left transition duration-200 hover:-translate-y-0.5 hover:border-emerald-400/30 hover:bg-[#142344] hover:shadow-lg hover:shadow-black/10 sm:p-5"
+      className="group w-full rounded-2xl border border-white/[0.08] bg-[#12364D] p-4 text-left transition duration-200 hover:-translate-y-0.5 hover:border-emerald-400/30 hover:bg-[#142344] hover:shadow-lg hover:shadow-black/10 sm:p-5"
     >
       <div className="flex items-start gap-3 sm:gap-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-300/20 bg-emerald-400/10 text-lg font-bold text-emerald-300 transition group-hover:bg-emerald-400 group-hover:text-[#0A1229]">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-300/20 bg-emerald-400/10 text-lg font-bold text-emerald-300 transition group-hover:bg-emerald-400 group-hover:text-[#0B1F33]">
           {getInitial(fullName)}
         </div>
 
@@ -255,16 +255,16 @@ function EmptyState({ filter, search }) {
 function LoadingState() {
   return (
     <AppShell>
-      <main className="min-h-screen bg-[#0A1229] px-4 py-8 sm:px-6 lg:px-8">
+      <main className="min-h-screen bg-[#0B1F33] px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl animate-pulse space-y-6">
           <div className="h-10 w-40 rounded-xl bg-white/5" />
-          <div className="h-64 rounded-3xl border border-white/5 bg-[#101D3A]" />
+          <div className="h-64 rounded-3xl border border-white/5 bg-[#12364D]" />
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {STAT_ITEMS.map((item) => (
               <div
                 key={item.key}
-                className="h-24 rounded-2xl border border-white/5 bg-[#101D3A]"
+                className="h-24 rounded-2xl border border-white/5 bg-[#12364D]"
               />
             ))}
           </div>
@@ -273,7 +273,7 @@ function LoadingState() {
             {[1, 2, 3].map((item) => (
               <div
                 key={item}
-                className="h-28 rounded-2xl border border-white/5 bg-[#101D3A]"
+                className="h-28 rounded-2xl border border-white/5 bg-[#12364D]"
               />
             ))}
           </div>
@@ -352,8 +352,8 @@ export default function OfferApplications() {
   if (!data) {
     return (
       <AppShell>
-        <main className="min-h-screen bg-[#0A1229] px-4 py-10 text-white sm:px-6">
-          <div className="mx-auto max-w-3xl rounded-3xl border border-white/10 bg-[#101D3A] p-8 text-center">
+        <main className="min-h-screen bg-[#0B1F33] px-4 py-10 text-white sm:px-6">
+          <div className="mx-auto max-w-3xl rounded-3xl border border-white/10 bg-[#12364D] p-8 text-center">
             <Users size={34} className="mx-auto text-slate-500" />
             <h1 className="mt-4 text-xl font-bold">
               Impossible de charger les candidatures
@@ -364,7 +364,7 @@ export default function OfferApplications() {
             <button
               type="button"
               onClick={() => load()}
-              className="mt-5 inline-flex items-center gap-2 rounded-xl bg-emerald-400 px-4 py-2.5 text-sm font-bold text-[#0A1229] hover:bg-emerald-300"
+              className="mt-5 inline-flex items-center gap-2 rounded-xl bg-emerald-400 px-4 py-2.5 text-sm font-bold text-[#0B1F33] hover:bg-emerald-300"
             >
               <RefreshCw size={15} />
               Réessayer
@@ -406,7 +406,7 @@ export default function OfferApplications() {
 
   return (
     <AppShell>
-      <main className="min-h-screen bg-[#0A1229] px-4 py-6 text-white sm:px-6 sm:py-8 lg:px-8">
+      <main className="min-h-screen bg-[#0B1F33] px-4 py-6 text-white sm:px-6 sm:py-8 lg:px-8">
         <div className="mx-auto max-w-6xl space-y-6">
           {/* Navigation */}
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -434,7 +434,7 @@ export default function OfferApplications() {
           </div>
 
           {/* Header de l'offre */}
-          <section className="relative overflow-hidden rounded-3xl border border-white/[0.08] bg-[#101D3A] p-6 shadow-xl shadow-black/10 sm:p-8">
+          <section className="relative overflow-hidden rounded-3xl border border-white/[0.08] bg-[#12364D] p-6 shadow-xl shadow-black/10 sm:p-8">
             <div className="pointer-events-none absolute -right-16 -top-24 h-72 w-72 rounded-full bg-emerald-400/[0.08] blur-3xl" />
             <div className="pointer-events-none absolute -bottom-24 right-1/3 h-48 w-48 rounded-full bg-blue-400/[0.06] blur-3xl" />
 
@@ -504,13 +504,13 @@ export default function OfferApplications() {
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder="Rechercher un candidat..."
                   aria-label="Rechercher un candidat"
-                  className="h-11 w-full rounded-xl border border-white/10 bg-[#101D3A] pl-10 pr-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-emerald-400/50 focus:ring-4 focus:ring-emerald-400/10"
+                  className="h-11 w-full rounded-xl border border-white/10 bg-[#12364D] pl-10 pr-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-emerald-400/50 focus:ring-4 focus:ring-emerald-400/10"
                 />
               </div>
             </div>
 
             {/* Filtres */}
-            <div className="rounded-2xl border border-white/[0.08] bg-[#101D3A] p-4">
+            <div className="rounded-2xl border border-white/[0.08] bg-[#12364D] p-4">
               <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
                 <SlidersHorizontal size={13} />
                 Filtrer par statut
@@ -536,7 +536,7 @@ export default function OfferApplications() {
                       aria-pressed={active}
                       className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition sm:text-sm ${
                         active
-                          ? "border-emerald-400 bg-emerald-400 text-[#0A1229]"
+                          ? "border-emerald-400 bg-emerald-400 text-[#0B1F33]"
                           : "border-white/[0.08] bg-white/[0.025] text-slate-300 hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
                       }`}
                     >
@@ -544,7 +544,7 @@ export default function OfferApplications() {
                       <span
                         className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
                           active
-                            ? "bg-black/10 text-[#0A1229]"
+                            ? "bg-black/10 text-[#0B1F33]"
                             : "bg-white/[0.06] text-slate-400"
                         }`}
                       >
@@ -710,10 +710,10 @@ function ApplicationDetailModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="application-detail-title"
-        className="flex max-h-[94vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#0F1E45] shadow-2xl shadow-black/40"
+        className="flex max-h-[94vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#12364D] shadow-2xl shadow-black/40"
       >
         {/* En-tête de la modale */}
-        <header className="flex items-start justify-between gap-4 border-b border-white/[0.08] bg-[#101D3A] p-5 sm:p-6">
+        <header className="flex items-start justify-between gap-4 border-b border-white/[0.08] bg-[#12364D] p-5 sm:p-6">
           <div className="flex min-w-0 items-center gap-3 sm:gap-4">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-300/20 bg-emerald-400/10 text-lg font-bold text-emerald-300 sm:h-14 sm:w-14">
               {getInitial(user?.name)}
@@ -834,7 +834,7 @@ function ApplicationDetailModal({
 
               {application.cv_path && (
                 <a
-                  href={`http://localhost:8001/storage/${application.cv_path}`}
+                  href={`/storage/${application.cv_path}`}
                   target="_blank"
                   rel="noreferrer"
                   className="group flex min-w-0 items-center gap-3 rounded-2xl border border-rose-400/20 bg-rose-400/[0.05] p-4 transition hover:border-rose-400/40 hover:bg-rose-400/[0.09]"
@@ -887,7 +887,7 @@ function ApplicationDetailModal({
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
               placeholder="Ajoute tes observations sur ce candidat..."
-              className="mt-3 w-full resize-y rounded-2xl border border-white/[0.08] bg-[#0A1229]/60 px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-slate-600 focus:border-emerald-400/40 focus:ring-4 focus:ring-emerald-400/[0.06]"
+              className="mt-3 w-full resize-y rounded-2xl border border-white/[0.08] bg-[#0B1F33]/60 px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-slate-600 focus:border-emerald-400/40 focus:ring-4 focus:ring-emerald-400/[0.06]"
             />
 
             {notesError && (
@@ -963,7 +963,7 @@ function ApplicationDetailModal({
         </div>
 
         {/* Actions */}
-        <footer className="border-t border-white/[0.08] bg-[#101D3A] p-5 sm:p-6">
+        <footer className="border-t border-white/[0.08] bg-[#12364D] p-5 sm:p-6">
           <p className="mb-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">
             Actions de recrutement
           </p>

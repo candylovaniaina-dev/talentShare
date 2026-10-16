@@ -29,7 +29,7 @@ function Avatar({ user, size = "md" }) {
 
   return user?.avatar_path ? (
     <img
-      src={`http://localhost:8001/storage/${user.avatar_path}`}
+      src={`/storage/${user.avatar_path}`}
       alt=""
       className={`${sizeClass} shrink-0 rounded-full border border-white/10 object-cover`}
     />
@@ -193,7 +193,7 @@ export default function NewGroupModal({ onClose, onCreated }) {
                   setStep("members");
                 }}
                 aria-label="Retour à la sélection des membres"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-[#0F1E45]"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-[#12364D]"
               >
                 <ArrowLeft size={18} />
               </button>
@@ -210,7 +210,7 @@ export default function NewGroupModal({ onClose, onCreated }) {
             <div className="min-w-0">
               <h2
                 id="new-group-title"
-                className="text-base font-bold text-[#0F1E45] sm:text-lg"
+                className="text-base font-bold text-[#12364D] sm:text-lg"
               >
                 {step === "members" ? "Créer un groupe" : "Personnaliser le groupe"}
               </h2>
@@ -226,7 +226,7 @@ export default function NewGroupModal({ onClose, onCreated }) {
             type="button"
             onClick={onClose}
             aria-label="Fermer"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-[#0F1E45]"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-[#12364D]"
           >
             <X size={19} />
           </button>
@@ -256,7 +256,7 @@ export default function NewGroupModal({ onClose, onCreated }) {
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder="Rechercher par nom ou email..."
                   aria-label="Rechercher des personnes"
-                  className="min-w-0 flex-1 bg-transparent py-3 text-sm text-[#0F1E45] outline-none placeholder:text-slate-400"
+                  className="min-w-0 flex-1 bg-transparent py-3 text-sm text-[#12364D] outline-none placeholder:text-slate-400"
                 />
                 {search && (
                   <button
@@ -274,7 +274,7 @@ export default function NewGroupModal({ onClose, onCreated }) {
             {selected.length > 0 && (
               <div className="px-5 pb-3 sm:px-6">
                 <div className="mb-2 flex items-center justify-between">
-                  <p className="text-xs font-bold text-[#0F1E45]">
+                  <p className="text-xs font-bold text-[#12364D]">
                     Membres sélectionnés
                   </p>
                   <button
@@ -330,7 +330,7 @@ export default function NewGroupModal({ onClose, onCreated }) {
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
                     {isSearching ? <Search size={21} /> : <Users size={21} />}
                   </div>
-                  <p className="mt-3 text-sm font-semibold text-[#0F1E45]">
+                  <p className="mt-3 text-sm font-semibold text-[#12364D]">
                     {isSearching
                       ? "Aucun utilisateur trouvé"
                       : "Aucune suggestion disponible"}
@@ -362,7 +362,7 @@ export default function NewGroupModal({ onClose, onCreated }) {
                       <Avatar user={user} />
 
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold text-[#0F1E45]">
+                        <p className="truncate text-sm font-semibold text-[#12364D]">
                           {user.name}
                         </p>
                         <p className="mt-0.5 truncate text-xs text-slate-500">
@@ -402,7 +402,7 @@ export default function NewGroupModal({ onClose, onCreated }) {
                 type="button"
                 onClick={goToNameStep}
                 disabled={selected.length < 2}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#0F1E45] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#172B5B] disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#12364D] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#172B5B] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Continuer
                 <ArrowRight size={16} />
@@ -420,7 +420,7 @@ export default function NewGroupModal({ onClose, onCreated }) {
                     <Sparkles size={16} />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-[#0F1E45]">
+                    <p className="text-sm font-bold text-[#12364D]">
                       Donne un nom à ton groupe
                     </p>
                     <p className="text-xs text-slate-500">
@@ -442,7 +442,7 @@ export default function NewGroupModal({ onClose, onCreated }) {
                   onChange={(event) => setGroupName(event.target.value)}
                   placeholder="Ex. : Équipe Marketing"
                   maxLength={180}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-[#0F1E45] outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-[#12364D] outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10"
                 />
                 <p className="mt-1.5 text-right text-[11px] text-slate-400">
                   {groupName.length}/180 caractères
@@ -454,7 +454,7 @@ export default function NewGroupModal({ onClose, onCreated }) {
                   <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
                     Participants
                   </p>
-                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-[#0F1E45]">
+                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-[#12364D]">
                     {selected.length + 1}
                   </span>
                 </div>
@@ -466,7 +466,7 @@ export default function NewGroupModal({ onClose, onCreated }) {
                       className="flex max-w-full items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-2"
                     >
                       <Avatar user={user} size="sm" />
-                      <span className="max-w-[150px] truncate text-xs font-semibold text-[#0F1E45]">
+                      <span className="max-w-[150px] truncate text-xs font-semibold text-[#12364D]">
                         {user.name}
                       </span>
                     </div>
@@ -496,7 +496,7 @@ export default function NewGroupModal({ onClose, onCreated }) {
               <button
                 type="submit"
                 disabled={creating || !groupName.trim() || selected.length < 2}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#0D9488] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#0F766E] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#0D9488] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#0F9691] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {creating ? (
                   <Loader2 size={16} className="animate-spin" />

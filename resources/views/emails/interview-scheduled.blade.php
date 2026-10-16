@@ -1,72 +1,129 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-    <meta charset="utf-8">
-    <style>
-        body { font-family: -apple-system, Arial, sans-serif; background: #0A1229; padding: 24px; color: #fff; margin: 0; }
-        .card { max-width: 480px; margin: 0 auto; background: #0F1E45; border-radius: 16px; padding: 32px; }
-        .badge { display: inline-block; background: rgba(16,185,129,0.15); color: #34d399; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 4px 10px; border-radius: 999px; }
-        h1 { font-size: 20px; margin: 16px 0 4px; color: #fff; }
-        p { color: #cbd5e1; font-size: 14px; line-height: 1.6; }
-        .box { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 16px; margin: 20px 0; }
-        .box p { margin: 4px 0; color: #e2e8f0; }
-        .btn { display: inline-block; background: #34d399; color: #0A1229 !important; text-decoration: none; font-weight: 700; padding: 12px 24px; border-radius: 999px; margin-top: 16px; font-size: 14px; }
-        .footer { text-align: center; color: #64748b; font-size: 11px; margin-top: 24px; }
-
-        .warn {
-            background: #fef3c7;
-            border: 1px solid #f59e0b;
-            border-radius: 10px;
-            padding: 14px 16px;
-            margin-bottom: 20px;
-        }
-        .warn p { color: #92400e; font-size: 13px; margin: 0; }
-        .warn a { color: #92400e; text-decoration: underline; font-weight: 700; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entretien programmé</title>
 </head>
-<body>
-    <div class="card">
+<body style="margin:0; padding:0; background:#0A1229; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#0A1229; padding:40px 16px;">
+  <tr>
+    <td align="center">
+      <table width="520" cellpadding="0" cellspacing="0" style="background:#0F1E45; border-radius:16px; overflow:hidden; border:1px solid rgba(255,255,255,0.06);">
 
-        @if($emailNotVerified ?? false)
-            <div class="warn">
-                <p>
-                    ⚠️ <strong>Votre adresse email n'est pas encore vérifiée.</strong>
-                    Pour recevoir les prochaines communications de <strong>TalentShare</strong> et de
-                    <strong>{{ $company?->name }}</strong>, merci de confirmer votre adresse.
-                </p>
-                @if(!empty($verificationUrl))
-                    <p style="margin-top:8px;">
-                        <a href="{{ $verificationUrl }}">Vérifier mon adresse email →</a>
+        {{-- HEADER --}}
+        <tr>
+          <td style="padding:40px 40px 32px 40px;">
+
+            {{-- Bandeau info (uniquement si email non vérifié) --}}
+            @if($emailNotVerified ?? false)
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(245,158,11,0.1); border-left:3px solid #F59E0B; border-radius:8px; margin-bottom:28px;">
+                <tr>
+                  <td style="padding:16px 18px;">
+                    <p style="margin:0 0 8px 0; color:#FCD34D; font-size:13px; font-weight:700; letter-spacing:0.3px;">
+                      Vérification requise
                     </p>
-                @endif
-            </div>
-        @endif
+                    <p style="margin:0; color:#FDE68A; font-size:13px; line-height:1.6;">
+                      Votre adresse email n'est pas encore vérifiée. Pour recevoir les prochaines communications de
+                      <strong>{{ $company?->name ?? 'TalentShare' }}</strong>, merci de confirmer votre adresse.
+                    </p>
+                    @if(!empty($verificationUrl))
+                      <p style="margin:12px 0 0 0;">
+                        <a href="{{ $verificationUrl }}" style="color:#FCD34D; font-size:13px; font-weight:700; text-decoration:underline;">
+                          Vérifier mon adresse email
+                        </a>
+                      </p>
+                    @endif
+                  </td>
+                </tr>
+              </table>
+            @endif
 
-        <span class="badge">Entretien programmé</span>
+            {{-- BADGE --}}
+            <p style="margin:0 0 20px 0;">
+              <span style="display:inline-block; background:rgba(52,211,153,0.12); color:#34D399; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; padding:6px 12px; border-radius:999px;">
+                Entretien programmé
+              </span>
+            </p>
 
-        <h1>Bonjour {{ $candidateName }},</h1>
+            {{-- TITRE --}}
+            <h1 style="margin:0 0 16px 0; color:#FFFFFF; font-size:22px; font-weight:700; line-height:1.35; letter-spacing:-0.3px;">
+              Bonjour {{ $candidateName }},
+            </h1>
 
-        <p>
-            <strong>{{ $company?->name }}</strong> souhaite vous rencontrer pour le poste
-            <strong>« {{ $offer->title }} »</strong>.
-        </p>
+            {{-- PARAGRAPHE --}}
+            <p style="margin:0 0 28px 0; color:#CBD5E1; font-size:15px; line-height:1.7;">
+              <strong style="color:#FFFFFF;">{{ $company?->name }}</strong> souhaite vous rencontrer pour le poste
+              <strong style="color:#FFFFFF;">«&nbsp;{{ $offer->title }}&nbsp;»</strong>.
+            </p>
 
-        <div class="box">
-            <p><strong>Date :</strong> {{ $application->interview_at->locale('fr')->isoFormat('dddd D MMMM YYYY') }}</p>
-            <p><strong>Heure :</strong> {{ $application->interview_at->format('H:i') }} (heure de Madagascar)</p>
-            <p><strong>Format :</strong> Visioconférence</p>
-        </div>
+            {{-- CARTE DETAILS --}}
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; margin-bottom:28px;">
+              <tr>
+                <td style="padding:20px 22px;">
+                  <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="padding:6px 0; color:#94A3B8; font-size:13px; font-weight:600; width:100px;">
+                        Date
+                      </td>
+                      <td style="padding:6px 0; color:#E2E8F0; font-size:14px; font-weight:500;">
+                        {{ $application->interview_at->locale('fr')->isoFormat('dddd D MMMM YYYY') }}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:6px 0; color:#94A3B8; font-size:13px; font-weight:600;">
+                        Heure
+                      </td>
+                      <td style="padding:6px 0; color:#E2E8F0; font-size:14px; font-weight:500;">
+                        {{ $application->interview_at->format('H:i') }} <span style="color:#94A3B8; font-weight:400;">(heure de Madagascar)</span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:6px 0; color:#94A3B8; font-size:13px; font-weight:600;">
+                        Format
+                      </td>
+                      <td style="padding:6px 0; color:#E2E8F0; font-size:14px; font-weight:500;">
+                        Visioconférence
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
 
-        <a href="{{ $application->interview_link }}" class="btn">Rejoindre l'entretien</a>
+            {{-- BOUTON --}}
+            <table cellpadding="0" cellspacing="0" style="margin:0 0 32px 0;">
+              <tr>
+                <td align="center" style="border-radius:999px; background:#34D399;">
+                  <a href="{{ $application->interview_link }}"
+                     style="display:inline-block; padding:14px 36px; color:#0A1229; text-decoration:none; font-weight:700; font-size:14px; letter-spacing:0.2px; border-radius:999px;">
+                    Rejoindre l'entretien
+                  </a>
+                </td>
+              </tr>
+            </table>
 
-        <p style="margin-top:20px;">
-            Un fichier joint à cet email vous permet d'ajouter automatiquement ce rendez-vous
-            à votre calendrier (Google Calendar, Outlook, Apple Calendar...).
-        </p>
+            {{-- NOTE CALENDRIER --}}
+            <p style="margin:0; color:#94A3B8; font-size:13px; line-height:1.7;">
+              Un fichier joint à cet email vous permet d'ajouter automatiquement ce rendez-vous
+              à votre calendrier (Google Calendar, Outlook, Apple Calendar).
+            </p>
 
-        <div class="footer">
-            TalentShare — vous recevez cet email car votre candidature a évolué.
-        </div>
-    </div>
+          </td>
+        </tr>
+
+        {{-- FOOTER --}}
+        <tr>
+          <td style="background:rgba(0,0,0,0.2); padding:20px 40px; text-align:center; border-top:1px solid rgba(255,255,255,0.05);">
+            <p style="margin:0; color:#64748B; font-size:11px; line-height:1.6;">
+              TalentShare — vous recevez cet email car votre candidature a évolué.
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
 </body>
 </html>

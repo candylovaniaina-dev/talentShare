@@ -98,7 +98,7 @@ function ProfileFrame({ user, children }) {
   if (user) {
     return (
       <AppShell>
-        <div className="relative mx-auto max-w-5xl rounded-3xl bg-[#0A1229] font-sans text-white">
+        <div className="relative mx-auto max-w-5xl rounded-3xl bg-[#0B1F33] font-sans text-white">
           <Glow />
           <div className="relative z-10">{children}</div>
         </div>
@@ -106,7 +106,7 @@ function ProfileFrame({ user, children }) {
     );
   }
   return (
-    <div className="relative min-h-screen bg-[#0A1229] font-sans text-white">
+    <div className="relative min-h-screen bg-[#0B1F33] font-sans text-white">
       <Glow fixed />
       <PublicNavbar variant="dark" />
       <div className="relative z-10 mx-auto max-w-5xl px-4 pt-[88px] pb-10">
@@ -197,7 +197,7 @@ export default function TalentProfile() {
           </p>
           <button
             onClick={() => navigate(-1)}
-            className="mt-6 inline-flex items-center gap-1.5 rounded-full bg-emerald-500 px-6 py-2.5 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400"
+            className="mt-6 inline-flex items-center gap-1.5 rounded-full bg-emerald-500 px-6 py-2.5 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400"
           >
             <ArrowLeft size={15} /> Retour
           </button>
@@ -466,7 +466,7 @@ export default function TalentProfile() {
               {profile.avatar_path ? (
                 <div className="h-32 w-32 overflow-hidden rounded-full border-4 border-white/10 ring-2 ring-emerald-400/40 sm:h-40 sm:w-40">
                   <img
-                    src={`http://localhost:8001/storage/${profile.avatar_path}`}
+                    src={`/storage/${profile.avatar_path}`}
                     alt={profile.user.name}
                     className="h-full w-full object-cover"
                   />
@@ -520,14 +520,14 @@ export default function TalentProfile() {
                 {isOwner ? (
                   <Link
                     to="/profile"
-                    className="flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400"
+                    className="flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400"
                   >
                     <Pencil size={15} /> Modifier mon profil
                   </Link>
                 ) : (
                   <button
                     onClick={startConversation}
-                    className="flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400"
+                    className="flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400"
                   >
                     <MessageSquare size={16} /> Proposer une connexion
                   </button>

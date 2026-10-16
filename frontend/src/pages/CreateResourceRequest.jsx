@@ -398,7 +398,7 @@ export default function CreateResourceRequestModal({ onClose, onSuccess }) {
               type="button"
               onClick={() => submit("published")}
               disabled={submitting || loadingCompany || (isCompany && !myCompany)}
-              className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0A1229] hover:bg-emerald-400 disabled:opacity-50 transition"
+              className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0B1F33] hover:bg-emerald-400 disabled:opacity-50 transition"
             >
               {submitting ? (
                 <>

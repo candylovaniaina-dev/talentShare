@@ -121,7 +121,7 @@ export default function JobOfferApplications() {
                         )}
                         {app.cv_path && (
                           <a
-                            href={`http://localhost:8001/storage/${app.cv_path}`}
+                            href={`/storage/${app.cv_path}`}
                             target="_blank"
                             rel="noreferrer"
                             className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300"

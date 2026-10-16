@@ -118,10 +118,28 @@ export const AuthProvider = ({ children }) => {
     return registeredUser;
   };
 
+  /**
+   * ✅ NOUVEAU : Auth depuis OAuth (Google / LinkedIn / Facebook)
+   * Appelé par OAuthCallback.jsx
+   */
+  const setAuthFromOAuth = useCallback((newToken, oauthUser) => {
+    if (!newToken || !oauthUser) {
+      console.error("setAuthFromOAuth: payload invalide");
+      return;
+    }
+
+    requestId.current += 1;
+    localStorage.setItem("token", newToken);
+    setToken(newToken);
+    setUser(oauthUser);
+    setLoading(false);
+    syncFromUser(oauthUser);
+    saveLastUser(oauthUser, oauthUser.email);
+  }, [syncFromUser, saveLastUser]);
+
   const logout = () => {
     requestId.current += 1;
 
-    // Conserve le token pour que l'intercepteur API puisse authentifier /logout.
     const logoutRequest = api.post("/logout").catch((error) => {
       console.error("Erreur logout:", error);
     });
@@ -182,6 +200,7 @@ export const AuthProvider = ({ children }) => {
         refreshUser,
         getLastUser,
         clearLastUser,
+        setAuthFromOAuth,   // ✅ AJOUT
       }}
     >
       {children}

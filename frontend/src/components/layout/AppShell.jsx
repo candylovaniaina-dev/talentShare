@@ -5,18 +5,19 @@ import {
   UserRound,
   BriefcaseBusiness,
   Search,
-  MessageSquare,
+  MessageCircle,
   Building2,
   Layers3,
-  Sparkles,
   ChevronRight,
   Menu,
   X,
+  Handshake,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import NotificationBell from "./NotificationBell";
 import DropdownMenu from "./DropdownMenu";
 import api from "../../services/api";
+import ActivityHistory from "./ActivityHistory";
 
 const navByRole = {
   company: [
@@ -25,25 +26,37 @@ const navByRole = {
     { to: "/my-publications", label: "Mes publications", icon: BriefcaseBusiness },
     { to: "/resource-offers/browse", label: "Ressources disponibles", icon: Search },
     { to: "/my-activity", label: "Mon activité", icon: Layers3 },
-    { to: "/messages", label: "Messagerie", icon: MessageSquare, badge: "messages" },
   ],
   employee: [
     { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
     { to: "/profile", label: "Mon profil", icon: UserRound },
-    { to: "/explore-dashboard", label: "Explorer", icon: Search },
+    {
+      label: "Explorer",
+      icon: Search,
+      children: [
+        { to: "/job-offers", label: "Offres d'emploi", icon: BriefcaseBusiness, badge: "newOffers" },
+        { to: "/browse-requests", label: "Demandes de ressources", icon: Handshake },
+        { to: "/resource-offers/browse", label: "Ressources disponibles", icon: Layers3 },
+      ],
+    },
     { to: "/my-activity", label: "Mon activité", icon: Layers3 },
-    { to: "/messages", label: "Messagerie", icon: MessageSquare, badge: "messages" },
   ],
   student: [
     { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
     { to: "/profile", label: "Mon profil", icon: UserRound },
-    { to: "/explore-dashboard", label: "Explorer", icon: Search },
+    {
+      label: "Explorer",
+      icon: Search,
+      children: [
+        { to: "/job-offers", label: "Offres d'emploi", icon: BriefcaseBusiness, badge: "newOffers" },
+        { to: "/browse-requests", label: "Demandes de ressources", icon: Handshake },
+        { to: "/resource-offers/browse", label: "Ressources disponibles", icon: Layers3 },
+      ],
+    },
     { to: "/my-activity", label: "Mon activité", icon: Layers3 },
-    { to: "/messages", label: "Messagerie", icon: MessageSquare, badge: "messages" },
   ],
   university: [
     { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-    { to: "/messages", label: "Messagerie", icon: MessageSquare, badge: "messages" },
   ],
   admin: [
     { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
@@ -58,12 +71,18 @@ function roleLabel(role) {
     student: "Étudiant",
     university: "Université",
     admin: "Administrateur",
-  }[role] || role || "Membre";
+  }[role] || "Membre";
 }
 
 function isRouteActive(pathname, to) {
   return pathname === to || pathname.startsWith(`${to}/`);
 }
+
+const getFirstName = (user) => {
+  if (user?.first_name) return user.first_name;
+  const name = user?.name || user?.full_name || "";
+  return name.trim().split(/\s+/)[0] || "";
+};
 
 export default function AppShell({ children }) {
   const { user } = useAuth();
@@ -71,45 +90,39 @@ export default function AppShell({ children }) {
   const nav = navByRole[user?.role] || navByRole.employee;
 
   const [unreadMessages, setUnreadMessages] = useState(0);
-  const [unreadNotifs, setUnreadNotifs] = useState(0);
+  const [newOffersCount, setNewOffersCount] = useState(0);  // ✅ NOUVEAU
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [explorerOpen, setExplorerOpen] = useState(false);
 
   const isOnMessagesPage = location.pathname.startsWith("/messages");
+  const firstName = getFirstName(user);
 
   useEffect(() => {
     setMobileNavOpen(false);
   }, [location.pathname]);
 
   useEffect(() => {
+    const explorer = nav.find((item) => item.children);
+    if (explorer?.children?.some((item) => isRouteActive(location.pathname, item.to))) {
+      setExplorerOpen(true);
+    }
+  }, [location.pathname, nav]);
+
+  useEffect(() => {
     let cancelled = false;
 
     const fetchCounts = async () => {
-      if (!isOnMessagesPage) {
-        api
-          .get("/conversations/unread-count")
-          .then((res) => {
-            if (!cancelled) {
-              setUnreadMessages(res.data?.unread_count || 0);
-            }
-          })
-          .catch(() => {});
+      if (isOnMessagesPage) {
+        setUnreadMessages(0);
+        return;
       }
 
-      api
-        .get("/notifications")
-        .then((res) => {
-          if (cancelled) return;
-
-          const data = res.data?.notifications || res.data || [];
-          const unread =
-            res.data?.unread_count ??
-            (Array.isArray(data)
-              ? data.filter((notification) => !notification.read_at).length
-              : 0);
-
-          setUnreadNotifs(unread);
-        })
-        .catch(() => {});
+      try {
+        const res = await api.get("/conversations/unread-count");
+        if (!cancelled) setUnreadMessages(res.data?.unread_count || 0);
+      } catch {
+        // silencieux
+      }
     };
 
     fetchCounts();
@@ -121,41 +134,54 @@ export default function AppShell({ children }) {
     };
   }, [user?.id, isOnMessagesPage]);
 
-  useEffect(() => {
-    if (isOnMessagesPage) {
-      setUnreadMessages(0);
+ // ✅ Charger le nombre de nouvelles offres
+useEffect(() => {
+  if (!user?.id) return;
+  let cancelled = false;
+
+  const fetchNewOffers = async () => {
+    // ⚠️ Si on est déjà sur /job-offers, on considère qu'il n'y a rien de nouveau
+    if (location.pathname.startsWith("/job-offers")) {
+      if (!cancelled) setNewOffersCount(0);
       return;
     }
 
-    let cancelled = false;
-
-    api
-      .get("/conversations/unread-count")
-      .then((res) => {
-        if (!cancelled) {
-          setUnreadMessages(res.data?.unread_count || 0);
-        }
-      })
-      .catch(() => {});
-
-    return () => {
-      cancelled = true;
-    };
-  }, [location.pathname, isOnMessagesPage]);
-
-  const getBadgeCount = (badgeType) => {
-    if (badgeType === "messages") {
-      return isOnMessagesPage ? 0 : unreadMessages;
+    try {
+      const res = await api.get("/job-offers/count-new");
+      if (!cancelled) setNewOffersCount(res.data?.count || 0);
+    } catch {
+      // silencieux
     }
-
-    if (badgeType === "notifications") return unreadNotifs;
-    return 0;
   };
 
-  // ✅ NAV LINK COMPACTE
+  fetchNewOffers();
+  const interval = setInterval(fetchNewOffers, 60000);
+
+  return () => {
+    cancelled = true;
+    clearInterval(interval);
+  };
+}, [user?.id, location.pathname]);  // ✅ Ajouter location.pathname
+  // ✅ Marquer les offres comme vues quand on visite /job-offers
+ useEffect(() => {
+  if (!location.pathname.startsWith("/job-offers")) return;
+  if (!user?.id) return;
+
+  // ✅ 1. Mettre à jour côté serveur EN PREMIER
+  api.post("/job-offers/mark-seen")
+    .then(() => {
+      // ✅ 2. Une fois le serveur OK, on met à jour le state local
+      setNewOffersCount(0);
+    })
+    .catch(() => {
+      // En cas d'erreur, on remet quand même à 0 localement
+      setNewOffersCount(0);
+    });
+}, [location.pathname, user?.id]);
+
   const renderNavLink = ({ to, label, icon: Icon, badge }) => {
     const active = isRouteActive(location.pathname, to);
-    const badgeCount = badge ? getBadgeCount(badge) : 0;
+    const badgeCount = badge === "newOffers" ? newOffersCount : 0;
 
     return (
       <Link
@@ -163,163 +189,210 @@ export default function AppShell({ children }) {
         to={to}
         onClick={() => setMobileNavOpen(false)}
         aria-current={active ? "page" : undefined}
-        className={`group flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] transition-all duration-150 ${
+        className={`group flex min-h-[44px] items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] transition-colors duration-150 ${
           active
             ? "bg-[#102A43] font-semibold text-white shadow-sm"
-            : "font-medium text-slate-600 hover:bg-slate-100 hover:text-[#102A43]"
+            : "font-medium text-[#334B63] hover:bg-[#F1F6FA] hover:text-[#102A43]"
         }`}
       >
-        <span
-          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors ${
-            active
-              ? "bg-[#16B8A6] text-[#082F49]"
-              : "bg-transparent text-slate-500 group-hover:bg-white group-hover:text-[#0F766E]"
-          }`}
-        >
-          <Icon size={16} strokeWidth={2} />
-        </span>
-
+        <Icon
+          size={19}
+          strokeWidth={1.8}
+          className={active ? "text-[#76DED7]" : "text-[#70849B] group-hover:text-[#0F9691]"}
+        />
         <span className="min-w-0 flex-1 truncate">{label}</span>
-
-        {badgeCount > 0 && (
-          <span
-            className={`flex min-w-4 items-center justify-center rounded-full px-1.5 py-0.5 text-[9px] font-bold ${
-              active
-                ? "bg-white text-[#102A43]"
-                : "bg-[#DDF8F3] text-[#087F73]"
-            }`}
-          >
-            {badgeCount > 99 ? "99+" : badgeCount}
-          </span>
-        )}
+       {badgeCount > 0 && (
+  <span className={`ml-auto flex h-6 min-w-[26px] shrink-0 items-center justify-center rounded-full px-2 text-[11px] font-extrabold leading-none shadow-sm ${
+    active ? "bg-white text-rose-600" : "bg-rose-500 text-white"
+  }`}>
+    +{badgeCount > 99 ? "99" : badgeCount}
+  </span>
+)}
       </Link>
     );
   };
 
+  const renderNavigation = () => (
+    <nav className="space-y-1">
+      {nav.map((item) => {
+        if (!item.children) return renderNavLink(item);
+
+        const Icon = item.icon;
+        const active = item.children.some((child) =>
+          isRouteActive(location.pathname, child.to)
+        );
+
+        return (
+          <div key={item.label} className="space-y-1">
+            <button
+              type="button"
+              onClick={() => setExplorerOpen((open) => !open)}
+              aria-expanded={explorerOpen}
+              className={`group flex min-h-[44px] w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[14px] transition-colors ${
+                active
+                  ? "font-semibold text-[#102A43]"
+                  : "font-medium text-[#334B63] hover:bg-[#F1F6FA]"
+              }`}
+            >
+              <Icon
+                size={19}
+                strokeWidth={1.8}
+                className={active ? "text-[#0F9691]" : "text-[#70849B] group-hover:text-[#0F9691]"}
+              />
+              <span className="flex-1">Explorer</span>
+              <ChevronRight
+                size={16}
+                className={`text-slate-400 transition-transform ${explorerOpen ? "rotate-90" : ""}`}
+              />
+            </button>
+
+            {explorerOpen && (
+              <div className="ml-5 space-y-1 border-l border-[#DFE8EF] pl-3">
+                {item.children.map((child) => {
+                  const ChildIcon = child.icon;
+                  const childActive = isRouteActive(location.pathname, child.to);
+                  const badgeCount = child.badge === "newOffers" ? newOffersCount : 0;
+
+                  return (
+                    <Link
+                      key={child.to}
+                      to={child.to}
+                      onClick={() => setMobileNavOpen(false)}
+                      aria-current={childActive ? "page" : undefined}
+                      className={`flex min-h-[39px] items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] transition-colors ${
+                        childActive
+                          ? "bg-[#E5F8F5] font-semibold text-[#087F73]"
+                          : "text-[#64788C] hover:bg-[#F4F8FB] hover:text-[#102A43]"
+                      }`}
+                    >
+                      <ChildIcon size={16} strokeWidth={1.8} />
+                      <span className="min-w-0 flex-1 truncate">{child.label}</span>
+                     {badgeCount > 0 && (
+  <span className="ml-auto flex h-6 min-w-[26px] shrink-0 items-center justify-center rounded-full bg-rose-500 px-2 text-[11px] font-extrabold leading-none text-white shadow-sm">
+    +{badgeCount > 99 ? "99" : badgeCount}
+  </span>
+)}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </nav>
+  );
+
   return (
-    <div className="min-h-screen bg-[#F5F8FC] font-sans text-slate-800 antialiased">
-      <div className="flex min-h-screen">
-        {/* Navigation latérale desktop — COMPACTE */}
-        <aside className="fixed inset-y-0 left-0 z-40 hidden w-[240px] flex-col border-r border-slate-200/80 bg-white px-4 py-5 lg:flex">
-          {/* Logo — plus compact */}
-          <Link to="/" className="mb-6 flex items-center gap-2.5 px-1.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#102A43] text-[#5EEAD4] shadow-sm">
-              <Layers3 size={19} strokeWidth={2.2} />
+    <div className="app-shell min-h-screen bg-[#F5F8FA] font-sans text-[#102A43] antialiased">
+      <div className="min-h-screen">
+        {/* Barre latérale desktop */}
+        <aside className="fixed inset-y-0 left-0 z-40 hidden w-[272px] flex-col border-r border-[#E4EBF1] bg-white px-5 py-6 lg:flex">
+          <Link to="/dashboard" className="mb-9 flex items-center gap-3 px-1">
+            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#102A43] text-[#76DED7]">
+              <Layers3 size={23} strokeWidth={2} />
             </span>
-            <span className="min-w-0">
-              <span className="block text-[16px] font-extrabold tracking-tight text-[#102A43]">
+            <span>
+              <span className="block text-[20px] font-extrabold tracking-tight text-[#102A43]">
                 TalentShare
               </span>
-              <span className="mt-0.5 block text-[9px] font-semibold uppercase tracking-[0.15em] text-slate-400">
+              <span className="mt-1 block text-[10px] font-semibold uppercase tracking-[0.17em] text-[#8A9BB0]">
                 Connecter les talents
               </span>
             </span>
           </Link>
 
-          {/* Section label — plus compact */}
-          <div className="mb-2 px-2.5 text-[9px] font-bold uppercase tracking-[0.15em] text-slate-400">
+          <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.17em] text-[#8A9BB0]">
             Espace de travail
+          </p>
+
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            {renderNavigation()}
           </div>
 
-          {/* Nav — plus compact */}
-          <nav className="flex-1 space-y-0.5 overflow-y-auto">
-            {nav.map(renderNavLink)}
-          </nav>
-
-          {/* Carte promotion — plus compacte */}
-          <div className="mt-4 overflow-hidden rounded-xl bg-gradient-to-br from-[#102A43] to-[#164E63] p-3.5 text-white">
-            <div className="mb-2 flex h-7 w-7 items-center justify-center rounded-lg bg-white/10 text-[#5EEAD4]">
-              <Sparkles size={14} />
-            </div>
-            <p className="text-[13px] font-semibold">Grandissez ensemble.</p>
-            <p className="mt-1 text-[10px] leading-4 text-slate-300">
-              Développez votre réseau et découvrez de nouvelles opportunités.
-            </p>
-            <div className="mt-3 flex items-center gap-1.5">
-              <span className="h-1 w-1 rounded-full bg-[#5EEAD4]" />
-              <span className="text-[9px] font-medium text-slate-300">
-                TalentShare · Version bêta
-              </span>
-            </div>
+          <div className="mt-5 border-t border-[#E8EEF3] pt-4">
+            <DropdownMenu variant="sidebar" />
           </div>
         </aside>
 
-        {/* Contenu principal */}
-        <div className="flex min-w-0 flex-1 flex-col lg:ml-[240px]">
-          <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/95 backdrop-blur-xl">
-            <div className="flex min-h-[68px] items-center justify-between gap-3 px-4 sm:px-6 xl:px-9">
-              <div className="flex min-w-0 items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setMobileNavOpen((open) => !open)}
-                  aria-label={mobileNavOpen ? "Fermer le menu" : "Ouvrir le menu"}
-                  aria-expanded={mobileNavOpen}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-600 transition hover:bg-slate-50 lg:hidden"
-                >
-                  {mobileNavOpen ? <X size={18} /> : <Menu size={18} />}
-                </button>
+        {/* Contenu */}
+        <div className="flex min-h-screen min-w-0 flex-col lg:ml-[272px]">
+          <header className="sticky top-0 z-30 border-b border-[#E4EBF1] bg-white/95 backdrop-blur-xl">
+            <div className="flex min-h-[72px] items-center justify-between gap-3 px-4 sm:px-7 xl:px-9">
+              <button
+                type="button"
+                onClick={() => setMobileNavOpen((open) => !open)}
+                aria-label={mobileNavOpen ? "Fermer le menu" : "Ouvrir le menu"}
+                aria-expanded={mobileNavOpen}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#E4EBF1] text-[#526B83] hover:bg-[#F5F8FA] lg:hidden"
+              >
+                {mobileNavOpen ? <X size={19} /> : <Menu size={19} />}
+              </button>
 
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 text-[11px] font-medium text-slate-400">
-                    <span className="hidden sm:inline">TalentShare</span>
-                    <ChevronRight size={12} className="hidden sm:inline" />
-                    <span className="truncate">Espace personnel</span>
-                  </div>
-                  <p className="mt-0.5 truncate text-sm font-bold text-[#102A43] sm:text-base">
-                    Bonjour{user?.name ? `, ${user.name.split(" ")[0]}` : ""}
-                  </p>
-                </div>
+              <div className="hidden min-w-0 flex-1 lg:block">
+                {firstName && (
+                  <h1 className="truncate text-[20px] font-bold tracking-tight text-[#0B1F33]">
+                    Bonjour, {firstName} <span className="ml-0.5">👋</span>
+                  </h1>
+                )}
               </div>
 
-              <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-                <div className="hidden h-8 items-center gap-2 rounded-full border border-[#BDEFE7] bg-[#F0FDFA] px-3 sm:flex">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#10B8A6]" />
-                  <span className="text-[11px] font-semibold text-[#0F766E]">
+              <div className="ml-auto flex shrink-0 items-center gap-3 sm:gap-4">
+                <div className="hidden items-center gap-2 rounded-full border border-[#BDEFE7] bg-[#F0FDFA] px-3.5 py-1.5 sm:flex">
+                  <span className="h-2 w-2 rounded-full bg-[#10B8A6]" />
+                  <span className="text-[12px] font-semibold text-[#0F9691]">
                     {roleLabel(user?.role)}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-center">
-                  <NotificationBell />
-                </div>
-
-                <div className="h-7 w-px bg-slate-200" />
-
-                <DropdownMenu />
+                <Link
+                  to="/messages"
+                  aria-label={
+                    unreadMessages > 0
+                      ? `Messagerie, ${unreadMessages} message(s) non lu(s)`
+                      : "Messagerie"
+                  }
+                  className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-[#E4EBF1] text-[#526B83] transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+                >
+                  <MessageCircle size={19} strokeWidth={1.9} />
+                  {unreadMessages > 0 && (
+                    <span className="absolute -right-1 -top-1 flex min-w-[18px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[10px] font-bold leading-[18px] text-white">
+                      {unreadMessages > 99 ? "99+" : unreadMessages}
+                    </span>
+                  )}
+                </Link>
+<ActivityHistory />
+                <NotificationBell />
               </div>
             </div>
           </header>
 
-          {/* Menu mobile */}
           {mobileNavOpen && (
-            <div className="fixed inset-0 top-[68px] z-40 lg:hidden">
+            <div className="fixed inset-0 top-[72px] z-40 lg:hidden">
               <button
                 type="button"
                 aria-label="Fermer le menu"
                 onClick={() => setMobileNavOpen(false)}
-                className="absolute inset-0 bg-slate-950/30 backdrop-blur-[2px]"
+                className="absolute inset-0 bg-[#102A43]/35 backdrop-blur-[2px]"
               />
-              <nav className="relative max-h-[calc(100vh-68px)] w-full overflow-y-auto border-b border-slate-200 bg-white p-4 shadow-xl sm:max-w-sm">
-                <div className="mb-3 flex items-center gap-3 rounded-xl bg-[#F5F8FC] p-3">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#102A43] text-[#5EEAD4]">
-                    <Layers3 size={18} />
-                  </span>
-                  <div>
-                    <p className="text-sm font-bold text-[#102A43]">TalentShare</p>
-                    <p className="text-[11px] text-slate-500">{roleLabel(user?.role)}</p>
-                  </div>
+              <nav className="relative flex max-h-[calc(100vh-72px)] w-full max-w-sm flex-col overflow-y-auto border-r border-[#E4EBF1] bg-white p-5 shadow-xl">
+                <p className="mb-4 px-3 text-[10px] font-bold uppercase tracking-[0.17em] text-[#8A9BB0]">
+                  Espace de travail
+                </p>
+                {renderNavigation()}
+                <div className="mt-5 border-t border-[#E8EEF3] pt-4">
+                  <DropdownMenu variant="sidebar" />
                 </div>
-                <div className="space-y-0.5">{nav.map(renderNavLink)}</div>
               </nav>
             </div>
           )}
 
-          <main className="w-full flex-1 px-4 py-6 sm:px-6 sm:py-8 xl:px-9">
+          <main className="app-content w-full flex-1 px-4 py-6 sm:px-7 sm:py-8 xl:px-9">
             <div className="mx-auto w-full max-w-[1600px]">{children}</div>
           </main>
 
-          <footer className="border-t border-slate-200/70 bg-white/70 px-4 py-4 sm:px-8">
-            <p className="text-center text-xs text-slate-400">
+          <footer className="border-t border-[#E4EBF1] bg-white/70 px-4 py-4 sm:px-8">
+            <p className="text-center text-xs text-[#8A9BB0]">
               © {new Date().getFullYear()} TalentShare · Ensemble, créons des opportunités.
             </p>
           </footer>

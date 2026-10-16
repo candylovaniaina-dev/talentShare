@@ -564,7 +564,7 @@ function Avatar({ candidate, size = "normal" }) {
       : "h-12 w-12 rounded-xl text-sm";
 
   const avatarUrl = candidate?.avatar_path
-    ? `http://localhost:8001/storage/${candidate.avatar_path}`
+    ? `/storage/${candidate.avatar_path}`
     : null;
 
   if (avatarUrl && !imageError) {

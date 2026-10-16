@@ -83,7 +83,7 @@ export default function ConversationContextMenu({
             className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition ${
               item.danger
                 ? "mt-1 border-t border-slate-100 pt-3 text-rose-600 hover:bg-rose-50"
-                : "text-slate-600 hover:bg-[#F0FCF8] hover:text-[#0F1E45]"
+                : "text-slate-600 hover:bg-[#F0FCF8] hover:text-[#12364D]"
             }`}
           >
             <span

@@ -5,11 +5,11 @@ export default {
   theme: {
     extend: {
       colors: {
-        navy: { DEFAULT: '#0B1633', light: '#121F49' },
-        mint: { DEFAULT: '#6EE7C8', dark: '#4FD1B0' },
+        navy: { DEFAULT: '#0B1F33', light: '#12364D' },
+        mint: { DEFAULT: '#16B8B1', dark: '#0F9691' },
       },
       fontFamily: {
-        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       keyframes: {
         float: {
@@ -17,8 +17,8 @@ export default {
           '50%': { transform: 'translateY(-10px)' },
         },
         pulseGlow: {
-          '0%, 100%': { boxShadow: '0 0 0 0 rgba(110,231,200,0.35)' },
-          '50%': { boxShadow: '0 0 0 14px rgba(110,231,200,0)' },
+          '0%, 100%': { boxShadow: '0 0 0 0 rgba(22,184,177,0.30)' },
+          '50%': { boxShadow: '0 0 0 14px rgba(22,184,177,0)' },
         },
       },
       animation: {

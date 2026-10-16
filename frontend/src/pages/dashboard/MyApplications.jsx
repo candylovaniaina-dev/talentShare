@@ -89,7 +89,7 @@ const STAT_ITEMS = [
   {
     key: "total",
     label: "Total",
-    color: "text-[#0A1229]",
+    color: "text-[#0B1F33]",
     icon: FileText,
     iconBg: "bg-slate-100",
     iconColor: "text-slate-600",
@@ -215,7 +215,7 @@ function ApplicationCard({ application }) {
       className="group block rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md sm:p-5"
     >
       <div className="flex items-start gap-4">
-        <div className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#0A1229] text-emerald-300 sm:flex">
+        <div className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#0B1F33] text-emerald-300 sm:flex">
           <Briefcase size={22} />
         </div>
 
@@ -229,7 +229,7 @@ function ApplicationCard({ application }) {
             </span>
           </div>
 
-          <h3 className="break-words text-base font-bold text-[#0A1229] transition group-hover:text-emerald-700 sm:text-lg">
+          <h3 className="break-words text-base font-bold text-[#0B1F33] transition group-hover:text-emerald-700 sm:text-lg">
             {offerTitle}
           </h3>
 
@@ -300,7 +300,7 @@ function EmptyState({ filter, search }) {
         {hasSearch ? <Search size={28} /> : <Inbox size={28} />}
       </div>
 
-      <h3 className="mt-5 text-lg font-bold text-[#0A1229]">{title}</h3>
+      <h3 className="mt-5 text-lg font-bold text-[#0B1F33]">{title}</h3>
 
       <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
         {description}
@@ -309,7 +309,7 @@ function EmptyState({ filter, search }) {
       {!hasSearch && !filteredByStatus && (
         <Link
           to="/opportunites"
-          className="mt-6 inline-flex items-center gap-2 rounded-xl bg-emerald-400 px-5 py-3 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-300"
+          className="mt-6 inline-flex items-center gap-2 rounded-xl bg-emerald-400 px-5 py-3 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-300"
         >
           <Plus size={17} />
           Voir les opportunités
@@ -323,9 +323,9 @@ function EmptyState({ filter, search }) {
 function LoadingState() {
   return (
     <AppShell>
-      <main className="min-h-screen bg-[#F5F7FB] px-4 py-8 sm:px-6 lg:px-8">
+      <main className="min-h-screen bg-[#F5F8FA] px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl animate-pulse space-y-6">
-          <div className="h-40 rounded-3xl bg-[#0A1229]" />
+          <div className="h-40 rounded-3xl bg-[#0B1F33]" />
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {STAT_ITEMS.map((item) => (
@@ -461,10 +461,10 @@ export default function MyApplications() {
 
   return (
     <AppShell>
-      <main className="min-h-screen bg-[#F5F7FB] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <main className="min-h-screen bg-[#F5F8FA] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
         <div className="mx-auto max-w-6xl space-y-6">
           {/* En-tête */}
-          <section className="relative overflow-hidden rounded-3xl bg-[#0A1229] p-6 text-white shadow-lg sm:p-8 lg:p-9">
+          <section className="relative overflow-hidden rounded-3xl bg-[#0B1F33] p-6 text-white shadow-lg sm:p-8 lg:p-9">
             <div className="pointer-events-none absolute -right-12 -top-20 h-64 w-64 rounded-full bg-emerald-400/10 blur-3xl" />
             <div className="pointer-events-none absolute -bottom-24 right-1/3 h-48 w-48 rounded-full bg-blue-400/10 blur-3xl" />
 
@@ -560,7 +560,7 @@ export default function MyApplications() {
           <section>
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
-                <h2 className="text-base font-bold text-[#0A1229]">
+                <h2 className="text-base font-bold text-[#0B1F33]">
                   Vue d'ensemble
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
@@ -584,7 +584,7 @@ export default function MyApplications() {
           <section className="space-y-4">
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
               <div>
-                <h2 className="text-lg font-bold text-[#0A1229]">
+                <h2 className="text-lg font-bold text-[#0B1F33]">
                   Toutes mes candidatures
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
@@ -604,7 +604,7 @@ export default function MyApplications() {
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder="Rechercher une offre..."
                   aria-label="Rechercher une candidature"
-                  className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-sm text-[#0A1229] outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-400/10"
+                  className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-sm text-[#0B1F33] outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-400/10"
                 />
               </div>
             </div>
@@ -633,7 +633,7 @@ export default function MyApplications() {
                       aria-pressed={active}
                       className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition sm:text-sm ${
                         active
-                          ? "border-[#0A1229] bg-[#0A1229] text-white shadow-sm"
+                          ? "border-[#0B1F33] bg-[#0B1F33] text-white shadow-sm"
                           : "border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:bg-emerald-50/50 hover:text-emerald-800"
                       }`}
                     >
@@ -657,7 +657,7 @@ export default function MyApplications() {
             {/* Résultats */}
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm text-slate-500">
-                <span className="font-bold text-[#0A1229]">
+                <span className="font-bold text-[#0B1F33]">
                   {filtered.length}
                 </span>{" "}
                 résultat(s)
@@ -699,7 +699,7 @@ export default function MyApplications() {
               </div>
 
               <div>
-                <p className="text-sm font-semibold text-[#0A1229]">
+                <p className="text-sm font-semibold text-[#0B1F33]">
                   Garde un œil sur tes candidatures
                 </p>
                 <p className="mt-1 text-xs leading-5 text-slate-500">

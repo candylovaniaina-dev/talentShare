@@ -216,7 +216,7 @@ export default function AdminVerifications() {
               <button
                 type="button"
                 onClick={load}
-                className="mt-4 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400"
+                className="mt-4 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400"
               >
                 Réessayer
               </button>
@@ -316,7 +316,7 @@ function VerificationCard({ item, processing, onApprove, onReject }) {
             onClick={onApprove}
             disabled={processing}
             title="Approuver la demande"
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
           >
             {processing ? (
               <Loader2 size={16} className="animate-spin" />

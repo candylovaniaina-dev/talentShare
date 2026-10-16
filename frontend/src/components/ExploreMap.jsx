@@ -55,7 +55,7 @@ export default function ExploreMap({ profiles }) {
           </div>
 
           <div>
-            <h3 className="text-sm font-bold text-[#0F1E45] sm:text-base">
+            <h3 className="text-sm font-bold text-[#12364D] sm:text-base">
               Répartition géographique
             </h3>
             <p className="mt-0.5 text-xs text-slate-500">
@@ -108,7 +108,7 @@ export default function ExploreMap({ profiles }) {
                   className="talentshare-map-tooltip"
                 >
                   <div className="px-1 py-0.5">
-                    <p className="font-bold text-[#0F1E45]">{city}</p>
+                    <p className="font-bold text-[#12364D]">{city}</p>
                     <p className="text-xs text-slate-500">
                       {count} profil{count > 1 ? "s" : ""}
                     </p>
@@ -124,7 +124,7 @@ export default function ExploreMap({ profiles }) {
             <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
               <MapPin size={23} />
             </div>
-            <p className="text-sm font-bold text-[#0F1E45]">
+            <p className="text-sm font-bold text-[#12364D]">
               Aucune localisation disponible
             </p>
             <p className="mt-1 max-w-xs text-xs leading-5 text-slate-500">

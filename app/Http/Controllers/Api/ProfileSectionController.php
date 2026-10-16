@@ -63,15 +63,15 @@ class ProfileSectionController extends Controller
     public function storeEducation(Request $request)
     {
         $data = $request->validate([
-            'institution'     => ['required', 'string', 'max:150'],
-            'degree'          => ['required', 'string', 'max:150'],
-            'field_of_study'  => ['nullable', 'string', 'max:150'],
-            'study_level'     => ['nullable', 'string', 'max:40'],      // ✅ AJOUT
-            'start_date'      => ['nullable', 'date'],                   // ✅ nullable
-            'end_date'        => ['nullable', 'date', 'after_or_equal:start_date'],
-            'is_current'      => ['boolean'],
-            'is_young_talent' => ['boolean'],                            // ✅ AJOUT
-        ]);
+        'institution'     => ['required', 'string', 'max:150'],
+        'degree'          => ['required', 'string', 'max:150'],
+        'field_of_study'  => ['nullable', 'string', 'max:150'],
+        'study_level'     => ['nullable', 'string', 'max:40'],      // ✅ déjà permissif ?
+        'start_date'      => ['nullable', 'date'],
+        'end_date'        => ['nullable', 'date', 'after_or_equal:start_date'],
+        'is_current'      => ['boolean'],
+        'is_young_talent' => ['boolean'],
+    ]);
 
         // ✅ Fallback automatique si pas de start_date (Young Talent)
         if (empty($data['start_date'])) {
@@ -90,7 +90,7 @@ class ProfileSectionController extends Controller
             'institution'     => ['sometimes', 'string', 'max:150'],
             'degree'          => ['sometimes', 'string', 'max:150'],
             'field_of_study'  => ['nullable', 'string', 'max:150'],
-            'study_level'     => ['nullable', 'string', 'max:40'],       // ✅ AJOUT
+             'study_level'     => ['nullable', 'string', 'max:40'],      // ✅ AJOUT
             'start_date'      => ['sometimes', 'nullable', 'date'],      // ✅ nullable
             'end_date'        => ['nullable', 'date', 'after_or_equal:start_date'],
             'is_current'      => ['boolean'],

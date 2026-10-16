@@ -28,7 +28,7 @@ class User extends Authenticatable
     'phone',
     'avatar_path',
     'status', 'first_name', 'last_name', 'country',
-    'theme_preference', 'font_size', 'high_contrast', 'reduce_motion',
+    'theme_preference', 'font_size', 'high_contrast', 'reduce_motion','provider', 'provider_id', 'last_login_at', 
 ];
 
     /**

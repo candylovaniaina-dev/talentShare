@@ -135,7 +135,7 @@ export default function RobotMascot({ mode = "idle" }) {
           <defs>
             <linearGradient id="rbHead" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#1e3a8a" />
-              <stop offset="100%" stopColor="#0F1E45" />
+              <stop offset="100%" stopColor="#12364D" />
             </linearGradient>
             <linearGradient id="rbBody" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#16295e" />
@@ -188,7 +188,7 @@ export default function RobotMascot({ mode = "idle" }) {
               strokeOpacity=".35"
             />
 
-            <rect x="130" y="206" width="40" height="18" fill="#0F1E45" />
+            <rect x="130" y="206" width="40" height="18" fill="#12364D" />
             <rect
               x="88"
               y="218"
@@ -242,7 +242,7 @@ export default function RobotMascot({ mode = "idle" }) {
                 <g className="rb-blink">
                   <circle
                     r="23"
-                    fill="#0A1229"
+                    fill="#0B1F33"
                     stroke={eyeColor}
                     strokeOpacity=".35"
                   />

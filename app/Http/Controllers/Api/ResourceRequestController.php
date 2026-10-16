@@ -576,4 +576,36 @@ class ResourceRequestController extends Controller
 
         $resourceRequest->skills()->sync($syncData);
     }
+        /**
+     * ✅ Compte les nouvelles demandes depuis la dernière visite
+     */
+    public function countNew(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['count' => 0]);
+        }
+
+        $since = $user->resource_requests_last_seen_at;
+
+        $count = ResourceRequest::published()
+            ->when($since, fn ($q) => $q->where('created_at', '>', $since))
+            ->when(!$since, fn ($q) => $q->where('created_at', '>', now()->subDays(30)))
+            ->where('created_by', '!=', $user->id)
+            ->count();
+
+        return response()->json(['count' => $count]);
+    }
+
+    /**
+     * ✅ Marque les demandes comme vues
+     */
+    public function markSeen(Request $request)
+    {
+        $request->user()?->update([
+            'resource_requests_last_seen_at' => now(),
+        ]);
+
+        return response()->json(['success' => true]);
+    }
 }

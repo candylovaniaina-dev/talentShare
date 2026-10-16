@@ -226,7 +226,7 @@ export default function ResourceOfferDetail() {
           <h2 className="font-bold mb-4">Profil du salarié</h2>
           <div className="flex items-center gap-4">
             {profile.avatar_path ? (
-              <img src={`http://localhost:8001/storage/${profile.avatar_path}`} alt={talentUser.name}
+              <img src={`/storage/${profile.avatar_path}`} alt={talentUser.name}
                 className="h-16 w-16 rounded-2xl object-cover" />
             ) : (
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-mint/20 text-xl font-bold text-navy">

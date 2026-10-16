@@ -46,7 +46,7 @@ const VerifyEmail = () => {
   const isSuccess = status === "success";
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0A1229] px-4 py-20 text-white">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0B1F33] px-4 py-20 text-white">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div
           className={`absolute -left-32 top-0 h-96 w-96 rounded-full blur-[120px] ${
@@ -138,7 +138,7 @@ const VerifyEmail = () => {
             <div className="mt-7 space-y-3">
               <Link
                 to="/login"
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-300 px-5 py-3.5 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-200"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-300 px-5 py-3.5 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-200"
               >
                 Retour à la connexion
                 <ArrowRight size={17} />
@@ -156,7 +156,7 @@ const VerifyEmail = () => {
           {isSuccess && (
             <Link
               to="/login"
-              className="mt-7 inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-300 px-5 py-3.5 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-200"
+              className="mt-7 inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-300 px-5 py-3.5 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-200"
             >
               Continuer vers la connexion
               <ArrowRight size={17} />

@@ -1,689 +1,599 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  Search,
-  MapPin,
-  Calendar,
-  Clock,
-  DollarSign,
-  Zap,
-  Users,
-  Tag,
-  SlidersHorizontal,
-  X,
-  Eye,
-  Briefcase,
-  Building2,
-  ShieldCheck,
-  Filter,
-  Plus,
-  Loader2,
-  ArrowRight,
-  RefreshCw,
-  AlertCircle,
-} from "lucide-react";
-import PublicNavbar from "../components/layout/PublicNavbar";
 import AppShell from "../components/layout/AppShell";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
+import {
+  Search,
+  MapPin,
+  Plus,
+  X,
+  Loader2,
+  Home,
+  CalendarDays,
+  Users,
+  CheckCircle2,
+  FileText,
+  ChevronRight,
+  AlertCircle,
+  SlidersHorizontal,
+  Sparkles,
+  RefreshCw,
+  ChevronLeft,
+  Banknote,
+  Clock,
+  Building2,
+  UserRound,
+  Zap,
+  Layers,
+  Eye,
+} from "lucide-react";
 
+/* ============================================================
+   CONFIG
+============================================================ */
+const REQUEST_TYPES = {
+  company: "Entreprise",
+  talent:  "Talent",
+};
+
+const TYPE_FILTERS = [
+  { id: "all",      label: "Toutes",       icon: SlidersHorizontal },
+  { id: "company",  label: "Entreprises",  icon: Building2 },
+  { id: "talent",   label: "Talents",      icon: UserRound },
+  { id: "urgent",   label: "Urgent",       icon: Zap },
+  { id: "remote",   label: "Télétravail",  icon: Home },
+];
+
+const ITEMS_PER_PAGE = 9;
+
+/* ============================================================
+   HELPERS
+============================================================ */
 const asArray = (data) => {
   if (Array.isArray(data)) return data;
   if (data && Array.isArray(data.data)) return data.data;
   return [];
 };
 
-const STATUS_CFG = {
-  published: {
-    label: "Ouverte",
-    badge: "border-emerald-500/20 bg-emerald-500/10 text-emerald-400",
-  },
-  filled: {
-    label: "Pourvue",
-    badge: "border-blue-500/20 bg-blue-500/10 text-blue-400",
-  },
-  closed: {
-    label: "Fermée",
-    badge: "border-rose-500/20 bg-rose-500/10 text-rose-400",
-  },
-  expired: {
-    label: "Expirée",
-    badge: "border-[var(--border-app)] bg-[var(--bg-surface-hover)] text-[var(--text-muted)]",
-  },
-};
-
-const formatDate = (date) => {
-  if (!date) return null;
-
-  const parsed = new Date(date);
-  if (Number.isNaN(parsed.getTime())) return null;
-
-  return parsed.toLocaleDateString("fr-FR", {
+const formatDate = (value) => {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat("fr-FR", {
     day: "numeric",
     month: "short",
     year: "numeric",
-  });
+  }).format(date);
 };
 
+const formatRelativeDate = (value) => {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  const diffDays = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return "Publié aujourd'hui";
+  if (diffDays === 1) return "Publié hier";
+  if (diffDays < 30) return `Publié il y a ${diffDays} jours`;
+  return `Publié le ${formatDate(value)}`;
+};
+
+const formatBudget = (min, max) => {
+  if (!min && !max) return null;
+  const fmt = (n) => new Intl.NumberFormat("fr-FR").format(n);
+  if (min && max) return `${fmt(min)} - ${fmt(max)} € / jour`;
+  if (min) return `À partir de ${fmt(min)} € / jour`;
+  return `Jusqu'à ${fmt(max)} € / jour`;
+};
+
+const getAuthorName = (r) =>
+  r.company?.name || r.author?.name || "Utilisateur";
+
+const getInitials = (name = "") =>
+  name.split(/\s+/).filter(Boolean).slice(0, 2)
+    .map((p) => p[0]?.toUpperCase()).join("") || "TS";
+
+/* ============================================================
+   PAGE PRINCIPALE
+============================================================ */
 export default function BrowseResourceRequests() {
   const { user } = useAuth();
-  const Layout = user ? AppShell : PublicOnlyLayout;
-
-  const [search, setSearch] = useState("");
-  const [country, setCountry] = useState("");
-  const [city, setCity] = useState("");
-  const [remoteOnly, setRemoteOnly] = useState(false);
-  const [urgency, setUrgency] = useState("");
-  const [budgetMin, setBudgetMin] = useState("");
-  const [budgetMax, setBudgetMax] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
+  const isCompany = user?.role === "company";
 
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [total, setTotal] = useState(0);
+  const [toast, setToast] = useState(null);
 
-  useEffect(() => {
-    let cancelled = false;
+  const [search, setSearch] = useState("");
+  const [citySearch, setCitySearch] = useState("");
+  const [activeFilter, setActiveFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("recent");
+  const [currentPage, setCurrentPage] = useState(1);
 
-    setLoading(true);
-    setError("");
-
-    const timeout = setTimeout(async () => {
-      try {
-        const res = await api.get("/resource-requests", {
-          params: {
-            search: search || undefined,
-            country: country || undefined,
-            city: city || undefined,
-            remote: remoteOnly || undefined,
-            urgency: urgency || undefined,
-            budget_min: budgetMin || undefined,
-            budget_max: budgetMax || undefined,
-            per_page: 20,
-          },
-        });
-
-        if (cancelled) return;
-
-        const result = asArray(res.data);
-        setRequests(result);
-        setTotal(
-          Number(res.data?.total ?? res.data?.meta?.total ?? result.length)
-        );
-      } catch (err) {
-        if (cancelled) return;
-
-        console.error("Erreur de chargement des demandes :", err);
-        setRequests([]);
-        setTotal(0);
-        setError(
-          err.response?.data?.message ||
-            "Impossible de charger les demandes pour le moment."
-        );
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }, 300);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timeout);
-    };
-  }, [search, country, city, remoteOnly, urgency, budgetMin, budgetMax]);
-
-  const clearFilters = () => {
-    setSearch("");
-    setCountry("");
-    setCity("");
-    setRemoteOnly(false);
-    setUrgency("");
-    setBudgetMin("");
-    setBudgetMax("");
+  const flash = (msg, type = "success") => {
+    setToast({ msg, type });
+    window.setTimeout(() => setToast(null), 3500);
   };
 
-  const activeFiltersCount = [
-    country,
-    city,
-    remoteOnly,
-    urgency,
-    budgetMin,
-    budgetMax,
-  ].filter(Boolean).length;
+  const load = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get("/resource-requests");
+      const data = asArray(res.data);
+      setRequests(data);
+    } catch (err) {
+      console.error("Erreur chargement des demandes :", err);
+      setRequests([]);
+      flash("Impossible de charger les demandes pour le moment.", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const canPublish =
-    user && (user.role === "company" || user.role === "employee");
+  useEffect(() => {
+    load();
+  }, []);
 
+  /* ============================================================
+     FILTRAGE + TRI
+  ============================================================ */
+  const filteredRequests = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    const cityQuery = citySearch.trim().toLowerCase();
+
+    const result = requests.filter((r) => {
+      const authorName = getAuthorName(r);
+      const matchesSearch =
+        !query ||
+        [r.title, r.description, authorName, r.city, r.country]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(query));
+
+      const matchesCity =
+        !cityQuery ||
+        [r.city, r.country]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(cityQuery));
+
+      const isTalent = r.author_type === "talent";
+      const matchesFilter =
+        activeFilter === "all" ||
+        (activeFilter === "company" && !isTalent) ||
+        (activeFilter === "talent"  && isTalent) ||
+        (activeFilter === "urgent"  && r.urgency === "urgent") ||
+        (activeFilter === "remote"  && Boolean(r.remote));
+
+      return matchesSearch && matchesCity && matchesFilter;
+    });
+
+    if (sortBy === "title") {
+      result.sort((a, b) => (a.title || "").localeCompare(b.title || "", "fr"));
+    } else if (sortBy === "budget") {
+      result.sort((a, b) => {
+        const aMax = Number(a.budget_max || a.budget_min || 0);
+        const bMax = Number(b.budget_max || b.budget_min || 0);
+        return bMax - aMax;
+      });
+    } else {
+      result.sort(
+        (a, b) =>
+          new Date(b.created_at || 0).getTime() -
+          new Date(a.created_at || 0).getTime()
+      );
+    }
+
+    return result;
+  }, [requests, search, citySearch, activeFilter, sortBy]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, citySearch, activeFilter, sortBy]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredRequests.length / ITEMS_PER_PAGE));
+  const paginatedRequests = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredRequests.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredRequests, currentPage]);
+
+  const canPublish = user && (user.role === "company" || user.role === "employee");
+
+  /* ============================================================
+     RENDU
+  ============================================================ */
   return (
-    <Layout>
-      {!user && (
-        <div className="mx-auto max-w-7xl px-4 pt-5 sm:px-6 lg:px-8">
-          <PublicNavbar variant="light" />
-        </div>
-      )}
+    <AppShell>
+      <div className="mx-auto w-full max-w-[1600px] space-y-4 pb-8">
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
-        {/* En-tête */}
-        <section className="relative overflow-hidden rounded-3xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-6 sm:p-9">
-          <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl" />
+        {/* ============ TITRE COMPACT + ACTIONS ============ */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#079C94]">
+              {isCompany ? "ESPACE ENTREPRISE" : "ESPACE TALENT"}
+            </p>
+            <h1 className="mt-0.5 text-xl font-extrabold tracking-tight text-[#102A43] sm:text-2xl">
+              Demandes de ressources
+            </h1>
+            <p className="mt-0.5 text-xs text-[#71849A]">
+              Découvrez les besoins des entreprises et des talents.
+            </p>
+          </div>
 
-          <div className="relative flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
-            <div className="max-w-2xl">
-              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-400">
-                <Briefcase size={14} />
-                Opportunités de collaboration
-              </span>
-
-              <h1 className="mt-5 text-3xl font-bold leading-tight tracking-tight text-[var(--text-app)] sm:text-4xl">
-                Les besoins des entreprises,
-                <span className="block text-emerald-400">
-                  vos prochaines opportunités.
-                </span>
-              </h1>
-
-              <p className="mt-4 max-w-xl text-sm leading-7 text-[var(--text-muted)] sm:text-base">
-                Explorez les demandes de ressources, identifiez les missions
-                qui correspondent à vos compétences et proposez votre profil.
-              </p>
-            </div>
-
+          <div className="flex shrink-0 items-center gap-2">
             {canPublish && (
               <Link
                 to="/resource-requests/new"
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-400 px-5 py-3 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-300"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-[#102A43] px-3 py-2 text-xs font-bold text-white transition hover:bg-[#174461]"
               >
-                <Plus size={17} />
+                <Plus size={14} />
                 Publier un besoin
               </Link>
             )}
           </div>
-        </section>
+        </div>
 
-        {/* Barre de recherche */}
-        <section className="mt-6 rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-3 sm:p-4">
-          <div className="flex items-center gap-3 rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-4 py-3 focus-within:border-emerald-500/50">
-            <Search size={18} className="shrink-0 text-[var(--text-faint)]" />
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Rechercher un poste, une compétence..."
-              className="w-full bg-transparent text-sm text-[var(--text-app)] outline-none placeholder:text-[var(--text-faint)]"
-            />
-            {search && (
-              <button
-                type="button"
-                onClick={() => setSearch("")}
-                aria-label="Effacer la recherche"
-                className="text-[var(--text-faint)] transition hover:text-[var(--text-app)]"
-              >
-                <X size={16} />
-              </button>
-            )}
-          </div>
-
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() =>
-                setUrgency((value) => (value === "urgent" ? "" : "urgent"))
-              }
-              aria-pressed={urgency === "urgent"}
-              className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-semibold transition ${
-                urgency === "urgent"
-                  ? "border-rose-500/40 bg-rose-500/10 text-rose-400"
-                  : "border-[var(--border-app)] text-[var(--text-muted)] hover:border-rose-500/30 hover:text-rose-400"
-              }`}
-            >
-              <Zap size={13} />
-              Besoins urgents
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setRemoteOnly((value) => !value)}
-              aria-pressed={remoteOnly}
-              className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-semibold transition ${
-                remoteOnly
-                  ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
-                  : "border-[var(--border-app)] text-[var(--text-muted)] hover:border-emerald-500/30 hover:text-emerald-400"
-              }`}
-            >
-              <MapPin size={13} />
-              Télétravail
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setShowFilters((value) => !value)}
-              aria-expanded={showFilters}
-              className={`ml-auto inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-semibold transition ${
-                showFilters
-                  ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
-                  : "border-[var(--border-app)] text-[var(--text-app)] hover:border-emerald-500/30"
-              }`}
-            >
-              <SlidersHorizontal size={15} />
-              Tous les filtres
-              {activeFiltersCount > 0 && (
-                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-emerald-400 px-1 text-[10px] font-bold text-[#0A1229]">
-                  {activeFiltersCount}
-                </span>
-              )}
-            </button>
-          </div>
-
-          {/* Filtres avancés */}
-          {showFilters && (
-            <div className="mt-5 border-t border-[var(--border-app)] pt-5">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-sm font-bold text-[var(--text-app)]">
-                    Filtres avancés
-                  </h2>
-                  <p className="mt-1 text-xs text-[var(--text-muted)]">
-                    Précisez votre recherche.
-                  </p>
-                </div>
-
-                {activeFiltersCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={clearFilters}
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-400 hover:text-rose-300"
-                  >
-                    <X size={13} />
-                    Effacer les filtres
-                  </button>
-                )}
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <FilterField label="Pays">
-                  <input
-                    value={country}
-                    onChange={(event) => setCountry(event.target.value)}
-                    placeholder="Ex. : Madagascar"
-                    className={inputClass}
-                  />
-                </FilterField>
-
-                <FilterField label="Ville">
-                  <input
-                    value={city}
-                    onChange={(event) => setCity(event.target.value)}
-                    placeholder="Ex. : Antananarivo"
-                    className={inputClass}
-                  />
-                </FilterField>
-
-                <FilterField label="Budget minimum (€/jour)">
-                  <input
-                    type="number"
-                    min="0"
-                    value={budgetMin}
-                    onChange={(event) => setBudgetMin(event.target.value)}
-                    placeholder="0"
-                    className={inputClass}
-                  />
-                </FilterField>
-
-                <FilterField label="Budget maximum (€/jour)">
-                  <input
-                    type="number"
-                    min="0"
-                    value={budgetMax}
-                    onChange={(event) => setBudgetMax(event.target.value)}
-                    placeholder="Sans limite"
-                    className={inputClass}
-                  />
-                </FilterField>
-              </div>
-
-              <div className="mt-5 flex justify-end">
+        {/* ============ RECHERCHE COMPACTE ============ */}
+        <section className="rounded-2xl border border-[#E5EDF3] bg-white p-2.5 shadow-sm shadow-[#102A43]/[0.03]">
+          <div className="grid gap-2 md:grid-cols-[1.4fr_1fr_auto]">
+            <label className="flex min-w-0 items-center gap-2.5 rounded-xl border border-[#E0E9F0] bg-[#FBFDFE] px-3 transition focus-within:border-[#19B8AE] focus-within:ring-2 focus-within:ring-[#19B8AE]/10">
+              <Search size={16} className="shrink-0 text-[#7C91A5]" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Intitulé, compétence ou entreprise"
+                className="min-w-0 flex-1 bg-transparent py-2 text-sm text-[#102A43] outline-none placeholder:text-[#96A7B8]"
+              />
+              {search && (
                 <button
                   type="button"
-                  onClick={() => setShowFilters(false)}
-                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-400 px-5 py-2.5 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-300"
+                  onClick={() => setSearch("")}
+                  aria-label="Effacer"
+                  className="text-slate-400 hover:text-slate-700"
                 >
-                  Afficher les résultats
-                  <ArrowRight size={15} />
+                  <X size={14} />
                 </button>
-              </div>
-            </div>
-          )}
-        </section>
+              )}
+            </label>
 
-        {/* Compteur */}
-        <div className="mb-4 mt-8 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-bold text-[var(--text-app)]">
-              Demandes de ressources
-            </h2>
-            <p className="mt-1 text-sm text-[var(--text-muted)]">
-              {loading
-                ? "Recherche des demandes..."
-                : `${total} résultat${total !== 1 ? "s" : ""} disponible${total !== 1 ? "s" : ""}`}
-            </p>
-          </div>
+            <label className="flex min-w-0 items-center gap-2.5 rounded-xl border border-[#E0E9F0] bg-[#FBFDFE] px-3 transition focus-within:border-[#19B8AE] focus-within:ring-2 focus-within:ring-[#19B8AE]/10">
+              <MapPin size={16} className="shrink-0 text-[#7C91A5]" />
+              <input
+                value={citySearch}
+                onChange={(e) => setCitySearch(e.target.value)}
+                placeholder="Ville"
+                className="min-w-0 flex-1 bg-transparent py-2 text-sm text-[#102A43] outline-none placeholder:text-[#96A7B8]"
+              />
+            </label>
 
-          {!loading && (
             <button
               type="button"
               onClick={() => {
-                setSearch((value) => value);
-                setCountry((value) => value);
+                setSearch("");
+                setCitySearch("");
+                setActiveFilter("all");
               }}
-              className="inline-flex items-center gap-2 text-xs font-semibold text-[var(--text-muted)] transition hover:text-emerald-400"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#102A43] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#174461]"
             >
-              <RefreshCw size={13} />
-              Actualisation automatique
+              <Search size={15} />
+              Rechercher
             </button>
-          )}
+          </div>
+        </section>
+
+        {/* ============ FILTRES + TRI ============ */}
+        <section className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap gap-1.5">
+            {TYPE_FILTERS.map((filter) => {
+              const Icon = filter.icon;
+              const active = activeFilter === filter.id;
+              return (
+                <button
+                  key={filter.id}
+                  type="button"
+                  onClick={() => setActiveFilter(filter.id)}
+                  aria-pressed={active}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition ${
+                    active
+                      ? "border-[#B8F0E8] bg-[#E6FAF6] text-[#087F73]"
+                      : "border-[#E3EBF2] bg-white text-[#60778E] hover:border-[#B8F0E8] hover:text-[#087F73]"
+                  }`}
+                >
+                  <Icon size={13} />
+                  {filter.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <label className="flex items-center gap-2 self-start text-xs text-[#8192A5] sm:self-auto">
+            <span>Trier par</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="rounded-lg border border-[#E2EAF1] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#334B63] outline-none focus:border-[#19B8AE]"
+            >
+              <option value="recent">Plus récentes</option>
+              <option value="budget">Budget</option>
+              <option value="title">Ordre alphabétique</option>
+            </select>
+          </label>
+        </section>
+
+        {/* ============ TITRE LISTE ============ */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-extrabold text-[#102A43]">
+            {`${filteredRequests.length} demande${filteredRequests.length > 1 ? "s" : ""} à découvrir`}
+          </h2>
+
+          <button
+            type="button"
+            onClick={load}
+            disabled={loading}
+            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-bold text-[#557087] transition hover:bg-white hover:text-[#087F83] disabled:opacity-50"
+          >
+            <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
+            Actualiser
+          </button>
         </div>
 
-        {error && (
-          <div className="mb-4 flex items-start gap-3 rounded-2xl border border-rose-500/20 bg-rose-500/5 p-4">
-            <AlertCircle size={18} className="mt-0.5 shrink-0 text-rose-400" />
-            <div>
-              <p className="text-sm text-[var(--text-app)]">{error}</p>
-              <p className="mt-1 text-xs text-[var(--text-muted)]">
-                Vérifiez votre connexion puis réessayez.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Résultats */}
+        {/* ============ GRILLE DES DEMANDES ============ */}
         {loading ? (
-          <div className="space-y-4">
-            {[1, 2, 3].map((item) => (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
               <div
-                key={item}
-                className="animate-pulse rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-5 sm:p-6"
+                key={i}
+                className="animate-pulse rounded-2xl border border-[#E5EDF3] bg-white p-5"
               >
-                <div className="h-5 w-2/3 rounded bg-[var(--bg-surface-hover)]" />
-                <div className="mt-4 h-3 w-full rounded bg-[var(--bg-surface-hover)]" />
-                <div className="mt-2 h-3 w-4/5 rounded bg-[var(--bg-surface-hover)]" />
-                <div className="mt-5 flex gap-2">
-                  <div className="h-6 w-20 rounded-full bg-[var(--bg-surface-hover)]" />
-                  <div className="h-6 w-24 rounded-full bg-[var(--bg-surface-hover)]" />
+                <div className="mb-5 flex items-center gap-3">
+                  <div className="h-11 w-11 rounded-xl bg-slate-100" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 w-2/5 rounded bg-slate-100" />
+                    <div className="h-2.5 w-1/3 rounded bg-slate-100" />
+                  </div>
                 </div>
+                <div className="mb-3 h-4 w-3/4 rounded bg-slate-100" />
+                <div className="h-3 rounded bg-slate-100" />
+                <div className="mt-2 h-3 w-4/5 rounded bg-slate-100" />
+                <div className="mt-6 h-9 rounded-lg bg-slate-100" />
               </div>
             ))}
           </div>
-        ) : !error && requests.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-[var(--border-app)] bg-[var(--bg-surface)] px-6 py-16 text-center">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-400">
-              <Filter size={25} />
+        ) : paginatedRequests.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-[#CBD9E4] bg-white px-5 py-16 text-center">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#EAF8F6] text-[#0F9691]">
+              <Layers size={29} strokeWidth={1.7} />
             </div>
-
-            <h3 className="mt-4 text-lg font-bold text-[var(--text-app)]">
-              Aucune demande trouvée
+            <h3 className="mt-5 text-lg font-extrabold text-[#102A43]">
+              {requests.length === 0
+                ? "Aucune demande pour le moment"
+                : "Aucune demande ne correspond à votre recherche"}
             </h3>
-
-            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[var(--text-muted)]">
-              Essayez d'élargir votre recherche ou de supprimer certains
-              filtres pour découvrir d'autres opportunités.
+            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#7C8FA2]">
+              {requests.length === 0
+                ? "Les entreprises n'ont pas encore publié de besoins. Revenez plus tard."
+                : "Essayez un autre mot-clé, une autre ville ou retirez certains filtres."}
             </p>
-
-            {activeFiltersCount > 0 || search ? (
+            {requests.length > 0 && (
               <button
                 type="button"
-                onClick={clearFilters}
-                className="mt-5 rounded-xl bg-emerald-400 px-5 py-2.5 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-300"
+                onClick={() => {
+                  setSearch("");
+                  setCitySearch("");
+                  setActiveFilter("all");
+                }}
+                className="mt-5 rounded-xl bg-[#102A43] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#174461]"
               >
                 Effacer les filtres
               </button>
-            ) : null}
-
-            {canPublish && (
-              <div>
-                <Link
-                  to="/resource-requests/new"
-                  className="mt-4 inline-flex items-center gap-2 rounded-xl border border-[var(--border-app)] px-5 py-2.5 text-sm font-semibold text-[var(--text-app)] transition hover:border-emerald-500/30"
-                >
-                  <Plus size={16} />
-                  Publier un besoin
-                </Link>
-              </div>
             )}
           </div>
         ) : (
-          <div className="space-y-4">
-            {requests.map((request) => (
-              <ResourceRequestCard key={request.id} request={request} />
+          <div className="grid items-stretch gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {paginatedRequests.map((request) => (
+              <RequestCard key={request.id} request={request} />
             ))}
           </div>
         )}
 
-        {/* Bouton flottant sur mobile */}
-        {canPublish && (
-          <Link
-            to="/resource-requests/new"
-            className="fixed bottom-5 right-4 z-40 inline-flex items-center gap-2 rounded-full bg-emerald-400 px-5 py-3.5 text-sm font-bold text-[#0A1229] shadow-xl shadow-black/20 transition hover:bg-emerald-300 sm:hidden"
-          >
-            <Plus size={18} />
-            Publier un besoin
-          </Link>
-        )}
-      </main>
-    </Layout>
-  );
-}
-
-const inputClass =
-  "mt-1.5 w-full rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-3 py-2.5 text-sm text-[var(--text-app)] outline-none transition focus:border-emerald-500/50 placeholder:text-[var(--text-faint)]";
-
-function FilterField({ label, children }) {
-  return (
-    <label className="block min-w-0">
-      <span className="text-xs font-semibold text-[var(--text-muted)]">
-        {label}
-      </span>
-      {children}
-    </label>
-  );
-}
-
-function ResourceRequestCard({ request }) {
-  const status =
-    STATUS_CFG[request.display_status] || STATUS_CFG.published;
-
-  const daysLeft = request.days_until_expiry;
-  const isExpiringSoon =
-    daysLeft !== null &&
-    daysLeft !== undefined &&
-    Number(daysLeft) >= 0 &&
-    Number(daysLeft) <= 7 &&
-    request.display_status === "published";
-
-  const budgetAvailable =
-    request.budget_min !== null &&
-    request.budget_min !== undefined &&
-    request.budget_min !== "" &&
-    request.budget_max !== null &&
-    request.budget_max !== undefined &&
-    request.budget_max !== "";
-
-  const startDate = formatDate(request.start_at);
-  const endDate = formatDate(request.end_at);
-
-  return (
-    <Link
-      to={`/resource-requests/${request.id}`}
-      className="group block rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-5 transition duration-200 hover:-translate-y-0.5 hover:border-emerald-500/30 hover:shadow-xl hover:shadow-black/5 sm:p-6"
-    >
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-base font-bold leading-6 text-[var(--text-app)] transition group-hover:text-emerald-400 sm:text-lg">
-              {request.title || "Demande sans titre"}
-            </h3>
-
-            <span
-              className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-semibold ${status.badge}`}
+        {/* ============ PAGINATION ============ */}
+        {!loading && totalPages > 1 && (
+          <div className="flex items-center justify-center gap-1.5 pt-2">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              aria-label="Page précédente"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E3EBF2] bg-white text-[#60778E] transition hover:border-[#B8F0E8] hover:text-[#087F73] disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {status.label}
-            </span>
+              <ChevronLeft size={16} />
+            </button>
 
-            {request.urgency === "urgent" && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-rose-500/20 bg-rose-500/10 px-2.5 py-1 text-[10px] font-bold text-rose-400">
-                <Zap size={11} />
-                Urgent
-              </span>
-            )}
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                type="button"
+                onClick={() => setCurrentPage(page)}
+                aria-current={currentPage === page ? "page" : undefined}
+                className={`flex h-9 min-w-[36px] items-center justify-center rounded-lg px-3 text-xs font-bold transition ${
+                  currentPage === page
+                    ? "bg-[#0F9691] text-white shadow-sm"
+                    : "border border-[#E3EBF2] bg-white text-[#60778E] hover:border-[#B8F0E8] hover:text-[#087F73]"
+                }`}
+              >
+                {page}
+              </button>
+            ))}
 
-            {isExpiringSoon && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-[10px] font-semibold text-amber-400">
-                Expire dans {daysLeft} j
-              </span>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              aria-label="Page suivante"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E3EBF2] bg-white text-[#60778E] transition hover:border-[#B8F0E8] hover:text-[#087F73] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        )}
+
+        {/* Toast */}
+        {toast && (
+          <div
+            role="status"
+            className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-xl border px-4 py-3 text-sm shadow-lg ${
+              toast.type === "error"
+                ? "border-rose-200 bg-rose-50 text-rose-700"
+                : "border-teal-200 bg-teal-50 text-teal-800"
+            }`}
+          >
+            {toast.type === "error" ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
+            <span>{toast.msg}</span>
+          </div>
+        )}
+      </div>
+    </AppShell>
+  );
+}
+
+/* ============================================================
+   CARTE DEMANDE
+============================================================ */
+function RequestCard({ request }) {
+  const isTalent = request.author_type === "talent";
+  const authorName = getAuthorName(request);
+  const publishedDate = formatRelativeDate(request.created_at);
+  const budget = formatBudget(request.budget_min, request.budget_max);
+
+  // Avatar : company logo OR talent avatar
+  const avatarPath = isTalent
+    ? (request.author?.professional_profile?.avatar_path ||
+       request.author?.professionalProfile?.avatar_path ||
+       request.author?.avatar_path)
+    : request.company?.logo_path;
+
+  const skills = Array.isArray(request.skills) ? request.skills : [];
+
+  return (
+    <article className="group flex min-w-0 flex-col rounded-2xl border border-[#E4ECF3] bg-white p-5 shadow-sm shadow-[#102A43]/[0.025] transition duration-200 hover:-translate-y-1 hover:border-[#B5E9E2] hover:shadow-xl hover:shadow-[#102A43]/[0.07]">
+
+      {/* En-tête */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#E5EDF3] bg-gradient-to-br from-[#EAF7FA] to-[#E1F6F0] text-sm font-extrabold text-[#087F83]">
+            {avatarPath ? (
+              <img
+                src={`http://localhost:8001/storage/${avatarPath}`}
+                alt=""
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              getInitials(authorName)
             )}
           </div>
 
-          {request.description && (
-            <p className="mt-3 line-clamp-2 text-sm leading-6 text-[var(--text-muted)]">
-              {request.description}
+          <div className="min-w-0">
+            <p className="truncate text-sm font-extrabold text-[#24435D]">
+              {authorName}
             </p>
-          )}
-
-          {request.company && (
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-[var(--text-muted)]">
-              <Building2 size={14} className="shrink-0 text-[var(--text-faint)]" />
-              <span>{request.company.name}</span>
-              {request.company.is_verified && (
-                <span
-                  title="Organisation vérifiée"
-                  className="inline-flex items-center gap-1 text-emerald-400"
-                >
-                  <ShieldCheck size={14} />
-                  Vérifiée
-                </span>
-              )}
-            </div>
-          )}
+            {publishedDate && (
+              <p className="mt-0.5 text-[11px] text-[#92A2B2]">
+                {publishedDate}
+              </p>
+            )}
+          </div>
         </div>
 
-        {Number(request.positions_count) > 1 && (
-          <span className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-xl border border-blue-500/20 bg-blue-500/5 px-3 py-2 text-xs font-semibold text-blue-400">
-            <Briefcase size={13} />
-            {request.positions_count} postes
+        {/* Badge urgent */}
+        {request.urgency === "urgent" && (
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-700">
+            <Zap size={9} /> URGENT
           </span>
         )}
       </div>
 
-      {/* Informations */}
-      <div className="mt-5 flex flex-wrap gap-x-5 gap-y-3 border-t border-[var(--border-app)] pt-4">
-        <MetaItem icon={Eye}>
-          {request.views_count ?? 0} vues
-        </MetaItem>
+      {/* Titre */}
+      <h3 className="mt-4 line-clamp-2 text-base font-extrabold leading-snug text-[#102A43] transition group-hover:text-[#087F83]">
+        {request.title || "Demande sans titre"}
+      </h3>
 
-        <MetaItem icon={Users}>
-          {request.proposals_count ?? 0} proposition
-          {Number(request.proposals_count ?? 0) !== 1 ? "s" : ""}
-        </MetaItem>
-
-        {budgetAvailable && (
-          <MetaItem icon={DollarSign} accent>
-            {request.budget_min}–{request.budget_max} €/jour
-          </MetaItem>
-        )}
-
+      {/* Meta : lieu + type */}
+      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-[#71869A]">
         {(request.city || request.country) && (
-          <MetaItem icon={MapPin}>
+          <span className="inline-flex items-center gap-1.5">
+            <MapPin size={13} className="shrink-0 text-[#8299AD]" />
             {[request.city, request.country].filter(Boolean).join(", ")}
-          </MetaItem>
+          </span>
         )}
-
-        {startDate && endDate && (
-          <MetaItem icon={Calendar}>
-            {startDate} – {endDate}
-          </MetaItem>
-        )}
-
-        {request.workload_percent !== null &&
-          request.workload_percent !== undefined &&
-          request.workload_percent !== "" && (
-            <MetaItem icon={Clock}>
-              {request.workload_percent} %
-            </MetaItem>
+        <span className="inline-flex items-center gap-1.5">
+          {isTalent ? (
+            <>
+              <UserRound size={13} className="shrink-0 text-[#8299AD]" />
+              Talent
+            </>
+          ) : (
+            <>
+              <Building2 size={13} className="shrink-0 text-[#8299AD]" />
+              Entreprise
+            </>
           )}
+        </span>
+        {request.remote && (
+          <span className="inline-flex items-center gap-1.5">
+            <Home size={13} className="shrink-0 text-[#8299AD]" />
+            Télétravail
+          </span>
+        )}
       </div>
 
       {/* Compétences */}
-      {Array.isArray(request.skills) && request.skills.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {request.skills.slice(0, 5).map((skill, index) => (
+      {skills.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {skills.slice(0, 4).map((skill, i) => (
             <span
-              key={skill.id ?? skill.name ?? index}
-              className="rounded-full border border-emerald-500/15 bg-emerald-500/5 px-3 py-1 text-xs font-medium text-emerald-400"
+              key={skill.id ?? skill.name ?? i}
+              className="rounded-md bg-[#E8F8F5] px-2 py-0.5 text-[10px] font-bold text-[#087F73]"
             >
               {skill.name || skill}
             </span>
           ))}
-
-          {request.skills.length > 5 && (
-            <span className="self-center text-xs text-[var(--text-faint)]">
-              +{request.skills.length - 5} compétences
+          {skills.length > 4 && (
+            <span className="self-center text-[10px] font-bold text-[#92A2B2]">
+              +{skills.length - 4}
             </span>
           )}
         </div>
       )}
 
-      {/* Tags */}
-      {Array.isArray(request.tags) && request.tags.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {request.tags.slice(0, 4).map((tag, index) => {
-            const tagLabel =
-              typeof tag === "string" ? tag : tag?.name || "";
+      {/* Description */}
+      <p className="mt-3 line-clamp-2 min-h-[40px] text-xs leading-5 text-[#71849A]">
+        {request.description || "Découvrez les détails de cette demande."}
+      </p>
 
-            if (!tagLabel) return null;
+      {/* Footer */}
+      <div className="mt-auto pt-4">
+        <div className="flex items-center justify-between gap-2 border-t border-[#EDF2F6] pt-3">
+          <div className="min-w-0">
+            {budget && (
+              <p className="flex items-center gap-1.5 text-xs font-bold text-[#102A43]">
+                <Banknote size={13} className="text-[#0F9691]" />
+                <span className="truncate">{budget}</span>
+              </p>
+            )}
+            {request.start_at && request.end_at && (
+              <p className="mt-0.5 flex items-center gap-1.5 text-[10px] text-[#8FA2B4]">
+                <Clock size={11} />
+                Du {formatDate(request.start_at)} au {formatDate(request.end_at)}
+              </p>
+            )}
+          </div>
 
-            return (
-              <span
-                key={tag.id ?? tagLabel ?? index}
-                className="inline-flex items-center gap-1 rounded-full border border-violet-500/15 bg-violet-500/5 px-2.5 py-1 text-[10px] font-medium text-violet-400"
-              >
-                <Tag size={10} />
-                {tagLabel}
-              </span>
-            );
-          })}
+          <Link
+            to={`/resource-requests/${request.id}`}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#102A43] px-3 py-2 text-xs font-bold text-white transition hover:bg-[#087F83]"
+          >
+            Voir la demande
+          </Link>
         </div>
-      )}
-
-      <div className="mt-5 flex items-center justify-between gap-3 border-t border-[var(--border-app)] pt-4">
-        <span className="text-xs text-[var(--text-faint)]">
-          Consulter les détails de la demande
-        </span>
-
-        <span className="inline-flex items-center gap-2 text-sm font-bold text-emerald-400 transition group-hover:gap-3">
-          Voir le détail
-          <ArrowRight size={16} />
-        </span>
       </div>
-    </Link>
-  );
-}
-
-function MetaItem({ icon: Icon, children, accent = false }) {
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 text-xs ${
-        accent
-          ? "font-semibold text-emerald-400"
-          : "text-[var(--text-muted)]"
-      }`}
-    >
-      <Icon size={13} className="shrink-0" />
-      {children}
-    </span>
-  );
-}
-
-function PublicOnlyLayout({ children }) {
-  return (
-    <div className="min-h-screen bg-slate-50 font-sans text-[#0A1229]">
-      {children}
-    </div>
+    </article>
   );
 }

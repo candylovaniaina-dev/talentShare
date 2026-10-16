@@ -15,6 +15,7 @@ class JobOffer extends Model
     protected $casts = [
         'remote' => 'boolean',
         'application_deadline' => 'date',
+          'criteria' => 'array', 
     ];
 
     public function company()

@@ -122,7 +122,7 @@ export default function ConversationInfoModal({ conversation, onClose, onUpdated
       onClick={onClose}
     >
       <div
-        className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-2xl border border-white/10 bg-[#0F1E45] shadow-2xl"
+        className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-2xl border border-white/10 bg-[#12364D] shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -142,7 +142,7 @@ export default function ConversationInfoModal({ conversation, onClose, onUpdated
               <Users size={40} />
             ) : participants[0]?.avatar_path ? (
               <img
-                src={`http://localhost:8001/storage/${participants[0].avatar_path}`}
+                src={`/storage/${participants[0].avatar_path}`}
                 className="h-24 w-24 rounded-full object-cover"
                 alt=""
               />
@@ -166,7 +166,7 @@ export default function ConversationInfoModal({ conversation, onClose, onUpdated
                   <button
                     onClick={saveTitle}
                     disabled={savingTitle}
-                    className="rounded-full bg-emerald-500 p-2 text-[#0A1229] hover:bg-emerald-400 disabled:opacity-50"
+                    className="rounded-full bg-emerald-500 p-2 text-[#0B1F33] hover:bg-emerald-400 disabled:opacity-50"
                   >
                     {savingTitle ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
                   </button>
@@ -248,7 +248,7 @@ export default function ConversationInfoModal({ conversation, onClose, onUpdated
                   className="mt-1 flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left transition hover:bg-white/5 disabled:opacity-50"
                 >
                   {u.avatar_path ? (
-                    <img src={`http://localhost:8001/storage/${u.avatar_path}`}
+                    <img src={`/storage/${u.avatar_path}`}
                       className="h-8 w-8 rounded-full object-cover" alt="" />
                   ) : (
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/20 text-xs font-bold text-emerald-300">
@@ -273,7 +273,7 @@ export default function ConversationInfoModal({ conversation, onClose, onUpdated
                 className="flex items-center gap-3 rounded-lg px-2 py-2 transition hover:bg-white/5"
               >
                 {p.avatar_path ? (
-                  <img src={`http://localhost:8001/storage/${p.avatar_path}`}
+                  <img src={`/storage/${p.avatar_path}`}
                     className="h-9 w-9 rounded-full object-cover" alt="" />
                 ) : (
                   <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/20 text-xs font-bold text-emerald-300">

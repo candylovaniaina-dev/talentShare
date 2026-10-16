@@ -1,0 +1,117 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-optical-sizing: auto;
+  --brand-navy: #0B1F33;
+  --brand-teal: #16B8B1;
+  --brand-teal-deep: #0F9691;
+  --app-background: #F5F8FA;
+  --surface: #FFFFFF;
+  --ink: #102A43;
+  --muted: #718096;
+  --line: #E1E8EF;
+  --focus-ring: rgba(22, 184, 177, .22);
+}
+
+html, body, #root { min-height: 100vh; }
+html { scroll-behavior: smooth; scroll-padding-top: 100px; }
+body { margin: 0; background: var(--app-background); color: var(--ink); transition: background-color .2s ease, color .2s ease; }
+::selection { background: rgba(22, 184, 177, .2); color: var(--brand-navy); }
+
+html.dark {
+  --app-background: #0B1F33;
+  --surface: #111B35;
+  --ink: #F8FAFC;
+  --muted: #94A3B8;
+  --line: rgba(255,255,255,.12);
+}
+html.light { color-scheme: light; }
+html.dark { color-scheme: dark; }
+html.font-small { font-size: 14px; }
+html.font-normal { font-size: 16px; }
+html.font-large { font-size: 18px; }
+
+:focus-visible { outline: 3px solid var(--brand-teal); outline-offset: 2px; }
+button, input, textarea, select { font: inherit; }
+button:not(:disabled), a, select { -webkit-tap-highlight-color: transparent; }
+button:disabled { cursor: not-allowed; }
+input, textarea, select { max-width: 100%; }
+input[type="text"], input[type="email"], input[type="password"], input[type="search"], input[type="url"], input[type="number"], input[type="date"], input[type="time"], input[type="tel"], textarea, select {
+  transition: border-color .16s ease, box-shadow .16s ease, background-color .16s ease;
+}
+input:focus, textarea:focus, select:focus { outline: none; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--app-background); }
+::-webkit-scrollbar-thumb { background: rgba(16, 42, 67, .2); border: 2px solid var(--app-background); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(15, 150, 145, .58); }
+html.dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.22); border-color: #0B1F33; }
+
+html.high-contrast { --line: rgba(15, 23, 42, .4); --muted: #334155; }
+html.dark.high-contrast { --line: rgba(255,255,255,.4); --muted: #CBD5E1; }
+html.high-contrast * { font-weight: 500; }
+html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+
+/* Contrôles natifs cohérents, en respectant les champs des interfaces sombres. */
+html.light select { color-scheme: light; }
+html.light select option { background: #FFFFFF; color: #102A43; }
+html.dark select option { background: #12364D; color: #FFFFFF; }
+select, select option { font-family: inherit; }
+
+@keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes modalOverlay { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modalContent { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.animate-modalOverlay { animation: modalOverlay .18s ease-out; }
+.animate-modalContent { animation: modalContent .22s cubic-bezier(.16, 1, .3, 1); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+/* Couche de cohérence appliquée aux pages connectées. */
+.app-shell { background-color: var(--app-background); }
+.app-content { min-width: 0; }
+.app-content :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), textarea, select) {
+  border-color: #D7E1E9;
+  border-radius: .8rem;
+}
+.app-content :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), textarea, select):focus {
+  border-color: var(--brand-teal);
+  box-shadow: 0 0 0 4px var(--focus-ring);
+}
+.app-content :is(input, textarea, select):disabled { opacity: .62; }
+.app-content table { width: 100%; border-collapse: separate; border-spacing: 0; }
+.app-content th { color: #52667A; font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-align: left; }
+.app-content :is(th, td) { border-bottom: 1px solid var(--line); padding: .8rem 1rem; vertical-align: middle; }
+.app-content tr:last-child td { border-bottom: 0; }
+.app-content :is(button, a) { -webkit-tap-highlight-color: transparent; }
+.app-content button:focus-visible, .app-content a:focus-visible { outline: 3px solid var(--brand-teal); outline-offset: 3px; }
+
+/* Lisibilité uniforme pour pages publiques, authentification et portfolios. */
+:is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), textarea, select) { max-width: 100%; }
+:is(input, textarea, select)::placeholder { opacity: .78; }
+button, [role="button"] { touch-action: manipulation; }
+img { max-width: 100%; }
+
+/* Surfaces communes : même traitement pour les cartes blanches des différentes vues. */
+:where(#root) :is(div, section, article)[class*="rounded-2xl"][class*="border"][class~="bg-white"],
+:where(#root) :is(div, section, article)[class*="rounded-3xl"][class*="border"][class~="bg-white"] {
+  border-color: var(--line);
+  box-shadow: 0 1px 2px rgba(11, 31, 51, .035), 0 5px 18px rgba(11, 31, 51, .025);
+}
+:where(#root) :is(button, a)[class*="transition"] { transition-timing-function: cubic-bezier(.2, .75, .25, 1); }
+
+@media (hover: hover) {
+  .app-content :is(a, button)[class*="hover:-translate-y"]:hover { box-shadow: 0 10px 24px rgba(11, 31, 51, .08); }
+}
+
+@media (max-width: 640px) {
+  .app-content :is(th, td) { padding: .65rem .7rem; }
+}

@@ -137,7 +137,7 @@ export default function ApplyModal({ offer, onClose, onSuccess }) {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A1229]/65 p-4 backdrop-blur-sm">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0B1F33]/65 p-4 backdrop-blur-sm">
         <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white px-6 py-5 shadow-2xl">
           <Loader2 className="animate-spin text-teal-600" size={22} />
           <span className="text-sm font-medium text-slate-600">
@@ -151,7 +151,7 @@ export default function ApplyModal({ offer, onClose, onSuccess }) {
   return (
     <>
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A1229]/65 p-3 backdrop-blur-sm sm:p-6"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-[#0B1F33]/65 p-3 backdrop-blur-sm sm:p-6"
         onClick={onClose}
       >
         <div
@@ -175,7 +175,7 @@ export default function ApplyModal({ offer, onClose, onSuccess }) {
 
                 <h2
                   id="apply-modal-title"
-                  className="mt-4 text-xl font-bold tracking-tight text-[#0F1E45] sm:text-2xl"
+                  className="mt-4 text-xl font-bold tracking-tight text-[#12364D] sm:text-2xl"
                 >
                   Envoyer ma candidature
                 </h2>
@@ -185,11 +185,11 @@ export default function ApplyModal({ offer, onClose, onSuccess }) {
                 </p>
 
                 <div className="mt-5 flex items-center gap-3 rounded-2xl border border-white/80 bg-white/80 p-3 shadow-sm">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#0F1E45] text-[#6EE7C8]">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#12364D] text-[#6EE7C8]">
                     <Briefcase size={19} />
                   </div>
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-bold text-[#0F1E45]">
+                    <p className="truncate text-sm font-bold text-[#12364D]">
                       {offer.title}
                     </p>
                     {offer.company?.name && (
@@ -205,7 +205,7 @@ export default function ApplyModal({ offer, onClose, onSuccess }) {
                 type="button"
                 onClick={onClose}
                 aria-label="Fermer"
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-[#6EE7C8] hover:bg-[#F0FCF8] hover:text-[#0F1E45]"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-[#6EE7C8] hover:bg-[#F0FCF8] hover:text-[#12364D]"
               >
                 <X size={18} />
               </button>
@@ -243,12 +243,12 @@ export default function ApplyModal({ offer, onClose, onSuccess }) {
 
               {portfolio ? (
                 <div className="flex items-center gap-3 rounded-2xl border border-[#6EE7C8] bg-[#F0FCF8] p-4 sm:p-5">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#0F1E45] text-[#6EE7C8]">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#12364D] text-[#6EE7C8]">
                     <Check size={20} />
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-bold text-[#0F1E45]">
+                    <p className="truncate text-sm font-bold text-[#12364D]">
                       {portfolio.title || "Mon portfolio"}
                     </p>
                     <p className="mt-1 text-xs leading-relaxed text-slate-500">
@@ -272,7 +272,7 @@ export default function ApplyModal({ offer, onClose, onSuccess }) {
                     <AlertCircle size={17} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-[#0F1E45]">
+                    <p className="text-sm font-semibold text-[#12364D]">
                       Aucun portfolio disponible
                     </p>
                     <p className="mt-1 text-xs leading-relaxed text-slate-600">
@@ -319,7 +319,7 @@ export default function ApplyModal({ offer, onClose, onSuccess }) {
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-[#0F1E45]">
+                      <p className="text-sm font-semibold text-[#12364D]">
                         Utiliser mon CV actuel
                       </p>
                       <p className="mt-1 text-xs leading-relaxed text-slate-500">
@@ -351,7 +351,7 @@ export default function ApplyModal({ offer, onClose, onSuccess }) {
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-[#0F1E45]">
+                    <p className="text-sm font-semibold text-[#12364D]">
                       Utiliser un autre CV
                     </p>
                     <p className="mt-1 break-words text-xs leading-relaxed text-slate-500">
@@ -410,7 +410,7 @@ export default function ApplyModal({ offer, onClose, onSuccess }) {
                 value={coverLetter}
                 onChange={(e) => setCoverLetter(e.target.value)}
                 placeholder="Présentez votre intérêt pour cette offre, vos compétences et ce que vous pourriez apporter à l'équipe..."
-                className="w-full resize-y rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-4 text-sm leading-6 text-[#0F1E45] outline-none transition placeholder:text-slate-400 focus:border-[#6EE7C8] focus:bg-white focus:ring-4 focus:ring-[#6EE7C8]/20"
+                className="w-full resize-y rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-4 text-sm leading-6 text-[#12364D] outline-none transition placeholder:text-slate-400 focus:border-[#6EE7C8] focus:bg-white focus:ring-4 focus:ring-[#6EE7C8]/20"
               />
 
               <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
@@ -450,7 +450,7 @@ export default function ApplyModal({ offer, onClose, onSuccess }) {
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-[#0F1E45]"
+                className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-[#12364D]"
               >
                 Annuler
               </button>
@@ -459,7 +459,7 @@ export default function ApplyModal({ offer, onClose, onSuccess }) {
                 type="submit"
                 form="application-form"
                 disabled={!canSubmit}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0F1E45] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1A3266] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:shadow-none"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#12364D] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1A3266] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:shadow-none"
               >
                 {sending ? (
                   <>

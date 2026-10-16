@@ -11,43 +11,44 @@ class ProfessionalProfileRequest extends FormRequest
         return true;
     }
 
-    public function rules(): array
-    {
-        // ✅ Détecter si c'est un update ou un create
-        $isUpdate = $this->isMethod('PATCH') || $this->isMethod('PUT');
-        $required = $isUpdate ? 'sometimes' : 'required';
+   public function rules(): array
+{
+    // Détecter si c'est un update (PATCH/PUT) OU si l'utilisateur a déjà un profil
+    $hasProfile = $this->user()?->professionalProfile()->exists();
+    $isUpdate = $this->isMethod('PATCH') || $this->isMethod('PUT') || $hasProfile;
+    $required = $isUpdate ? 'sometimes' : 'required';
 
-        // Détecter Young Talent
-        $isYoungTalent = in_array($this->input('profile_type'), ['student'])
-            || $this->boolean('is_young_talent');
+    // Détecter Young Talent
+    $isYoungTalent = in_array($this->input('profile_type'), ['student'])
+        || $this->boolean('is_young_talent');
 
-        return [
-            // Identité
-            'profile_type' => [$required, 'in:employee,student,freelancer'],
-            'headline'     => [$required, 'string', 'max:180'],
-            'bio'          => ['nullable', 'string', 'max:2000'],
+    return [
+        // Identité
+        'profile_type' => [$required, 'in:employee,student,freelancer'],
+        'headline'     => [$required, 'string', 'max:180'],
+        'bio'          => ['nullable', 'string', 'max:2000'],
 
-            // Visibilité
-            'visibility' => [$required, 'in:public,network,private'],
+        // Visibilité
+        'visibility' => [$required, 'in:public,network,private'],
 
-            // Localisation
-            'country' => ['nullable', 'string', 'max:100'],
-            'city'    => ['nullable', 'string', 'max:100'],
+        // Localisation
+        'country' => ['nullable', 'string', 'max:100'],
+        'city'    => ['nullable', 'string', 'max:100'],
 
-            // Liens externes (max 500 pour accepter les URLs longues)
-            'portfolio_url' => ['nullable', 'string', 'max:500'],
-            'linkedin_url'  => ['nullable', 'string', 'max:500'],
-            'github_url'    => ['nullable', 'string', 'max:500'],
-            'behance_url'   => ['nullable', 'string', 'max:500'],
+        // Liens externes
+        'portfolio_url' => ['nullable', 'string', 'max:500'],
+        'linkedin_url'  => ['nullable', 'string', 'max:500'],
+        'github_url'    => ['nullable', 'string', 'max:500'],
+        'behance_url'   => ['nullable', 'string', 'max:500'],
 
-            // Champs Young Talent
-            'is_young_talent'         => ['nullable', 'boolean'],
-            'looking_for_opportunity' => ['nullable', 'boolean'],
-            'university'              => ['nullable', 'string', 'max:255'],
-            'field_of_study'          => ['nullable', 'string', 'max:255'],
-            'study_level'             => ['nullable', 'in:L1,L2,L3,M1,M2,Doctorat,BTS,DUT,Licence,Master,Autre'],
-        ];
-    }
+        // Champs Young Talent
+        'is_young_talent'         => ['nullable', 'boolean'],
+        'looking_for_opportunity' => ['nullable', 'boolean'],
+        'university'              => ['nullable', 'string', 'max:255'],
+        'field_of_study'          => ['nullable', 'string', 'max:255'],
+        'study_level'             => ['nullable', 'in:L1,L2,L3,M1,M2,Doctorat,BTS,DUT,Licence,Master,Autre'],
+    ];
+}
 
     public function messages(): array
     {

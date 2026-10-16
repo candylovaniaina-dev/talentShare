@@ -205,7 +205,7 @@ export default function TalentProfileModal({
                 <div className="shrink-0">
                   {profile.avatar_path ? (
                     <img
-                      src={`http://localhost:8001/storage/${profile.avatar_path}`}
+                      src={`/storage/${profile.avatar_path}`}
                       alt={profile.user?.name || "Avatar du talent"}
                       className="h-20 w-20 rounded-2xl border border-white object-cover shadow-md ring-1 ring-slate-200 sm:h-24 sm:w-24"
                     />

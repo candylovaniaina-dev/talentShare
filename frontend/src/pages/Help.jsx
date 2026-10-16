@@ -134,7 +134,7 @@ export default function Help() {
           </div>
           <a
             href="mailto:support@talentshare.mg"
-            className="flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] transition hover:bg-emerald-400"
+            className="flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400"
           >
             <Mail size={15} /> Contacter le support
           </a>

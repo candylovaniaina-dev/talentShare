@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Application\ApplicationRequest;
 use App\Mail\InterviewScheduled;
+use App\Mail\ApplicationShortlisted;
 use App\Models\Application;
 use App\Models\Notification;
 use Illuminate\Http\Request;
@@ -89,11 +90,11 @@ class ApplicationController extends Controller
      */
     public function store(ApplicationRequest $request)
     {
-         if ($request->user()->role === "company") {
-        return response()->json([
-            'message' => 'Une entreprise ne peut pas postuler à une offre. Utilisez la messagerie.',
-        ], 403);
-    }
+        if ($request->user()->role === "company") {
+            return response()->json([
+                'message' => 'Une entreprise ne peut pas postuler à une offre. Utilisez la messagerie.',
+            ], 403);
+        }
 
         $profile = $request->user()->professionalProfile;
 
@@ -196,6 +197,8 @@ class ApplicationController extends Controller
             ], 422);
         }
 
+        $previousStatus = $application->status;
+
         $application->transitionTo($data['status']);
 
         if (array_key_exists('recruiter_notes', $data)) {
@@ -231,6 +234,7 @@ class ApplicationController extends Controller
 
                 $cfg = $config[$data['status']];
 
+                // 📬 Notification interne (cloche)
                 Notification::create([
                     'user_id' => $applicant->id,
                     'type' => $cfg['type'],
@@ -244,6 +248,17 @@ class ApplicationController extends Controller
                         'status' => $data['status'],
                     ],
                 ]);
+
+                // 📧 EMAIL : Présélection (uniquement si on passe à ce statut pour la première fois)
+                if ($data['status'] === 'shortlisted' && $previousStatus !== 'shortlisted') {
+                    try {
+                        Mail::to($applicant->email)
+                            ->send(new ApplicationShortlisted($fresh));
+                        \Log::info("✅ Email présélection envoyé à {$applicant->email}");
+                    } catch (\Exception $e) {
+                        \Log::error("❌ Erreur envoi email présélection: " . $e->getMessage());
+                    }
+                }
             }
         } catch (\Exception $e) {
             \Log::warning('Erreur notification updateStatus: ' . $e->getMessage());
@@ -254,15 +269,8 @@ class ApplicationController extends Controller
 
     /**
      * ✅ Programme un entretien avec vérification automatique de l'email
-     *
-     * Logique :
-     * 1. Valide le format de l'email (RFC)
-     * 2. Vérifie que le domaine a un enregistrement MX (le serveur peut recevoir des emails)
-     * 3. Si email VÉRIFIÉ → envoie l'invitation normale avec .ics
-     * 4. Si email NON VÉRIFIÉ → envoie quand même l'invitation + lien de vérification
-     * 5. Si email INVALIDE → refuse et informe le recruteur
      */
-    public function scheduleInterview(Request $request, Application $application)
+        public function scheduleInterview(Request $request, Application $application)
     {
         $isOwnerCompany = $request->user()->companies()
             ->where('id', $application->jobOffer->company_id)->exists();
@@ -280,9 +288,7 @@ class ApplicationController extends Controller
             return response()->json(['message' => 'Candidat introuvable.'], 422);
         }
 
-        // ═══════════════════════════════════════════════
-        // ✅ VÉRIFICATION 1 : Format de l'email (RFC)
-        // ═══════════════════════════════════════════════
+        // Vérification email (RFC + MX)
         $emailValidation = Validator::make(
             ['email' => $applicant->email],
             ['email' => 'required|email:rfc,dns']
@@ -290,14 +296,11 @@ class ApplicationController extends Controller
 
         if ($emailValidation->fails()) {
             return response()->json([
-                'message' => "L'adresse email du candidat « {$applicant->email} » est invalide. Impossible d'envoyer l'invitation.",
+                'message' => "L'adresse email du candidat « {$applicant->email} » est invalide.",
                 'errors' => $emailValidation->errors(),
             ], 422);
         }
 
-        // ═══════════════════════════════════════════════
-        // ✅ VÉRIFICATION 2 : Domaine a un MX record (peut recevoir emails)
-        // ═══════════════════════════════════════════════
         $emailDomain = substr(strrchr($applicant->email, "@"), 1);
         $hasMxRecord = false;
 
@@ -309,35 +312,26 @@ class ApplicationController extends Controller
             \Log::warning("Erreur checkdnsrr pour {$emailDomain}: " . $e->getMessage());
         }
 
-        // Si le domaine n'a pas de MX, c'est très probablement une fausse adresse
         if (!$hasMxRecord) {
-            // Fallback : essayer avec A record (certains domaines ne déclarent pas MX)
             try {
                 if (function_exists('checkdnsrr')) {
-                    $hasARecord = checkdnsrr($emailDomain, 'A');
-                    if ($hasARecord) {
-                        $hasMxRecord = true;
-                    }
+                    $hasMxRecord = checkdnsrr($emailDomain, 'A');
                 }
-            } catch (\Exception $e) {
-                // ignorer
-            }
+            } catch (\Exception $e) {}
         }
 
         if (!$hasMxRecord) {
             return response()->json([
-                'message' => "Le domaine « {$emailDomain} » ne peut pas recevoir d'emails. L'adresse « {$applicant->email} » est probablement invalide.",
+                'message' => "Le domaine « {$emailDomain} » ne peut pas recevoir d'emails.",
             ], 422);
         }
 
         // ═══════════════════════════════════════════════
-        // ✅ VÉRIFICATION 3 : Email vérifié ou non
+        // ÉTAPE CLÉ : On détecte si l'email est vérifié ou non
         // ═══════════════════════════════════════════════
         $emailNotVerified = !$applicant->email_verified_at;
 
-        // ═══════════════════════════════════════════════
-        // ✅ GÉNÉRATION DU LIEN VISIO
-        // ═══════════════════════════════════════════════
+        // Génération lien visio
         $roomId = 'talentshare-' . $application->id . '-' . Str::random(10);
         $meetLink = "https://meet.jit.si/{$roomId}";
 
@@ -347,24 +341,69 @@ class ApplicationController extends Controller
             'interview_link' => $meetLink,
         ]);
 
-        // ═══════════════════════════════════════════════
-        // ✅ ENVOI DE L'EMAIL
-        // ═══════════════════════════════════════════════
-               $emailSent = false;
+        $emailSent = false;
         $emailError = null;
+        $waitingForVerification = false;
 
-        try {
-            // ✅ $emailNotVerified passé directement au constructeur
-            $mailable = new InterviewScheduled($application->fresh(), $emailNotVerified);
+        // ═══════════════════════════════════════════════
+        // 🔴 CAS 1 : Email NON VÉRIFIÉ → on n'envoie PAS l'email d'entretien
+        // ═══════════════════════════════════════════════
+        if ($emailNotVerified) {
+            $waitingForVerification = true;
 
-            Mail::to($applicant->email)->send($mailable);
+            // On envoie SEULEMENT un email "Vérifiez votre email"
+            try {
+                Mail::to($applicant->email)->send(
+                    new \App\Mail\InterviewScheduledVerificationNeeded($application->fresh())
+                );
+                \Log::info("⏳ Email d'entretien EN ATTENTE de vérification pour {$applicant->email}");
+            } catch (\Exception $e) {
+                \Log::error('❌ Erreur envoi email "vérification requise": ' . $e->getMessage());
+                $emailError = $e->getMessage();
+            }
+
+            // Pas d'email d'entretien tant que pas vérifié → on saute
+            // Le mail d'entretien partira automatiquement quand l'email sera vérifié
+
+        } else {
+            // ═══════════════════════════════════════════════
+            // 🟢 CAS 2 : Email VÉRIFIÉ → on envoie normalement
+            // ═══════════════════════════════════════════════
+            try {
+                Mail::to($applicant->email)->send(
+                    new InterviewScheduled($application->fresh(), false)
+                );
                 $emailSent = true;
-            \Log::info("✅ Email entretien envoyé à {$applicant->email} (vérifié: " . ($emailNotVerified ? 'NON' : 'OUI') . ")");
-        } catch (\Exception $e) {
-            \Log::error('❌ Erreur envoi email entretien: ' . $e->getMessage());
-            $emailError = $e->getMessage();
+                \Log::info("✅ Email entretien envoyé à {$applicant->email}");
+            } catch (\Exception $e) {
+                \Log::error('❌ Erreur envoi email entretien: ' . $e->getMessage());
+                $emailError = $e->getMessage();
+            }
         }
-                // Envoi au recruteur (si trouvé)
+
+        // ═══════════════════════════════════════════════
+        // SMS — envoyé UNIQUEMENT si l'email est vérifié
+        // ═══════════════════════════════════════════════
+        $smsSent = false;
+
+        if (!$emailNotVerified && !empty($applicant->phone)) {
+            try {
+                $interviewDate = $application->interview_at
+                    ->locale('fr')
+                    ->isoFormat('dddd D MMMM [à] HH:mm');
+
+                $smsMessage = "🎉 Félicitations {$applicant->name} ! "
+                    . "Votre entretien avec {$application->jobOffer->company?->name} "
+                    . "est prévu le {$interviewDate}. "
+                    . "Lien visio : {$meetLink}";
+
+                $smsSent = \App\Services\SmsService::send($applicant->phone, $smsMessage);
+            } catch (\Exception $e) {
+                \Log::error("❌ Erreur SMS entretien: " . $e->getMessage());
+            }
+        }
+
+        // Email au recruteur (toujours envoyé)
         try {
             $company = $application->jobOffer->company;
             if ($company && $company->owner_user_id) {
@@ -376,12 +415,10 @@ class ApplicationController extends Controller
                 }
             }
         } catch (\Exception $e) {
-            \Log::warning('Erreur envoi email recruteur entretien: ' . $e->getMessage());
+            \Log::warning('Erreur envoi email recruteur: ' . $e->getMessage());
         }
 
-        // ═══════════════════════════════════════════════
-        // ✅ NOTIFICATION INTERNE (cloche)
-        // ═══════════════════════════════════════════════
+        // Notification interne (cloche)
         try {
             Notification::create([
                 'user_id' => $applicant->id,
@@ -401,23 +438,31 @@ class ApplicationController extends Controller
         }
 
         // ═══════════════════════════════════════════════
-        // ✅ RÉPONSE FINALE
+        // RÉPONSE FINALE
         // ═══════════════════════════════════════════════
+        if ($waitingForVerification) {
+            return response()->json([
+                'message' => "Entretien programmé. Le candidat n'a pas encore vérifié son email — un email de vérification lui a été envoyé. L'invitation d'entretien partira automatiquement après vérification.",
+                'warning' => "Le candidat doit confirmer son adresse email pour recevoir l'invitation.",
+                'application' => $application->fresh(),
+                'waiting_for_verification' => true,
+            ], 202); // 202 Accepted
+        }
+
         if (!$emailSent) {
             return response()->json([
                 'message' => "L'entretien a été enregistré mais l'email n'a pas pu être envoyé.",
                 'error' => $emailError,
                 'application' => $application->fresh(),
-            ], 207); // 207 Multi-Status
+            ], 207);
         }
 
         return response()->json([
-            'message' => $emailNotVerified
-                ? "Entretien programmé. L'invitation a été envoyée à {$applicant->email} — le candidat devra confirmer son adresse email pour recevoir les prochaines communications."
-                : 'Entretien programmé et invitation envoyée.',
-            'warning' => $emailNotVerified ? "L'email du candidat n'est pas encore vérifié. Un rappel de vérification est inclus dans l'invitation." : null,
+            'message' => 'Entretien programmé et invitation envoyée.',
             'application' => $application->fresh(),
             'email_sent_to' => $applicant->email,
+            'sms_sent' => $smsSent,
+            'sms_sent_to' => $smsSent ? $applicant->phone : null,
         ]);
     }
 

@@ -82,7 +82,7 @@ export default function Accueil() {
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link
                   to="/actualite"
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-[#0A1229] shadow-lg shadow-emerald-500/10 transition hover:-translate-y-0.5 hover:bg-emerald-400"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-[#0B1F33] shadow-lg shadow-emerald-500/10 transition hover:-translate-y-0.5 hover:bg-emerald-400"
                 >
                   <Briefcase size={16} />
                   Explorer les offres

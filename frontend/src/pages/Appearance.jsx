@@ -253,7 +253,7 @@ function ThemeOption({
   const previewClass =
     variant === "light"
       ? "border-slate-200 bg-white text-slate-800"
-      : "border-slate-700 bg-[#0A1229] text-slate-100";
+      : "border-slate-700 bg-[#0B1F33] text-slate-100";
 
   return (
     <button

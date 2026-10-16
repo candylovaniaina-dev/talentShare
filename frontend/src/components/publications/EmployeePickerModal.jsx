@@ -20,7 +20,7 @@ function Avatar({ path, name, size = "md" }) {
   if (path) {
     return (
       <img
-        src={`http://localhost:8001/storage/${path}`}
+        src={`/storage/${path}`}
         alt={`Photo de ${name || "salarié"}`}
         className={`${sizes[size]} shrink-0 rounded-2xl border border-slate-200 object-cover`}
       />

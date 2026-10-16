@@ -199,7 +199,7 @@ export default function ProposalDetail() {
             <div className="flex items-center gap-4">
               {proposal.profile.avatar_path ? (
                 <img
-                  src={`http://localhost:8001/storage/${proposal.profile.avatar_path}`}
+                  src={`/storage/${proposal.profile.avatar_path}`}
                   className="h-16 w-16 rounded-2xl object-cover"
                   alt={proposal.profile.user.name}
                 />
@@ -336,7 +336,7 @@ export default function ProposalDetail() {
 
                   <div className="flex gap-1 shrink-0">
                     <a
-                      href={`http://localhost:8001/api/documents/${d.id}/download`}
+                      href={`/api/documents/${d.id}/download`}
                       target="_blank"
                       rel="noreferrer"
                       className="rounded-full border border-slate-200 p-2 hover:border-navy"

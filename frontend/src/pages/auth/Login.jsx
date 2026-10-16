@@ -13,6 +13,8 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import RobotMascot from "../../components/RobotMascot";
 
+const API_URL = import.meta.env.VITE_API_URL || "/api";
+
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState(null);
@@ -91,7 +93,7 @@ export default function Login() {
           : "idle";
 
   const inputClass =
-    "w-full rounded-2xl border border-white/10 bg-[#0A1229]/70 px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-emerald-400/60 focus:ring-4 focus:ring-emerald-400/10";
+    "w-full rounded-2xl border border-white/10 bg-[#0B1F33]/70 px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-emerald-400/60 focus:ring-4 focus:ring-emerald-400/10";
 
   const renderError = () =>
     error ? (
@@ -141,11 +143,11 @@ export default function Login() {
     <button
       type="submit"
       disabled={loading}
-      className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-300 px-5 py-3.5 text-sm font-bold text-[#0A1229] shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-200 focus:outline-none focus:ring-4 focus:ring-emerald-300/20 disabled:cursor-not-allowed disabled:opacity-60"
+      className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-300 px-5 py-3.5 text-sm font-bold text-[#0B1F33] shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-200 focus:outline-none focus:ring-4 focus:ring-emerald-300/20 disabled:cursor-not-allowed disabled:opacity-60"
     >
       {loading ? (
         <>
-          <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#0A1229] border-t-transparent" />
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#0B1F33] border-t-transparent" />
           Connexion en cours…
         </>
       ) : (
@@ -156,16 +158,65 @@ export default function Login() {
     </button>
   );
 
+  // ✅ BLOC BOUTONS OAUTH
+  const renderSocialLogin = () => (
+    <>
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-white/10" />
+        </div>
+        <div className="relative flex justify-center">
+          <span className="bg-[#111B35] px-3 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+            Ou continuer avec
+          </span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3">
+        <SocialButton
+          provider="google"
+          label="Google"
+          icon={
+            <svg viewBox="0 0 24 24" className="h-5 w-5">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1A11 11 0 0 0 2.18 7.06l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38z"/>
+            </svg>
+          }
+        />
+        <SocialButton
+          provider="linkedin-openid"
+          label="LinkedIn"
+          icon={
+            <svg viewBox="0 0 24 24" className="h-5 w-5">
+              <path fill="#0A66C2" d="M20.45 20.45h-3.55v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05a3.74 3.74 0 0 1 3.37-1.85c3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.72V1.72C24 .77 23.2 0 22.22 0z"/>
+            </svg>
+          }
+        />
+        <SocialButton
+          provider="facebook"
+          label="Facebook"
+          icon={
+            <svg viewBox="0 0 24 24" className="h-5 w-5">
+              <path fill="#1877F2" d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.69 4.53-4.69 1.31 0 2.68.24 2.68.24v2.97h-1.51c-1.49 0-1.96.93-1.96 1.89v2.25h3.33l-.53 3.49h-2.8V24C19.61 23.1 24 18.1 24 12.07z"/>
+            </svg>
+          }
+        />
+      </div>
+    </>
+  );
+
   const renderQuickLogin = () => (
     <div className="flex flex-col items-center">
       {lastUser.avatar_path ? (
         <img
-          src={`http://localhost:8001/storage/${lastUser.avatar_path}`}
+          src={`/storage/${lastUser.avatar_path}`}
           alt={lastUser.name || "Avatar"}
           className="h-24 w-24 rounded-full border-2 border-emerald-300/50 object-cover shadow-xl shadow-emerald-950/30 sm:h-28 sm:w-28"
         />
       ) : (
-        <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-emerald-300 to-teal-600 text-3xl font-bold text-[#0A1229] shadow-xl shadow-emerald-950/30 sm:h-28 sm:w-28 sm:text-4xl">
+        <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-emerald-300 to-teal-600 text-3xl font-bold text-[#0B1F33] shadow-xl shadow-emerald-950/30 sm:h-28 sm:w-28 sm:text-4xl">
           {lastUser.name?.charAt(0)?.toUpperCase() || "T"}
         </div>
       )}
@@ -194,6 +245,9 @@ export default function Login() {
         {renderError()}
         {renderSubmitButton()}
       </form>
+
+      {/* ✅ OAuth aussi en mode "quick login" */}
+      {renderSocialLogin()}
 
       <Link
         to="/forgot-password"
@@ -286,6 +340,9 @@ export default function Login() {
         {renderSubmitButton()}
       </form>
 
+      {/* ✅ BLOC OAUTH */}
+      {renderSocialLogin()}
+
       <p className="mt-7 text-center text-sm text-slate-400">
         Pas encore de compte ?{" "}
         <Link
@@ -310,7 +367,7 @@ export default function Login() {
   );
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#0A1229] text-white">
+    <div className="relative min-h-screen overflow-hidden bg-[#0B1F33] text-white">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -left-40 top-10 h-[420px] w-[420px] rounded-full bg-emerald-400/10 blur-[120px]" />
         <div className="absolute -right-40 bottom-0 h-[420px] w-[420px] rounded-full bg-blue-500/10 blur-[120px]" />
@@ -361,5 +418,27 @@ export default function Login() {
         </section>
       </main>
     </div>
+  );
+}
+
+/* ============================================================
+   BOUTON OAUTH SOCIAL
+============================================================ */
+function SocialButton({ provider, label, icon }) {
+  const handleClick = () => {
+    // ✅ Redirige vers le backend qui redirige vers le provider
+    window.location.href = `${API_URL}/auth/${provider}/redirect`;
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      className="flex flex-col items-center gap-1.5 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3 transition hover:border-emerald-400/40 hover:bg-white/[0.08]"
+      title={`Continuer avec ${label}`}
+    >
+      {icon}
+      <span className="text-[10px] font-semibold text-slate-300">{label}</span>
+    </button>
   );
 }

@@ -299,7 +299,7 @@ export default function MyActivity() {
             {user?.role === "company" && (
     <Link
       to="/proposals/new"
-      className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-xs font-bold text-[#0A1229] transition hover:bg-emerald-400"
+      className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-xs font-bold text-[#0B1F33] transition hover:bg-emerald-400"
     >
       <Plus size={14} /> Publier une proposition
     </Link>
@@ -556,7 +556,7 @@ function ProposalRow({
                 <button
                   onClick={() => onAccept(p.id)}
                   disabled={actionLoading === p.id}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3.5 py-1.5 text-xs font-bold text-[#0A1229] transition hover:bg-emerald-400 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3.5 py-1.5 text-xs font-bold text-[#0B1F33] transition hover:bg-emerald-400 disabled:opacity-50"
                 >
                   <Check size={12} /> Accepter
                 </button>
@@ -575,7 +575,7 @@ function ProposalRow({
                 <button
                   onClick={() => onSubmit(p.id)}
                   disabled={actionLoading === p.id}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3.5 py-1.5 text-xs font-bold text-[#0A1229] transition hover:bg-emerald-400 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3.5 py-1.5 text-xs font-bold text-[#0B1F33] transition hover:bg-emerald-400 disabled:opacity-50"
                 >
                   <Send size={12} /> Envoyer
                 </button>
@@ -695,7 +695,7 @@ function MissionRow({ mission, user, onAccept, onDecline, onUpdateStatus, action
                 <button
                   onClick={() => onAccept(mission.id)}
                   disabled={actionLoading === mission.id}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3.5 py-1.5 text-xs font-bold text-[#0A1229] transition hover:bg-emerald-400 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3.5 py-1.5 text-xs font-bold text-[#0B1F33] transition hover:bg-emerald-400 disabled:opacity-50"
                 >
                   <Check size={12} /> Accepter
                 </button>
@@ -888,7 +888,7 @@ function MissionDetailModal({ mission, user, onClose, onAccept, onDecline, onUpd
               <button
                 onClick={() => onAccept(mission.id)}
                 disabled={actionLoading === mission.id}
-                className="flex-1 min-w-[140px] rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] hover:bg-emerald-400 disabled:opacity-60 inline-flex items-center justify-center gap-2"
+                className="flex-1 min-w-[140px] rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0B1F33] hover:bg-emerald-400 disabled:opacity-60 inline-flex items-center justify-center gap-2"
               >
                 <Check size={16} /> Accepter
               </button>
@@ -906,7 +906,7 @@ function MissionDetailModal({ mission, user, onClose, onAccept, onDecline, onUpd
             <button
               onClick={() => onUpdateStatus(mission.id, "active")}
               disabled={actionLoading === mission.id}
-              className="flex-1 min-w-[180px] rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] hover:bg-emerald-400 disabled:opacity-60 inline-flex items-center justify-center gap-2"
+              className="flex-1 min-w-[180px] rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0B1F33] hover:bg-emerald-400 disabled:opacity-60 inline-flex items-center justify-center gap-2"
             >
               <PlayCircle size={16} /> Démarrer la mission
             </button>
@@ -916,7 +916,7 @@ function MissionDetailModal({ mission, user, onClose, onAccept, onDecline, onUpd
             <button
               onClick={() => onUpdateStatus(mission.id, "completed")}
               disabled={actionLoading === mission.id}
-              className="flex-1 min-w-[180px] rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0A1229] hover:bg-emerald-400 disabled:opacity-60 inline-flex items-center justify-center gap-2"
+              className="flex-1 min-w-[180px] rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0B1F33] hover:bg-emerald-400 disabled:opacity-60 inline-flex items-center justify-center gap-2"
             >
               <CheckCircle size={16} /> Terminer
             </button>

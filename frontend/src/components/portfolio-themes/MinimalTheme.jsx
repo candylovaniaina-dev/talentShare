@@ -1,80 +1,76 @@
-
 import React from "react";
-import { MapPin, ArrowDownRight } from "lucide-react";
 import PortfolioContent from "./PortfolioContent";
 
-const STORAGE_URL = "http://localhost:8001/storage/";
+const STORAGE_URL = "/storage";
 
-export default function MinimalTheme({ portfolio, profile, accent = "#20BFAF" }) {
+export default function MinimalTheme({ portfolio, profile, accent = "#16B8B1" }) {
+  if (!profile) return null;
+
+  const initials = (profile.name || "?")
+    .trim()
+    .split(/\s+/)
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+
   return (
-    <div className="min-h-screen bg-[#F7F9FC] font-sans text-[#102342]">
-      <main className="mx-auto max-w-4xl px-5 py-10 sm:px-8 sm:py-16">
-        <header className="overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white shadow-sm">
-          <div className="h-2" style={{ backgroundColor: accent }} />
+    <div className="min-h-screen bg-[#F5F8FA] font-sans text-[#0B1F33]">
+      <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
+        <article className="overflow-hidden rounded-2xl border border-[#E4EBF1] bg-white shadow-sm">
+          <div className="h-1.5 w-full" style={{ backgroundColor: accent }} />
 
-          <div className="p-6 sm:p-10">
-            <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
-              {profile?.avatar ? (
+          {/* EN-TÊTE */}
+          <header className="border-b border-[#E4EBF1] px-6 py-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              {profile.avatar_path ? (
                 <img
-                  src={`${STORAGE_URL}${profile.avatar}`}
-                  alt={profile?.name || "Photo de profil"}
-                  className="h-24 w-24 rounded-3xl object-cover ring-4 ring-slate-50 sm:h-28 sm:w-28"
+                  src={`${STORAGE_URL}/${profile.avatar_path}`}
+                  alt={profile.name}
+                  className="h-16 w-16 shrink-0 rounded-full object-cover shadow-sm ring-2 ring-white"
                 />
               ) : (
                 <div
-                  className="flex h-24 w-24 items-center justify-center rounded-3xl text-4xl font-bold sm:h-28 sm:w-28"
-                  style={{ backgroundColor: `${accent}18`, color: accent }}
+                  className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-lg font-bold text-white shadow-sm"
+                  style={{ backgroundColor: accent }}
                 >
-                  {profile?.name?.charAt(0)?.toUpperCase() || "?"}
+                  {initials}
                 </div>
               )}
 
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
-                  Portfolio
-                </p>
-                <h1 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">
-                  {profile?.name || "Mon portfolio"}
+                <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
+                  {profile.name || "Mon portfolio"}
                 </h1>
-
-                {profile?.headline && (
-                  <p className="mt-3 text-base font-medium sm:text-lg" style={{ color: accent }}>
+                {profile.headline && (
+                  <p className="mt-0.5 text-sm font-medium" style={{ color: accent }}>
                     {profile.headline}
                   </p>
                 )}
-
-                {profile?.city && (
-                  <p className="mt-3 flex items-center gap-2 text-sm text-slate-500">
-                    <MapPin size={15} />
-                    {[profile.city, profile.country].filter(Boolean).join(", ")}
-                  </p>
-                )}
+                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-[#64788C]">
+                  {(profile.city || profile.country) && (
+                    <span>{[profile.city, profile.country].filter(Boolean).join(", ")}</span>
+                  )}
+                  {profile.user?.email && <span>{profile.user.email}</span>}
+                  {profile.user?.phone && <span>{profile.user.phone}</span>}
+                </div>
               </div>
             </div>
 
-            {profile?.bio && (
-              <div className="mt-8 border-t border-slate-100 pt-6">
-                <h2 className="text-xs font-bold uppercase tracking-[0.15em] text-slate-400">
-                  À propos de moi
-                </h2>
-                <p className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-600 sm:text-base">
-                  {profile.bio}
-                </p>
-              </div>
+            {profile.bio && (
+              <p className="mt-3 whitespace-pre-line text-[13px] leading-6 text-[#334B63]">
+                {profile.bio}
+              </p>
             )}
+          </header>
 
-            <div className="mt-6 flex items-center gap-2 text-xs font-medium text-slate-400">
-              <ArrowDownRight size={15} style={{ color: accent }} />
-              Découvrez mon parcours
-            </div>
+          {/* CONTENU */}
+          <div className="px-6 py-5">
+            <PortfolioContent profile={profile} accent={accent} variant="light" />
           </div>
-        </header>
+        </article>
 
-        <div className="mt-8">
-          <PortfolioContent profile={profile} accent={accent} variant="light" />
-        </div>
-
-        <footer className="py-10 text-center text-xs text-slate-400">
+        <footer className="py-4 text-center text-[10px] text-[#8A9BB0]">
           Portfolio présenté sur TalentShare
         </footer>
       </main>

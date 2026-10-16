@@ -253,7 +253,7 @@ export default function RobotBuddy({ mode = "idle", role = "employee" }) {
       <div className={`relative ${mode === "error" ? "rb2-shake" : ""}`}>
         <div
           key={`chip-${mode}-${role}`}
-          className="rb2-pop absolute -right-1 top-2 z-20 flex h-10 w-10 items-center justify-center rounded-2xl border bg-[#0A1229]/80 backdrop-blur-md sm:-right-2 sm:h-11 sm:w-11"
+          className="rb2-pop absolute -right-1 top-2 z-20 flex h-10 w-10 items-center justify-center rounded-2xl border bg-[#0B1F33]/80 backdrop-blur-md sm:-right-2 sm:h-11 sm:w-11"
           style={{
             borderColor: `${color}66`,
             color,
@@ -303,7 +303,7 @@ export default function RobotBuddy({ mode = "idle", role = "employee" }) {
               width="48"
               height="28"
               rx="14"
-              fill="#0F1E45"
+              fill="#12364D"
               stroke={color}
               strokeOpacity=".5"
             />

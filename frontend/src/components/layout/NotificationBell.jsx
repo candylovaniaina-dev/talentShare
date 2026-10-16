@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from "react";
 import {
   Bell,
@@ -17,7 +16,6 @@ import {
   UserCheck,
   Heart,
   MessageCircle,
-  ArrowRight,
   CheckCheck,
   Inbox,
   LoaderCircle,
@@ -25,56 +23,73 @@ import {
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 
+/* ============================================================
+   CONFIG ICÔNES / BADGES
+============================================================ */
 const ICONS = {
-  new_message: { icon: MessageSquare, color: "text-blue-700", bg: "bg-blue-50" },
-  resource_offer_published: { icon: Sparkles, color: "text-violet-700", bg: "bg-violet-50" },
-  offer_viewed: { icon: Eye, color: "text-amber-700", bg: "bg-amber-50" },
-  offer_contacted: { icon: Handshake, color: "text-teal-700", bg: "bg-teal-50" },
-  proposal_accepted: { icon: CheckCircle, color: "text-emerald-700", bg: "bg-emerald-50" },
-  proposal_declined: { icon: XCircle, color: "text-rose-700", bg: "bg-rose-50" },
-  talent_available: { icon: Sparkles, color: "text-teal-700", bg: "bg-teal-50" },
+  new_message: { icon: MessageSquare, color: "text-blue-600", bg: "bg-blue-500" },
+  resource_offer_published: { icon: Sparkles, color: "text-violet-600", bg: "bg-violet-500" },
+  offer_viewed: { icon: Eye, color: "text-amber-600", bg: "bg-amber-500" },
+  offer_contacted: { icon: Handshake, color: "text-teal-600", bg: "bg-teal-500" },
+  proposal_accepted: { icon: CheckCircle, color: "text-emerald-600", bg: "bg-emerald-500" },
+  proposal_declined: { icon: XCircle, color: "text-rose-600", bg: "bg-rose-500" },
+  talent_available: { icon: Sparkles, color: "text-teal-600", bg: "bg-teal-500" },
 
-  mission_pending_approval: { icon: Target, color: "text-amber-700", bg: "bg-amber-50" },
-  mission_created_pending: { icon: Target, color: "text-blue-700", bg: "bg-blue-50" },
-  mission_accepted: { icon: CheckCircle, color: "text-emerald-700", bg: "bg-emerald-50" },
-  mission_declined: { icon: XCircle, color: "text-rose-700", bg: "bg-rose-50" },
+  mission_pending_approval: { icon: Target, color: "text-amber-600", bg: "bg-amber-500" },
+  mission_created_pending: { icon: Target, color: "text-blue-600", bg: "bg-blue-500" },
+  mission_accepted: { icon: CheckCircle, color: "text-emerald-600", bg: "bg-emerald-500" },
+  mission_declined: { icon: XCircle, color: "text-rose-600", bg: "bg-rose-500" },
 
-  availability_expiring: { icon: Clock, color: "text-amber-700", bg: "bg-amber-50" },
-  saved_search_match: { icon: Sparkles, color: "text-blue-700", bg: "bg-blue-50" },
+  availability_expiring: { icon: Clock, color: "text-amber-600", bg: "bg-amber-500" },
+  saved_search_match: { icon: Sparkles, color: "text-blue-600", bg: "bg-blue-500" },
 
-  resource_request_published: { icon: Target, color: "text-emerald-700", bg: "bg-emerald-50" },
-  resource_request_matched: { icon: UserPlus, color: "text-blue-700", bg: "bg-blue-50" },
-  resource_request_expiring: { icon: AlertCircle, color: "text-amber-700", bg: "bg-amber-50" },
-  resource_request_closed: { icon: FileText, color: "text-slate-600", bg: "bg-slate-100" },
+  resource_request_published: { icon: Target, color: "text-emerald-600", bg: "bg-emerald-500" },
+  resource_request_matched: { icon: UserPlus, color: "text-blue-600", bg: "bg-blue-500" },
+  resource_request_expiring: { icon: AlertCircle, color: "text-amber-600", bg: "bg-amber-500" },
+  resource_request_closed: { icon: FileText, color: "text-slate-600", bg: "bg-slate-500" },
 
-  proposal_received: { icon: FileText, color: "text-blue-700", bg: "bg-blue-50" },
-  proposal_expired: { icon: AlertCircle, color: "text-slate-600", bg: "bg-slate-100" },
+  proposal_received: { icon: FileText, color: "text-blue-600", bg: "bg-blue-500" },
+  proposal_expired: { icon: AlertCircle, color: "text-slate-600", bg: "bg-slate-500" },
 
-  new_application: { icon: FileText, color: "text-emerald-700", bg: "bg-emerald-50" },
-  application_viewed: { icon: Eye, color: "text-blue-700", bg: "bg-blue-50" },
-  application_shortlisted: { icon: UserCheck, color: "text-violet-700", bg: "bg-violet-50" },
-  application_interview: { icon: Video, color: "text-amber-700", bg: "bg-amber-50" },
-  application_accepted: { icon: CheckCircle, color: "text-emerald-700", bg: "bg-emerald-50" },
-  application_rejected: { icon: XCircle, color: "text-rose-700", bg: "bg-rose-50" },
+  new_application: { icon: FileText, color: "text-emerald-600", bg: "bg-emerald-500" },
+  application_viewed: { icon: Eye, color: "text-blue-600", bg: "bg-blue-500" },
+  application_shortlisted: { icon: UserCheck, color: "text-violet-600", bg: "bg-violet-500" },
+  application_interview: { icon: Video, color: "text-amber-600", bg: "bg-amber-500" },
+  application_accepted: { icon: CheckCircle, color: "text-emerald-600", bg: "bg-emerald-500" },
+  application_rejected: { icon: XCircle, color: "text-rose-600", bg: "bg-rose-500" },
 
-  offer_liked: { icon: Heart, color: "text-rose-700", bg: "bg-rose-50" },
-  offer_commented: { icon: MessageCircle, color: "text-blue-700", bg: "bg-blue-50" },
+  offer_liked: { icon: Heart, color: "text-rose-600", bg: "bg-rose-500" },
+  offer_commented: { icon: MessageCircle, color: "text-blue-600", bg: "bg-blue-500" },
 
-  default: { icon: Bell, color: "text-slate-600", bg: "bg-slate-100" },
+  default: { icon: Bell, color: "text-slate-600", bg: "bg-slate-500" },
 };
 
-function formatDate(date) {
-  if (!date) return "";
+const API_BASE = "http://localhost:8001";
+const STORAGE_URL = `${API_BASE}/storage`;
 
-  const parsed = new Date(date);
-  if (Number.isNaN(parsed.getTime())) return "";
+/* ============================================================
+   HELPERS
+============================================================ */
+function formatRelativeTime(dateStr) {
+  if (!dateStr) return "";
+  const now = Date.now();
+  const then = new Date(dateStr).getTime();
+  const diff = Math.floor((now - then) / 1000);
 
-  return parsed.toLocaleString("fr-FR", {
+  if (diff < 60) return "à l'instant";
+  if (diff < 3600) return `${Math.floor(diff / 60)} min`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} h`;
+  if (diff < 604800) return `${Math.floor(diff / 86400)} j`;
+  return new Date(dateStr).toLocaleDateString("fr-FR", {
     day: "numeric",
     month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
   });
+}
+
+function buildImageUrl(pathOrUrl) {
+  if (!pathOrUrl) return null;
+  if (pathOrUrl.startsWith("http")) return pathOrUrl;
+  return `${STORAGE_URL}/${pathOrUrl}`;
 }
 
 function getNotificationData(payload) {
@@ -87,11 +102,59 @@ function getNotificationData(payload) {
   const unread =
     !Array.isArray(payload) && payload?.unread_count != null
       ? payload.unread_count
-      : data.filter((notification) => !notification.read_at).length;
+      : data.filter((n) => !n.read_at).length;
 
   return { data, unread };
 }
 
+/* ============================================================
+   AVATAR ACTEUR (photo OU initiales)
+============================================================ */
+function ActorAvatar({ actor, size = 48, typeConfig, isUnread }) {
+  const [error, setError] = useState(false);
+  const Icon = typeConfig.icon;
+  const badgeBg = typeConfig.bg;
+
+  const initials = actor?.name
+    ? actor.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
+    : null;
+
+  const imageUrl = buildImageUrl(actor?.avatar_path);
+
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      {/* Photo ou initiales */}
+      {imageUrl && !error ? (
+        <img
+          src={imageUrl}
+          alt={actor?.name || ""}
+          onError={() => setError(true)}
+          className="h-full w-full rounded-full border border-slate-200 object-cover"
+        />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-[#16B8B1] to-[#0F9691] text-sm font-bold text-white">
+          {initials || "?"}
+        </div>
+      )}
+
+      {/* Badge icône en coin */}
+      <span
+        className={`absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white ${badgeBg} text-white shadow-sm`}
+      >
+        <Icon size={10} strokeWidth={2.5} />
+      </span>
+
+      {/* Point bleu (non lu) */}
+      {isUnread && (
+        <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-blue-500" />
+      )}
+    </div>
+  );
+}
+
+/* ============================================================
+   COMPOSANT PRINCIPAL
+============================================================ */
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([]);
@@ -104,7 +167,6 @@ export default function NotificationBell() {
 
   const load = async (showLoader = false) => {
     if (showLoader) setLoading(true);
-
     try {
       const res = await api.get("/notifications");
       const { data, unread } = getNotificationData(res.data);
@@ -120,28 +182,19 @@ export default function NotificationBell() {
 
   useEffect(() => {
     load(true);
-
-    const interval = setInterval(() => {
-      load();
-    }, 15000);
-
+    const interval = setInterval(() => load(), 15000);
     return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
-    const onClickOutside = (event) => {
-      if (ref.current && !ref.current.contains(event.target)) {
-        setOpen(false);
-      }
+    const onClickOutside = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
     };
-
-    const onEscape = (event) => {
-      if (event.key === "Escape") setOpen(false);
+    const onEscape = (e) => {
+      if (e.key === "Escape") setOpen(false);
     };
-
     document.addEventListener("mousedown", onClickOutside);
     document.addEventListener("keydown", onEscape);
-
     return () => {
       document.removeEventListener("mousedown", onClickOutside);
       document.removeEventListener("keydown", onEscape);
@@ -151,12 +204,12 @@ export default function NotificationBell() {
   const markRead = async (id) => {
     try {
       await api.post(`/notifications/${id}/read`);
-      setItems((current) =>
-        current.map((item) =>
-          item.id === id ? { ...item, read_at: item.read_at || new Date().toISOString() } : item
+      setItems((cur) =>
+        cur.map((it) =>
+          it.id === id ? { ...it, read_at: it.read_at || new Date().toISOString() } : it
         )
       );
-      setUnreadCount((count) => Math.max(0, count - 1));
+      setUnreadCount((c) => Math.max(0, c - 1));
       return true;
     } catch {
       return false;
@@ -165,130 +218,97 @@ export default function NotificationBell() {
 
   const markAllRead = async () => {
     if (markingAll || unreadCount === 0) return;
-
     setMarkingAll(true);
-
     try {
       await api.post("/notifications/read-all");
       const now = new Date().toISOString();
-
-      setItems((current) =>
-        current.map((item) => ({
-          ...item,
-          read_at: item.read_at || now,
-        }))
-      );
+      setItems((cur) => cur.map((it) => ({ ...it, read_at: it.read_at || now })));
       setUnreadCount(0);
       setError("");
     } catch {
-      setError("Impossible de marquer toutes les notifications comme lues.");
+      setError("Impossible de marquer tout comme lu.");
     } finally {
       setMarkingAll(false);
     }
   };
 
-  const handleClick = async (notification) => {
-    if (!notification.action_url) return;
-
-    if (!notification.read_at) {
-      await markRead(notification.id);
-    }
-
+  const handleClick = async (n) => {
+    if (!n.action_url) return;
+    if (!n.read_at) await markRead(n.id);
     setOpen(false);
 
-    if (notification.action_url.includes("#")) {
-      const [path, hash] = notification.action_url.split("#");
+    if (n.action_url.includes("#")) {
+      const [path, hash] = n.action_url.split("#");
       navigate(path || "/");
-
       window.setTimeout(() => {
-        const element = document.getElementById(hash);
-
-        if (element) {
-          element.scrollIntoView({ behavior: "smooth", block: "center" });
-          element.classList.add("ring-2", "ring-[#16B8A6]", "rounded-xl");
-
+        const el = document.getElementById(hash);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          el.classList.add("ring-2", "ring-[#16B8B1]", "rounded-xl");
           window.setTimeout(() => {
-            element.classList.remove("ring-2", "ring-[#16B8A6]", "rounded-xl");
+            el.classList.remove("ring-2", "ring-[#16B8B1]", "rounded-xl");
           }, 2500);
         }
       }, 800);
     } else {
-      navigate(notification.action_url);
+      navigate(n.action_url);
     }
   };
 
   return (
     <div className="relative" ref={ref}>
+      {/* BOUTON CLOCHE */}
       <button
         type="button"
-        onClick={() => setOpen((current) => !current)}
+        onClick={() => setOpen((o) => !o)}
         aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} non lues` : ""}`}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        className={`relative flex h-10 w-10 items-center justify-center rounded-xl transition-all ${
+        className={`relative flex h-10 w-10 items-center justify-center rounded-full transition-all ${
           open
-            ? "bg-[#E6FAF6] text-[#0F766E]"
-            : "text-slate-500 hover:bg-slate-100 hover:text-[#102A43]"
+            ? "bg-[#E6FAF6] text-[#0F9691]"
+            : "text-slate-600 hover:bg-slate-100"
         }`}
       >
         <Bell size={20} strokeWidth={1.9} />
-
         {unreadCount > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-[19px] min-w-[19px] items-center justify-center rounded-full border-2 border-white bg-rose-500 px-1 text-[9px] font-extrabold text-white shadow-sm">
+          <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-white bg-rose-500 px-1 text-[10px] font-bold text-white">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
       </button>
 
+      {/* PANNEAU */}
       {open && (
         <section
-          role="dialog"
-          aria-label="Notifications"
-          className="absolute right-0 top-full z-50 mt-3 flex max-h-[min(590px,calc(100vh-100px))] w-[min(410px,calc(100vw-24px))] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_20px_60px_-15px_rgba(15,23,42,0.25)]"
+          className="absolute right-0 top-full z-50 mt-2 flex max-h-[min(620px,calc(100vh-100px))] w-[min(400px,calc(100vw-24px))] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_20px_60px_-15px_rgba(15,23,42,0.25)]"
         >
-          {/* En-tête */}
-          <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-4 sm:px-5">
-            <div className="flex min-w-0 items-center gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E6FAF6] text-[#0F766E]">
-                <Bell size={19} />
-              </span>
-              <div>
-                <h2 className="text-sm font-bold text-[#102A43]">Notifications</h2>
-                <p className="mt-0.5 text-xs text-slate-500">
-                  {unreadCount > 0
-                    ? `${unreadCount} notification${unreadCount > 1 ? "s" : ""} non lue${unreadCount > 1 ? "s" : ""}`
-                    : "Vous êtes à jour"}
-                </p>
-              </div>
-            </div>
-
+          {/* HEADER style Facebook */}
+          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+            <h2 className="text-[20px] font-bold text-[#102A43]">Notifications</h2>
             {unreadCount > 0 && (
               <button
                 type="button"
                 onClick={markAllRead}
                 disabled={markingAll}
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-2 text-[11px] font-semibold text-[#0F766E] transition hover:bg-[#E6FAF6] disabled:opacity-50"
+                className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-[12px] font-semibold text-[#0F9691] transition hover:bg-[#E6FAF6] disabled:opacity-50"
               >
                 {markingAll ? (
-                  <LoaderCircle size={14} className="animate-spin" />
+                  <LoaderCircle size={13} className="animate-spin" />
                 ) : (
-                  <CheckCheck size={14} />
+                  <CheckCheck size={13} />
                 )}
-                <span className="hidden sm:inline">Tout marquer comme lu</span>
-                <span className="sm:hidden">Tout lire</span>
+                Tout marquer comme lu
               </button>
             )}
           </div>
 
-          {/* Contenu */}
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          {/* CONTENU */}
+          <div className="min-h-0 flex-1 overflow-y-auto">
             {error && (
-              <div className="mx-4 mt-3 rounded-xl border border-rose-100 bg-rose-50 p-3 text-xs text-rose-700">
+              <div className="mx-3 mt-3 rounded-xl border border-rose-100 bg-rose-50 p-3 text-xs text-rose-700">
                 <p>{error}</p>
                 <button
-                  type="button"
                   onClick={() => load(true)}
-                  className="mt-2 font-bold underline underline-offset-2"
+                  className="mt-2 font-bold underline"
                 >
                   Réessayer
                 </button>
@@ -296,10 +316,10 @@ export default function NotificationBell() {
             )}
 
             {loading ? (
-              <div className="space-y-4 p-5">
-                {[1, 2, 3].map((item) => (
-                  <div key={item} className="flex animate-pulse gap-3">
-                    <div className="h-10 w-10 shrink-0 rounded-xl bg-slate-100" />
+              <div className="space-y-4 p-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex animate-pulse gap-3">
+                    <div className="h-12 w-12 shrink-0 rounded-full bg-slate-100" />
                     <div className="flex-1 space-y-2 py-1">
                       <div className="h-3 w-3/4 rounded bg-slate-100" />
                       <div className="h-3 w-full rounded bg-slate-100" />
@@ -310,74 +330,79 @@ export default function NotificationBell() {
               </div>
             ) : items.length === 0 ? (
               <div className="px-6 py-12 text-center">
-                <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F1F5F9] text-slate-400">
-                  <Inbox size={29} strokeWidth={1.5} />
+                <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                  <Inbox size={28} strokeWidth={1.5} />
                 </span>
                 <h3 className="mt-4 text-sm font-bold text-[#102A43]">
                   Rien de nouveau
                 </h3>
                 <p className="mx-auto mt-1.5 max-w-[230px] text-xs leading-5 text-slate-500">
-                  Vos nouvelles activités et opportunités apparaîtront ici.
+                  Vos nouvelles activités apparaîtront ici.
                 </p>
               </div>
             ) : (
-              <div className="divide-y divide-slate-100/80">
-                {items.map((notification) => {
-                  const config = ICONS[notification.type] || ICONS.default;
-                  const Icon = config.icon;
-                  const isUnread = !notification.read_at;
-                  const clickable = Boolean(notification.action_url);
+              <div>
+                {items.map((n) => {
+                  const cfg = ICONS[n.type] || ICONS.default;
+                  const isUnread = !n.read_at;
+                  const clickable = Boolean(n.action_url);
+                  const actor = n.actor;
 
                   return (
                     <button
-                      key={notification.id}
+                      key={n.id}
                       type="button"
-                      onClick={() => handleClick(notification)}
+                      onClick={() => handleClick(n)}
                       disabled={!clickable}
-                      className={`group flex w-full gap-3 px-4 py-4 text-left transition sm:px-5 ${
+                      className={`flex w-full items-start gap-3 px-3 py-3 text-left transition ${
                         clickable ? "cursor-pointer hover:bg-slate-50" : "cursor-default"
-                      } ${
-                        isUnread
-                          ? "bg-[#F0FDFA]/70 hover:bg-[#E6FAF6]/80"
-                          : "bg-white"
-                      }`}
+                      } ${isUnread ? "bg-[#E7F3FF]/40 hover:bg-[#E7F3FF]/60" : "bg-white"}`}
                     >
-                      <span
-                        className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${config.bg} ${config.color}`}
-                      >
-                        <Icon size={18} strokeWidth={1.9} />
-                        {isUnread && (
-                          <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-[#16B8A6]" />
-                        )}
-                      </span>
+                      {/* Photo acteur + badge */}
+                      <ActorAvatar
+                        actor={actor}
+                        size={48}
+                        typeConfig={cfg}
+                        isUnread={isUnread}
+                      />
 
-                      <span className="min-w-0 flex-1">
-                        <span
-                          className={`block text-[13px] leading-5 ${
-                            isUnread
-                              ? "font-bold text-[#102A43]"
-                              : "font-semibold text-slate-700"
-                          }`}
-                        >
-                          {notification.title}
-                        </span>
-
-                        {notification.body && (
-                          <span className="mt-1 line-clamp-2 block text-xs leading-5 text-slate-500">
-                            {notification.body}
+                      {/* Contenu texte */}
+                      <div className="min-w-0 flex-1">
+                        {/* Ligne principale : nom en gras + action */}
+                        <p className="text-[14px] leading-[1.35] text-[#050505]">
+                          {actor?.name && (
+                            <strong className="font-semibold text-[#050505]">
+                              {actor.name}
+                            </strong>
+                          )}{" "}
+                          <span className={isUnread ? "font-normal text-[#050505]" : "text-[#65676B]"}>
+                            {n.title}
                           </span>
+                        </p>
+
+                        {/* Extrait body */}
+                        {n.body && (
+                          <p className="mt-0.5 line-clamp-2 text-[13px] leading-[1.35] text-[#65676B]">
+                            {n.body}
+                          </p>
                         )}
 
-                        <span className="mt-2 flex items-center gap-1.5 text-[10px] font-medium text-slate-400">
-                          <Clock size={11} />
-                          {formatDate(notification.created_at)}
-                          {clickable && (
-                            <span className="ml-auto inline-flex items-center gap-1 text-[#0F766E] opacity-0 transition group-hover:opacity-100">
-                              Ouvrir <ArrowRight size={12} />
-                            </span>
-                          )}
-                        </span>
-                      </span>
+                        {/* Timestamp + point bleu */}
+                        <div className="mt-1 flex items-center gap-2">
+                          <span
+                            className={`text-[12px] font-semibold ${
+                              isUnread ? "text-[#0866FF]" : "text-[#65676B]"
+                            }`}
+                          >
+                            {formatRelativeTime(n.created_at)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Point bleu côté droit (style FB) */}
+                      {isUnread && (
+                        <span className="mt-2 h-3 w-3 shrink-0 rounded-full bg-[#0866FF]" />
+                      )}
                     </button>
                   );
                 })}
@@ -385,15 +410,14 @@ export default function NotificationBell() {
             )}
           </div>
 
-          {/* Pied de panneau */}
-          <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/80 px-4 py-3">
-            <span className="text-[10px] font-medium text-slate-400">
+          {/* FOOTER */}
+          <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50 px-4 py-2.5">
+            <span className="text-[11px] font-medium text-slate-400">
               Mis à jour automatiquement
             </span>
             <button
-              type="button"
               onClick={() => load(true)}
-              className="rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-[#0F766E] transition hover:bg-[#E6FAF6]"
+              className="rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-[#0F9691] transition hover:bg-[#E6FAF6]"
             >
               Actualiser
             </button>

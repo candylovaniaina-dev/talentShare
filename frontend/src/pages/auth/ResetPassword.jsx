@@ -100,7 +100,7 @@ const ResetPassword = () => {
   };
 
   const inputClass =
-    "w-full rounded-2xl border border-white/10 bg-[#0A1229]/70 px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-emerald-400/60 focus:ring-4 focus:ring-emerald-400/10";
+    "w-full rounded-2xl border border-white/10 bg-[#0B1F33]/70 px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-emerald-400/60 focus:ring-4 focus:ring-emerald-400/10";
 
   const passwordField = (
     name,
@@ -146,7 +146,7 @@ const ResetPassword = () => {
   );
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0A1229] px-4 py-20 text-white">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0B1F33] px-4 py-20 text-white">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -left-32 top-0 h-96 w-96 rounded-full bg-emerald-400/10 blur-[120px]" />
         <div className="absolute -right-32 bottom-0 h-96 w-96 rounded-full bg-blue-500/10 blur-[120px]" />
@@ -256,7 +256,7 @@ const ResetPassword = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-300 px-5 py-3.5 text-sm font-bold text-[#0A1229] shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-200 focus:outline-none focus:ring-4 focus:ring-emerald-300/20 disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-300 px-5 py-3.5 text-sm font-bold text-[#0B1F33] shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-200 focus:outline-none focus:ring-4 focus:ring-emerald-300/20 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loading ? (
                   <>

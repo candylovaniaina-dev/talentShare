@@ -31,7 +31,7 @@ export default function ScheduleInterviewModal({
   ].join("-");
 
   const inputClass =
-    "w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-[#0F1E45] outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-500/10";
+    "w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-[#12364D] outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-500/10";
 
   const labelClass =
     "mb-2 flex items-center gap-2 text-xs font-semibold text-slate-700";
@@ -97,7 +97,7 @@ export default function ScheduleInterviewModal({
               </p>
               <h2
                 id="schedule-interview-title"
-                className="mt-0.5 text-base font-bold text-[#0F1E45] sm:text-lg"
+                className="mt-0.5 text-base font-bold text-[#12364D] sm:text-lg"
               >
                 Programmer un entretien
               </h2>
@@ -108,7 +108,7 @@ export default function ScheduleInterviewModal({
             type="button"
             onClick={onClose}
             aria-label="Fermer"
-            className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-[#0F1E45]"
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-[#12364D]"
           >
             <X size={19} />
           </button>
@@ -120,7 +120,7 @@ export default function ScheduleInterviewModal({
               <CheckCircle2 size={17} />
             </div>
             <div>
-              <p className="text-sm font-semibold text-[#0F1E45]">
+              <p className="text-sm font-semibold text-[#12364D]">
                 Propose un créneau au candidat
               </p>
               <p className="mt-1 text-xs leading-5 text-slate-600">
@@ -219,7 +219,7 @@ export default function ScheduleInterviewModal({
               <button
                 type="submit"
                 disabled={saving || !date || !time}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0F1E45] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#172B5B] focus:outline-none focus:ring-4 focus:ring-[#0F1E45]/15 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#12364D] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#172B5B] focus:outline-none focus:ring-4 focus:ring-[#12364D]/15 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {saving ? (
                   <Loader2 size={16} className="animate-spin" />

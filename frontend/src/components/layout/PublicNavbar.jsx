@@ -99,8 +99,8 @@ export default function PublicNavbar({ variant = "dark" }) {
     `inline-flex items-center justify-center rounded-xl px-3 py-2 text-[13px] font-semibold transition-all duration-200 ${
       active
         ? isDark
-          ? "bg-white/10 text-[#5EEAD4]"
-          : "bg-[#E6FAF6] text-[#0F766E]"
+          ? "bg-white/10 text-[#76DED7]"
+          : "bg-[#E6FAF6] text-[#0F9691]"
         : isDark
           ? "text-slate-300 hover:bg-white/5 hover:text-white"
           : "text-slate-600 hover:bg-slate-100 hover:text-[#102A43]"
@@ -171,7 +171,7 @@ export default function PublicNavbar({ variant = "dark" }) {
             aria-label="TalentShare, accueil"
             className="group flex shrink-0 items-center gap-2.5"
           >
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#16B8A6] text-[#102A43] shadow-sm transition-transform duration-200 group-hover:scale-105">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#16B8B1] text-[#102A43] shadow-sm transition-transform duration-200 group-hover:scale-105">
               <Layers3 size={22} strokeWidth={2.2} />
             </span>
             <span>
@@ -210,8 +210,8 @@ export default function PublicNavbar({ variant = "dark" }) {
               title="Changer de thème"
               className={`flex h-9 w-9 items-center justify-center rounded-xl transition ${
                 isDark
-                  ? "text-slate-300 hover:bg-white/10 hover:text-[#5EEAD4]"
-                  : "text-slate-500 hover:bg-slate-100 hover:text-[#0F766E]"
+                  ? "text-slate-300 hover:bg-white/10 hover:text-[#76DED7]"
+                  : "text-slate-500 hover:bg-slate-100 hover:text-[#0F9691]"
               }`}
             >
               {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
@@ -267,7 +267,7 @@ export default function PublicNavbar({ variant = "dark" }) {
                   <LayoutDashboard size={16} />
                   Mon espace
                 </Link>
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#16B8A6] text-sm font-extrabold text-[#102A43]">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#16B8B1] text-sm font-extrabold text-[#102A43]">
                   {user.name?.charAt(0)?.toUpperCase() || "?"}
                 </span>
               </div>
@@ -285,7 +285,7 @@ export default function PublicNavbar({ variant = "dark" }) {
                 </Link>
                 <Link
                   to="/register"
-                  className="inline-flex items-center gap-2 rounded-xl bg-[#16B8A6] px-4 py-2.5 text-[13px] font-bold text-[#102A43] shadow-sm transition hover:bg-[#5EEAD4] hover:shadow-md"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#16B8B1] px-4 py-2.5 text-[13px] font-bold text-[#102A43] shadow-sm transition hover:bg-[#76DED7] hover:shadow-md"
                 >
                   Rejoindre
                   <ChevronRight size={15} />
@@ -385,7 +385,7 @@ export default function PublicNavbar({ variant = "dark" }) {
               <Link
                 to="/dashboard"
                 onClick={() => setMobileOpen(false)}
-                className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-[#16B8A6] px-4 py-3 text-sm font-bold text-[#102A43]"
+                className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-[#16B8B1] px-4 py-3 text-sm font-bold text-[#102A43]"
               >
                 <LayoutDashboard size={17} />
                 Accéder à mon espace
@@ -406,7 +406,7 @@ export default function PublicNavbar({ variant = "dark" }) {
                 <Link
                   to="/register"
                   onClick={() => setMobileOpen(false)}
-                  className="flex items-center justify-center gap-1 rounded-xl bg-[#16B8A6] px-3 py-3 text-sm font-bold text-[#102A43]"
+                  className="flex items-center justify-center gap-1 rounded-xl bg-[#16B8B1] px-3 py-3 text-sm font-bold text-[#102A43]"
                 >
                   Rejoindre
                   <ChevronRight size={15} />

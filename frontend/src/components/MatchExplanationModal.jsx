@@ -19,8 +19,8 @@ const BREAKDOWN_ITEMS = [
     key: "skills",
     label: "Compétences",
     icon: Target,
-    color: "#0F1E45",
-    track: "bg-[#0F1E45]",
+    color: "#12364D",
+    track: "bg-[#12364D]",
   },
   {
     key: "availability",
@@ -159,7 +159,7 @@ export default function MatchExplanationModal({
             <div>
               <h2
                 id="match-explanation-title"
-                className="text-base font-bold text-[#0F1E45]"
+                className="text-base font-bold text-[#12364D]"
               >
                 Pourquoi ce score ?
               </h2>
@@ -173,7 +173,7 @@ export default function MatchExplanationModal({
             type="button"
             onClick={onClose}
             aria-label="Fermer"
-            className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-[#0F1E45]"
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-[#12364D]"
           >
             <X size={19} />
           </button>
@@ -185,7 +185,7 @@ export default function MatchExplanationModal({
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E8FBF5]">
                 <Loader2 size={27} className="animate-spin text-[#087F70]" />
               </div>
-              <p className="mt-4 text-sm font-semibold text-[#0F1E45]">
+              <p className="mt-4 text-sm font-semibold text-[#12364D]">
                 Analyse de la correspondance…
               </p>
               <p className="mt-1 text-xs text-slate-500">
@@ -218,7 +218,7 @@ export default function MatchExplanationModal({
 
           {!loading && !error && data && (
             <div className="space-y-6">
-              <div className="relative overflow-hidden rounded-2xl bg-[#0F1E45] p-5 text-white sm:p-6">
+              <div className="relative overflow-hidden rounded-2xl bg-[#12364D] p-5 text-white sm:p-6">
                 <div className="pointer-events-none absolute -right-8 -top-10 h-36 w-36 rounded-full bg-[#6EE7C8]/10 blur-2xl" />
                 <div className="pointer-events-none absolute -bottom-12 -left-8 h-32 w-32 rounded-full bg-blue-400/10 blur-2xl" />
 
@@ -254,7 +254,7 @@ export default function MatchExplanationModal({
                 Object.keys(data.breakdown).length > 0 && (
                   <section>
                     <div className="mb-4">
-                      <h3 className="text-sm font-bold text-[#0F1E45]">
+                      <h3 className="text-sm font-bold text-[#12364D]">
                         Détail du calcul
                       </h3>
                       <p className="mt-1 text-xs text-slate-500">
@@ -274,7 +274,7 @@ export default function MatchExplanationModal({
                             <div key={key}>
                               <div className="mb-2 flex items-center justify-between gap-3">
                                 <div className="flex items-center gap-2.5">
-                                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-[#0F1E45]">
+                                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-[#12364D]">
                                     <Icon size={15} />
                                   </div>
                                   <span className="text-sm font-medium text-slate-700">
@@ -282,7 +282,7 @@ export default function MatchExplanationModal({
                                   </span>
                                 </div>
 
-                                <span className="text-sm font-bold tabular-nums text-[#0F1E45]">
+                                <span className="text-sm font-bold tabular-nums text-[#12364D]">
                                   {value}%
                                 </span>
                               </div>
@@ -304,7 +304,7 @@ export default function MatchExplanationModal({
               {Array.isArray(data.explanation) &&
                 data.explanation.length > 0 && (
                   <section>
-                    <h3 className="mb-3 text-sm font-bold text-[#0F1E45]">
+                    <h3 className="mb-3 text-sm font-bold text-[#12364D]">
                       Analyse détaillée
                     </h3>
 
@@ -359,7 +359,7 @@ export default function MatchExplanationModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl bg-[#0F1E45] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#172B5B] focus:outline-none focus:ring-4 focus:ring-[#0F1E45]/15"
+            className="rounded-xl bg-[#12364D] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#172B5B] focus:outline-none focus:ring-4 focus:ring-[#12364D]/15"
           >
             Fermer
           </button>

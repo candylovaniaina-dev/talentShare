@@ -395,19 +395,22 @@ class ProfessionalProfileController extends Controller
     /**
      * ✅ Créer mon profil
      */
-    public function store(ProfessionalProfileRequest $request)
-    {
-        if ($request->user()->professionalProfile) {
-            return response()->json(['message' => 'Profil déjà existant, utilisez update.'], 409);
-        }
+   public function store(ProfessionalProfileRequest $request)
+{
+    $user = $request->user();
+    $data = $request->validated();
 
-        $data = $request->validated();
-        $data['user_id'] = $request->user()->id;
+    // ✅ Si le profil existe déjà → update, sinon → create
+    $profile = $user->professionalProfile;
 
-        $profile = ProfessionalProfile::create($data);
-
-        return response()->json($profile, 201);
+    if ($profile) {
+        $profile->update($data);
+        return response()->json($profile->fresh());
     }
+
+    $profile = $user->professionalProfile()->create($data);
+    return response()->json($profile, 201);
+}
 
     /**
      * ✅ Mettre à jour mon profil

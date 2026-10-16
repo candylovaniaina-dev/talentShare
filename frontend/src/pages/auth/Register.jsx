@@ -71,7 +71,7 @@ const STRENGTH_COLORS = [
 ];
 
 const inputClass =
-  "w-full rounded-2xl border border-white/10 bg-[#0A1229]/70 px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-emerald-400/60 focus:ring-4 focus:ring-emerald-400/10";
+  "w-full rounded-2xl border border-white/10 bg-[#0B1F33]/70 px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-emerald-400/60 focus:ring-4 focus:ring-emerald-400/10";
 
 const labelClass =
   "mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-300";
@@ -173,7 +173,7 @@ export default function Register() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#0A1229] text-white">
+    <div className="relative min-h-screen overflow-hidden bg-[#0B1F33] text-white">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -left-40 top-10 h-[420px] w-[420px] rounded-full bg-emerald-400/10 blur-[120px]" />
         <div className="absolute -right-40 bottom-0 h-[420px] w-[420px] rounded-full bg-blue-500/10 blur-[120px]" />
@@ -465,11 +465,11 @@ export default function Register() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-300 px-5 py-3.5 text-sm font-bold text-[#0A1229] shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-200 focus:outline-none focus:ring-4 focus:ring-emerald-300/20 disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-300 px-5 py-3.5 text-sm font-bold text-[#0B1F33] shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-200 focus:outline-none focus:ring-4 focus:ring-emerald-300/20 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loading ? (
                   <>
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#0A1229] border-t-transparent" />
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#0B1F33] border-t-transparent" />
                     Création en cours…
                   </>
                 ) : (

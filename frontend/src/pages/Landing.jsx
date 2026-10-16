@@ -52,7 +52,7 @@ const relations = [
 
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-white font-sans text-navy dark:bg-[#0A1229] dark:text-white">
+    <div className="min-h-screen bg-white font-sans text-navy dark:bg-[#0B1F33] dark:text-white">
       {/* HERO */}
       <section className="relative overflow-hidden bg-navy pb-0 pt-6 text-white">
         <div className="mx-auto max-w-6xl px-6 pt-28">

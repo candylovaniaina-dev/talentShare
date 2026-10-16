@@ -101,8 +101,8 @@ export default function AvailabilitySection({
   const viewButtonClass = (active) =>
     `inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2.5 text-xs font-semibold transition ${
       active
-        ? "bg-[#0F1E45] text-white shadow-sm"
-        : "text-slate-500 hover:bg-white hover:text-[#0F1E45]"
+        ? "bg-[#12364D] text-white shadow-sm"
+        : "text-slate-500 hover:bg-white hover:text-[#12364D]"
     }`;
 
   return (
@@ -128,7 +128,7 @@ export default function AvailabilitySection({
             </div>
 
             <div>
-              <p className="text-sm font-bold text-[#0F1E45]">
+              <p className="text-sm font-bold text-[#12364D]">
                 Votre planning
               </p>
               <p className="mt-0.5 text-xs text-slate-500">
@@ -169,7 +169,7 @@ export default function AvailabilitySection({
               <button
                 type="button"
                 onClick={() => onOpenModal("availability")}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#0F1E45] px-4 py-3 text-xs font-semibold text-white transition hover:bg-[#1A3266]"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#12364D] px-4 py-3 text-xs font-semibold text-white transition hover:bg-[#1A3266]"
               >
                 <Plus size={15} className="text-[#6EE7C8]" />
                 Ajouter une période
@@ -191,7 +191,7 @@ export default function AvailabilitySection({
                       <CheckCircle2 size={17} />
                     </span>
                     <div>
-                      <h3 className="text-sm font-bold text-[#0F1E45]">
+                      <h3 className="text-sm font-bold text-[#12364D]">
                         À venir
                       </h3>
                       <p className="text-xs text-slate-500">
@@ -226,7 +226,7 @@ export default function AvailabilitySection({
                       <History size={17} />
                     </span>
                     <div>
-                      <h3 className="text-sm font-bold text-[#0F1E45]">
+                      <h3 className="text-sm font-bold text-[#12364D]">
                         Historique
                       </h3>
                       <p className="text-xs text-slate-500">
@@ -420,7 +420,7 @@ function WindowCard({ w, onEdit, onDelete, compact = false }) {
         <button
           type="button"
           onClick={onEdit}
-          className="inline-flex items-center gap-1 text-xs font-semibold text-[#087F70] transition hover:text-[#0F1E45]"
+          className="inline-flex items-center gap-1 text-xs font-semibold text-[#087F70] transition hover:text-[#12364D]"
         >
           Voir les détails
           <ChevronRight size={14} />
@@ -441,7 +441,7 @@ function InfoItem({ icon: Icon, label, value }) {
         <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
           {label}
         </p>
-        <div className="mt-1 break-words text-xs font-semibold text-[#0F1E45]">
+        <div className="mt-1 break-words text-xs font-semibold text-[#12364D]">
           {value}
         </div>
       </div>

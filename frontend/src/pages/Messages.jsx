@@ -397,10 +397,10 @@ export default function Messages() {
 
   return (
     <AppShell>
-      <div className="flex h-[calc(100vh-8rem)] overflow-hidden rounded-2xl border border-white/10 bg-[#0F1E45] shadow-xl">
+      <div className="flex h-[calc(100vh-8rem)] overflow-hidden rounded-2xl border border-white/10 bg-[#12364D] shadow-xl">
 
         {/* ==================== COLONNE LISTE ==================== */}
-        <aside className={`w-full shrink-0 flex-col border-r border-white/10 bg-[#0F1E45] md:flex md:w-96 ${
+        <aside className={`w-full shrink-0 flex-col border-r border-white/10 bg-[#12364D] md:flex md:w-96 ${
           showMobileList ? "flex" : "hidden"
         }`}>
 
@@ -412,7 +412,7 @@ export default function Messages() {
               </button>
               <button
                 onClick={() => setShowNewModal(true)}
-                className="rounded-full bg-emerald-500 p-2 text-[#0A1229] transition hover:bg-emerald-400"
+                className="rounded-full bg-emerald-500 p-2 text-[#0B1F33] transition hover:bg-emerald-400"
               >
                 <Plus size={18} />
               </button>
@@ -442,7 +442,7 @@ export default function Messages() {
                 onClick={() => setFilter(tab.id)}
                 className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
                   filter === tab.id
-                    ? "bg-emerald-500 text-[#0A1229]"
+                    ? "bg-emerald-500 text-[#0B1F33]"
                     : "text-slate-400 hover:bg-white/5 hover:text-white"
                 }`}
               >
@@ -486,18 +486,18 @@ export default function Messages() {
                         <Users size={20} />
                       </div>
                     ) : avatarPath ? (
-                      <img src={`http://localhost:8001/storage/${avatarPath}`}
+                      <img src={`/storage/${avatarPath}`}
                         className="h-12 w-12 rounded-full object-cover"
                         alt={other?.name} />
                     ) : (
-                      <div className={`flex h-12 w-12 items-center justify-center rounded-full font-bold text-[#0A1229] ${
+                      <div className={`flex h-12 w-12 items-center justify-center rounded-full font-bold text-[#0B1F33] ${
                         isUnread ? "bg-emerald-400" : "bg-emerald-500/30 text-emerald-300"
                       }`}>
                         {initials(other?.name)}
                       </div>
                     )}
                     {!isGroup && (
-                      <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[#0F1E45] bg-emerald-500" />
+                      <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[#12364D] bg-emerald-500" />
                     )}
                   </div>
 
@@ -520,7 +520,7 @@ export default function Messages() {
                   </div>
 
                   {isUnread && (
-                    <span className="flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full bg-emerald-500 px-1.5 text-[10px] font-bold text-[#0A1229]">
+                    <span className="flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full bg-emerald-500 px-1.5 text-[10px] font-bold text-[#0B1F33]">
                       {conv.unread_count}
                     </span>
                   )}
@@ -531,7 +531,7 @@ export default function Messages() {
         </aside>
 
         {/* ==================== COLONNE CHAT ==================== */}
-        <section className={`flex-1 flex-col bg-[#0A1229] md:flex ${
+        <section className={`flex-1 flex-col bg-[#0B1F33] md:flex ${
           !showMobileList && hasActiveChat ? "flex" : "hidden md:flex"
         }`}>
           {!hasActiveChat ? (
@@ -543,7 +543,7 @@ export default function Messages() {
             </div>
           ) : (
             <>
-              <div className="flex items-center justify-between border-b border-white/10 bg-[#0F1E45] px-4 py-3">
+              <div className="flex items-center justify-between border-b border-white/10 bg-[#12364D] px-4 py-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <button
                     onClick={() => setShowMobileList(true)}
@@ -559,7 +559,7 @@ export default function Messages() {
                       </div>
                     ) : getAvatarPath(otherUser) ? (
                       <img
-                        src={`http://localhost:8001/storage/${getAvatarPath(otherUser)}`}
+                        src={`/storage/${getAvatarPath(otherUser)}`}
                         className="h-10 w-10 rounded-full object-cover"
                         alt={otherUser?.name}
                       />
@@ -569,7 +569,7 @@ export default function Messages() {
                       </div>
                     )}
                     {!(activeConv?.title || activeConv?.participants?.length > 2) && (
-                      <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-[#0F1E45] bg-emerald-500" />
+                      <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-[#12364D] bg-emerald-500" />
                     )}
                   </div>
 
@@ -642,7 +642,7 @@ export default function Messages() {
                           <div className="w-7 shrink-0">
                             {showAvatar && (
                               senderAvatar ? (
-                                <img src={`http://localhost:8001/storage/${senderAvatar}`}
+                                <img src={`/storage/${senderAvatar}`}
                                   className="h-7 w-7 rounded-full object-cover" alt="" />
                               ) : (
                                 <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/20 text-[10px] font-bold text-emerald-300">
@@ -662,7 +662,7 @@ export default function Messages() {
 
                           <div className={`rounded-2xl overflow-hidden shadow-sm ${
                             isMine
-                              ? `bg-emerald-500 text-[#0A1229] ${isLastInGroup ? "rounded-br-md" : ""}`
+                              ? `bg-emerald-500 text-[#0B1F33] ${isLastInGroup ? "rounded-br-md" : ""}`
                               : `bg-white/10 text-white ${isLastInGroup ? "rounded-bl-md" : ""}`
                           } ${msg.pending ? "opacity-60" : ""}`}>
 
@@ -704,7 +704,7 @@ export default function Messages() {
               </div>
 
               {attachment && (
-                <div className="flex items-center gap-3 border-t border-white/10 bg-[#0F1E45] px-4 py-2">
+                <div className="flex items-center gap-3 border-t border-white/10 bg-[#12364D] px-4 py-2">
                   <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-white/5">
                     {attachment.isImage ? (
                       <img src={attachment.preview} className="h-full w-full object-cover" alt="" />
@@ -724,7 +724,7 @@ export default function Messages() {
               )}
 
               {showEmojiPicker && (
-                <div className="relative border-t border-white/10 bg-[#0F1E45]">
+                <div className="relative border-t border-white/10 bg-[#12364D]">
                   <div className="absolute bottom-2 right-4 z-20">
                     <EmojiPicker
                       onEmojiClick={onEmojiClick}
@@ -738,7 +738,7 @@ export default function Messages() {
                 </div>
               )}
 
-              <form onSubmit={send} className="relative border-t border-white/10 bg-[#0F1E45] p-3">
+              <form onSubmit={send} className="relative border-t border-white/10 bg-[#12364D] p-3">
                 <div className="flex items-end gap-2 rounded-2xl bg-white/5 px-3 py-2">
 
                   <button
@@ -791,7 +791,7 @@ export default function Messages() {
                     <button
                       type="submit"
                       disabled={sending}
-                      className="rounded-full bg-emerald-500 p-2 text-[#0A1229] transition hover:bg-emerald-400 disabled:opacity-40"
+                      className="rounded-full bg-emerald-500 p-2 text-[#0B1F33] transition hover:bg-emerald-400 disabled:opacity-40"
                     >
                       <Send size={16} />
                     </button>
@@ -918,7 +918,7 @@ function NewConversationModal({ onClose, onCreated }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
-      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-[#0F1E45] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-[#12364D] shadow-2xl" onClick={(e) => e.stopPropagation()}>
 
         <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
           <h2 className="text-lg font-bold text-white">Nouveau message</h2>
@@ -990,7 +990,7 @@ function NewConversationModal({ onClose, onCreated }) {
                 className="flex w-full items-center gap-3 px-4 py-2 text-left transition hover:bg-white/5 disabled:opacity-50"
               >
                 {avatarPath ? (
-                  <img src={`http://localhost:8001/storage/${avatarPath}`}
+                  <img src={`/storage/${avatarPath}`}
                     className="h-10 w-10 rounded-full object-cover" alt="" />
                 ) : (
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20 font-bold text-emerald-300">
