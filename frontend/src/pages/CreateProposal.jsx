@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Send, Save, User, Building2, Calendar, FileText, AlertCircle } from "lucide-react";
+import { ArrowLeft, Send, Save, User, Building2, Calendar, AlertCircle, CheckCircle } from "lucide-react";
 import AppShell from "../components/layout/AppShell";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import Toast from "../components/ui/Toast";
 import { useToast } from "../hooks/useToast";
+import SuccessOverlay from "../components/requests/SuccessOverlay";
 
 const asArray = (data) => Array.isArray(data) ? data : (data?.data || []);
 
@@ -17,6 +18,9 @@ export default function CreateProposal() {
   const [allCompanies, setAllCompanies] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [alreadySent, setAlreadySent] = useState(false);
+  const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
+  const [successMessage, setSuccessMessage] = useState({ title: "", subtitle: "" });
   const { toast, show: showToast, close: closeToast } = useToast();
 
   const [form, setForm] = useState({
@@ -55,7 +59,9 @@ export default function CreateProposal() {
 
   const submit = async (status) => {
     setError(null);
+    setAlreadySent(false);
     setSubmitting(true);
+
     try {
       const res = await api.post("/proposals", {
         ...form,
@@ -63,13 +69,31 @@ export default function CreateProposal() {
         status,
         workload_percent: Number(form.workload_percent) || 100,
       });
-      showToast(
-        status === "draft" ? "💾 Brouillon enregistré" : "✅ Proposition envoyée",
-        "success"
-      );
-      // ✅ Redirection vers la page détail
-      setTimeout(() => navigate(`/proposals/${res.data.id}`), 1200);
+
+      // ✅ Brouillon → Toast
+      if (status === "draft") {
+        showToast("💾 Brouillon enregistré", "success");
+        setTimeout(() => navigate(`/proposals/${res.data.id}`), 1200);
+        return;
+      }
+
+      // ✅ Proposition envoyée → Overlay animé
+      setSuccessMessage({
+        title: "Proposition envoyée ! 🎉",
+        subtitle: "Le destinataire sera notifié dès que possible.",
+      });
+      setShowSuccessOverlay(true);
     } catch (err) {
+      // ✅ CAS SPÉCIAL : déjà proposé (409 duplicate_proposal)
+      if (err.response?.status === 409 && err.response?.data?.code === "duplicate_proposal") {
+        setAlreadySent(true);
+        setSuccessMessage({
+          title: "Candidature déjà envoyée ✓",
+          subtitle: "Vous pouvez suivre son statut dans votre activité.",
+        });
+        setShowSuccessOverlay(true);
+        return;
+      }
       const msg = err.response?.data?.message;
       const errors = err.response?.data?.errors;
       setError(msg || (errors ? Object.values(errors).flat().join(" · ") : "Erreur"));
@@ -100,6 +124,17 @@ export default function CreateProposal() {
         <p className="mt-1 text-sm text-slate-500">
           Proposez un de vos salariés à une autre entreprise.
         </p>
+
+        {/* ✅ Bandeau succès si déjà envoyé (en plus de l'overlay) */}
+        {alreadySent && (
+          <div className="mt-5 flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+            <CheckCircle size={18} className="mt-0.5 shrink-0" />
+            <div>
+              <p className="font-bold">Candidature déjà envoyée</p>
+              <p className="mt-0.5 text-xs">Redirection vers votre activité…</p>
+            </div>
+          </div>
+        )}
 
         <div className="mt-6 space-y-5 rounded-2xl border border-slate-200 bg-white p-6">
           {/* Salarié */}
@@ -247,23 +282,38 @@ export default function CreateProposal() {
           <div className="flex gap-3 pt-3 border-t border-slate-100">
             <button
               onClick={() => submit("draft")}
-              disabled={submitting || !form.professional_profile_id || !form.to_company_id}
+              disabled={submitting || !form.professional_profile_id || !form.to_company_id || alreadySent}
               className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm font-semibold hover:border-navy disabled:opacity-50 flex items-center justify-center gap-2"
             >
               <Save size={14} /> Brouillon
             </button>
             <button
               onClick={() => submit("sent")}
-              disabled={submitting || !form.professional_profile_id || !form.to_company_id}
+              disabled={submitting || !form.professional_profile_id || !form.to_company_id || alreadySent}
               className="flex-1 rounded-xl bg-navy py-2.5 text-sm font-semibold text-white disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              <Send size={14} /> {submitting ? "Envoi..." : "Envoyer"}
+              <Send size={14} /> {submitting ? "Envoi..." : alreadySent ? "Déjà envoyé" : "Envoyer"}
             </button>
           </div>
         </div>
       </div>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={closeToast} />}
+
+      {/* ✅ SUCCESS OVERLAY animé */}
+      {showSuccessOverlay && (
+        <SuccessOverlay
+          title={successMessage.title}
+          subtitle={successMessage.subtitle}
+          duration={2600}
+          onComplete={() => {
+            setShowSuccessOverlay(false);
+            setTimeout(() => {
+              if (alreadySent) navigate("/my-activity?tab=profile");
+            }, 200);
+          }}
+        />
+      )}
     </AppShell>
   );
 }

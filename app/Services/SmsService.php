@@ -8,10 +8,39 @@ use Illuminate\Support\Facades\Log;
 class SmsService
 {
     /**
-     * Envoie un SMS via Brevo (même compte que tes emails)
+     * ⚠️ Flag global : passe à true quand tu veux activer les SMS
+     *    - false = SMS désactivés (aucun envoi, juste un log)
+     *    - true  = SMS activés (envoi via Brevo)
+     */
+    private static $enabled = false;
+
+    /**
+     * ✅ Activer / désactiver les SMS dynamiquement
+     */
+    public static function setEnabled(bool $enabled): void
+    {
+        self::$enabled = $enabled;
+    }
+
+    /**
+     * ✅ Vérifie si les SMS sont activés
+     */
+    public static function isEnabled(): bool
+    {
+        return self::$enabled;
+    }
+
+    /**
+     * Envoie un SMS via Brevo
      */
     public static function send(string $phone, string $message): bool
     {
+        // ✅ Si désactivé → on n'envoie rien, juste un log
+        if (!self::$enabled) {
+            Log::info("📱 SMS désactivé (flag). Destinataire: {$phone} | Message: " . mb_substr($message, 0, 50));
+            return false;
+        }
+
         $apiKey = env('BREVO_API_KEY');
 
         if (!$apiKey) {

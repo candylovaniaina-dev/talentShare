@@ -332,15 +332,15 @@ class ProfessionalProfileController extends Controller
             }
         }
 
-        $profile->load([
-            'user',
-            'skills.category.parent',
-            'skills.category',
-            'experiences',
-            'educations',
-            'certifications',
-            'languages',
-        ]);
+       $profile->load([
+    'user',
+    'skills.category.parent', // ✅ Charge la catégorie ET la sous-catégorie
+    'skills.category',        // ✅ Charge la catégorie directe
+    'experiences',
+    'educations',
+    'certifications',
+    'languages',
+]);
 
         $profile->availability_windows = $profile->availabilityWindows()
             ->where('end_at', '>=', now()->startOfDay())
@@ -383,7 +383,7 @@ class ProfessionalProfileController extends Controller
             ] : null,
 
             // Relations
-            'skills' => $profile->skills,
+           'skills' => $profile->skills()->with(['category.parent', 'category'])->get(),
             'experiences' => $profile->experiences,
             'educations' => $profile->educations,
             'certifications' => $profile->certifications,
@@ -656,4 +656,18 @@ public function index(Request $request)
             'cover_path' => $path,
         ]);
     }
+    public function myCompanies(Request $request)
+{
+    $user = $request->user();
+    
+    // On récupère les entreprises où le talent est salarié
+    $companies = \App\Models\Employee::where('user_id', $user->id)
+        ->where('status', 'active')
+        ->with('company:id,name,logo_path,industry,city,country')
+        ->get()
+        ->pluck('company')
+        ->filter();
+
+    return response()->json($companies);
+}
 }

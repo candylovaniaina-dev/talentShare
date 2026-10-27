@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
-  Briefcase, FileText, Search, MapPin, Clock, Building2, Euro,
+  Briefcase, FileText, Search, MapPin, Clock, Building2,
   X, Check, ChevronDown, Calendar, Users, Zap,
-  ShieldCheck, Loader2, Sparkles, Bookmark, ArrowUpRight,
-  Home, MapPinned, Wallet, SlidersHorizontal, TrendingUp,
-  Award, GraduationCap, Sparkle, ExternalLink,
+  ShieldCheck, Loader2, Sparkles, Bookmark,
+  Home, SlidersHorizontal, GraduationCap, ArrowRight,
 } from "lucide-react";
 import AppShell from "../components/layout/AppShell";
 import { useAuth } from "../context/AuthContext";
@@ -57,22 +56,18 @@ export default function ExploreDashboard() {
   const [city, setCity] = useState("");
   const [remoteOnly, setRemoteOnly] = useState(false);
   const [urgentOnly, setUrgentOnly] = useState(false);
-  const [budgetMin, setBudgetMin] = useState("");
-  const [budgetMax, setBudgetMax] = useState("");
   const [sort, setSort] = useState("recent");
   const [showFilters, setShowFilters] = useState(false);
 
   const [jobs, setJobs] = useState([]);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const [profile, setProfile] = useState(null);
 
-  // ✅ Modales
   const [applyOffer, setApplyOffer] = useState(null);
   const [detailOffer, setDetailOffer] = useState(null);
 
-  const activeFiltersCount = [country, city, remoteOnly, urgentOnly, budgetMin, budgetMax].filter(Boolean).length;
+  const activeFiltersCount = [country, city, remoteOnly, urgentOnly].filter(Boolean).length;
 
   useEffect(() => {
     setSearchParams({ tab }, { replace: true });
@@ -92,8 +87,6 @@ export default function ExploreDashboard() {
       city: city || undefined,
       remote: remoteOnly || undefined,
       urgency: urgentOnly ? "urgent" : undefined,
-      budget_min: budgetMin || undefined,
-      budget_max: budgetMax || undefined,
       per_page: 30,
     };
 
@@ -112,11 +105,10 @@ export default function ExploreDashboard() {
         setRequests(asArray(reqRes.data));
       })
       .finally(() => setLoading(false));
-  }, [tab, debouncedSearch, country, city, remoteOnly, urgentOnly, budgetMin, budgetMax]);
+  }, [tab, debouncedSearch, country, city, remoteOnly, urgentOnly]);
 
   const clearFilters = () => {
-    setCountry(""); setCity(""); setRemoteOnly(false);
-    setUrgentOnly(false); setBudgetMin(""); setBudgetMax("");
+    setCountry(""); setCity(""); setRemoteOnly(false); setUrgentOnly(false);
   };
 
   const items = tab === "jobs" ? jobs : requests;
@@ -136,109 +128,114 @@ export default function ExploreDashboard() {
 
   return (
     <AppShell>
-      <div className="grid gap-5 lg:grid-cols-[240px_1fr_280px]">
+      {/* Conteneur global calqué sur le style de la Landing */}
+      <div className="min-h-screen bg-[#F5F8FA] dark:bg-[#0B253B] text-[#102A43] dark:text-white transition-colors duration-300">
+        
+        {/* Header de page */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight text-[#0B253B] dark:text-white">
+            Explorer
+          </h1>
+          <p className="mt-2 text-sm text-[#637487] dark:text-slate-400">
+            Découvrez les opportunités et les besoins qui correspondent à votre profil.
+          </p>
+        </div>
 
-        {/* COLONNE GAUCHE */}
-        <aside className="hidden space-y-4 lg:block">
-          <div className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-4">
-            <div className="flex justify-center">
-              {profile?.avatar_path ? (
-                <img
-                  src={`/storage/${profile.avatar_path}`}
-                  alt={profile?.user?.name || user?.name}
-                  className="h-20 w-20 rounded-full border-4 border-[var(--bg-surface)] object-cover shadow-lg"
-                />
-              ) : (
-                <div className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-[var(--bg-surface)] bg-gradient-to-br from-emerald-400 to-emerald-600 text-xl font-bold text-white shadow-lg">
-                  {initials}
+        <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
+          
+          {/* COLONNE PRINCIPALE */}
+          <div className="min-w-0 space-y-6">
+            
+            {/* Barre de recherche & Filtres */}
+            <div className="rounded-2xl border border-[#E5ECEF] dark:border-slate-800 bg-white dark:bg-[#102A43] p-2 shadow-sm">
+              <div className="flex flex-col sm:flex-row items-center gap-2">
+                <div className="relative flex-1 w-full">
+                  <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#82919D] dark:text-slate-500" />
+                  <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Rechercher une offre, une entreprise, une compétence..."
+                    className="w-full rounded-xl bg-transparent py-3 pl-11 pr-4 text-sm text-[#0B253B] dark:text-white placeholder:text-[#82919D] dark:placeholder:text-slate-500 focus:outline-none"
+                  />
+                  {search && (
+                    <button onClick={() => setSearch("")} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#82919D] hover:text-rose-500">
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+                <div className="h-px w-full sm:h-8 sm:w-px bg-[#E5ECEF] dark:bg-slate-700" />
+                <button
+                  onClick={() => setShowFilters((s) => !s)}
+                  className={`flex w-full sm:w-auto shrink-0 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition ${
+                    showFilters || activeFiltersCount > 0
+                      ? "bg-[#16B8B1]/10 text-[#0F9691] dark:text-[#55E0D0]"
+                      : "text-[#637487] dark:text-slate-400 hover:bg-[#F5F8FA] dark:hover:bg-slate-800"
+                  }`}
+                >
+                  <SlidersHorizontal size={16} /> 
+                  Filtres
+                  {activeFiltersCount > 0 && (
+                    <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#16B8B1] px-1 text-[10px] font-bold text-[#0B253B]">
+                      {activeFiltersCount}
+                    </span>
+                  )}
+                </button>
+              </div>
+
+              {/* Panneau de filtres */}
+              {showFilters && (
+                <div className="mt-2 grid gap-3 rounded-xl border border-[#E5ECEF] dark:border-slate-700 bg-[#F9FBFD] dark:bg-[#0B253B] p-4 sm:grid-cols-2">
+                  <div className="flex items-center gap-2 rounded-lg border border-[#E5ECEF] dark:border-slate-700 bg-white dark:bg-[#102A43] px-3 py-2">
+                    <MapPin size={14} className="text-[#82919D]" />
+                    <input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Pays"
+                      className="w-full bg-transparent text-sm text-[#0B253B] dark:text-white placeholder:text-[#82919D] focus:outline-none" />
+                  </div>
+                  <div className="flex items-center gap-2 rounded-lg border border-[#E5ECEF] dark:border-slate-700 bg-white dark:bg-[#102A43] px-3 py-2">
+                    <MapPin size={14} className="text-[#82919D]" />
+                    <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Ville"
+                      className="w-full bg-transparent text-sm text-[#0B253B] dark:text-white placeholder:text-[#82919D] focus:outline-none" />
+                  </div>
+                  
+                  <button
+                    onClick={() => setRemoteOnly(!remoteOnly)}
+                    className={`flex items-center justify-between rounded-lg border px-3 py-2 transition ${
+                      remoteOnly ? "border-[#16B8B1] bg-[#16B8B1]/10" : "border-[#E5ECEF] dark:border-slate-700 bg-white dark:bg-[#102A43]"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2 text-sm font-semibold">
+                      <Home size={14} className={remoteOnly ? "text-[#0F9691] dark:text-[#55E0D0]" : "text-[#82919D]"} />
+                      <span className={remoteOnly ? "text-[#0F9691] dark:text-[#55E0D0]" : "text-[#637487] dark:text-slate-400"}>Télétravail</span>
+                    </span>
+                    {remoteOnly && <Check size={14} className="text-[#0F9691] dark:text-[#55E0D0]" />}
+                  </button>
+
+                  <button
+                    onClick={() => setUrgentOnly(!urgentOnly)}
+                    className={`flex items-center justify-between rounded-lg border px-3 py-2 transition ${
+                      urgentOnly ? "border-rose-500 bg-rose-500/10" : "border-[#E5ECEF] dark:border-slate-700 bg-white dark:bg-[#102A43]"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2 text-sm font-semibold">
+                      <Zap size={14} className={urgentOnly ? "text-rose-500" : "text-[#82919D]"} />
+                      <span className={urgentOnly ? "text-rose-500" : "text-[#637487] dark:text-slate-400"}>Urgent</span>
+                    </span>
+                    {urgentOnly && <Check size={14} className="text-rose-500" />}
+                  </button>
+
+                  {activeFiltersCount > 0 && (
+                    <button
+                      onClick={clearFilters}
+                      className="sm:col-span-2 flex justify-center rounded-lg border border-rose-200 dark:border-rose-900/30 px-3 py-2 text-sm font-semibold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20"
+                    >
+                      Effacer les filtres
+                    </button>
+                  )}
                 </div>
               )}
             </div>
 
-            <div className="mt-3 text-center">
-              <p className="truncate text-sm font-bold text-[var(--text-app)]">
-                {profile?.user?.name || user?.name}
-              </p>
-              {profile?.headline && (
-                <p className="mt-0.5 truncate text-xs font-medium text-emerald-400">
-                  {profile.headline}
-                </p>
-              )}
-            </div>
-
-            <div className="mt-3 space-y-1.5 border-t border-[var(--border-app)] pt-3">
-              {profile?.city && (
-                <p className="flex items-center justify-center gap-1.5 text-[10px] text-[var(--text-muted)]">
-                  <MapPin size={10} className="shrink-0 text-[var(--text-faint)]" />
-                  <span className="truncate">
-                    {profile.city}
-                    {profile.country && `, ${profile.country}`}
-                  </span>
-                </p>
-              )}
-              {profile?.university && (
-                <p className="flex items-center justify-center gap-1.5 text-[10px] text-[var(--text-muted)]">
-                  <GraduationCap size={10} className="shrink-0 text-[var(--text-faint)]" />
-                  <span className="truncate">
-                    {profile.study_level && `${profile.study_level} · `}
-                    {profile.field_of_study || profile.university}
-                  </span>
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-4">
-            <p className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-app)]">
-              <TrendingUp size={13} className="text-emerald-400" /> Résultats
-            </p>
-            <div className="mt-3 space-y-2 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-[var(--text-muted)]">Offres d'emploi</span>
-                <span className="font-bold text-[var(--text-app)]">{jobs.length}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[var(--text-muted)]">Demandes</span>
-                <span className="font-bold text-[var(--text-app)]">{requests.length}</span>
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        {/* COLONNE CENTRALE */}
-        <div className="min-w-0 space-y-4">
-          <div className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-4">
-            <div className="flex items-center gap-2 rounded-full border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-4 py-2.5">
-              <Search size={16} className="shrink-0 text-[var(--text-faint)]" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Rechercher une offre, une entreprise, une compétence..."
-                className="w-full bg-transparent text-sm text-[var(--text-app)] placeholder:text-[var(--text-faint)] focus:outline-none"
-              />
-              {search && (
-                <button onClick={() => setSearch("")} className="shrink-0 text-[var(--text-faint)] hover:text-rose-400">
-                  <X size={14} />
-                </button>
-              )}
-              <button
-                onClick={() => setShowFilters((s) => !s)}
-                className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-                  showFilters || activeFiltersCount > 0
-                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
-                    : "border-[var(--border-app)] text-[var(--text-muted)] hover:text-[var(--text-app)]"
-                }`}
-              >
-                <SlidersHorizontal size={12} /> Filtres
-                {activeFiltersCount > 0 && (
-                  <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[10px] font-bold text-[#0B1F33]">
-                    {activeFiltersCount}
-                  </span>
-                )}
-              </button>
-            </div>
-
-            <div className="mt-4 flex gap-1 border-b border-[var(--border-app)]">
+            {/* Onglets */}
+            <div className="flex items-center gap-2 border-b border-[#E5ECEF] dark:border-slate-800">
               {TABS.map((t) => {
                 const Icon = t.icon;
                 const active = tab === t.id;
@@ -246,172 +243,146 @@ export default function ExploreDashboard() {
                   <button
                     key={t.id}
                     onClick={() => setTab(t.id)}
-                    className={`relative flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition ${
-                      active ? "text-emerald-400" : "text-[var(--text-muted)] hover:text-[var(--text-app)]"
+                    className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-semibold transition ${
+                      active 
+                        ? "border-[#16B8B1] text-[#0B253B] dark:text-white" 
+                        : "border-transparent text-[#637487] dark:text-slate-400 hover:text-[#0B253B] dark:hover:text-white"
                     }`}
                   >
-                    <Icon size={15} />
+                    <Icon size={16} />
                     {t.label}
-                    {active && <span className="absolute inset-x-2 -bottom-px h-[2px] rounded-full bg-emerald-400" />}
                   </button>
                 );
               })}
             </div>
 
-            {showFilters && (
-              <div className="mt-4 grid gap-3 rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-hover)] p-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="flex items-center gap-2 rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface)] px-3 py-2">
-                  <MapPinned size={12} className="shrink-0 text-[var(--text-faint)]" />
-                  <input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Pays"
-                    className="w-full bg-transparent text-xs text-[var(--text-app)] placeholder:text-[var(--text-faint)] focus:outline-none" />
-                </div>
-                <div className="flex items-center gap-2 rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface)] px-3 py-2">
-                  <MapPin size={12} className="shrink-0 text-[var(--text-faint)]" />
-                  <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Ville"
-                    className="w-full bg-transparent text-xs text-[var(--text-app)] placeholder:text-[var(--text-faint)] focus:outline-none" />
-                </div>
-                <div className="flex items-center gap-2 rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface)] px-3 py-2">
-                  <Wallet size={11} className="shrink-0 text-[var(--text-faint)]" />
-                  <input type="number" min="0" value={budgetMin} onChange={(e) => setBudgetMin(e.target.value)} placeholder="Budget min"
-                    className="w-full bg-transparent text-xs text-[var(--text-app)] placeholder:text-[var(--text-faint)] focus:outline-none" />
-                </div>
-                <div className="flex items-center gap-2 rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface)] px-3 py-2">
-                  <Wallet size={11} className="shrink-0 text-[var(--text-faint)]" />
-                  <input type="number" min="0" value={budgetMax} onChange={(e) => setBudgetMax(e.target.value)} placeholder="Budget max"
-                    className="w-full bg-transparent text-xs text-[var(--text-app)] placeholder:text-[var(--text-faint)] focus:outline-none" />
-                </div>
-
-                <button
-                  onClick={() => setRemoteOnly(!remoteOnly)}
-                  className={`flex items-center justify-between rounded-lg border px-3 py-2 transition ${
-                    remoteOnly ? "border-blue-500/40 bg-blue-500/10" : "border-[var(--border-app)] bg-[var(--bg-surface)]"
-                  }`}
+            {/* Compteur et Tri */}
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-[#637487] dark:text-slate-400">
+                {loading ? (
+                  <span className="flex items-center gap-2"><Loader2 size={14} className="animate-spin" /> Chargement...</span>
+                ) : (
+                  <><b className="text-[#0B253B] dark:text-white">{totalCount}</b> résultat{totalCount > 1 ? "s" : ""}</>
+                )}
+              </p>
+              <div className="relative">
+                <select
+                  value={sort}
+                  onChange={(e) => setSort(e.target.value)}
+                  className="appearance-none rounded-xl border border-[#E5ECEF] dark:border-slate-700 bg-white dark:bg-[#102A43] px-4 py-2 pr-10 text-sm font-medium text-[#0B253B] dark:text-white focus:border-[#16B8B1] focus:outline-none"
                 >
-                  <span className="flex items-center gap-2 text-xs font-semibold">
-                    <Home size={13} className={remoteOnly ? "text-blue-400" : "text-[var(--text-muted)]"} />
-                    <span className={remoteOnly ? "text-blue-400" : "text-[var(--text-app)]"}>Télétravail</span>
-                  </span>
-                  {remoteOnly && <Check size={12} className="text-blue-400" />}
-                </button>
+                  {SORTS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                </select>
+                <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#82919D]" />
+              </div>
+            </div>
 
-                <button
-                  onClick={() => setUrgentOnly(!urgentOnly)}
-                  className={`flex items-center justify-between rounded-lg border px-3 py-2 transition ${
-                    urgentOnly ? "border-rose-500/40 bg-rose-500/10" : "border-[var(--border-app)] bg-[var(--bg-surface)]"
-                  }`}
-                >
-                  <span className="flex items-center gap-2 text-xs font-semibold">
-                    <Zap size={13} className={urgentOnly ? "text-rose-400" : "text-[var(--text-muted)]"} />
-                    <span className={urgentOnly ? "text-rose-400" : "text-[var(--text-app)]"}>Urgent</span>
-                  </span>
-                  {urgentOnly && <Check size={12} className="text-rose-400" />}
-                </button>
-
+            {/* Liste des résultats */}
+            {loading ? (
+              <div className="space-y-4">
+                {[...Array(3)].map((_, i) => <div key={i} className="h-40 animate-pulse rounded-2xl bg-white dark:bg-[#102A43]" />)}
+              </div>
+            ) : items.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-[#E5ECEF] dark:border-slate-700 bg-white dark:bg-[#102A43] p-12 text-center">
+                <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#F5F8FA] dark:bg-[#0B253B] text-[#82919D]">
+                  <Search size={28} />
+                </span>
+                <p className="mt-4 text-base font-bold text-[#0B253B] dark:text-white">
+                  Aucun résultat
+                </p>
+                <p className="mt-1 text-sm text-[#637487] dark:text-slate-400">
+                  Essayez de modifier vos critères de recherche.
+                </p>
                 {activeFiltersCount > 0 && (
-                  <button
-                    onClick={clearFilters}
-                    className="flex items-center justify-center rounded-lg border border-rose-500/30 px-3 py-2 text-xs font-semibold text-rose-400 hover:bg-rose-500/10"
-                  >
-                    Effacer les filtres
+                  <button onClick={clearFilters} className="mt-4 text-sm font-semibold text-[#0F9691] dark:text-[#55E0D0] hover:underline">
+                    Réinitialiser les filtres
                   </button>
                 )}
               </div>
-            )}
-          </div>
-
-          <div className="flex items-center justify-between px-1">
-            <p className="text-xs text-[var(--text-muted)]">
-              {loading ? (
-                <span className="flex items-center gap-1.5"><Loader2 size={11} className="animate-spin" /> Chargement...</span>
-              ) : (
-                <><b className="text-[var(--text-app)]">{totalCount}</b> résultat{totalCount > 1 ? "s" : ""}</>
-              )}
-            </p>
-            <div className="relative">
-              <select
-                value={sort}
-                onChange={(e) => setSort(e.target.value)}
-                className="appearance-none rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-3 py-1.5 pr-7 text-xs font-medium text-[var(--text-app)] focus:border-emerald-500/50 focus:outline-none"
-              >
-                {SORTS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
-              </select>
-              <ChevronDown size={11} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-faint)]" />
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="space-y-3">
-              {[...Array(4)].map((_, i) => <div key={i} className="h-40 animate-pulse rounded-xl bg-[var(--bg-surface)]" />)}
-            </div>
-          ) : items.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-[var(--border-app)] bg-[var(--bg-surface)] p-12 text-center">
-              <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[var(--bg-surface-hover)] text-[var(--text-faint)]">
-                <Search size={20} />
-              </span>
-              <p className="mt-3 text-sm font-semibold text-[var(--text-app)]">
-                Aucun{tab === "jobs" ? "e offre" : "e demande"} pour le moment
-              </p>
-              <p className="mt-1 text-xs text-[var(--text-faint)]">Essayez d'élargir vos filtres.</p>
-              {activeFiltersCount > 0 && (
-                <button onClick={clearFilters} className="mt-3 text-xs font-semibold text-emerald-400 hover:text-emerald-300">
-                  Réinitialiser les filtres
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {items.map((item) =>
-                tab === "jobs"
-                  ? (
+            ) : (
+              <div className="space-y-4">
+                {items.map((item) =>
+                  tab === "jobs" ? (
                     <JobCard
                       key={item.id}
                       job={item}
                       onApply={(o) => setApplyOffer(o)}
                       onDetails={(o) => setDetailOffer(o)}
                     />
-                  )
-                  : <RequestCard key={item.id} request={item} />
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* COLONNE DROITE */}
-        <aside className="hidden space-y-4 lg:block">
-        <div className="rounded-xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/[0.08] to-transparent p-4">
-  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400">
-    <Sparkles size={14} />
-  </span>
-  <p className="mt-3 text-sm font-bold text-[var(--text-app)]">
-    {user?.role === "company"
-      ? "Une compétence à trouver ?"
-      : "Vous cherchez un stage ?"}
-  </p>
-  <p className="mt-1 text-xs leading-relaxed text-[var(--text-muted)]">
-    {user?.role === "company"
-      ? "Publiez votre besoin en 2 minutes et laissez les talents venir à vous."
-      : "Publiez votre recherche et laissez les entreprises vous découvrir."}
-  </p>
-  <button
-  onClick={() => setShowCreateRequest(true)}
-  className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-emerald-500 px-3 py-2 text-xs font-bold text-[#0B1F33] transition hover:bg-emerald-400"
->
-  Publier un besoin <ArrowUpRight size={12} />
-</button>
-</div>
-
-          <div className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-4">
-            <p className="text-xs font-bold text-[var(--text-app)]">Conseils rapides</p>
-            <ul className="mt-3 space-y-2 text-[11px] text-[var(--text-muted)]">
-              <li className="flex gap-2"><span className="text-emerald-400">•</span> Complétez votre profil pour apparaître dans plus de recherches.</li>
-              <li className="flex gap-2"><span className="text-emerald-400">•</span> Activez les alertes pour ne manquer aucune opportunité.</li>
-              <li className="flex gap-2"><span className="text-emerald-400">•</span> Sauvegardez les offres qui vous intéressent.</li>
-            </ul>
+                  ) : <RequestCard key={item.id} request={item} />
+                )}
+              </div>
+            )}
           </div>
-        </aside>
+
+          {/* COLONNE LATÉRALE */}
+          <aside className="space-y-6">
+            
+            {/* Carte Profil */}
+            {profile && (
+              <div className="rounded-2xl border border-[#E5ECEF] dark:border-slate-800 bg-white dark:bg-[#102A43] p-6 text-center shadow-sm">
+                {profile?.avatar_path ? (
+                  <img
+                    src={`/storage/${profile.avatar_path}`}
+                    alt={profile?.user?.name || user?.name}
+                    className="mx-auto h-24 w-24 rounded-full border-4 border-[#F5F8FA] dark:border-[#0B253B] object-cover shadow-sm"
+                  />
+                ) : (
+                  <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full border-4 border-[#F5F8FA] dark:border-[#0B253B] bg-[#16B8B1] text-2xl font-bold text-[#0B253B] shadow-sm">
+                    {initials}
+                  </div>
+                )}
+                <p className="mt-4 text-base font-bold text-[#0B253B] dark:text-white">
+                  {profile?.user?.name || user?.name}
+                </p>
+                {profile?.headline && (
+                  <p className="mt-1 text-sm font-medium text-[#0F9691] dark:text-[#55E0D0]">
+                    {profile.headline}
+                  </p>
+                )}
+                <div className="mt-4 space-y-2 border-t border-[#E5ECEF] dark:border-slate-800 pt-4 text-sm text-[#637487] dark:text-slate-400">
+                  {profile?.city && (
+                    <p className="flex items-center justify-center gap-2">
+                      <MapPin size={14} className="text-[#82919D]" />
+                      {profile.city}
+                    </p>
+                  )}
+                  {profile?.university && (
+                    <p className="flex items-center justify-center gap-2">
+                      <GraduationCap size={14} className="text-[#82919D]" />
+                      {profile.university}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Carte Action (Publier) */}
+            <div className="rounded-2xl border border-[#16B8B1]/30 bg-[#E8FAF6] dark:bg-[#16B8B1]/10 p-6">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#16B8B1] text-[#0B253B]">
+                <Sparkles size={20} />
+              </span>
+              <p className="mt-4 text-base font-bold text-[#0B253B] dark:text-white">
+                {user?.role === "company" ? "Besoin d'un talent ?" : "Cherchez-vous un stage ?"}
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-[#637487] dark:text-slate-300">
+                {user?.role === "company" 
+                  ? "Publiez votre besoin en 2 minutes et laissez les talents venir à vous."
+                  : "Publiez votre recherche et laissez les entreprises vous découvrir."}
+              </p>
+              <button
+                onClick={() => setShowCreateRequest(true)}
+                className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#0B253B] dark:bg-[#16B8B1] px-4 py-3 text-sm font-bold text-white dark:text-[#0B253B] transition hover:bg-[#12344B] dark:hover:bg-[#50D6C5]"
+              >
+                Publier un besoin <ArrowRight size={16} />
+              </button>
+            </div>
+
+          </aside>
+        </div>
       </div>
 
-      {/* ✅ MODAL : Postuler */}
+      {/* MODALES (inchangées visuellement mais fonctionnelles) */}
       {applyOffer && (
         <ApplyModal
           offer={applyOffer}
@@ -424,7 +395,6 @@ export default function ExploreDashboard() {
         />
       )}
 
-      {/* ✅ MODAL : Détails de l'offre */}
       {detailOffer && (
         <OfferDetailModal
           offer={detailOffer}
@@ -436,93 +406,99 @@ export default function ExploreDashboard() {
           }}
         />
       )}
+
       {showCreateRequest && (
-  <CreateResourceRequestModal
-    onClose={() => setShowCreateRequest(false)}
-    onSuccess={(data) => {
-      setShowCreateRequest(false);
-      showToast("✅ Besoin publié", "success");
-      // Optionnel : rediriger vers le détail
-      // navigate(`/resource-requests/${data.id}`);
-    }}
-  />
-)}
+        <CreateResourceRequestModal
+          onClose={() => setShowCreateRequest(false)}
+          onSuccess={(data) => {
+            setShowCreateRequest(false);
+            showToast("✅ Besoin publié", "success");
+          }}
+        />
+      )}
     </AppShell>
   );
 }
 
 /* ============================================================
-   CARTE : OFFRE D'EMPLOI
+   CARTE : OFFRE D'EMPLOI (Moderne)
 ============================================================ */
 function JobCard({ job, onApply, onDetails }) {
   const [saved, setSaved] = useState(false);
   const initials = job.company?.name?.split(" ").map((n) => n[0]).join("").slice(0, 2);
 
   return (
-    <div className="group rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-4 transition hover:border-emerald-500/40 hover:shadow-md hover:shadow-emerald-500/5">
-      <div className="flex items-start gap-3">
+    <div className="group rounded-2xl border border-[#E5ECEF] dark:border-slate-800 bg-white dark:bg-[#102A43] p-5 transition duration-200 hover:border-[#16B8B1]/50 dark:hover:border-[#55E0D0]/50 hover:shadow-[0_8px_30px_rgba(11,37,59,0.06)] dark:hover:shadow-none">
+      <div className="flex items-start gap-4">
+        
+        {/* Logo */}
         {job.company?.logo_path ? (
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[var(--border-app)] bg-white">
-            <img src={`/storage/${job.company.logo_path}`} alt={job.company.name} className="h-full w-full object-contain" />
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#E5ECEF] dark:border-slate-700 bg-white">
+            <img src={`/storage/${job.company.logo_path}`} alt={job.company.name} className="h-full w-full object-contain p-1" />
           </div>
         ) : (
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-[var(--border-app)] bg-gradient-to-br from-emerald-400 to-blue-500 text-sm font-bold text-white">
-            {initials || <Building2 size={18} />}
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-[#0B253B] dark:bg-[#16B8B1] text-base font-bold text-white dark:text-[#0B253B]">
+            {initials || <Building2 size={20} />}
           </div>
         )}
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
+          <div className="flex items-start justify-between gap-3">
             <button
               onClick={() => onDetails?.(job)}
-              className="block truncate text-left text-sm font-bold text-[var(--text-app)] transition group-hover:text-emerald-400"
+              className="block truncate text-left text-base font-bold text-[#0B253B] dark:text-white transition group-hover:text-[#0F9691] dark:group-hover:text-[#55E0D0]"
             >
               {job.title}
             </button>
             <button
               onClick={(e) => { e.preventDefault(); setSaved(!saved); }}
-              className={`shrink-0 rounded-lg p-1.5 transition ${saved ? "text-emerald-400" : "text-[var(--text-faint)] hover:text-[var(--text-app)]"}`}
+              className={`shrink-0 rounded-lg p-2 transition ${saved ? "text-[#0F9691] dark:text-[#55E0D0]" : "text-[#82919D] hover:bg-[#F5F8FA] dark:hover:bg-slate-800"}`}
             >
-              <Bookmark size={15} fill={saved ? "currentColor" : "none"} />
+              <Bookmark size={18} fill={saved ? "currentColor" : "none"} />
             </button>
           </div>
-          {job.company && (
-            <span className="mt-0.5 flex items-center gap-1 text-xs text-[var(--text-muted)]">
-              {job.company.name}
-              {job.company.is_verified && <ShieldCheck size={11} className="text-emerald-400" />}
-            </span>
-          )}
+          
+          <div className="mt-1 flex items-center gap-2 text-sm text-[#637487] dark:text-slate-400">
+            <span className="font-medium">{job.company?.name}</span>
+            {job.company?.is_verified && <ShieldCheck size={14} className="text-[#0F9691] dark:text-[#55E0D0]" />}
+          </div>
 
-          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          {/* Tags */}
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             {job.city && (
-              <span className="inline-flex items-center gap-1 rounded-md border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-2 py-0.5 text-[10px] text-[var(--text-muted)]">
-                <MapPin size={10} /> {job.city}{job.country && `, ${job.country}`}
+              <span className="inline-flex items-center gap-1.5 rounded-md bg-[#F5F8FA] dark:bg-[#0B253B] px-2.5 py-1 text-xs font-medium text-[#637487] dark:text-slate-300">
+                <MapPin size={12} /> {job.city}{job.country && `, ${job.country}`}
               </span>
             )}
             {job.remote && (
-              <span className="inline-flex items-center gap-1 rounded-md border border-blue-500/30 bg-blue-500/10 px-2 py-0.5 text-[10px] font-semibold text-blue-400">
-                <Home size={10} /> Télétravail
+              <span className="inline-flex items-center gap-1.5 rounded-md bg-blue-50 dark:bg-blue-900/20 px-2.5 py-1 text-xs font-medium text-blue-600 dark:text-blue-400">
+                <Home size={12} /> Télétravail
               </span>
             )}
             {job.offer_type && (
-              <span className="inline-flex items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">
+              <span className="inline-flex items-center gap-1.5 rounded-md bg-[#16B8B1]/10 dark:bg-[#16B8B1]/20 px-2.5 py-1 text-xs font-medium text-[#0F9691] dark:text-[#55E0D0]">
                 {OFFER_TYPES[job.offer_type] || job.offer_type}
               </span>
             )}
           </div>
 
-          {job.description && <p className="mt-2 line-clamp-2 text-xs text-[var(--text-muted)]">{job.description}</p>}
+          {job.description && (
+            <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-[#637487] dark:text-slate-400">
+              {job.description}
+            </p>
+          )}
 
-          <div className="mt-3 flex items-center gap-2">
+          {/* Actions */}
+          <div className="mt-5 flex items-center gap-3">
             <button
               onClick={() => onApply?.(job)}
-              className="rounded-lg bg-emerald-500 px-3.5 py-1.5 text-xs font-bold text-[#0B1F33] transition hover:bg-emerald-400"
+              className="rounded-xl bg-[#16B8B1] px-5 py-2.5 text-sm font-bold text-[#0B253B] transition hover:bg-[#50D6C5]"
             >
               Postuler
             </button>
             <button
               onClick={() => onDetails?.(job)}
-              className="rounded-lg border border-[var(--border-app)] px-3 py-1.5 text-xs font-medium text-[var(--text-app)] transition hover:border-emerald-500/40 hover:text-emerald-400"
+              className="rounded-xl border border-[#E5ECEF] dark:border-slate-700 px-5 py-2.5 text-sm font-semibold text-[#0B253B] dark:text-white transition hover:bg-[#F5F8FA] dark:hover:bg-slate-800"
             >
               Détails
             </button>
@@ -534,68 +510,67 @@ function JobCard({ job, onApply, onDetails }) {
 }
 
 /* ============================================================
-   CARTE : DEMANDE
+   CARTE : DEMANDE (Moderne)
 ============================================================ */
 function RequestCard({ request }) {
   const isUrgent = request.urgency === "urgent";
   const initials = request.company?.name?.split(" ").map((n) => n[0]).join("").slice(0, 2);
 
   return (
-    <div className="group rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-4 transition hover:border-emerald-500/40 hover:shadow-md hover:shadow-emerald-500/5">
-      <div className="flex items-start gap-3">
+    <div className="group rounded-2xl border border-[#E5ECEF] dark:border-slate-800 bg-white dark:bg-[#102A43] p-5 transition duration-200 hover:border-[#16B8B1]/50 dark:hover:border-[#55E0D0]/50 hover:shadow-[0_8px_30px_rgba(11,37,59,0.06)] dark:hover:shadow-none">
+      <div className="flex items-start gap-4">
+        
         {request.company?.logo_path ? (
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[var(--border-app)] bg-white">
-            <img src={`/storage/${request.company.logo_path}`} alt={request.company.name} className="h-full w-full object-contain" />
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#E5ECEF] dark:border-slate-700 bg-white">
+            <img src={`/storage/${request.company.logo_path}`} alt={request.company.name} className="h-full w-full object-contain p-1" />
           </div>
         ) : (
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-[var(--border-app)] bg-gradient-to-br from-amber-400 to-orange-500 text-sm font-bold text-white">
-            {initials || <Building2 size={18} />}
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-[#0B253B] dark:bg-[#16B8B1] text-base font-bold text-white dark:text-[#0B253B]">
+            {initials || <Building2 size={20} />}
           </div>
         )}
 
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <Link to={`/resource-requests/${request.id}`} className="truncate text-sm font-bold text-[var(--text-app)] transition group-hover:text-emerald-400">
+          <div className="flex flex-wrap items-center gap-3">
+            <Link to={`/resource-requests/${request.id}`} className="truncate text-base font-bold text-[#0B253B] dark:text-white transition group-hover:text-[#0F9691] dark:group-hover:text-[#55E0D0]">
               {request.title}
             </Link>
             {isUrgent && (
-              <span className="inline-flex items-center gap-1 rounded-md border border-rose-500/40 bg-rose-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase text-rose-400">
-                <Zap size={8} /> Urgent
+              <span className="inline-flex items-center gap-1 rounded-md bg-rose-50 dark:bg-rose-900/20 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">
+                <Zap size={10} /> Urgent
               </span>
             )}
           </div>
-          {request.company && (
-            <span className="mt-0.5 flex items-center gap-1 text-xs text-[var(--text-muted)]">
-              {request.company.name}
-              {request.company.is_verified && <ShieldCheck size={11} className="text-emerald-400" />}
-            </span>
-          )}
+          
+          <div className="mt-1 flex items-center gap-2 text-sm text-[#637487] dark:text-slate-400">
+            <span className="font-medium">{request.company?.name}</span>
+            {request.company?.is_verified && <ShieldCheck size={14} className="text-[#0F9691] dark:text-[#55E0D0]" />}
+          </div>
 
-          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             {request.city && (
-              <span className="inline-flex items-center gap-1 rounded-md border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-2 py-0.5 text-[10px] text-[var(--text-muted)]">
-                <MapPin size={10} /> {request.city}
-              </span>
-            )}
-            {request.budget_min && request.budget_max && (
-              <span className="inline-flex items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">
-                <Euro size={10} /> {request.budget_min}–{request.budget_max} €/j
+              <span className="inline-flex items-center gap-1.5 rounded-md bg-[#F5F8FA] dark:bg-[#0B253B] px-2.5 py-1 text-xs font-medium text-[#637487] dark:text-slate-300">
+                <MapPin size={12} /> {request.city}
               </span>
             )}
             {request.proposals_count > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-md border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-2 py-0.5 text-[10px] text-[var(--text-muted)]">
-                <Users size={10} /> {request.proposals_count}
+              <span className="inline-flex items-center gap-1.5 rounded-md bg-[#F5F8FA] dark:bg-[#0B253B] px-2.5 py-1 text-xs font-medium text-[#637487] dark:text-slate-300">
+                <Users size={12} /> {request.proposals_count} proposition{request.proposals_count > 1 ? 's' : ''}
               </span>
             )}
           </div>
 
-          {request.description && <p className="mt-2 line-clamp-2 text-xs text-[var(--text-muted)]">{request.description}</p>}
+          {request.description && (
+            <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-[#637487] dark:text-slate-400">
+              {request.description}
+            </p>
+          )}
 
-          <div className="mt-3 flex items-center gap-2">
-            <Link to={`/resource-requests/${request.id}`} className="rounded-lg bg-emerald-500 px-3.5 py-1.5 text-xs font-bold text-[#0B1F33] transition hover:bg-emerald-400">
+          <div className="mt-5 flex items-center gap-3">
+            <Link to={`/resource-requests/${request.id}`} className="rounded-xl bg-[#16B8B1] px-5 py-2.5 text-sm font-bold text-[#0B253B] transition hover:bg-[#50D6C5]">
               Proposer un profil
             </Link>
-            <Link to={`/resource-requests/${request.id}`} className="rounded-lg border border-[var(--border-app)] px-3 py-1.5 text-xs font-medium text-[var(--text-app)] transition hover:border-emerald-500/40 hover:text-emerald-400">
+            <Link to={`/resource-requests/${request.id}`} className="rounded-xl border border-[#E5ECEF] dark:border-slate-700 px-5 py-2.5 text-sm font-semibold text-[#0B253B] dark:text-white transition hover:bg-[#F5F8FA] dark:hover:bg-slate-800">
               Détails
             </Link>
           </div>
@@ -613,28 +588,28 @@ function OfferDetailModal({ offer, onClose, onApply }) {
   const isOwner = user?.id === offer.company?.owner_user_id;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
-      <div className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0B253B]/60 dark:bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-[#E5ECEF] dark:border-slate-800 bg-white dark:bg-[#102A43] shadow-2xl" onClick={(e) => e.stopPropagation()}>
 
         {/* Header */}
-        <div className="flex items-start justify-between gap-3 border-b border-[var(--border-app)] px-6 py-5">
-          <div className="flex items-start gap-3 min-w-0">
+        <div className="flex items-start justify-between gap-4 border-b border-[#E5ECEF] dark:border-slate-800 px-6 py-6">
+          <div className="flex items-start gap-4 min-w-0">
             {offer.company?.logo_path ? (
               <img
                 src={`/storage/${offer.company.logo_path}`}
                 alt={offer.company.name}
-                className="h-12 w-12 shrink-0 rounded-lg border border-[var(--border-app)] object-cover"
+                className="h-14 w-14 shrink-0 rounded-xl border border-[#E5ECEF] dark:border-slate-700 bg-white object-contain p-1"
               />
             ) : (
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 text-base font-bold text-white">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-[#0B253B] dark:bg-[#16B8B1] text-xl font-bold text-white dark:text-[#0B253B]">
                 {offer.company?.name?.charAt(0)?.toUpperCase() || "?"}
               </div>
             )}
             <div className="min-w-0">
-              <p className="truncate text-sm font-bold text-[var(--text-app)]">
+              <p className="truncate text-base font-bold text-[#0B253B] dark:text-white">
                 {offer.company?.name || "Entreprise"}
               </p>
-              <p className="mt-0.5 text-xs text-[var(--text-muted)]">
+              <p className="mt-1 text-sm text-[#637487] dark:text-slate-400">
                 {offer.city}
                 {offer.remote && " · Télétravail"}
               </p>
@@ -642,57 +617,57 @@ function OfferDetailModal({ offer, onClose, onApply }) {
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-[var(--text-faint)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-app)]"
+            className="rounded-xl p-2 text-[#82919D] transition hover:bg-[#F5F8FA] dark:hover:bg-slate-800 hover:text-[#0B253B] dark:hover:text-white"
           >
-            <X size={18} />
+            <X size={20} />
           </button>
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-6">
-          <span className="inline-block rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-400">
+        <div className="flex-1 overflow-y-auto p-6 sm:p-8">
+          <span className="inline-block rounded-full bg-[#16B8B1]/10 dark:bg-[#16B8B1]/20 px-3 py-1 text-xs font-bold uppercase tracking-wide text-[#0F9691] dark:text-[#55E0D0]">
             {OFFER_TYPES[offer.offer_type] || offer.offer_type}
           </span>
-          <h1 className="mt-3 text-xl font-bold text-[var(--text-app)]">
+          <h1 className="mt-4 text-2xl font-bold text-[#0B253B] dark:text-white">
             {offer.title}
           </h1>
 
-          <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-[var(--text-muted)]">
+          <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-[#637487] dark:text-slate-400">
             {offer.city && (
-              <span className="flex items-center gap-1"><MapPin size={12} /> {offer.city}{offer.country && `, ${offer.country}`}</span>
+              <span className="flex items-center gap-2"><MapPin size={16} /> {offer.city}{offer.country && `, ${offer.country}`}</span>
             )}
             {offer.remote && (
-              <span className="flex items-center gap-1 rounded-md border border-blue-500/30 bg-blue-500/10 px-2 py-0.5 font-semibold text-blue-400">
-                <Home size={11} /> Télétravail
+              <span className="flex items-center gap-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 px-2.5 py-1 font-semibold text-blue-600 dark:text-blue-400">
+                <Home size={14} /> Télétravail
               </span>
             )}
             {offer.application_deadline && (
-              <span className="flex items-center gap-1">
-                <Calendar size={12} /> Avant le {new Date(offer.application_deadline).toLocaleDateString("fr-FR")}
+              <span className="flex items-center gap-2">
+                <Calendar size={16} /> Avant le {new Date(offer.application_deadline).toLocaleDateString("fr-FR")}
               </span>
             )}
             {offer.created_at && (
-              <span className="flex items-center gap-1">
-                <Clock size={12} /> Publié le {new Date(offer.created_at).toLocaleDateString("fr-FR")}
+              <span className="flex items-center gap-2">
+                <Clock size={16} /> Publié le {new Date(offer.created_at).toLocaleDateString("fr-FR")}
               </span>
             )}
           </div>
 
-          <div className="mt-6 border-t border-[var(--border-app)] pt-5">
-            <p className="mb-2 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-              Description
-            </p>
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--text-app)]">
+          <div className="mt-8 border-t border-[#E5ECEF] dark:border-slate-800 pt-6">
+            <h3 className="mb-3 text-sm font-bold text-[#0B253B] dark:text-white">
+              Description du poste
+            </h3>
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-[#637487] dark:text-slate-300">
               {offer.description || "Aucune description fournie."}
             </p>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between gap-3 border-t border-[var(--border-app)] bg-[var(--bg-surface)] px-6 py-4">
+        <div className="flex items-center justify-between gap-4 border-t border-[#E5ECEF] dark:border-slate-800 bg-[#F9FBFD] dark:bg-[#0B253B] px-6 py-5">
           <button
             onClick={onClose}
-            className="rounded-lg border border-[var(--border-app)] px-4 py-2 text-sm font-medium text-[var(--text-app)] transition hover:bg-[var(--bg-surface-hover)]"
+            className="rounded-xl border border-[#E5ECEF] dark:border-slate-700 bg-white dark:bg-[#102A43] px-5 py-2.5 text-sm font-semibold text-[#0B253B] dark:text-white transition hover:bg-[#F5F8FA] dark:hover:bg-slate-800"
           >
             Fermer
           </button>
@@ -700,14 +675,14 @@ function OfferDetailModal({ offer, onClose, onApply }) {
           {!isOwner && user?.role !== "company" && (
             <button
               onClick={onApply}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400"
+              className="rounded-xl bg-[#16B8B1] px-6 py-2.5 text-sm font-bold text-[#0B253B] transition hover:bg-[#50D6C5]"
             >
               Postuler
             </button>
           )}
 
           {isOwner && (
-            <span className="text-xs text-[var(--text-muted)]">
+            <span className="text-sm font-medium text-[#82919D]">
               C'est votre publication
             </span>
           )}
@@ -772,43 +747,42 @@ function ApplyModal({ offer, onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
-      <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0B253B]/60 dark:bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-[#E5ECEF] dark:border-slate-800 bg-white dark:bg-[#102A43] shadow-2xl" onClick={(e) => e.stopPropagation()}>
 
-        <div className="flex items-start justify-between gap-3 border-b border-[var(--border-app)] px-6 py-5">
+        <div className="flex items-start justify-between gap-4 border-b border-[#E5ECEF] dark:border-slate-800 px-6 py-6">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Postuler</p>
-            <h2 className="mt-0.5 text-base font-bold text-[var(--text-app)]">{offer.title}</h2>
-            <p className="text-xs text-[var(--text-muted)]">chez {offer.company?.name}</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-[#0F9691] dark:text-[#55E0D0]">Postuler</p>
+            <h2 className="mt-1 text-lg font-bold text-[#0B253B] dark:text-white">{offer.title}</h2>
+            <p className="text-sm text-[#637487] dark:text-slate-400">chez {offer.company?.name}</p>
           </div>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-[var(--text-faint)] hover:bg-[var(--bg-surface-hover)]">
-            <X size={18} />
+          <button onClick={onClose} className="rounded-xl p-2 text-[#82919D] hover:bg-[#F5F8FA] dark:hover:bg-slate-800">
+            <X size={20} />
           </button>
         </div>
 
-        <form onSubmit={submit} className="flex-1 space-y-4 overflow-y-auto p-6">
+        <form onSubmit={submit} className="flex-1 space-y-5 overflow-y-auto p-6">
           {loading ? (
-            <div className="flex justify-center py-6">
-              <Loader2 className="animate-spin text-emerald-400" size={24} />
+            <div className="flex justify-center py-8">
+              <Loader2 className="animate-spin text-[#0F9691] dark:text-[#55E0D0]" size={28} />
             </div>
           ) : (
             <>
               {error && (
-                <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-400">
+                <div className="rounded-xl border border-rose-200 dark:border-rose-900/30 bg-rose-50 dark:bg-rose-900/10 p-4 text-sm text-rose-600 dark:text-rose-400">
                   {error}
                 </div>
               )}
               {!profile && (
-                <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-400">
-                  Vous n'avez pas de profil. <a href="/profile" className="font-semibold underline">Créez-le d'abord</a>.
+                <div className="rounded-xl border border-amber-200 dark:border-amber-900/30 bg-amber-50 dark:bg-amber-900/10 p-4 text-sm text-amber-600 dark:text-amber-400">
+                  Vous n'avez pas de profil. <Link to="/profile" className="font-semibold underline">Créez-le d'abord</Link>.
                 </div>
               )}
 
-              {/* Lettre de motivation + compteur */}
               <div>
-                <label className="mb-1.5 flex items-center justify-between text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)]">
+                <label className="mb-2 flex items-center justify-between text-xs font-bold text-[#0B253B] dark:text-white">
                   <span>Lettre de motivation *</span>
-                  <span className={tooShort ? "text-amber-400" : coverLetter.length >= MIN_LENGTH ? "text-emerald-400" : "text-[var(--text-faint)]"}>
+                  <span className={tooShort ? "text-amber-500" : coverLetter.length >= MIN_LENGTH ? "text-[#0F9691] dark:text-[#55E0D0]" : "text-[#82919D]"}>
                     {coverLetter.length} / {MIN_LENGTH} car. min
                   </span>
                 </label>
@@ -817,37 +791,37 @@ function ApplyModal({ offer, onClose, onSuccess }) {
                   value={coverLetter}
                   onChange={(e) => setCoverLetter(e.target.value)}
                   placeholder="Expliquez pourquoi cette offre vous intéresse..."
-                  className={`w-full rounded-lg border bg-[var(--bg-surface-hover)] px-3 py-2 text-sm text-[var(--text-app)] placeholder:text-[var(--text-faint)] focus:outline-none ${
+                  className={`w-full rounded-xl border bg-[#F9FBFD] dark:bg-[#0B253B] px-4 py-3 text-sm text-[#0B253B] dark:text-white placeholder:text-[#82919D] focus:outline-none ${
                     tooShort
-                      ? "border-amber-500/50 focus:border-amber-500"
+                      ? "border-amber-400 focus:border-amber-500"
                       : coverLetter.length >= MIN_LENGTH
-                      ? "border-emerald-500/50 focus:border-emerald-500"
-                      : "border-[var(--border-app)] focus:border-emerald-500/50"
+                      ? "border-[#16B8B1]/50 focus:border-[#16B8B1]"
+                      : "border-[#E5ECEF] dark:border-slate-700 focus:border-[#16B8B1]/50"
                   }`}
                 />
                 {tooShort && (
-                  <p className="mt-1 text-[10px] text-amber-400">
+                  <p className="mt-1.5 text-xs text-amber-500 font-medium">
                     Encore {MIN_LENGTH - coverLetter.trim().length} caractère{MIN_LENGTH - coverLetter.trim().length > 1 ? "s" : ""} minimum
                   </p>
                 )}
               </div>
 
               {profile?.cv_path && (
-                <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-400">
-                  CV joint automatiquement
+                <div className="rounded-xl border border-[#16B8B1]/30 bg-[#16B8B1]/10 p-4 text-sm font-medium text-[#0F9691] dark:text-[#55E0D0]">
+                  Votre CV sera joint automatiquement.
                 </div>
               )}
 
-              <div className="flex justify-end gap-2 border-t border-[var(--border-app)] pt-4">
-                <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-[var(--text-muted)] hover:bg-[var(--bg-surface-hover)]">
+              <div className="flex justify-end gap-3 border-t border-[#E5ECEF] dark:border-slate-800 pt-5">
+                <button type="button" onClick={onClose} className="rounded-xl px-5 py-2.5 text-sm font-semibold text-[#637487] hover:bg-[#F5F8FA] dark:hover:bg-slate-800">
                   Annuler
                 </button>
                 <button
                   type="submit"
                   disabled={saving || !canSubmit}
-                  className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#16B8B1] px-6 py-2.5 text-sm font-bold text-[#0B253B] transition hover:bg-[#50D6C5] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {saving ? <Loader2 size={14} className="animate-spin" /> : null}
+                  {saving ? <Loader2 size={16} className="animate-spin" /> : null}
                   {saving ? "Envoi..." : "Envoyer ma candidature"}
                 </button>
               </div>

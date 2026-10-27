@@ -44,7 +44,9 @@ import MyPublications from "./pages/MyPublications";
 import Accueil from "./pages/Accueil";
 import Actualite from "./pages/Actualite";
 import JobOfferDetail from "./pages/JobOfferDetail";
-
+import ActivityHistoryPage from "./pages/ActivityHistoryPage";
+import Explorer from "./pages/Explorer";
+import CreateCompanyPage from "./pages/CreateCompanyPage";
 /* ============================================================
     GUARDS
 ============================================================ */
@@ -120,11 +122,14 @@ function App() {
         <Route path="/account-settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
 
         <Route path="/company" element={<ProtectedRoute><CompanyProfile /></ProtectedRoute>} />
+        <Route path="/company" element={<ProtectedRoute><CompanyProfile /></ProtectedRoute>} />
+<Route path="/company/create" element={<ProtectedRoute><CreateCompanyPage /></ProtectedRoute>} />
 
         <Route path="/opportunites" element={<ProtectedRoute><Opportunities /></ProtectedRoute>} />
         <Route path="/opportunites/:id" element={<ProtectedRoute><Opportunities /></ProtectedRoute>} />
 
         <Route path="/my-publications" element={<ProtectedRoute><MyPublications /></ProtectedRoute>} />
+        <Route path="/explorer" element={<ProtectedRoute><Explorer /></ProtectedRoute>} />
 
         <Route path="/my-offers" element={<Navigate to="/my-publications" replace />} />
 
@@ -177,6 +182,7 @@ function App() {
         <Route path="/help" element={<ProtectedRoute><Help /></ProtectedRoute>} />
         <Route path="/guide" element={<ProtectedRoute><Guide /></ProtectedRoute>} />
         <Route path="/cgu" element={<ProtectedRoute><Cgu /></ProtectedRoute>} />
+        <Route path="/history" element={<ProtectedRoute><ActivityHistoryPage /></ProtectedRoute>} />
         <Route path="/confidentialite" element={<ProtectedRoute><Confidentialite /></ProtectedRoute>} />
 
         <Route path="/resource-offers" element={<ProtectedRoute><ResourceOffers /></ProtectedRoute>} />

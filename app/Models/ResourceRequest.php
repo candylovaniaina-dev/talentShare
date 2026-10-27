@@ -14,7 +14,7 @@ class ResourceRequest extends Model
         'start_at', 'end_at', 'workload_percent', 'remote',
         'country', 'city', 'status', 'expires_at',
         'budget_min', 'budget_max', 'positions_count', 'urgency', 'tags',
-        'views_count', 'proposals_count','shares_count', 'closed_reason', 'closed_at',
+        'views_count', 'proposals_count','shares_count', 'closed_reason', 'closed_at', 'contract_type',
     ];
 
     protected $casts = [

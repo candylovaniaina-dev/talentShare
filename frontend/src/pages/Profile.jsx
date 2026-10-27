@@ -1,37 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
+import { Check, ChevronDown, FolderTree, Plus, Search, X, MapPin, Phone, Building2, MessageCircle, ChevronRight } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import {
-  Award,
-  BriefcaseBusiness,
-  Camera,
-  Check,
-  CheckCircle2,
-  ChevronRight,
-  CircleUserRound,
-  Clock,
-  Calendar,
-  Edit,
-  ExternalLink,
-  Eye,
-  FileText,
-  FolderKanban,
-  Globe2,
-  GraduationCap,
-  Languages,
-  Lightbulb,
-  Link2,
-  MapPin,
-  MapPinned,
-  Palette,
-  Phone,
-  Percent,
-  Plus,
-  Search,
-  ShieldCheck,
-  Sparkles,
-  Trash2,
-  X,
-} from "lucide-react";
 
 import AppShell from "../components/layout/AppShell";
 import AvailabilitySection from "../components/AvailabilitySection";
@@ -40,10 +9,14 @@ import api from "../services/api";
 import { useToast } from "../context/ToastContext";
 import PublicPortfolio from "./PublicPortfolio";
 
-
 /* ============================================================
    CONSTANTES & HELPERS
 ============================================================ */
+const asArray = (data) => {
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.data)) return data.data;
+  return [];
+};
 
 const STORAGE_URL = "/storage";
 
@@ -54,6 +27,8 @@ const LEVEL_LABEL = {
   expert: "Expert",
 };
 
+const LEVEL_RANK = { beginner: 1, intermediate: 2, advanced: 3, expert: 4 };
+
 const LANGUAGE_LEVEL_LABEL = {
   basic: "Notions",
   conversational: "Intermédiaire",
@@ -62,20 +37,61 @@ const LANGUAGE_LEVEL_LABEL = {
 };
 
 const PROJECT_TYPES = {
-  academic: { label: "Universitaire", icon: GraduationCap, cls: "bg-emerald-50 text-emerald-700" },
-  personal: { label: "Personnel", icon: CircleUserRound, cls: "bg-blue-50 text-blue-700" },
-  professional: { label: "Professionnel", icon: BriefcaseBusiness, cls: "bg-slate-100 text-slate-600" },
+  academic: {
+    label: "Universitaire",
+    cls: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20",
+    grad: "from-emerald-100 to-teal-100 dark:from-emerald-500/10 dark:to-teal-500/10",
+    ink: "text-emerald-700/25 dark:text-emerald-400/20",
+  },
+  personal: {
+    label: "Personnel",
+    cls: "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-500/10 dark:text-sky-400 dark:border-sky-500/20",
+    grad: "from-sky-100 to-indigo-100 dark:from-sky-500/10 dark:to-indigo-500/10",
+    ink: "text-sky-700/25 dark:text-sky-400/20",
+  },
+  professional: {
+    label: "Professionnel",
+    cls: "bg-slate-100 text-slate-600 border-slate-200 dark:bg-white/5 dark:text-slate-400 dark:border-white/10",
+    grad: "from-slate-100 to-slate-200 dark:from-white/5 dark:to-white/10",
+    ink: "text-slate-600/25 dark:text-slate-400/20",
+  },
 };
 
 const THEMES = [
-  { id: "minimal", label: "Minimal", desc: "Épuré & navy", preview: "bg-slate-200" },
-  { id: "bold", label: "Bold", desc: "Sombre & impactant", preview: "bg-[#0B1633]" },
-  { id: "corporate", label: "Corporate", desc: "Sidebar professionnel", preview: "bg-white border border-[#E4EBF1]" },
+  { id: "minimal", label: "Minimal", desc: "Épuré & navy", preview: "bg-slate-200 dark:bg-slate-700" },
+  { id: "bold", label: "Bold", desc: "Sombre & impactant", preview: "bg-[#0B1633] dark:bg-black" },
+  { id: "corporate", label: "Corporate", desc: "Sidebar professionnel", preview: "bg-white border border-slate-200 dark:bg-white/10 dark:border-white/10" },
   { id: "vibrant", label: "Vibrant", desc: "Coloré & moderne", preview: "bg-gradient-to-br from-pink-400 to-purple-500" },
 ];
 
-const inputCls =
-  "w-full rounded-lg border border-[#E4EBF1] bg-[#F9FBFC] px-3 py-2 text-sm text-[#0B1F33] placeholder:text-[#8A9BB0] focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100";
+const CARD = "rounded-xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,42,61,0.04)] dark:border-white/10 dark:bg-[#112A3A] dark:shadow-none";
+
+const FIELD_CLS =
+  "w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 transition " +
+  "hover:border-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/15 " +
+  "dark:border-white/10 dark:bg-[#0B1F33] dark:text-white dark:placeholder:text-slate-500 dark:hover:border-white/20";
+
+const SKILL_FIELD = FIELD_CLS;
+const LABEL_CLS = "mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-400";
+const PILL_ON = "border-[#0B2A35] bg-[#0B2A35] text-white dark:border-[#13B89A] dark:bg-[#13B89A] dark:text-[#06251F]";
+const PILL_OFF = "border-slate-300 bg-white text-slate-600 hover:border-slate-400 hover:bg-slate-50 dark:border-white/10 dark:bg-[#0B1F33] dark:text-slate-400 dark:hover:bg-white/5";
+
+const BTN_PRIMARY =
+  "inline-flex items-center justify-center gap-2 rounded-lg bg-[#0B2A35] px-4 py-2.5 text-sm font-medium text-white transition " +
+  "hover:bg-[#0E3B3A] focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 " +
+  "dark:bg-[#13B89A] dark:hover:bg-[#18C6A6] dark:focus-visible:ring-offset-[#112A3A]";
+
+const BTN_SECONDARY =
+  "inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition " +
+  "hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 disabled:opacity-60 " +
+  "dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10 dark:focus-visible:ring-offset-[#112A3A]";
+
+const LEVELS = [
+  { value: "beginner", label: "Débutant" },
+  { value: "intermediate", label: "Intermédiaire" },
+  { value: "advanced", label: "Avancé" },
+  { value: "expert", label: "Expert" },
+];
 
 function getDisplayName(user) {
   if (!user) return "Mon profil";
@@ -136,6 +152,10 @@ export default function Profile() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  
+  const [myCompanies, setMyCompanies] = useState([]);
+ 
+
   const avatarInputRef = useRef(null);
   const coverInputRef = useRef(null);
 
@@ -179,6 +199,9 @@ export default function Profile() {
 
   useEffect(() => {
     load();
+    api.get("/profile/my-companies")
+      .then((res) => setMyCompanies(res.data || []))
+      .catch(() => setMyCompanies([]));
   }, []);
 
   const flash = (text, type = "success") => showToast(text, type);
@@ -299,10 +322,10 @@ export default function Profile() {
     .sort((a, b) => new Date(a.start_at) - new Date(b.start_at))[0];
 
   const links = [
-    { key: "linkedin_url", label: "LinkedIn", icon: Link2 },
-    { key: "portfolio_url", label: "Portfolio personnel", icon: Globe2 },
-    { key: "github_url", label: "GitHub", icon: Link2 },
-    { key: "behance_url", label: "Behance", icon: Palette },
+    { key: "linkedin_url", label: "LinkedIn" },
+    { key: "portfolio_url", label: "Portfolio personnel" },
+    { key: "github_url", label: "GitHub" },
+    { key: "behance_url", label: "Behance" },
   ].filter((l) => profile[l.key]);
 
   const checklist = [
@@ -315,43 +338,51 @@ export default function Profile() {
   const completion = Math.round((doneCount / checklist.length) * 100);
   const missing = checklist.filter((c) => !c.done);
 
+  const ringR = 44;
+  const ringC = 2 * Math.PI * ringR;
+
   return (
     <AppShell>
-      <div className="mx-auto max-w-7xl">
-        <div className="grid gap-5 lg:grid-cols-3">
-          <div className="space-y-5 lg:col-span-2">
-            <section className="overflow-hidden rounded-2xl border border-[#E4EBF1] bg-white shadow-sm">
-              <div className="relative h-28 bg-gradient-to-r from-[#0B1F33] via-[#0F4C5C] to-[#16B8B1] sm:h-32">
-                {profile.cover_path && (
+      {/* ✅ FOND ADAPTÉ AU MODE CLAIR ET SOMBRE */}
+      <div className="min-h-screen bg-[#F4F7FA] px-3 py-4 transition-colors duration-300 dark:bg-transparent sm:px-5 sm:py-5">
+        <div className="mx-auto max-w-[1500px] text-slate-900 dark:text-slate-200">
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+          {/* ================= COLONNE PRINCIPALE ================= */}
+          <div className="min-w-0 space-y-5">
+            {/* ----- Carte d'identité ----- */}
+            <section className={`overflow-hidden ${CARD}`}>
+              <div className="relative h-36 overflow-hidden bg-gradient-to-r from-[#0B2A35] via-[#0B3A36] to-[#0E4B42] sm:h-44">
+                {profile.cover_path ? (
                   <img
                     src={`${STORAGE_URL}/${profile.cover_path}`}
                     alt="Couverture du profil"
                     className="h-full w-full object-cover"
                   />
+                ) : (
+                  <div className="pointer-events-none absolute -right-10 -top-20 h-64 w-64 rounded-full bg-emerald-400/10 blur-3xl" />
                 )}
                 <button
                   type="button"
                   onClick={() => coverInputRef.current?.click()}
                   disabled={uploadingCover}
-                  className="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-lg bg-white/90 px-3 py-1.5 text-xs font-semibold text-[#0B1F33] shadow-sm transition hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 disabled:opacity-60"
+                  className="absolute right-4 top-4 rounded-lg bg-white/90 px-3.5 py-2 text-xs font-medium text-slate-800 backdrop-blur transition hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 disabled:opacity-60 dark:bg-black/50 dark:text-white dark:hover:bg-black/70"
                 >
-                  <Camera size={13} />
                   {uploadingCover ? "Envoi..." : profile.cover_path ? "Changer la couverture" : "Ajouter une couverture"}
                 </button>
                 <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} />
               </div>
 
-              <div className="px-5 pb-5">
-                <div className="-mt-12 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div className="px-5 pb-6 sm:px-7">
+                <div className="-mt-12 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                   <div className="relative w-fit shrink-0">
                     {profile.avatar_path ? (
                       <img
                         src={`${STORAGE_URL}/${profile.avatar_path}`}
                         alt="Photo de profil"
-                        className="h-24 w-24 rounded-full border-4 border-white object-cover shadow-md"
+                        className="h-24 w-24 rounded-2xl border-4 border-white object-cover shadow-sm ring-1 ring-slate-200 dark:border-[#112A3A] dark:ring-white/10"
                       />
                     ) : (
-                      <div className="flex h-24 w-24 items-center justify-center rounded-full border-4 border-white bg-gradient-to-br from-[#16B8B1] to-[#0F9691] text-3xl font-bold text-white shadow-md">
+                      <div className="flex h-24 w-24 items-center justify-center rounded-2xl border-4 border-white bg-gradient-to-br from-teal-600 to-[#0B2A35] text-3xl font-semibold text-white shadow-sm ring-1 ring-slate-200 dark:border-[#112A3A] dark:ring-white/10">
                         {getInitials(profile.user)}
                       </div>
                     )}
@@ -359,179 +390,137 @@ export default function Profile() {
                       type="button"
                       onClick={() => avatarInputRef.current?.click()}
                       disabled={uploadingAvatar}
-                      aria-label="Changer la photo de profil"
-                      className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-[#0B1F33] text-white transition hover:bg-[#17284B] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 disabled:opacity-60"
+                      className="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-[#0B2A35] px-2.5 py-1 text-[11px] font-medium text-white ring-2 ring-white transition hover:bg-[#0E3B3A] focus:outline-none focus-visible:ring-teal-400 disabled:opacity-60 dark:bg-emerald-600 dark:ring-[#112A3A] dark:hover:bg-emerald-500"
                     >
-                      <Camera size={14} />
+                      {uploadingAvatar ? "Envoi..." : "Changer"}
                     </button>
                     <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => openModal("info")}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-[#16B8B1] px-4 py-2 text-sm font-semibold text-[#07172A] transition hover:bg-[#0F9691] hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
-                    >
-                      <Edit size={14} /> Modifier le profil
+                    <button type="button" onClick={() => openModal("info")} className={BTN_PRIMARY}>
+                      Modifier le profil
                     </button>
                     {portfolio?.public_slug ? (
-                      <button
-                        type="button"
-                        onClick={() => setPreviewOpen(true)}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-[#E4EBF1] bg-white px-4 py-2 text-sm font-semibold text-[#0B1F33] transition hover:bg-[#F5F8FA] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
-                      >
-                        <Eye size={14} /> Aperçu public
+                      <button type="button" onClick={() => setPreviewOpen(true)} className={BTN_SECONDARY}>
+                        Aperçu public
                       </button>
                     ) : (
-                      <button
-                        type="button"
-                        onClick={() => navigate("/portfolio/create")}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-[#E4EBF1] bg-white px-4 py-2 text-sm font-semibold text-[#0B1F33] transition hover:bg-[#F5F8FA] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
-                      >
-                        <Eye size={14} /> Créer mon portfolio
+                      <button type="button" onClick={() => navigate("/portfolio/create")} className={BTN_SECONDARY}>
+                        Créer mon portfolio
                       </button>
                     )}
                   </div>
                 </div>
 
-                <div className="mt-4">
+                <div className="mt-5">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-xl font-bold leading-tight text-[#0B1F33] sm:text-2xl">
+                    <h2 className="text-xl font-semibold leading-tight tracking-tight text-slate-900 dark:text-white">
                       {getDisplayName(profile.user)}
                     </h2>
-                    {profile.is_verified && <Chip icon={ShieldCheck} tone="emerald">Vérifié</Chip>}
+                    {profile.is_verified && <Chip tone="emerald">Vérifié</Chip>}
                     {profile.is_young_talent && <Chip tone="emerald">Young Talent</Chip>}
-                    {profile.looking_for_opportunity && <Chip icon={Search} tone="amber">En recherche</Chip>}
+                    {profile.looking_for_opportunity && <Chip tone="amber">En recherche</Chip>}
                   </div>
 
-                  {profile.headline && (
-                    <p className="mt-1 text-sm font-semibold text-[#0F9691]">{profile.headline}</p>
-                  )}
+                  {profile.headline && <p className="mt-1 text-sm text-teal-700 dark:text-emerald-400">{profile.headline}</p>}
 
-                  <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-[#64788C]">
+                  <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] text-slate-500 dark:text-slate-400">
                     {(profile.city || profile.country) && (
-                      <span className="flex items-center gap-1.5">
-                        <MapPin size={13} className="text-[#8A9BB0]" />
+                      <span className="inline-flex items-center gap-1.5">
+                        <MapPin size={14} className="text-slate-400 dark:text-slate-500" />
                         {[profile.city, profile.country].filter(Boolean).join(", ")}
                       </span>
                     )}
-                    {profile.university && (
-                      <span className="flex items-center gap-1.5">
-                        <GraduationCap size={13} className="text-[#8A9BB0]" />
-                        {profile.study_level && `${profile.study_level} · `}
-                        {profile.field_of_study || profile.university}
+                    {profile.user?.phone && (
+                      <span className="inline-flex items-center gap-1.5">
+                        <Phone size={13} className="text-slate-400 dark:text-slate-500" />
+                        {profile.user.phone}
                       </span>
                     )}
                     {nextAvail && (
-                      <span className="flex items-center gap-1.5 text-[#0F9691]">
-                        <span className="h-1.5 w-1.5 rounded-full bg-[#16B8B1]" />
-                        Dispo {new Date(nextAvail.start_at).toLocaleDateString("fr-FR", { month: "short", year: "numeric" })}
+                      <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                        Disponible dès {new Date(nextAvail.start_at).toLocaleDateString("fr-FR", { month: "short", year: "numeric" })}
                       </span>
                     )}
                   </div>
 
                   {profile.bio && (
-                    <p className="mt-3 line-clamp-3 text-sm leading-6 text-[#64788C]">{profile.bio}</p>
+                    <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600 line-clamp-3 dark:text-slate-400">{profile.bio}</p>
                   )}
 
-                  {(profile.user?.phone || profile.cv_path) && (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {profile.user?.phone && (
-                        <span className="inline-flex items-center gap-1.5 rounded-lg border border-[#E4EBF1] bg-[#F9FBFC] px-3 py-1.5 text-xs text-[#334B63]">
-                          <Phone size={12} className="text-[#16B8B1]" />
-                          {profile.user.phone}
-                        </span>
-                      )}
-                      {profile.cv_path && (
-                        <a
-                          href={`${STORAGE_URL}/${profile.cv_path}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-600 transition hover:bg-rose-100"
-                        >
-                          <FileText size={12} /> Mon CV
-                        </a>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-5 flex flex-col gap-3 rounded-xl border border-[#E4EBF1] bg-[#F9FBFC] p-3.5 sm:flex-row sm:items-center">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-2 text-sm">
-                      <span className="font-semibold text-[#0B1F33]">Profil complété à {completion} %</span>
-                    </div>
-                    <div
-                      className="mt-2 h-2 overflow-hidden rounded-full bg-[#E4EBF1]"
-                      role="progressbar"
-                      aria-valuenow={completion}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                      aria-label="Complétion du profil"
+                  {profile.cv_path && (
+                    <a
+                      href={`${STORAGE_URL}/${profile.cv_path}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-4 inline-flex items-center rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
                     >
-                      <div
-                        className="h-full rounded-full bg-[#16B8B1] transition-all duration-500 motion-reduce:transition-none"
-                        style={{ width: `${completion}%` }}
-                      />
-                    </div>
-                    <p className="mt-1.5 text-xs text-[#64788C]">
-                      {missing.length === 0
-                        ? "Bravo, ton profil est complet."
-                        : `À renseigner : ${missing.map((m) => m.label.replace(/^Ajouter (des |une |un )?/, "")).join(", ")}.`}
-                    </p>
-                  </div>
-                  {missing.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={missing[0].action}
-                      className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[#E4EBF1] bg-white px-4 py-2 text-sm font-semibold text-[#0B1F33] transition hover:border-emerald-300 hover:bg-emerald-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
-                    >
-                      Compléter mon profil <ChevronRight size={14} />
-                    </button>
+                      Télécharger mon CV
+                    </a>
                   )}
                 </div>
               </div>
             </section>
 
+            {/* ----- Compétences ----- */}
             <Panel
-              icon={Sparkles}
               title="Compétences clés"
               count={skills.length}
               action={<AddButton onClick={() => openModal("skill")}>Ajouter</AddButton>}
             >
               {skills.length === 0 ? (
-                <EmptyBlock icon={Sparkles} text="Aucune compétence pour l'instant." actionLabel="Ajouter une compétence" onAction={() => openModal("skill")} />
+                <EmptyBlock text="Aucune compétence pour l'instant." actionLabel="Ajouter une compétence" onAction={() => openModal("skill")} />
               ) : (
-                <ul className="flex flex-wrap gap-2">
-                  {skills.map((s) => (
-                    <li
-                      key={s.id}
-                      title={`${LEVEL_LABEL[s.pivot?.level] || "Intermédiaire"}${s.pivot?.years_experience ? ` · ${s.pivot.years_experience} an(s)` : ""}`}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-[#BDEFE7] bg-[#F0FDFA] py-1 pl-3 pr-1.5 text-xs font-medium text-[#0F766E]"
-                    >
-                      {s.name}
-                      {s.pivot?.is_featured && <span className="text-amber-500">★</span>}
-                      <span className="text-[10px] font-normal text-[#64788C]">
-                        · {LEVEL_LABEL[s.pivot?.level] || "Intermédiaire"}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => detachSkill(s.id)}
-                        aria-label={`Retirer ${s.name}`}
-                        className="rounded-full p-0.5 text-[#70849B] transition hover:bg-rose-50 hover:text-rose-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
+                <ul className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+                  {skills.map((s) => {
+                   const catObj = s.category || s.skill_category || s.skillCategory || s.skill_category_data;
+const catName = catObj?.name;
+const subCatName = catObj?.parent?.name || catObj?.parent_category?.name;
+const displayPath = [subCatName, catName].filter(Boolean).join(" · ");
+
+                    return (
+                      <li
+                        key={s.id}
+                        className="group relative rounded-lg border border-slate-200 bg-white px-3.5 py-3 pr-9 transition hover:border-teal-300 hover:bg-slate-50/60 dark:border-white/10 dark:bg-[#0B1F33] dark:hover:border-[#13B89A]/40 dark:hover:bg-white/5"
                       >
-                        <X size={12} />
-                      </button>
-                    </li>
-                  ))}
+                        <div className="flex items-center gap-2">
+                          <span className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">{s.name}</span>
+                          {s.pivot?.is_featured && <span className="text-xs text-amber-500">★</span>}
+                        </div>
+
+                        <div className="mt-1.5 flex items-center gap-2">
+                          <LevelDots level={s.pivot?.level} />
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400">{LEVEL_LABEL[s.pivot?.level] || "Intermédiaire"}</span>
+                        </div>
+
+                        {displayPath && <p className="mt-1.5 truncate text-[11px] text-slate-400 dark:text-slate-500">{displayPath}</p>}
+
+                        {s.pivot?.years_experience > 0 && (
+                          <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                            {s.pivot.years_experience} an{s.pivot.years_experience > 1 ? "s" : ""} d'expérience
+                          </p>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => detachSkill(s.id)}
+                          aria-label={`Retirer ${s.name}`}
+                          className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-md text-slate-400 opacity-0 transition hover:bg-rose-50 hover:text-rose-600 focus:opacity-100 group-hover:opacity-100 dark:hover:bg-rose-500/20 dark:hover:text-rose-400"
+                        >
+                          <X size={14} />
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </Panel>
 
+            {/* ----- Expériences / Formations ----- */}
             <div className="grid gap-5 md:grid-cols-2">
               <TimelineCard
-                icon={BriefcaseBusiness}
                 title="Expériences"
                 items={experiences}
                 emptyText="Aucune expérience renseignée."
@@ -540,14 +529,13 @@ export default function Profile() {
                 onDelete={(id) => handleDelete("experience", id)}
                 render={(i) => (
                   <>
-                    <p className="text-sm font-semibold text-[#0B1F33]">{i.title}</p>
-                    <p className="text-xs text-[#64788C]">{[i.company, i.location].filter(Boolean).join(" · ")}</p>
-                    {fmtRange(i) && <p className="mt-0.5 text-xs text-[#8A9BB0]">{fmtRange(i)}</p>}
+                    <p className="text-sm font-medium text-slate-900 dark:text-white">{i.title}</p>
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{[i.company, i.location].filter(Boolean).join(" · ")}</p>
+                    {fmtRange(i) && <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{fmtRange(i)}</p>}
                   </>
                 )}
               />
               <TimelineCard
-                icon={GraduationCap}
                 title="Formations"
                 items={educations}
                 emptyText="Aucune formation renseignée."
@@ -556,14 +544,14 @@ export default function Profile() {
                 onDelete={(id) => handleDelete("education", id)}
                 render={(i) => (
                   <>
-                    <p className="text-sm font-semibold text-[#0B1F33]">
+                    <p className="text-sm font-medium text-slate-900 dark:text-white">
                       {i.degree}
-                      {i.study_level && <span className="font-medium text-[#0F9691]"> · {i.study_level}</span>}
+                      {i.study_level && <span className="font-normal text-teal-700 dark:text-emerald-400"> · {i.study_level}</span>}
                     </p>
-                    <p className="text-xs text-[#64788C]">
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                       {[i.institution, i.field_of_study].filter(Boolean).join(" · ")}
                     </p>
-                    {fmtRange(i) && <p className="mt-0.5 text-xs text-[#8A9BB0]">{fmtRange(i)}</p>}
+                    {fmtRange(i) && <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{fmtRange(i)}</p>}
                   </>
                 )}
               />
@@ -580,7 +568,6 @@ export default function Profile() {
 
             <div className="grid gap-5 md:grid-cols-2">
               <TimelineCard
-                icon={Award}
                 title="Certifications"
                 items={profile.certifications || []}
                 emptyText="Aucune certification renseignée."
@@ -589,14 +576,13 @@ export default function Profile() {
                 onDelete={(id) => handleDelete("certification", id)}
                 render={(i) => (
                   <>
-                    <p className="text-sm font-semibold text-[#0B1F33]">{i.name}</p>
-                    <p className="text-xs text-[#64788C]">{i.issuing_organization}</p>
-                    {i.issue_date && <p className="mt-0.5 text-xs text-[#8A9BB0]">{fmtMonth(i.issue_date)}</p>}
+                    <p className="text-sm font-medium text-slate-900 dark:text-white">{i.name}</p>
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{i.issuing_organization}</p>
+                    {i.issue_date && <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{fmtMonth(i.issue_date)}</p>}
                   </>
                 )}
               />
               <TimelineCard
-                icon={Languages}
                 title="Langues"
                 items={profile.languages || []}
                 emptyText="Aucune langue renseignée."
@@ -605,28 +591,76 @@ export default function Profile() {
                 onDelete={(id) => handleDelete("language", id)}
                 render={(i) => (
                   <>
-                    <p className="text-sm font-semibold text-[#0B1F33]">{i.name}</p>
-                    <p className="text-xs text-[#64788C]">{LANGUAGE_LEVEL_LABEL[i.level] || LEVEL_LABEL[i.level] || i.level}</p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-white">{i.name}</p>
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{LANGUAGE_LEVEL_LABEL[i.level] || LEVEL_LABEL[i.level] || i.level}</p>
                   </>
                 )}
               />
             </div>
           </div>
 
-          <aside className="space-y-5">
-            <Panel icon={Eye} title="Visibilité du profil">
-              <p className="text-xs leading-5 text-[#64788C]">
-                Choisis ce que les organisations peuvent découvrir avant toute mise en relation.
+          {/* ================= COLONNE LATÉRALE ================= */}
+          <aside className="space-y-5 xl:sticky xl:top-[100px] xl:self-start">
+            {/* Complétion */}
+            <section className="relative overflow-hidden rounded-xl bg-gradient-to-br from-[#0B2A35] via-[#0B3A36] to-[#0E4B42] p-5 text-white shadow-[0_8px_24px_rgba(8,60,55,0.18)]">
+              <p className="text-xs font-medium text-emerald-300/90">Complétion du profil</p>
+              <div className="mt-4 flex items-center gap-4">
+                <div
+                  className="relative h-20 w-20 shrink-0"
+                  role="progressbar"
+                  aria-valuenow={completion}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-label="Complétion du profil"
+                >
+                  <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
+                    <circle cx="50" cy="50" r={ringR} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="8" />
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r={ringR}
+                      fill="none"
+                      stroke="#34D399"
+                      strokeWidth="8"
+                      strokeLinecap="round"
+                      strokeDasharray={ringC}
+                      strokeDashoffset={ringC * (1 - completion / 100)}
+                      className="transition-all duration-700 motion-reduce:transition-none"
+                    />
+                  </svg>
+                  <span className="absolute inset-0 flex items-center justify-center text-base font-semibold">{completion} %</span>
+                </div>
+                <p className="text-[13px] leading-5 text-white/70">
+                  {missing.length === 0
+                    ? "Votre profil est complet."
+                    : `À renseigner : ${missing.map((m) => m.label.replace(/^Ajouter (des |une |un )?/, "")).join(", ")}.`}
+                </p>
+              </div>
+              {missing.length > 0 && (
+                <button
+                  type="button"
+                  onClick={missing[0].action}
+                  className="mt-5 w-full rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-[#0B2A35] transition hover:bg-emerald-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                >
+                  Compléter mon profil
+                </button>
+              )}
+            </section>
+
+            {/* Visibilité */}
+            <Panel title="Visibilité du profil">
+              <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">
+                Choisissez ce que les organisations peuvent découvrir avant toute mise en relation.
               </p>
-              <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-[#E4EBF1] bg-[#F9FBFC] px-3.5 py-3">
+              <div className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50/70 px-4 py-3 dark:border-white/10 dark:bg-white/5">
                 <div>
-                  <p className="text-sm font-semibold text-[#0B1F33]">
+                  <p className="text-sm font-medium text-slate-800 dark:text-white">
                     {profile.visibility === "public" ? "Profil visible" : "Profil privé"}
                   </p>
-                  <p className="text-xs text-[#64788C]">
+                  <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                     {profile.visibility === "public"
-                      ? "Les recruteurs et entreprises peuvent consulter ton profil."
-                      : "Seul toi peux voir ton profil."}
+                      ? "Les recruteurs et entreprises peuvent consulter votre profil."
+                      : "Seul vous pouvez voir votre profil."}
                   </p>
                 </div>
                 <button
@@ -635,8 +669,8 @@ export default function Profile() {
                   aria-checked={profile.visibility === "public"}
                   aria-label="Rendre le profil public"
                   onClick={toggleVisibility}
-                  className={`relative h-6 w-11 shrink-0 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 ${
-                    profile.visibility === "public" ? "bg-[#16B8B1]" : "bg-slate-300"
+                  className={`relative h-6 w-11 shrink-0 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ${
+                    profile.visibility === "public" ? "bg-teal-600" : "bg-slate-300 dark:bg-slate-600"
                   }`}
                 >
                   <span
@@ -646,30 +680,29 @@ export default function Profile() {
                   />
                 </button>
               </div>
-              <p className="mt-2 text-xs text-[#8A9BB0]">Les coordonnées restent masquées.</p>
+              <p className="mt-2.5 text-xs text-slate-400 dark:text-slate-500">Les coordonnées restent masquées.</p>
             </Panel>
 
-            <Panel icon={Link2} title="Liens professionnels">
+            {/* Liens */}
+            <Panel title="Liens professionnels">
               {links.length === 0 ? (
-                <EmptyBlock icon={Link2} text="Aucun lien renseigné." compact />
+                <EmptyBlock text="Aucun lien renseigné." compact />
               ) : (
                 <ul className="space-y-2">
-                  {links.map(({ key, label, icon: Icon }) => (
+                  {links.map(({ key, label }) => (
                     <li key={key}>
                       <a
                         href={profile[key]}
                         target="_blank"
                         rel="noreferrer"
-                        className="group flex items-center gap-3 rounded-xl border border-[#E4EBF1] p-2.5 transition hover:border-emerald-300 hover:bg-emerald-50/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+                        className="group flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-2.5 transition hover:border-teal-300 hover:bg-slate-50/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:border-white/10 dark:bg-[#0B1F33] dark:hover:border-[#13B89A]/40 dark:hover:bg-white/5"
                       >
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#F1F6FA] text-[#334B63] group-hover:bg-emerald-100 group-hover:text-emerald-700">
-                          <Icon size={17} />
-                        </span>
+                        <PlatformIcon platform={key} />
                         <span className="min-w-0 flex-1">
-                          <span className="block text-sm font-semibold text-[#0B1F33]">{label}</span>
-                          <span className="block truncate text-xs text-[#8A9BB0]">{prettyUrl(profile[key])}</span>
+                          <span className="block text-sm font-medium text-slate-800 dark:text-slate-200">{label}</span>
+                          <span className="block truncate text-xs text-slate-400 dark:text-slate-500">{prettyUrl(profile[key])}</span>
                         </span>
-                        <ExternalLink size={14} className="shrink-0 text-slate-300 group-hover:text-emerald-600" />
+                        <span className="shrink-0 text-sm text-slate-300 transition group-hover:text-teal-600 dark:text-slate-600 dark:group-hover:text-emerald-400">→</span>
                       </a>
                     </li>
                   ))}
@@ -678,29 +711,30 @@ export default function Profile() {
               <button
                 type="button"
                 onClick={() => openModal("info")}
-                className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-[#CBD8E3] px-3 py-2 text-sm font-medium text-[#334B63] transition hover:border-emerald-300 hover:text-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+                className="mt-3 w-full rounded-lg border border-dashed border-slate-300 px-3 py-2.5 text-sm text-slate-600 transition hover:border-teal-400 hover:bg-teal-50/50 hover:text-teal-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:border-white/20 dark:text-slate-400 dark:hover:border-emerald-500/50 dark:hover:bg-white/5 dark:hover:text-emerald-400"
               >
-                <Plus size={14} /> {links.length === 0 ? "Ajouter un lien" : "Ajouter ou modifier un lien"}
+                + {links.length === 0 ? "Ajouter un lien" : "Ajouter ou modifier un lien"}
               </button>
             </Panel>
 
-            <Panel icon={Lightbulb} title="Conseils pour améliorer votre profil">
-              <ul className="space-y-1">
+            {/* Conseils */}
+            <Panel title="Conseils pour votre profil">
+              <ul className="space-y-0.5">
                 {checklist.map((c) => (
                   <li key={c.label}>
                     <button
                       type="button"
                       onClick={c.action}
-                      className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition hover:bg-[#F5F8FA] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+                      className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:hover:bg-white/5"
                     >
                       <span
-                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
-                          c.done ? "bg-[#16B8B1] text-white" : "border-2 border-slate-300 text-transparent"
+                        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${
+                          c.done ? "bg-teal-600" : "border border-slate-300 dark:border-slate-600"
                         }`}
                       >
-                        <Check size={11} strokeWidth={3} />
+                        {c.done && <Check size={10} className="text-white" strokeWidth={3} />}
                       </span>
-                      <span className={`text-sm ${c.done ? "text-[#8A9BB0] line-through" : "font-medium text-[#0B1F33]"}`}>
+                      <span className={`text-sm ${c.done ? "text-slate-400 line-through dark:text-slate-600" : "text-slate-700 dark:text-slate-300"}`}>
                         {c.label}
                       </span>
                     </button>
@@ -709,15 +743,16 @@ export default function Profile() {
               </ul>
               <Link
                 to="/job-offers"
-                className="mt-3 flex items-center justify-between rounded-xl bg-[#F0FDFA] px-3.5 py-2.5 text-sm font-semibold text-[#0F766E] transition hover:bg-emerald-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+                className="mt-3 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50/70 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-teal-300 hover:text-teal-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:border-[#13B89A]/40 dark:hover:text-emerald-400"
               >
-                Voir les opportunités <ChevronRight size={15} />
+                Voir les opportunités <span>→</span>
               </Link>
             </Panel>
 
+            {/* Apparence */}
             {portfolio && (
-              <Panel icon={Palette} title="Apparence du portfolio">
-                <div className="flex flex-wrap gap-2">
+              <Panel title="Apparence du portfolio">
+                <div className="grid grid-cols-2 gap-2.5">
                   {THEMES.map((theme) => {
                     const active = portfolio.theme === theme.id;
                     return (
@@ -727,26 +762,18 @@ export default function Profile() {
                         onClick={() => changeTheme(theme.id)}
                         aria-pressed={active}
                         title={theme.desc}
-                        className={`group relative flex items-center gap-2 rounded-xl border px-2.5 py-2 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 ${
+                        className={`rounded-lg border p-2 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ${
                           active
-                            ? "border-[#16B8B1] bg-[#F0FDFA] shadow-sm"
-                            : "border-[#E4EBF1] bg-white hover:border-emerald-300 hover:bg-emerald-50/40"
+                            ? "border-teal-600 bg-teal-50/60 ring-1 ring-teal-600 dark:border-emerald-500 dark:bg-emerald-500/10 dark:ring-emerald-500"
+                            : "border-slate-200 bg-white hover:border-slate-300 dark:border-white/10 dark:bg-[#0B1F33] dark:hover:border-white/20"
                         }`}
                       >
-                        <span
-                          className={`h-6 w-6 shrink-0 rounded-md ${theme.preview} ${
-                            active ? "ring-2 ring-[#16B8B1] ring-offset-1" : ""
-                          }`}
-                        />
-                        <span className="min-w-0">
-                          <span className="block text-[12px] font-semibold leading-tight text-[#0B1F33]">
-                            {theme.label}
-                          </span>
-                          <span className="block truncate text-[10px] leading-tight text-[#8A9BB0]">
-                            {theme.desc}
-                          </span>
+                        <span className={`block h-10 w-full rounded-md ${theme.preview}`} />
+                        <span className="mt-2 flex items-center justify-between gap-1">
+                          <span className="text-xs font-medium text-slate-800 dark:text-slate-200">{theme.label}</span>
+                          {active && <span className="rounded bg-teal-600 px-1.5 py-0.5 text-[9px] font-medium uppercase text-white dark:bg-emerald-600">Actif</span>}
                         </span>
-                        {active && <Check size={13} className="shrink-0 text-[#0F9691]" />}
+                        <span className="block truncate text-[10px] text-slate-400 dark:text-slate-500">{theme.desc}</span>
                       </button>
                     );
                   })}
@@ -755,20 +782,20 @@ export default function Profile() {
             )}
 
             {profile.is_young_talent && (
-              <Panel icon={GraduationCap} title="Conseils Young Talent">
-                <ol className="space-y-2.5 text-sm text-[#64788C]">
-                  <li className="flex gap-2">
-                    <span className="font-bold text-[#0F9691]">1.</span>
-                    <span>Ajoute tes <strong className="text-[#0B1F33]">projets universitaires</strong> pour montrer tes compétences.</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="font-bold text-[#0F9691]">2.</span>
-                    <span>Précise tes <strong className="text-[#0B1F33]">disponibilités</strong> (stage, alternance, premier emploi).</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="font-bold text-[#0F9691]">3.</span>
-                    <span>Mets à jour ton <strong className="text-[#0B1F33]">CV</strong> et ton LinkedIn.</span>
-                  </li>
+              <Panel title="Conseils Young Talent">
+                <ol className="space-y-3 text-sm text-slate-500 dark:text-slate-400">
+                  {[
+                    <>Ajoutez vos <span className="font-medium text-slate-800 dark:text-slate-200">projets universitaires</span> pour montrer vos compétences.</>,
+                    <>Précisez vos <span className="font-medium text-slate-800 dark:text-slate-200">disponibilités</span> (stage, alternance, premier emploi).</>,
+                    <>Mettez à jour votre <span className="font-medium text-slate-800 dark:text-slate-200">CV</span> et votre LinkedIn.</>,
+                  ].map((tip, i) => (
+                    <li key={i} className="flex gap-3">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-slate-300 text-[11px] font-medium text-slate-600 dark:border-white/20 dark:text-slate-400">
+                        {i + 1}
+                      </span>
+                      <span className="leading-5">{tip}</span>
+                    </li>
+                  ))}
                 </ol>
               </Panel>
             )}
@@ -803,6 +830,10 @@ export default function Profile() {
           }}
         />
       )}
+
+   
+      
+        </div>
     </AppShell>
   );
 }
@@ -811,81 +842,81 @@ export default function Profile() {
    COMPOSANTS D'INTERFACE
 ============================================================ */
 
-function Panel({ icon: Icon, title, count, action, children, className = "" }) {
+function Panel({ title, count, action, children, className = "" }) {
   return (
-    <section className={`rounded-2xl border border-[#E4EBF1] bg-white p-5 shadow-sm ${className}`}>
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2.5">
-          {Icon && (
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F0FDFA] text-[#0F9691]">
-              <Icon size={16} strokeWidth={1.9} />
-            </span>
-          )}
-          <h2 className="truncate font-bold text-[#0B1F33]">{title}</h2>
-          {typeof count === "number" && (
-            <span className="rounded-full bg-[#F1F6FA] px-2 py-0.5 text-xs font-semibold text-[#64788C]">{count}</span>
-          )}
+    <section className={`${CARD} ${className}`}>
+      <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-3.5 dark:border-white/10">
+        <div className="flex min-w-0 items-baseline gap-2">
+          <h2 className="truncate text-[15px] font-semibold tracking-tight text-slate-900 dark:text-white">{title}</h2>
+          {typeof count === "number" && <span className="text-xs text-slate-400 dark:text-slate-500">{count}</span>}
         </div>
         {action}
       </div>
-      {children}
+      <div className="p-5">{children}</div>
     </section>
   );
 }
 
-function AddButton({ onClick, children, icon: Icon = Plus }) {
+function AddButton({ onClick, children }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[#E4EBF1] px-2.5 py-1.5 text-xs font-semibold text-[#334B63] transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+      className="shrink-0 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 transition hover:border-teal-300 hover:bg-teal-50/60 hover:text-teal-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:border-[#13B89A]/40 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-400"
     >
-      <Icon size={13} /> {children}
+      + {children}
     </button>
   );
 }
 
-function Chip({ icon: Icon, tone = "emerald", children }) {
+function Chip({ tone = "emerald", children }) {
   const tones = {
-    emerald: "border-[#BDEFE7] bg-[#F0FDFA] text-[#0F766E]",
-    amber: "border-amber-200 bg-amber-50 text-amber-700",
+    emerald: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400",
+    amber: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-400",
   };
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${tones[tone]}`}>
-      {Icon && <Icon size={11} />}
+    <span className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11px] font-medium ${tones[tone]}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${tone === "amber" ? "bg-amber-500" : "bg-emerald-500"}`} />
       {children}
     </span>
   );
 }
 
-function EmptyBlock({ icon: Icon, text, actionLabel, onAction, compact = false }) {
+function LevelDots({ level }) {
+  const rank = LEVEL_RANK[level] || 2;
   return (
-    <div className={`flex flex-col items-center rounded-xl border border-dashed border-[#D5DFE8] bg-[#F9FBFC] px-4 text-center ${compact ? "py-5" : "py-8"}`}>
-      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#8A9BB0] shadow-sm">
-        <Icon size={19} />
-      </span>
-      <p className="mt-2.5 text-sm text-[#64788C]">{text}</p>
+    <span className="flex items-center gap-0.5" aria-label={LEVEL_LABEL[level] || "Intermédiaire"}>
+      {[1, 2, 3, 4].map((n) => (
+        <span key={n} className={`h-1.5 w-3 rounded-sm ${n <= rank ? "bg-teal-600 dark:bg-emerald-500" : "bg-slate-200 dark:bg-slate-700"}`} />
+      ))}
+    </span>
+  );
+}
+
+function EmptyBlock({ text, actionLabel, onAction, compact = false }) {
+  return (
+    <div className={`flex flex-col items-center rounded-lg border border-dashed border-slate-300 bg-slate-50/50 px-4 text-center dark:border-white/10 dark:bg-white/5 ${compact ? "py-5" : "py-8"}`}>
+      <p className="text-sm text-slate-500 dark:text-slate-400">{text}</p>
       {onAction && (
         <button
           type="button"
           onClick={onAction}
-          className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-emerald-700 hover:text-emerald-800 focus:outline-none focus-visible:underline"
+          className="mt-3 rounded-md border border-slate-300 bg-white px-3.5 py-1.5 text-sm font-medium text-slate-700 transition hover:border-teal-400 hover:text-teal-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:border-white/20 dark:bg-transparent dark:text-slate-300 dark:hover:border-emerald-500/50 dark:hover:text-emerald-400"
         >
-          <Plus size={14} /> {actionLabel}
+          + {actionLabel}
         </button>
       )}
     </div>
   );
 }
 
-function IconAction({ onClick, label, danger = false, children }) {
+function TextAction({ onClick, danger = false, children }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={label}
-      className={`rounded-md p-1.5 text-[#8A9BB0] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 ${
-        danger ? "hover:bg-rose-50 hover:text-rose-500" : "hover:bg-emerald-50 hover:text-emerald-600"
+      className={`rounded-md px-2 py-1 text-xs text-slate-500 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:text-slate-400 ${
+        danger ? "hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/20 dark:hover:text-rose-400" : "hover:bg-slate-100 hover:text-teal-700 dark:hover:bg-white/10 dark:hover:text-emerald-400"
       }`}
     >
       {children}
@@ -893,34 +924,25 @@ function IconAction({ onClick, label, danger = false, children }) {
   );
 }
 
-function TimelineCard({ icon, title, items = [], emptyText, onAdd, onEdit, onDelete, render }) {
+function TimelineCard({ title, items = [], emptyText, onAdd, onEdit, onDelete, render }) {
   const [showAll, setShowAll] = useState(false);
   const visible = showAll ? items : items.slice(0, 3);
 
   return (
-    <Panel
-      icon={icon}
-      title={title}
-      count={items.length}
-      action={<AddButton onClick={onAdd}>Ajouter</AddButton>}
-    >
+    <Panel title={title} count={items.length} action={<AddButton onClick={onAdd}>Ajouter</AddButton>}>
       {items.length === 0 ? (
-        <EmptyBlock icon={icon} text={emptyText} actionLabel="Ajouter" onAction={onAdd} compact />
+        <EmptyBlock text={emptyText} actionLabel="Ajouter" onAction={onAdd} compact />
       ) : (
         <>
-          <ol className="ml-1.5 space-y-4 border-l border-[#E4EBF1] pl-5">
+          <ol className="ml-1 space-y-5 border-l border-slate-200 pl-6 dark:border-white/10">
             {visible.map((item) => (
               <li key={item.id} className="relative">
-                <span className="absolute -left-[26px] top-1.5 h-2.5 w-2.5 rounded-full bg-[#16B8B1] ring-4 ring-white" />
+                <span className="absolute -left-[29px] top-1.5 h-2 w-2 rounded-full bg-teal-600 ring-4 ring-white dark:bg-emerald-500 dark:ring-[#112A3A]" />
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">{render(item)}</div>
-                  <div className="flex shrink-0 gap-0.5">
-                    <IconAction label="Modifier" onClick={() => onEdit(item)}>
-                      <Edit size={13} />
-                    </IconAction>
-                    <IconAction label="Supprimer" danger onClick={() => onDelete(item.id)}>
-                      <Trash2 size={13} />
-                    </IconAction>
+                  <div className="flex shrink-0 flex-col items-end sm:flex-row">
+                    <TextAction onClick={() => onEdit(item)}>Modifier</TextAction>
+                    <TextAction danger onClick={() => onDelete(item.id)}>Supprimer</TextAction>
                   </div>
                 </div>
               </li>
@@ -930,9 +952,9 @@ function TimelineCard({ icon, title, items = [], emptyText, onAdd, onEdit, onDel
             <button
               type="button"
               onClick={() => setShowAll((v) => !v)}
-              className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:text-emerald-800 focus:outline-none focus-visible:underline"
+              className="mt-4 text-xs font-medium text-teal-700 underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:text-emerald-400"
             >
-              {showAll ? "Voir moins" : `Voir tout (${items.length})`} <ChevronRight size={12} className={showAll ? "-rotate-90" : "rotate-90"} />
+              {showAll ? "Voir moins" : `Voir tout (${items.length})`}
             </button>
           )}
         </>
@@ -946,14 +968,9 @@ function ProjectsPanel({ projects, onAdd, onEdit, onDelete }) {
   const visible = showAll ? projects : projects.slice(0, 4);
 
   return (
-    <Panel
-      icon={FolderKanban}
-      title="Projets & réalisations"
-      count={projects.length}
-      action={<AddButton onClick={onAdd}>Ajouter</AddButton>}
-    >
+    <Panel title="Projets & réalisations" count={projects.length} action={<AddButton onClick={onAdd}>Ajouter</AddButton>}>
       {projects.length === 0 ? (
-        <EmptyBlock icon={FolderKanban} text="Aucun projet pour l'instant." actionLabel="Ajouter un projet" onAction={onAdd} />
+        <EmptyBlock text="Aucun projet pour l'instant." actionLabel="Ajouter un projet" onAction={onAdd} />
       ) : (
         <>
           <ul className="grid gap-4 sm:grid-cols-2">
@@ -965,10 +982,9 @@ function ProjectsPanel({ projects, onAdd, onEdit, onDelete }) {
             <button
               type="button"
               onClick={() => setShowAll((v) => !v)}
-              className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:text-emerald-800 focus:outline-none focus-visible:underline"
+              className="mt-5 text-xs font-medium text-teal-700 underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:text-emerald-400"
             >
               {showAll ? "Voir moins" : `Voir tout (${projects.length})`}
-              <ChevronRight size={12} className={showAll ? "-rotate-90" : "rotate-90"} />
             </button>
           )}
         </>
@@ -977,13 +993,11 @@ function ProjectsPanel({ projects, onAdd, onEdit, onDelete }) {
   );
 }
 
-/* ---------- Carte projet (design moderne) ---------- */
+/* ---------- Carte projet ---------- */
 function ProjectCard({ project: p, onEdit, onDelete }) {
   const type = PROJECT_TYPES[p.project_type || "professional"] || PROJECT_TYPES.professional;
-  const TypeIcon = type.icon;
   const techs = Array.isArray(p.technologies) ? p.technologies : [];
 
-  // Récupère l'image (URL complète ou chemin relatif)
   const image =
     p.image_url ||
     p.thumbnail_url ||
@@ -991,9 +1005,8 @@ function ProjectCard({ project: p, onEdit, onDelete }) {
     (p.image_path ? `${STORAGE_URL}/${p.image_path}` : null);
 
   return (
-    <li className="group relative flex flex-col overflow-hidden rounded-2xl border border-[#E4EBF1] bg-white transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-[0_10px_30px_rgba(15,30,69,0.08)]">
-      {/* ===== Visuel / couverture ===== */}
-      <div className="relative h-36 w-full overflow-hidden">
+    <li className="group relative flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white transition duration-200 hover:border-teal-300 hover:shadow-[0_8px_24px_rgba(15,60,60,0.08)] dark:border-white/10 dark:bg-[#0B1F33] dark:hover:border-[#13B89A]/40 dark:hover:shadow-none">
+      <div className="relative h-36 w-full overflow-hidden border-b border-slate-100 dark:border-white/5">
         {image ? (
           <img
             src={image}
@@ -1002,105 +1015,64 @@ function ProjectCard({ project: p, onEdit, onDelete }) {
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
-          // Fallback : dégradé + icône du type
-          <div
-            className={`flex h-full w-full items-center justify-center ${
-              p.project_type === "academic"
-                ? "bg-gradient-to-br from-emerald-100 via-emerald-50 to-teal-100"
-                : p.project_type === "personal"
-                ? "bg-gradient-to-br from-blue-100 via-sky-50 to-indigo-100"
-                : "bg-gradient-to-br from-slate-100 via-slate-50 to-slate-200"
-            }`}
-          >
-            <TypeIcon
-              size={44}
-              strokeWidth={1.4}
-              className={
-                p.project_type === "academic"
-                  ? "text-emerald-500/70"
-                  : p.project_type === "personal"
-                  ? "text-blue-500/70"
-                  : "text-slate-400/80"
-              }
-            />
+          <div className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${type.grad}`}>
+            <span className={`select-none text-6xl font-semibold ${type.ink}`}>
+              {(p.title || "?").charAt(0).toUpperCase()}
+            </span>
           </div>
         )}
 
-        {/* Badge type en overlay */}
-        <span
-          className={`absolute left-3 top-3 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider shadow-sm ${type.cls}`}
-        >
-          <TypeIcon size={11} />
+        <span className={`absolute left-3 top-3 rounded-md border px-2 py-0.5 text-[10px] font-medium ${type.cls}`}>
           {type.label}
         </span>
 
-        {/* Actions (edit/delete) en overlay, visibles au survol */}
-        <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition group-hover:opacity-100">
+        <div className="absolute right-3 top-3 flex gap-1.5 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
           <button
             type="button"
             onClick={() => onEdit(p)}
-            aria-label="Modifier le projet"
-            className="rounded-lg bg-white/95 p-1.5 text-[#334B63] shadow-sm backdrop-blur transition hover:bg-white hover:text-emerald-600"
+            className="rounded-md bg-white/95 px-2.5 py-1 text-[11px] font-medium text-slate-700 shadow-sm backdrop-blur transition hover:text-teal-700 dark:bg-black/80 dark:text-slate-200 dark:hover:text-emerald-400"
           >
-            <Edit size={13} />
+            Modifier
           </button>
           <button
             type="button"
             onClick={() => onDelete(p.id)}
-            aria-label="Supprimer le projet"
-            className="rounded-lg bg-white/95 p-1.5 text-[#334B63] shadow-sm backdrop-blur transition hover:bg-white hover:text-rose-600"
+            className="rounded-md bg-white/95 px-2.5 py-1 text-[11px] font-medium text-slate-700 shadow-sm backdrop-blur transition hover:text-rose-600 dark:bg-black/80 dark:text-slate-200 dark:hover:text-rose-400"
           >
-            <Trash2 size={13} />
+            Supprimer
           </button>
         </div>
       </div>
 
-      {/* ===== Contenu ===== */}
       <div className="flex flex-1 flex-col p-4">
-        <h3 className="line-clamp-1 text-sm font-bold text-[#0B1F33]">{p.title}</h3>
+        <h3 className="line-clamp-1 text-sm font-semibold text-slate-900 dark:text-white">{p.title}</h3>
 
-        {p.description && (
-          <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-[#64788C]">
-            {p.description}
-          </p>
-        )}
+        {p.description && <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-slate-500 dark:text-slate-400">{p.description}</p>}
 
         {techs.length > 0 && (
-          <div className="mt-2.5 flex flex-wrap gap-1">
+          <div className="mt-3 flex flex-wrap gap-1.5">
             {techs.slice(0, 4).map((t, i) => (
-              <span
-                key={i}
-                className="rounded-md bg-[#F1F6FA] px-2 py-0.5 text-[10px] font-medium text-[#334B63]"
-              >
+              <span key={i} className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-600 dark:bg-white/5 dark:text-slate-300">
                 {t}
               </span>
             ))}
             {techs.length > 4 && (
-              <span className="rounded-md bg-[#F1F6FA] px-2 py-0.5 text-[10px] font-medium text-[#8A9BB0]">
-                +{techs.length - 4}
-              </span>
+              <span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] text-slate-400 dark:bg-white/5 dark:text-slate-500">+{techs.length - 4}</span>
             )}
           </div>
         )}
 
-        {/* Lien élégant en pied de carte */}
         {p.project_url ? (
           <a
             href={p.project_url}
             target="_blank"
             rel="noreferrer"
-            className="group/link mt-3 inline-flex items-center gap-1.5 self-start rounded-lg border border-[#E4EBF1] bg-[#F9FBFC] px-3 py-1.5 text-[11px] font-semibold text-[#334B63] transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
+            className="mt-4 inline-flex items-center gap-1.5 self-start text-xs font-medium text-teal-700 underline-offset-2 hover:underline dark:text-emerald-400"
           >
-            Voir le projet
-            <ExternalLink
-              size={11}
-              className="transition-transform group-hover/link:translate-x-0.5"
-            />
+            Voir le projet <span>→</span>
           </a>
         ) : (
-          <span className="mt-3 text-[11px] italic text-[#8A9BB0]">
-            Aucun lien renseigné
-          </span>
+          <span className="mt-4 text-[11px] italic text-slate-400 dark:text-slate-500">Aucun lien renseigné</span>
         )}
       </div>
     </li>
@@ -1108,21 +1080,21 @@ function ProjectCard({ project: p, onEdit, onDelete }) {
 }
 
 function ProfileSkeleton() {
-  const pulse = "animate-pulse motion-reduce:animate-none rounded-2xl bg-white";
+  const pulse = "animate-pulse motion-reduce:animate-none rounded-xl bg-white/80 dark:bg-white/5";
   return (
     <AppShell>
-      <div className="mx-auto grid max-w-7xl gap-5 lg:grid-cols-3" role="status" aria-label="Chargement du profil">
-        <div className="space-y-5 lg:col-span-2">
+      <div className="mx-auto grid max-w-[1500px] gap-5 xl:grid-cols-[minmax(0,1fr)_340px]" role="status" aria-label="Chargement du profil">
+        <div className="space-y-5">
           <div className={`h-80 ${pulse}`} />
           <div className={`h-32 ${pulse}`} />
           <div className="grid gap-5 md:grid-cols-2">
-            <div className={`h-48 ${pulse}`} />
-            <div className={`h-48 ${pulse}`} />
+            <div className={`h-52 ${pulse}`} />
+            <div className={`h-52 ${pulse}`} />
           </div>
         </div>
         <div className="space-y-5">
-          <div className={`h-40 ${pulse}`} />
-          <div className={`h-56 ${pulse}`} />
+          <div className={`h-44 ${pulse}`} />
+          <div className={`h-60 ${pulse}`} />
         </div>
       </div>
     </AppShell>
@@ -1151,12 +1123,13 @@ function EmptyProfileCreate({ onCreated, showToast }) {
   };
 
   return (
-    <div className="mx-auto max-w-md rounded-2xl border border-[#E4EBF1] bg-white p-6 shadow-sm">
-      <h1 className="text-lg font-bold text-[#0B1F33]">Créons ton profil</h1>
-      <p className="mt-1 text-sm text-[#64788C]">Un titre professionnel suffit pour commencer.</p>
-      <form onSubmit={submit} className="mt-5 space-y-3">
+    <div className={`mx-auto max-w-md p-7 ${CARD}`}>
+      <p className="text-xs font-medium text-teal-700 dark:text-emerald-400">Bienvenue</p>
+      <h1 className="mt-1 text-xl font-semibold tracking-tight text-slate-900 dark:text-white">Créons votre profil</h1>
+      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Un titre professionnel suffit pour commencer.</p>
+      <form onSubmit={submit} className="mt-6 space-y-3">
         <select
-          className={inputCls}
+          className={FIELD_CLS}
           value={form.profile_type}
           onChange={(e) => setForm({ ...form, profile_type: e.target.value })}
         >
@@ -1166,14 +1139,11 @@ function EmptyProfileCreate({ onCreated, showToast }) {
         <input
           required
           placeholder="Titre professionnel"
-          className={inputCls}
+          className={FIELD_CLS}
           value={form.headline}
           onChange={(e) => setForm({ ...form, headline: e.target.value })}
         />
-        <button
-          disabled={saving}
-          className="w-full rounded-lg bg-[#16B8B1] py-2.5 text-sm font-semibold text-[#07172A] transition hover:bg-[#0F9691] hover:text-white disabled:opacity-60"
-        >
+        <button disabled={saving} className={`${BTN_PRIMARY} w-full`}>
           {saving ? "Création..." : "Créer mon profil"}
         </button>
       </form>
@@ -1185,34 +1155,33 @@ function EmptyProfileCreate({ onCreated, showToast }) {
    MODAL ROUTER
 ============================================================ */
 
-const FIELD_CLS =
-  "w-full rounded-lg border border-[#E4EBF1] bg-[#F9FBFC] px-3 py-2 text-sm text-[#0B1F33] placeholder:text-[#8A9BB0] focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100";
-
-const LABEL_CLS = "mb-1 block text-xs font-semibold text-[#334B63]";
-
-function ModalShell({ title, onClose, children, footer }) {
+function ModalShell({ title, onClose, children }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button
         type="button"
         aria-label="Fermer"
         onClick={onClose}
-        className="absolute inset-0 bg-[#0B1F33]/40 backdrop-blur-[2px]"
+        className="absolute inset-0 bg-[#06141F]/50 backdrop-blur-sm"
       />
-      <div className="relative z-10 flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[#E4EBF1] bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b border-[#E8EEF3] px-5 py-3.5">
-          <h3 className="font-bold text-[#0B1F33]">{title}</h3>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className="relative z-10 flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-white shadow-[0_24px_60px_rgba(6,25,35,0.3)] dark:bg-[#112A3A] dark:shadow-none dark:ring-1 dark:ring-white/10"
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-6 py-4 dark:border-white/10">
+          <h3 className="text-base font-semibold tracking-tight text-slate-900 dark:text-white">{title}</h3>
           <button
             type="button"
             onClick={onClose}
             aria-label="Fermer"
-            className="rounded-lg p-1.5 text-[#8A9BB0] transition hover:bg-[#F1F6FA] hover:text-[#0B1F33]"
+            className="flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:hover:bg-white/10 dark:hover:text-white"
           >
-            <X size={16} />
+            <X size={18} />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
-        {footer && <div className="border-t border-[#E8EEF3] px-5 py-3">{footer}</div>}
+        <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
       </div>
     </div>
   );
@@ -1224,6 +1193,18 @@ function Field({ label, children }) {
       <label className={LABEL_CLS}>{label}</label>
       {children}
     </div>
+  );
+}
+
+function MapButton({ onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="rounded-md border border-slate-200 px-2.5 py-1 text-[11px] font-medium text-teal-700 transition hover:bg-teal-50 dark:border-white/10 dark:text-emerald-400 dark:hover:bg-emerald-500/10"
+    >
+      Choisir sur la carte
+    </button>
   );
 }
 
@@ -1267,7 +1248,7 @@ function ModalInfo({ profile, onSaved, onClose, flash }) {
     bio: profile?.bio || "",
     city: profile?.city || "",
     country: profile?.country || "",
-       phone: profile?.user?.phone || "", 
+    phone: profile?.user?.phone || "",
     linkedin_url: profile?.linkedin_url || "",
     portfolio_url: profile?.portfolio_url || "",
     github_url: profile?.github_url || "",
@@ -1276,11 +1257,10 @@ function ModalInfo({ profile, onSaved, onClose, flash }) {
   const [saving, setSaving] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
 
-   const submit = async (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     setSaving(true);
     try {
-      // 1. Sauvegarder le profil (sans le téléphone)
       await api.post("/profile", {
         profile_type: form.profile_type,
         visibility: form.visibility,
@@ -1294,7 +1274,6 @@ function ModalInfo({ profile, onSaved, onClose, flash }) {
         behance_url: form.behance_url,
       });
 
-      // 2. Sauvegarder le téléphone sur /account
       if (form.phone !== (profile?.user?.phone || "")) {
         await api.patch("/account", { phone: form.phone });
       }
@@ -1337,7 +1316,7 @@ function ModalInfo({ profile, onSaved, onClose, flash }) {
 
   return (
     <>
-      <form onSubmit={submit} className="space-y-3">
+      <form onSubmit={submit} className="space-y-4">
         <Field label="Titre professionnel">
           <input className={FIELD_CLS} value={form.headline} onChange={(e) => setForm({ ...form, headline: e.target.value })} />
         </Field>
@@ -1346,35 +1325,18 @@ function ModalInfo({ profile, onSaved, onClose, flash }) {
           <textarea rows={3} className={FIELD_CLS} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} />
         </Field>
 
-        {/* Localisation avec bouton carte */}
         <div>
-          <div className="mb-1 flex items-center justify-between gap-2">
-            <label className={LABEL_CLS}>Localisation</label>
-            <button
-              type="button"
-              onClick={() => setMapOpen(true)}
-              className="inline-flex items-center gap-1 rounded-lg border border-[#E4EBF1] bg-white px-2.5 py-1 text-[11px] font-semibold text-[#334B63] transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
-            >
-              <MapPinned size={12} />
-              Choisir sur la carte
-            </button>
+          <div className="mb-1.5 flex items-center justify-between gap-2">
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400">Localisation</label>
+            <MapButton onClick={() => setMapOpen(true)} />
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <input
-              className={FIELD_CLS}
-              value={form.city}
-              onChange={(e) => setForm({ ...form, city: e.target.value })}
-              placeholder="Ville"
-            />
-            <input
-              className={FIELD_CLS}
-              value={form.country}
-              onChange={(e) => setForm({ ...form, country: e.target.value })}
-              placeholder="Pays"
-            />
+            <input className={FIELD_CLS} value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="Ville" />
+            <input className={FIELD_CLS} value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} placeholder="Pays" />
           </div>
         </div>
+
         <Field label="Téléphone">
           <input
             type="tel"
@@ -1384,10 +1346,11 @@ function ModalInfo({ profile, onSaved, onClose, flash }) {
             placeholder="+261 34 12 345 67"
             autoComplete="tel"
           />
-          <p className="mt-1 text-[11px] text-[#8A9BB0]">
-            Format international recommandé. Utilisé pour recevoir les SMS d'entretien.
+          <p className="mt-1.5 text-[11px] leading-4 text-slate-400 dark:text-slate-500">
+            Format international recommandé. Utilisé uniquement pour les SMS liés aux entretiens et ne sera pas affiché publiquement.
           </p>
         </Field>
+
         <Field label="LinkedIn">
           <input className={FIELD_CLS} value={form.linkedin_url} onChange={(e) => setForm({ ...form, linkedin_url: e.target.value })} />
         </Field>
@@ -1404,7 +1367,6 @@ function ModalInfo({ profile, onSaved, onClose, flash }) {
         <ModalFooter saving={saving} onClose={onClose} />
       </form>
 
-      {/* Modal carte */}
       <MapPicker
         open={mapOpen}
         onClose={() => setMapOpen(false)}
@@ -1420,137 +1382,411 @@ function ModalInfo({ profile, onSaved, onClose, flash }) {
 
 /* ---------- Modal : compétence ---------- */
 function ModalSkill({ onSaved, onClose, flash }) {
-  const [form, setForm] = useState({ name: "", level: "intermediate", years_experience: "" });
-  const [saving, setSaving] = useState(false);
-  const [search, setSearch] = useState("");
-  const [results, setResults] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
+  const [categoryId, setCategoryId] = useState("");
+  const [subcategoryId, setSubcategoryId] = useState("");
+  const [skillSearch, setSkillSearch] = useState("");
+  const [skillResults, setSkillResults] = useState([]);
   const [selectedSkill, setSelectedSkill] = useState(null);
-  const [searching, setSearching] = useState(false);
+  const [level, setLevel] = useState("intermediate");
+  const [yearsExperience, setYearsExperience] = useState("");
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [loadingSubcategories, setLoadingSubcategories] = useState(false);
+  const [searchingSkills, setSearchingSkills] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [newSubcategoryName, setNewSubcategoryName] = useState("");
+  const [adding, setAdding] = useState("");
+  const [showAddCategory, setShowAddCategory] = useState(false);
+  const [showAddSubcategory, setShowAddSubcategory] = useState(false);
+
+  const selectedCategory = useMemo(
+    () => categories.find((item) => String(item.id) === String(categoryId)),
+    [categories, categoryId]
+  );
+  const effectiveCategoryId = subcategoryId || categoryId;
 
   useEffect(() => {
-    if (selectedSkill) return;
-    if (search.trim().length < 2) {
-      setResults([]);
+    let alive = true;
+    setLoadingCategories(true);
+    setError("");
+
+    api.get("/skill-categories", { params: { parent_id: null } })
+      .then((res) => {
+        if (!alive) return;
+        const data = asArray(res.data);
+        if (data.length > 0) {
+          setCategories(data);
+        } else {
+          throw new Error("Vide");
+        }
+      })
+      .catch((err) => {
+        if (!alive) return;
+        console.warn("Fallback des catégories activé", err);
+        setCategories([
+          { id: 1, name: "Informatique & Tech" },
+          { id: 2, name: "Finance & Gestion" },
+          { id: 3, name: "Santé" },
+          { id: 4, name: "Marketing & Communication" },
+          { id: 5, name: "Génie Civil & BTP" },
+          { id: 6, name: "Agriculture" },
+        ]);
+      })
+      .finally(() => alive && setLoadingCategories(false));
+    return () => { alive = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!categoryId) {
+      setSubcategories([]);
+      setSubcategoryId("");
+      return undefined;
+    }
+    let alive = true;
+    setLoadingSubcategories(true);
+    setSubcategories([]);
+    setSubcategoryId("");
+
+    api.get("/skill-categories", { params: { parent_id: categoryId } })
+      .then((res) => {
+        if (!alive) return;
+        const data = asArray(res.data);
+        if (data.length > 0) {
+          setSubcategories(data);
+        } else {
+          throw new Error("Vide");
+        }
+      })
+      .catch((err) => {
+        if (!alive) return;
+        console.warn("Fallback des sous-catégories activé", err);
+        const fallbacks = {
+          "1": [{ id: 101, name: "Développement Web" }, { id: 102, name: "Data & IA" }],
+          "2": [{ id: 201, name: "Comptabilité" }],
+          "3": [{ id: 301, name: "Soins infirmiers" }],
+          "4": [{ id: 401, name: "Réseaux sociaux" }],
+          "5": [{ id: 501, name: "Architecture" }],
+        };
+        setSubcategories(fallbacks[String(categoryId)] || []);
+      })
+      .finally(() => alive && setLoadingSubcategories(false));
+    return () => { alive = false; };
+  }, [categoryId]);
+
+  useEffect(() => {
+    let alive = true;
+    if (!effectiveCategoryId || skillSearch.trim().length < 2 || selectedSkill) {
+      setSkillResults([]);
+      setSearchingSkills(false);
+      return undefined;
+    }
+    const timer = setTimeout(() => {
+      setSearchingSkills(true);
+      api.get("/skills", {
+        params: { search: skillSearch.trim(), category_id: effectiveCategoryId, limit: 10 },
+      })
+        .then((res) => alive && setSkillResults(asArray(res.data)))
+        .catch(() => alive && setSkillResults([]))
+        .finally(() => alive && setSearchingSkills(false));
+    }, 250);
+    return () => { alive = false; clearTimeout(timer); };
+  }, [skillSearch, effectiveCategoryId, selectedSkill]);
+
+  const addTaxonomyNode = async (kind) => {
+    const isCategory = kind === "category";
+    const name = (isCategory ? newCategoryName : newSubcategoryName).trim();
+    if (!name) return;
+    setAdding(kind);
+    setError("");
+    try {
+      const parent_id = isCategory ? null : Number(categoryId);
+      const res = await api.post("/skill-categories", { name, parent_id });
+      const created = res.data?.data || res.data;
+      if (!created?.id) throw new Error("L’API n’a pas renvoyé l’identifiant de la catégorie créée.");
+      if (isCategory) {
+        setCategories((current) => [...current, created].sort((a, b) => a.name.localeCompare(b.name, "fr")));
+        setCategoryId(String(created.id));
+        setNewCategoryName("");
+        setShowAddCategory(false);
+      } else {
+        setSubcategories((current) => [...current, created].sort((a, b) => a.name.localeCompare(b.name, "fr")));
+        setSubcategoryId(String(created.id));
+        setNewSubcategoryName("");
+        setShowAddSubcategory(false);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || "Création impossible.");
+    } finally {
+      setAdding("");
+    }
+  };
+
+  const chooseCategory = (value) => {
+    setCategoryId(value);
+    setSelectedSkill(null);
+    setSkillSearch("");
+    setSkillResults([]);
+    setError("");
+  };
+
+  const chooseSubcategory = (value) => {
+    setSubcategoryId(value);
+    setSelectedSkill(null);
+    setSkillSearch("");
+    setSkillResults([]);
+    setError("");
+  };
+
+  const submit = async (event) => {
+    event.preventDefault();
+    if (!effectiveCategoryId) {
+      setError("Choisissez au minimum un domaine ou une catégorie avant d’ajouter une compétence.");
       return;
     }
-    const timer = setTimeout(async () => {
-      setSearching(true);
-      try {
-        const res = await api.get("/skills", { params: { search: search.trim(), limit: 8 } });
-        setResults(Array.isArray(res.data) ? res.data : []);
-      } catch {
-        setResults([]);
-      } finally {
-        setSearching(false);
-      }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [search, selectedSkill]);
-
-  const submit = async (e) => {
-    e.preventDefault();
+    const skillName = (selectedSkill?.name || skillSearch).trim();
+    if (!skillName) {
+      setError("Saisissez ou sélectionnez une compétence.");
+      return;
+    }
     setSaving(true);
+    setError("");
     try {
       let skillId = selectedSkill?.id;
       if (!skillId) {
-        const createRes = await api.post("/skills", { name: form.name.trim() });
-        skillId = createRes.data?.id;
-        if (!skillId) throw new Error("Impossible de créer la compétence.");
+      const createdRes = await api.post("/skills", {
+  name: skillName,
+  skill_category_id: Number(effectiveCategoryId),
+});
+        const created = createdRes.data?.data || createdRes.data;
+        skillId = created?.id;
+        if (!skillId) throw new Error("La compétence a été créée, mais l’API n’a pas renvoyé son identifiant.");
       }
       await api.post("/skills/attach", {
         skill_id: skillId,
-        level: form.level,
-        years_experience: form.years_experience === "" ? null : Number(form.years_experience),
+        level,
+        years_experience: yearsExperience === "" ? null : Number(yearsExperience),
       });
-      flash("Compétence ajoutée", "success");
+      flash("Compétence ajoutée à votre profil.", "success");
       onSaved();
     } catch (err) {
-      console.error("Erreur ajout compétence :", err.response?.data || err);
-      flash(
-        err.response?.data?.message ||
-          err.response?.data?.errors?.skill_id?.[0] ||
-          "Erreur lors de l'ajout",
-        "error"
-      );
+      const message = err.response?.data?.message || err.response?.data?.errors?.skill_id?.[0] || err.message || "Erreur lors de l’ajout de la compétence.";
+      setError(message);
+      flash(message, "error");
     } finally {
       setSaving(false);
     }
   };
 
-  return (
-    <form onSubmit={submit} className="space-y-3">
-      <Field label="Nom de la compétence">
-        <input
-          required
-          autoComplete="off"
-          className={FIELD_CLS}
-          value={form.name}
-          placeholder="Entrez une compétence"
-          onChange={(e) => {
-            setForm({ ...form, name: e.target.value });
-            setSelectedSkill(null);
-            setSearch(e.target.value);
-          }}
-        />
-      </Field>
+  const squareBtn =
+    "flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-600 transition hover:border-teal-500 hover:text-teal-700 dark:border-white/10 dark:bg-[#0B1F33] dark:text-slate-300 dark:hover:border-emerald-500/50 dark:hover:text-emerald-400";
+  const inlineAdd =
+    "flex gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2 dark:border-white/10 dark:bg-white/5";
+  const inlineAddBtn =
+    "rounded-lg bg-[#0B2A35] px-3.5 text-xs font-medium text-white transition hover:bg-[#0E3B3A] disabled:opacity-50 dark:bg-[#13B89A] dark:hover:bg-[#18C6A6]";
 
-      {!selectedSkill && search.trim().length >= 2 && (
-        <div className="rounded-lg border border-[#E4EBF1] bg-white">
-          {searching ? (
-            <p className="px-3 py-2 text-xs text-[#8A9BB0]">Recherche...</p>
-          ) : results.length === 0 ? (
-            <p className="px-3 py-2 text-xs text-[#8A9BB0]">Aucune correspondance — cette compétence sera créée.</p>
-          ) : (
-            <ul className="max-h-44 overflow-y-auto">
-              {results.map((s) => (
-                <li key={s.id}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedSkill(s);
-                      setForm({ ...form, name: s.name });
-                      setResults([]);
-                    }}
-                    className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm transition hover:bg-emerald-50"
-                  >
-                    <span className="truncate text-[#0B1F33]">{s.name}</span>
-                    {s.category?.name && (
-                      <span className="shrink-0 text-[11px] text-[#8A9BB0]">{s.category.name}</span>
-                    )}
-                  </button>
-                </li>
+  return (
+    <form onSubmit={submit} className="space-y-5">
+      <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-4 dark:border-white/10 dark:bg-white/5">
+        <p className="text-sm font-medium text-slate-800 dark:text-white">Référentiel ouvert à tous les métiers</p>
+        <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
+          Choisissez une catégorie, puis une sous-catégorie. Si elle n’existe pas, ajoutez-la : cette structure fonctionne pour tout domaine professionnel.
+        </p>
+      </div>
+
+      {error && (
+        <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3.5 py-3 text-sm text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-400">
+          {error}
+        </div>
+      )}
+
+      <div className="space-y-2">
+        <label htmlFor="skill-category" className={LABEL_CLS}>
+          Domaine / catégorie <span className="text-rose-600 dark:text-rose-400">*</span>
+        </label>
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <FolderTree size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+            <select
+              id="skill-category"
+              required
+              value={categoryId}
+              onChange={(e) => chooseCategory(e.target.value)}
+              className={`${SKILL_FIELD} appearance-none pl-9 pr-9`}
+            >
+              <option value="">{loadingCategories ? "Chargement des domaines…" : "Sélectionner un domaine"}</option>
+              {categories.map((category, index) => (
+                <option key={`${category.id}-${index}`} value={category.id}>{category.name}</option>
               ))}
-            </ul>
+            </select>
+            <ChevronDown size={15} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+          </div>
+          <button type="button" onClick={() => setShowAddCategory((v) => !v)} title="Ajouter une catégorie" className={squareBtn}>
+            <Plus size={17} />
+          </button>
+        </div>
+        {showAddCategory && (
+          <div className={inlineAdd}>
+            <input
+              autoFocus
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTaxonomyNode("category"))}
+              placeholder="Ex. Agriculture, Finance, BTP…"
+              className={SKILL_FIELD}
+            />
+            <button type="button" disabled={!newCategoryName.trim() || adding === "category"} onClick={() => addTaxonomyNode("category")} className={inlineAddBtn}>
+              {adding === "category" ? "…" : "Ajouter"}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {categoryId && (
+        <div className="space-y-2">
+          <label htmlFor="skill-subcategory" className={LABEL_CLS}>
+            Sous-catégorie <span className="text-slate-400 dark:text-slate-500">(facultatif)</span>
+          </label>
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <select
+                id="skill-subcategory"
+                value={subcategoryId}
+                onChange={(e) => chooseSubcategory(e.target.value)}
+                className={`${SKILL_FIELD} appearance-none pr-9`}
+              >
+                <option value="">
+                  {loadingSubcategories
+                    ? "Chargement…"
+                    : subcategories.length
+                      ? "Tout le domaine / choisir une sous-catégorie"
+                      : "Aucune sous-catégorie — vous pouvez en créer une"}
+                </option>
+                {subcategories.map((subcategory, index) => (
+                  <option key={`${subcategory.id}-${index}`} value={subcategory.id}>{subcategory.name}</option>
+                ))}
+              </select>
+              <ChevronDown size={15} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+            </div>
+            <button type="button" onClick={() => setShowAddSubcategory((v) => !v)} title="Ajouter une sous-catégorie" className={squareBtn}>
+              <Plus size={17} />
+            </button>
+          </div>
+          {showAddSubcategory && (
+            <div className={inlineAdd}>
+              <input
+                autoFocus
+                value={newSubcategoryName}
+                onChange={(e) => setNewSubcategoryName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTaxonomyNode("subcategory"))}
+                placeholder={`Nouvelle sous-catégorie de ${selectedCategory?.name || "ce domaine"}`}
+                className={SKILL_FIELD}
+              />
+              <button type="button" disabled={!newSubcategoryName.trim() || adding === "subcategory"} onClick={() => addTaxonomyNode("subcategory")} className={inlineAddBtn}>
+                {adding === "subcategory" ? "…" : "Ajouter"}
+              </button>
+            </div>
           )}
         </div>
       )}
 
-      {selectedSkill && (
-        <p className="flex items-center gap-1.5 text-xs text-emerald-700">
-          <Check size={13} />
-          Compétence existante sélectionnée
-        </p>
+      {effectiveCategoryId && (
+        <div className="space-y-2">
+          <label htmlFor="skill-search" className={LABEL_CLS}>
+            Compétence <span className="text-rose-600 dark:text-rose-400">*</span>
+          </label>
+          <div className="relative">
+            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+            <input
+              id="skill-search"
+              required
+              autoComplete="off"
+              value={selectedSkill?.name || skillSearch}
+              onChange={(e) => { setSelectedSkill(null); setSkillSearch(e.target.value); }}
+              placeholder="Rechercher ou saisir une compétence"
+              className={`${SKILL_FIELD} pl-9 ${selectedSkill ? "border-teal-500 bg-teal-50/40 dark:border-emerald-500/50 dark:bg-emerald-500/10" : ""}`}
+            />
+            {selectedSkill && (
+              <button
+                type="button"
+                onClick={() => { setSelectedSkill(null); setSkillSearch(""); }}
+                aria-label="Désélectionner la compétence"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-white"
+              >
+                <X size={15} />
+              </button>
+            )}
+          </div>
+
+          {skillSearch.trim().length >= 2 && !selectedSkill && (
+            <div className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-white/10 dark:bg-[#112A3A]">
+              {searchingSkills ? (
+                <p className="px-3.5 py-2.5 text-xs text-slate-500 dark:text-slate-400">Recherche en cours…</p>
+              ) : skillResults.length > 0 ? (
+                <ul className="max-h-44 divide-y divide-slate-100 overflow-y-auto dark:divide-white/5">
+                  {skillResults.map((s) => (
+                    <li key={s.id}>
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedSkill(s); setSkillSearch(s.name); }}
+                        className="w-full px-3.5 py-2.5 text-left text-sm text-slate-700 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/5"
+                      >
+                        {s.name}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="px-3.5 py-2.5 text-xs text-slate-500 dark:text-slate-400">
+                  Aucun résultat : « {skillSearch.trim()} » sera créée comme nouvelle compétence.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
       )}
 
-      <Field label="Niveau">
-        <select className={FIELD_CLS} value={form.level} onChange={(e) => setForm({ ...form, level: e.target.value })}>
-          <option value="beginner">Débutant</option>
-          <option value="intermediate">Intermédiaire</option>
-          <option value="advanced">Avancé</option>
-          <option value="expert">Expert</option>
-        </select>
-      </Field>
+      {effectiveCategoryId && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="skill-level" className={LABEL_CLS}>Niveau</label>
+            <select id="skill-level" value={level} onChange={(e) => setLevel(e.target.value)} className={SKILL_FIELD}>
+              {LEVELS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="skill-years" className={LABEL_CLS}>Années d’expérience</label>
+            <input
+              id="skill-years"
+              type="number"
+              min="0"
+              max="60"
+              step="1"
+              value={yearsExperience}
+              onChange={(e) => setYearsExperience(e.target.value)}
+              placeholder="Ex. 3"
+              className={SKILL_FIELD}
+            />
+          </div>
+        </div>
+      )}
 
-      <Field label="Années d'expérience">
-        <input type="number" min="0" max="60" className={FIELD_CLS} value={form.years_experience} onChange={(e) => setForm({ ...form, years_experience: e.target.value })} />
-      </Field>
-
-      <ModalFooter saving={saving} onClose={onClose} />
+      <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end dark:border-white/10">
+        <button type="button" onClick={onClose} className={BTN_SECONDARY}>Annuler</button>
+        <button
+          type="submit"
+          disabled={saving || !effectiveCategoryId || !(selectedSkill?.name || skillSearch.trim())}
+          className={BTN_PRIMARY}
+        >
+          {saving ? "Enregistrement…" : <><Check size={15} />Ajouter à mon profil</>}
+        </button>
+      </div>
     </form>
   );
 }
 
-/* ---------- Modal : expérience ---------- */
 /* ---------- Modal : expérience ---------- */
 function ModalExperience({ item, onSaved, onClose, flash }) {
   const [form, setForm] = useState({
@@ -1563,7 +1799,7 @@ function ModalExperience({ item, onSaved, onClose, flash }) {
     description: item?.description || "",
   });
   const [saving, setSaving] = useState(false);
-  const [mapOpen, setMapOpen] = useState(false);   // ✅ AJOUT
+  const [mapOpen, setMapOpen] = useState(false);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -1582,7 +1818,6 @@ function ModalExperience({ item, onSaved, onClose, flash }) {
     }
   };
 
-  // Récupère juste la ville depuis le MapPicker (le pays n'est pas utilisé ici)
   const handleCitySelect = ({ city }) => {
     if (!city) return;
     setForm((prev) => ({ ...prev, location: city }));
@@ -1590,7 +1825,7 @@ function ModalExperience({ item, onSaved, onClose, flash }) {
 
   return (
     <>
-      <form onSubmit={submit} className="space-y-3">
+      <form onSubmit={submit} className="space-y-4">
         <Field label="Poste">
           <input required className={FIELD_CLS} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
         </Field>
@@ -1599,20 +1834,11 @@ function ModalExperience({ item, onSaved, onClose, flash }) {
           <input required className={FIELD_CLS} value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} />
         </Field>
 
-        {/* ✅ Lieu avec bouton "Choisir sur la carte" */}
         <div>
-          <div className="mb-1 flex items-center justify-between gap-2">
-            <label className={LABEL_CLS}>Lieu</label>
-            <button
-              type="button"
-              onClick={() => setMapOpen(true)}
-              className="inline-flex items-center gap-1 rounded-lg border border-[#E4EBF1] bg-white px-2.5 py-1 text-[11px] font-semibold text-[#334B63] transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
-            >
-              <MapPinned size={12} />
-              Choisir sur la carte
-            </button>
+          <div className="mb-1.5 flex items-center justify-between gap-2">
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400">Lieu</label>
+            <MapButton onClick={() => setMapOpen(true)} />
           </div>
-
           <input
             className={FIELD_CLS}
             value={form.location}
@@ -1626,13 +1852,14 @@ function ModalExperience({ item, onSaved, onClose, flash }) {
             <input type="date" className={FIELD_CLS} value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
           </Field>
           <Field label="Fin">
-            <input type="date" disabled={form.is_current} className={FIELD_CLS} value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
+            <input type="date" disabled={form.is_current} className={`${FIELD_CLS} disabled:bg-slate-50 disabled:opacity-60 dark:disabled:bg-white/5`} value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
           </Field>
         </div>
 
-        <label className="flex items-center gap-2 text-sm text-[#334B63]">
+        <label className="flex cursor-pointer items-center gap-2.5 text-sm text-slate-700 dark:text-slate-300">
           <input
             type="checkbox"
+            className="h-4 w-4 rounded border-slate-300 accent-teal-600 dark:border-white/20 dark:accent-emerald-500"
             checked={form.is_current}
             onChange={(e) => setForm({ ...form, is_current: e.target.checked, end_date: e.target.checked ? "" : form.end_date })}
           />
@@ -1646,16 +1873,11 @@ function ModalExperience({ item, onSaved, onClose, flash }) {
         <ModalFooter saving={saving} onClose={onClose} />
       </form>
 
-      {/* ✅ Modal carte */}
-      <MapPicker
-        open={mapOpen}
-        onClose={() => setMapOpen(false)}
-        initialCity={form.location}
-        onSelect={handleCitySelect}
-      />
+      <MapPicker open={mapOpen} onClose={() => setMapOpen(false)} initialCity={form.location} onSelect={handleCitySelect} />
     </>
   );
 }
+
 /* ---------- Modal : formation ---------- */
 function ModalEducation({ item, onSaved, onClose, flash }) {
   const [form, setForm] = useState({
@@ -1698,7 +1920,7 @@ function ModalEducation({ item, onSaved, onClose, flash }) {
   };
 
   return (
-    <form onSubmit={submit} className="space-y-3">
+    <form onSubmit={submit} className="space-y-4">
       <Field label="Diplôme">
         <input required className={FIELD_CLS} value={form.degree} onChange={(e) => setForm({ ...form, degree: e.target.value })} />
       </Field>
@@ -1710,57 +1932,33 @@ function ModalEducation({ item, onSaved, onClose, flash }) {
       </Field>
       <Field label="Niveau d'études">
         <div className="flex flex-wrap gap-1.5">
-          {[
-            { v: "L1", label: "L1" },
-            { v: "L2", label: "L2" },
-            { v: "L3", label: "L3" },
-            { v: "M1", label: "M1" },
-            { v: "M2", label: "M2" },
-            { v: "Licence", label: "Licence" },
-            { v: "Master", label: "Master" },
-            { v: "BTS", label: "BTS" },
-            { v: "DUT", label: "DUT" },
-            { v: "Doctorat", label: "Doctorat" },
-            { v: "Autre", label: "Autre" },
-          ].map(({ v, label }) => {
+          {["L1", "L2", "L3", "M1", "M2", "Licence", "Master", "BTS", "DUT", "Doctorat", "Autre"].map((v) => {
             const active = form.study_level === v;
             return (
               <button
                 key={v}
                 type="button"
-                onClick={() => {
-                  if (v === "Autre") {
-                    setForm({ ...form, study_level: active ? "" : "Autre", custom_study_level: "" });
-                  } else {
-                    setForm({ ...form, study_level: active ? "" : v, custom_study_level: "" });
-                  }
-                }}
+                onClick={() => setForm({ ...form, study_level: active ? "" : v, custom_study_level: "" })}
                 aria-pressed={active}
-                className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 ${
-                  active
-                    ? "border-[#16B8B1] bg-[#16B8B1] text-white shadow-sm"
-                    : "border-[#E4EBF1] bg-white text-[#334B63] hover:border-emerald-300 hover:bg-emerald-50"
-                }`}
+                className={`rounded-md border px-3 py-1.5 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ${active ? PILL_ON : PILL_OFF}`}
               >
-                {label}
+                {v}
               </button>
             );
           })}
         </div>
 
         {form.study_level === "Autre" && (
-          <div className="mt-2">
+          <div className="mt-2.5">
             <input
               type="text"
               autoFocus
-              placeholder="Précise ton niveau (ex: C2, Bac+4, Certificat pro...)"
+              placeholder="Précisez votre niveau (ex: C2, Bac+4, Certificat pro...)"
               className={FIELD_CLS}
               value={form.custom_study_level || ""}
               onChange={(e) => setForm({ ...form, custom_study_level: e.target.value })}
             />
-            <p className="mt-1 text-[11px] text-[#8A9BB0]">
-              Ce niveau personnalisé sera utilisé dans ton profil.
-            </p>
+            <p className="mt-1.5 text-[11px] text-slate-400 dark:text-slate-500">Ce niveau personnalisé sera utilisé dans votre profil.</p>
           </div>
         )}
       </Field>
@@ -1769,11 +1967,16 @@ function ModalEducation({ item, onSaved, onClose, flash }) {
           <input type="date" className={FIELD_CLS} value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
         </Field>
         <Field label="Fin">
-          <input type="date" disabled={form.is_current} className={FIELD_CLS} value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
+          <input type="date" disabled={form.is_current} className={`${FIELD_CLS} disabled:bg-slate-50 disabled:opacity-60 dark:disabled:bg-white/5`} value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
         </Field>
       </div>
-      <label className="flex items-center gap-2 text-sm text-[#334B63]">
-        <input type="checkbox" checked={form.is_current} onChange={(e) => setForm({ ...form, is_current: e.target.checked, end_date: e.target.checked ? "" : form.end_date })} />
+      <label className="flex cursor-pointer items-center gap-2.5 text-sm text-slate-700 dark:text-slate-300">
+        <input
+          type="checkbox"
+          className="h-4 w-4 rounded border-slate-300 accent-teal-600 dark:border-white/20 dark:accent-emerald-500"
+          checked={form.is_current}
+          onChange={(e) => setForm({ ...form, is_current: e.target.checked, end_date: e.target.checked ? "" : form.end_date })}
+        />
         En cours
       </label>
       <ModalFooter saving={saving} onClose={onClose} />
@@ -1812,7 +2015,7 @@ function ModalProject({ item, onSaved, onClose, flash }) {
   };
 
   return (
-    <form onSubmit={submit} className="space-y-3">
+    <form onSubmit={submit} className="space-y-4">
       <Field label="Titre">
         <input required className={FIELD_CLS} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
       </Field>
@@ -1864,7 +2067,7 @@ function ModalCertification({ item, onSaved, onClose, flash }) {
   };
 
   return (
-    <form onSubmit={submit} className="space-y-3">
+    <form onSubmit={submit} className="space-y-4">
       <Field label="Nom">
         <input required className={FIELD_CLS} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
       </Field>
@@ -1911,7 +2114,7 @@ function ModalLanguage({ item, onSaved, onClose, flash }) {
   };
 
   return (
-    <form onSubmit={submit} className="space-y-3">
+    <form onSubmit={submit} className="space-y-4">
       <Field label="Langue">
         <input required className={FIELD_CLS} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
       </Field>
@@ -1980,22 +2183,19 @@ function ModalAvailability({ item, onSaved, onClose, flash }) {
 
   const days =
     form.start_at && form.end_at
-      ? Math.max(
-          0,
-          Math.round((new Date(form.end_at) - new Date(form.start_at)) / (1000 * 60 * 60 * 24))
-        ) + 1
+      ? Math.max(0, Math.round((new Date(form.end_at) - new Date(form.start_at)) / (1000 * 60 * 60 * 24))) + 1
       : null;
 
   return (
-    <form onSubmit={submit} className="space-y-5">
+    <form onSubmit={submit} className="space-y-6">
       <section>
-        <Label icon={CheckCircle2}>Statut de disponibilité</Label>
-        <div className="mt-2 flex flex-wrap gap-2">
+        <Label>Statut de disponibilité</Label>
+        <div className="mt-2.5 flex flex-wrap gap-2">
           {[
-            { v: "available", label: "Disponible", dot: "bg-emerald-500", ring: "ring-emerald-200", bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-300" },
-            { v: "partially_available", label: "Partiel", dot: "bg-amber-500", ring: "ring-amber-200", bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-300" },
-            { v: "unavailable", label: "Indisponible", dot: "bg-rose-500", ring: "ring-rose-200", bg: "bg-rose-50", text: "text-rose-700", border: "border-rose-300" },
-            { v: "on_mission", label: "En mission", dot: "bg-blue-500", ring: "ring-blue-200", bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-300" },
+            { v: "available", label: "Disponible", dot: "bg-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-500/10", text: "text-emerald-700 dark:text-emerald-400", border: "border-emerald-400 dark:border-emerald-500/30" },
+            { v: "partially_available", label: "Partiel", dot: "bg-amber-500", bg: "bg-amber-50 dark:bg-amber-500/10", text: "text-amber-700 dark:text-amber-400", border: "border-amber-400 dark:border-amber-500/30" },
+            { v: "unavailable", label: "Indisponible", dot: "bg-rose-500", bg: "bg-rose-50 dark:bg-rose-500/10", text: "text-rose-700 dark:text-rose-400", border: "border-rose-400 dark:border-rose-500/30" },
+            { v: "on_mission", label: "En mission", dot: "bg-sky-500", bg: "bg-sky-50 dark:bg-sky-500/10", text: "text-sky-700 dark:text-sky-400", border: "border-sky-400 dark:border-sky-500/30" },
           ].map((s) => {
             const active = form.status === s.v;
             return (
@@ -2004,10 +2204,8 @@ function ModalAvailability({ item, onSaved, onClose, flash }) {
                 type="button"
                 onClick={() => setForm({ ...form, status: s.v })}
                 aria-pressed={active}
-                className={`inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 ${
-                  active
-                    ? `${s.border} ${s.bg} ${s.text} ring-2 ${s.ring}`
-                    : "border-[#E4EBF1] bg-white text-[#334B63] hover:border-[#CBD8E3] hover:bg-[#F9FBFC]"
+                className={`inline-flex items-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ${
+                  active ? `${s.border} ${s.bg} ${s.text}` : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:bg-transparent dark:text-slate-400 dark:hover:bg-white/5"
                 }`}
               >
                 <span className={`h-2 w-2 rounded-full ${s.dot}`} />
@@ -2018,29 +2216,28 @@ function ModalAvailability({ item, onSaved, onClose, flash }) {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-[#E4EBF1] bg-[#F9FBFC] p-4">
-        <Label icon={Calendar}>Période</Label>
+      <section className="rounded-lg border border-slate-200 bg-slate-50/70 p-4 dark:border-white/10 dark:bg-white/5">
+        <Label>Période</Label>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <div>
-            <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-[#8A9BB0]">Début</span>
+            <span className="mb-1 block text-[11px] text-slate-500 dark:text-slate-400">Début</span>
             <input type="date" required className={FIELD_CLS} value={form.start_at} onChange={(e) => setForm({ ...form, start_at: e.target.value })} />
           </div>
           <div>
-            <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-[#8A9BB0]">Fin</span>
+            <span className="mb-1 block text-[11px] text-slate-500 dark:text-slate-400">Fin</span>
             <input type="date" required className={FIELD_CLS} value={form.end_at} onChange={(e) => setForm({ ...form, end_at: e.target.value })} />
           </div>
         </div>
         {days !== null && days > 0 && (
-          <p className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1 text-xs font-medium text-[#0F9691]">
-            <Clock size={12} />
+          <p className="mt-3 inline-block rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs text-teal-700 dark:border-white/10 dark:bg-[#0B1F33] dark:text-emerald-400">
             {days} jour{days > 1 ? "s" : ""} de disponibilité
           </p>
         )}
       </section>
 
       <section>
-        <Label icon={BriefcaseBusiness}>Type de contrat</Label>
-        <div className="mt-2 flex flex-wrap gap-1.5">
+        <Label>Type de contrat</Label>
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
           {[
             { v: "full_time", label: "Temps plein" },
             { v: "part_time", label: "Temps partiel" },
@@ -2055,11 +2252,7 @@ function ModalAvailability({ item, onSaved, onClose, flash }) {
                 type="button"
                 onClick={() => setForm({ ...form, type: v })}
                 aria-pressed={active}
-                className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
-                  active
-                    ? "border-[#16B8B1] bg-[#16B8B1] text-white shadow-sm"
-                    : "border-[#E4EBF1] bg-white text-[#334B63] hover:border-emerald-300 hover:bg-emerald-50"
-                }`}
+                className={`rounded-md border px-3 py-1.5 text-xs font-medium transition ${active ? PILL_ON : PILL_OFF}`}
               >
                 {label}
               </button>
@@ -2069,8 +2262,8 @@ function ModalAvailability({ item, onSaved, onClose, flash }) {
       </section>
 
       <section>
-        <Label icon={Percent}>Charge de travail</Label>
-        <div className="mt-2 grid gap-3 sm:grid-cols-[1fr_auto]">
+        <Label>Charge de travail</Label>
+        <div className="mt-2.5 grid gap-3 sm:grid-cols-[1fr_auto]">
           <input type="number" min="0" className={FIELD_CLS} value={form.workload_value} onChange={(e) => setForm({ ...form, workload_value: e.target.value })} placeholder="Ex: 50" />
           <select className={`${FIELD_CLS} sm:w-40`} value={form.workload_unit} onChange={(e) => setForm({ ...form, workload_unit: e.target.value })}>
             <option value="percentage">%</option>
@@ -2081,13 +2274,13 @@ function ModalAvailability({ item, onSaved, onClose, flash }) {
       </section>
 
       <section>
-        <Label icon={MapPin}>Localisation</Label>
-        <div className="mt-2 flex flex-wrap gap-1.5">
+        <Label>Localisation</Label>
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
           {[
-            { v: "onsite", label: "Sur site", emoji: "🏢" },
-            { v: "remote", label: "Télétravail", emoji: "🏠" },
-            { v: "hybrid", label: "Hybride", emoji: "🔄" },
-          ].map(({ v, label, emoji }) => {
+            { v: "onsite", label: "Sur site" },
+            { v: "remote", label: "Télétravail" },
+            { v: "hybrid", label: "Hybride" },
+          ].map(({ v, label }) => {
             const active = form.location_type === v;
             return (
               <button
@@ -2095,13 +2288,8 @@ function ModalAvailability({ item, onSaved, onClose, flash }) {
                 type="button"
                 onClick={() => setForm({ ...form, location_type: v })}
                 aria-pressed={active}
-                className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
-                  active
-                    ? "border-[#16B8B1] bg-[#16B8B1] text-white shadow-sm"
-                    : "border-[#E4EBF1] bg-white text-[#334B63] hover:border-emerald-300 hover:bg-emerald-50"
-                }`}
+                className={`rounded-md border px-3 py-1.5 text-xs font-medium transition ${active ? PILL_ON : PILL_OFF}`}
               >
-                <span>{emoji}</span>
                 {label}
               </button>
             );
@@ -2109,21 +2297,21 @@ function ModalAvailability({ item, onSaved, onClose, flash }) {
         </div>
 
         {form.location_type !== "remote" && (
-          <input className={`${FIELD_CLS} mt-2.5`} value={form.location_city} onChange={(e) => setForm({ ...form, location_city: e.target.value })} placeholder="Ville (ex: Antananarivo)" />
+          <input className={`${FIELD_CLS} mt-3`} value={form.location_city} onChange={(e) => setForm({ ...form, location_city: e.target.value })} placeholder="Ville (ex: Antananarivo)" />
         )}
       </section>
 
       <section>
-        <Label icon={FileText}>Notes (optionnel)</Label>
-        <textarea rows={3} className={`${FIELD_CLS} mt-2`} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Ex: Disponible pour un stage de 6 mois à partir de mars" />
+        <Label>Notes (optionnel)</Label>
+        <textarea rows={3} className={`${FIELD_CLS} mt-2.5`} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Ex: Disponible pour un stage de 6 mois à partir de mars" />
       </section>
 
-      <section className="rounded-2xl border border-dashed border-[#E4EBF1] p-4">
+      <section className="rounded-lg border border-dashed border-slate-300 p-4 dark:border-white/20">
         <label className="flex cursor-pointer items-center gap-3">
-          <input type="checkbox" className="h-4 w-4 accent-[#16B8B1]" checked={form.is_recurring} onChange={(e) => setForm({ ...form, is_recurring: e.target.checked })} />
+          <input type="checkbox" className="h-4 w-4 rounded border-slate-300 accent-teal-600 dark:border-white/20 dark:accent-emerald-500" checked={form.is_recurring} onChange={(e) => setForm({ ...form, is_recurring: e.target.checked })} />
           <div>
-            <p className="text-sm font-semibold text-[#0B1F33]">Disponibilité récurrente</p>
-            <p className="text-xs text-[#64788C]">Ex: tous les lundis, une semaine sur deux...</p>
+            <p className="text-sm font-medium text-slate-800 dark:text-slate-200">Disponibilité récurrente</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Ex: tous les lundis, une semaine sur deux...</p>
           </div>
         </label>
 
@@ -2140,33 +2328,62 @@ function ModalAvailability({ item, onSaved, onClose, flash }) {
 /* ---------- Footer des modals ---------- */
 function ModalFooter({ saving, onClose }) {
   return (
-    <div className="mt-5 flex justify-end gap-2 border-t border-[#E8EEF3] pt-3">
-      <button
-        type="button"
-        onClick={onClose}
-        className="rounded-lg border border-[#E4EBF1] px-4 py-2 text-sm font-semibold text-[#334B63] transition hover:bg-[#F5F8FA]"
-      >
+    <div className="mt-6 flex justify-end gap-2 border-t border-slate-100 pt-4 dark:border-white/10">
+      <button type="button" onClick={onClose} className={BTN_SECONDARY}>
         Annuler
       </button>
-      <button
-        type="submit"
-        disabled={saving}
-        className="rounded-lg bg-[#16B8B1] px-4 py-2 text-sm font-semibold text-[#07172A] transition hover:bg-[#0F9691] hover:text-white disabled:opacity-60"
-      >
+      <button type="submit" disabled={saving} className={BTN_PRIMARY}>
         {saving ? "Enregistrement..." : "Enregistrer"}
       </button>
     </div>
   );
 }
 
-/* ---------- Petit label avec icône ---------- */
-function Label({ icon: Icon, children }) {
-  return (
-    <div className="flex items-center gap-1.5">
-      <Icon size={13} className="text-[#0F9691]" />
-      <span className="text-xs font-semibold uppercase tracking-wider text-[#334B63]">
-        {children}
+/* ---------- Libellé de section (sans icône) ---------- */
+function Label({ children }) {
+  return <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">{children}</span>;
+}
+
+/* ---------- Logos des liens ---------- */
+function PlatformIcon({ platform }) {
+  const cls =
+    "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white dark:border-white/10 dark:bg-white/5";
+
+  if (platform === "linkedin_url") {
+    return (
+      <span className={cls}>
+        <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]">
+          <path fill="#0A66C2" d="M20.45 20.45h-3.55v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05a3.74 3.74 0 0 1 3.37-1.85c3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.72V1.72C24 .77 23.2 0 22.22 0z" />
+        </svg>
       </span>
-    </div>
+    );
+  }
+
+  if (platform === "github_url") {
+    return (
+      <span className={cls}>
+        <svg viewBox="0 0 24 24" className="h-[18px] w-[18px] fill-slate-800 dark:fill-white">
+          <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+        </svg>
+      </span>
+    );
+  }
+
+  if (platform === "behance_url") {
+    return (
+      <span className={cls}>
+        <svg viewBox="0 0 24 24" className="h-[18px] w-[18px] fill-[#1769FF]">
+          <path d="M22 7h-7v2h7V7zm-1.2 10.2c-.4.8-1.1 1.2-2 1.2-1.5 0-2.4-1.1-2.4-2.6h6.6c0-.1.1-.3.1-.4 0-2.7-1.7-4.6-4.3-4.6-2.7 0-4.4 1.9-4.4 4.6 0 2.7 1.7 4.6 4.4 4.6 2 0 3.5-1 4.2-2.6h-2.2zm-2-4.9c.9 0 1.5.5 1.6 1.4h-3.3c.1-.9.8-1.4 1.7-1.4zM6.2 12.1c1.1 0 1.8.7 1.8 1.8 0 1.2-.8 1.9-2 1.9H2V9h3.9c1.9 0 2.8.8 2.8 2 0 .8-.3 1.4-1 1.8.4.2 1.1.8 1.1 1.8 0 1.5-1.1 2.4-2.9 2.4H3.8v-2.1h2.4c.7 0 1-.3 1-1s-.4-1-1-1H3.8V12h2.4zM3.8 10.9V10h2.1c.5 0 .8.3.8.7s-.3.7-.8.7H3.8z" />
+        </svg>
+      </span>
+    );
+  }
+
+  return (
+    <span className={cls}>
+      <svg viewBox="0 0 24 24" className="h-[18px] w-[18px] fill-slate-600 dark:fill-slate-400">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
+      </svg>
+    </span>
   );
 }

@@ -228,12 +228,17 @@ class PortfolioController extends Controller
         $profile = $portfolio->profile;
 
         $portfolio->is_owner = $isOwner;
+        
+        // ✅ CORRECTION : On renvoie TOUTES les données nécessaires au frontend
         $portfolio->profile_data = [
             'user_id'      => $profile->user_id,
             'name'         => $profile->user->name,
             'headline'     => $profile->headline,
             'bio'          => $profile->bio,
-            'avatar'       => $profile->avatar_path,
+            
+            // ✅ L'image de profil (avatar)
+            'avatar_path'  => $profile->avatar_path,
+            
             'city'         => $profile->city,
             'country'      => $profile->country,
             'profile_type' => $profile->profile_type,
@@ -246,29 +251,34 @@ class PortfolioController extends Controller
             'field_of_study'          => $profile->field_of_study,
             'study_level'             => $profile->study_level,
 
+            // ✅ L'utilisateur (avec email)
             'user' => [
+                'name'       => $profile->user->name,
                 'first_name' => $profile->user->first_name,
                 'last_name'  => $profile->user->last_name,
+                'email'      => $profile->user->email, 
                 'phone'      => $profile->user->phone,
                 'country'    => $profile->user->country,
+                'avatar_path'=> $profile->user->avatar_path,
             ],
 
+            // ✅ Les liens professionnels (à la racine)
+            'portfolio_url' => $profile->portfolio_url,
+            'linkedin_url'  => $profile->linkedin_url,
+            'github_url'    => $profile->github_url,
+            'behance_url'   => $profile->behance_url,
+
+            // ✅ Les relations
             'skills'         => $profile->skills,
             'experiences'    => $profile->experiences,
             'educations'     => $profile->educations,
             'certifications' => $profile->certifications,
             'languages'      => $profile->languages,
+            
             'availability_windows' => $profile->availabilityWindows()
                 ->where('end_at', '>=', now()->startOfDay())
                 ->orderBy('start_at')
                 ->get(),
-
-            'links' => [
-                'portfolio' => $profile->portfolio_url,
-                'linkedin'  => $profile->linkedin_url,
-                'github'    => $profile->github_url,
-                'behance'   => $profile->behance_url,
-            ],
         ];
 
         return response()->json($portfolio);

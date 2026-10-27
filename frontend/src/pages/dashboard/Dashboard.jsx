@@ -10,7 +10,6 @@ import {
   CheckCircle2,
   ChevronRight,
   CircleUserRound,
-  Clock,
   Compass,
   FileText,
   Handshake,
@@ -27,6 +26,7 @@ import {
 import AppShell from "../../components/layout/AppShell";
 import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
+import { useTheme } from "../../context/ThemeContext";
 
 /* ============================================================
    HELPERS
@@ -87,24 +87,32 @@ const bucketOf = (status) => {
 };
 
 const STATUS_META = {
-  accepted: { label: "Acceptée", cls: "bg-emerald-50 text-emerald-700", hex: "#16B8B1" },
-  pending: { label: "En cours", cls: "bg-blue-50 text-blue-700", hex: "#3B82F6" },
-  rejected: { label: "Refusée", cls: "bg-slate-100 text-slate-600", hex: "#94A3B8" },
+  accepted: { label: "Acceptée", cls: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100", hex: "#10B981" },
+  pending: { label: "En cours", cls: "bg-sky-50 text-sky-700 ring-1 ring-sky-100", hex: "#38BDF8" },
+  rejected: { label: "Refusée", cls: "bg-slate-100 text-slate-600 ring-1 ring-slate-200", hex: "#94A3B8" },
 };
 
 const COLORS = {
-  emerald: { icon: "bg-emerald-50 text-emerald-600", hex: "#16B8B1", hover: "hover:border-emerald-200" },
-  blue: { icon: "bg-blue-50 text-blue-600", hex: "#3B82F6", hover: "hover:border-blue-200" },
-  violet: { icon: "bg-violet-50 text-violet-600", hex: "#8B5CF6", hover: "hover:border-violet-200" },
-  amber: { icon: "bg-amber-50 text-amber-600", hex: "#F59E0B", hover: "hover:border-amber-200" },
+  emerald: { icon: "bg-emerald-50 text-emerald-600", hex: "#10B981" },
+  blue: { icon: "bg-sky-50 text-sky-600", hex: "#38BDF8" },
+  violet: { icon: "bg-indigo-50 text-indigo-600", hex: "#6366F1" },
+  amber: { icon: "bg-amber-50 text-amber-600", hex: "#F59E0B" },
 };
 
 const TONES = {
-  blue: "bg-blue-50 text-blue-600",
+  blue: "bg-sky-50 text-sky-600",
   emerald: "bg-emerald-50 text-emerald-600",
-  violet: "bg-violet-50 text-violet-600",
+  violet: "bg-indigo-50 text-indigo-600",
   amber: "bg-amber-50 text-amber-600",
   slate: "bg-slate-100 text-slate-500",
+};
+
+const STATS_COLS = {
+  2: "sm:grid-cols-2",
+  3: "sm:grid-cols-3",
+  4: "sm:grid-cols-2 lg:grid-cols-4",
+  5: "sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5",
+  8: "sm:grid-cols-2 lg:grid-cols-4",
 };
 
 const companyOf = (item) =>
@@ -177,10 +185,9 @@ function buildStats(role, s, x) {
       { key: "recv", title: "Candidatures reçues", value: x.applicationsReceived, icon: Inbox, to: "/my-publications", accent: "emerald" },
       { key: "req", title: "Demandes ouvertes", value: s.resource_requests_open, icon: BriefcaseBusiness, to: "/my-publications", accent: "amber" },
       { key: "prop", title: "Propositions reçues", value: s.proposals_received, icon: Handshake, to: "/my-activity", accent: "violet" },
-      { key: "accp", title: "Propositions acceptées", value: x.proposalsAccepted, icon: CheckCircle2, to: "/my-activity", accent: "emerald" },
+     
       { key: "mis", title: "Missions actives", value: s.active_missions, icon: Target, to: "/my-activity", accent: "amber" },
-      { key: "pub", title: "Offres publiées", value: x.jobsPublished, icon: TrendingUp, to: "/my-publications", accent: "blue" },
-      { key: "unread", title: "Messages non lus", value: x.unread, icon: MessageCircle, to: "/messages", accent: "violet" },
+     
     ];
   } else if (role === "university") {
     list = [
@@ -322,6 +329,8 @@ const PANEL_GRID = { 1: "lg:grid-cols-1", 2: "lg:grid-cols-2", 3: "lg:grid-cols-
 
 function Dashboard() {
   const { user: authUser } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
 
   const [dashboard, setDashboard] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -431,15 +440,15 @@ function Dashboard() {
   const series = useMemo(() => {
     if (isTalent) {
       return [
-        apps.data && { key: "apps", label: "Candidatures", hex: "#3B82F6", dates: appList.map(dateOf) },
-        proposals.data && { key: "prop", label: "Propositions reçues", hex: "#8B5CF6", dates: proposalList.map(dateOf) },
+        apps.data && { key: "apps", label: "Candidatures", hex: "#10B981", dates: appList.map(dateOf) },
+        proposals.data && { key: "prop", label: "Propositions reçues", hex: "#6366F1", dates: proposalList.map(dateOf) },
       ].filter(Boolean);
     }
     if (isCompany) {
       return [
-        myJobs.data && { key: "jobs", label: "Offres publiées", hex: "#3B82F6", dates: myJobList.map(dateOf) },
-        myRequests.data && { key: "req", label: "Demandes publiées", hex: "#16B8B1", dates: myRequestList.map(dateOf) },
-        proposals.data && { key: "prop", label: "Propositions reçues", hex: "#8B5CF6", dates: proposalList.map(dateOf) },
+        myJobs.data && { key: "jobs", label: "Offres publiées", hex: "#10B981", dates: myJobList.map(dateOf) },
+        myRequests.data && { key: "req", label: "Demandes publiées", hex: "#F59E0B", dates: myRequestList.map(dateOf) },
+        proposals.data && { key: "prop", label: "Propositions reçues", hex: "#6366F1", dates: proposalList.map(dateOf) },
       ].filter(Boolean);
     }
     return [];
@@ -579,12 +588,12 @@ function Dashboard() {
 
   return (
     <AppShell>
-      <div className="text-[#17213A]">
-        <div className="mx-auto max-w-7xl space-y-5">
+      <div className="text-[#17213A] dark:text-slate-200">
+        <div className="mx-auto max-w-[1500px] space-y-5">
           {error && (
             <div
               role="alert"
-              className="flex flex-col gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-400 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="flex items-start gap-2">
                 <Activity size={18} className="mt-0.5 shrink-0" />
@@ -594,7 +603,7 @@ function Dashboard() {
                 type="button"
                 onClick={() => loadDashboard(true)}
                 disabled={refreshing}
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-2 font-semibold transition hover:bg-red-100 disabled:opacity-60"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-red-200 bg-white px-4 py-2 font-semibold transition hover:bg-red-100 disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
               >
                 <RefreshCw size={15} className={refreshing ? "animate-spin motion-reduce:animate-none" : ""} />
                 Réessayer
@@ -606,20 +615,23 @@ function Dashboard() {
             <DashboardSkeleton />
           ) : (
             <>
-              {/* Barre d'outils discrète */}
-              <div className="flex justify-end">
+              {/* Titre de section + actualiser */}
+              <div className="flex items-end justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400">Vue d'ensemble</p>
+                  <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-[#0B1F33] dark:text-white">Tableau de bord</h2>
+                </div>
                 <button
                   type="button"
                   onClick={() => loadDashboard(true)}
                   disabled={refreshing}
-                  className="inline-flex items-center gap-2 rounded-lg border border-[#E4EBF1] bg-white px-3 py-1.5 text-xs font-semibold text-[#334B63] transition hover:border-emerald-300 hover:text-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 disabled:opacity-60"
+                  className="inline-flex items-center gap-2 rounded-full bg-[#0B2A35] px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-[#0E3B3A] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 disabled:opacity-60 dark:bg-emerald-600 dark:hover:bg-emerald-500"
                 >
                   <RefreshCw size={13} className={refreshing ? "animate-spin motion-reduce:animate-none" : ""} />
                   Actualiser
                 </button>
               </div>
 
-              {/* ✅ Grille de statistiques visuelles */}
               {statCards.length > 0 && <StatsGrid cards={statCards} />}
 
               {alerts.map((alert) => (
@@ -630,12 +642,12 @@ function Dashboard() {
               <section className="grid gap-5 lg:grid-cols-3">
                 {series.length > 0 ? (
                   <>
-                    <EvolutionChart series={series} className="lg:col-span-2" />
-                    <StatusDonut {...donut} />
+                   <EvolutionChart series={series} className="lg:col-span-2" isDark={isDark} />
+                  <StatusDonut {...donut} isDark={isDark} />
                   </>
                 ) : (
                   <>
-                    <StatusDonut {...donut} />
+                   <StatusDonut {...donut} isDark={isDark} />
                     <QuickLinksPanel links={quickLinks} className="lg:col-span-2" />
                   </>
                 )}
@@ -681,17 +693,17 @@ function Dashboard() {
 ============================================================ */
 
 function DashboardSkeleton() {
-  const pulse = "animate-pulse motion-reduce:animate-none rounded-2xl bg-white";
+  const pulse = "animate-pulse motion-reduce:animate-none rounded-3xl bg-white/80 dark:bg-white/5";
   return (
     <div className="space-y-5" role="status" aria-label="Chargement du tableau de bord">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className={`h-32 ${pulse}`} />
+          <div key={i} className={`h-36 ${pulse}`} />
         ))}
       </div>
       <div className="grid gap-5 lg:grid-cols-3">
-        <div className={`h-72 lg:col-span-2 ${pulse}`} />
-        <div className={`h-72 ${pulse}`} />
+        <div className={`h-80 lg:col-span-2 ${pulse}`} />
+        <div className={`h-80 ${pulse}`} />
       </div>
     </div>
   );
@@ -703,15 +715,17 @@ function DashboardSkeleton() {
 
 function Panel({ title, description, action, children, className = "" }) {
   return (
-    <div className={`rounded-2xl border border-[#E4EBF1] bg-white p-5 shadow-sm ${className}`}>
+    <div
+      className={`rounded-3xl border border-white bg-white/85 p-5 shadow-[0_10px_40px_rgba(15,60,60,0.06)] ring-1 ring-slate-900/[0.04] backdrop-blur sm:p-6 dark:border-white/10 dark:bg-[#112A3A] dark:ring-white/5 ${className}`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="font-bold text-[#0B1F33]">{title}</h2>
-          {description && <p className="mt-0.5 text-xs text-[#64788C]">{description}</p>}
+          <h2 className="text-[15px] font-extrabold tracking-tight text-[#0B1F33] dark:text-white">{title}</h2>
+          {description && <p className="mt-0.5 text-xs text-[#64788C] dark:text-slate-400">{description}</p>}
         </div>
         {action}
       </div>
-      <div className="mt-4">{children}</div>
+      <div className="mt-5">{children}</div>
     </div>
   );
 }
@@ -720,18 +734,18 @@ function AlertBanner({ label, count, to }) {
   return (
     <Link
       to={to}
-      className="flex items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 transition hover:bg-amber-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+      className="flex items-center justify-between gap-3 rounded-3xl border border-amber-200 bg-gradient-to-r from-amber-50 to-white p-4 transition hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 dark:border-amber-500/20 dark:from-amber-500/10 dark:to-transparent"
     >
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400">
           <Target size={20} />
         </div>
         <div>
-          <p className="font-semibold text-amber-950">{label}</p>
-          <p className="text-sm text-amber-800">{count} élément(s) nécessitent ton attention.</p>
+          <p className="font-semibold text-amber-950 dark:text-amber-100">{label}</p>
+          <p className="text-sm text-amber-800 dark:text-amber-300/80">{count} élément(s) nécessitent ton attention.</p>
         </div>
       </div>
-      <ArrowRight size={18} className="shrink-0 text-amber-900" />
+      <ArrowRight size={18} className="shrink-0 text-amber-900 dark:text-amber-400" />
     </Link>
   );
 }
@@ -739,73 +753,105 @@ function AlertBanner({ label, count, to }) {
 function EmptyState({ icon: Icon, title, text, compact = false }) {
   return (
     <div
-      className={`flex flex-col items-center rounded-xl border border-dashed border-[#D5DFE8] bg-[#F9FBFC] px-4 text-center ${
-        compact ? "py-6" : "py-9"
+      className={`flex flex-col items-center rounded-2xl border border-dashed border-[#D5DFE8] bg-[#F7FAFB] px-4 text-center dark:border-white/10 dark:bg-[#0B1F33] ${
+        compact ? "py-6" : "py-10"
       }`}
     >
-      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#8A9BB0] shadow-sm">
-        <Icon size={19} />
+      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-emerald-600 shadow-sm dark:bg-white/10 dark:text-emerald-400">
+        <Icon size={20} />
       </div>
-      {title && <p className="mt-3 text-sm font-semibold text-[#0B1F33]">{title}</p>}
-      <p className={`max-w-xs text-xs text-[#64788C] ${title ? "mt-1" : "mt-3"}`}>{text}</p>
+      {title && <p className="mt-3 text-sm font-semibold text-[#0B1F33] dark:text-white">{title}</p>}
+      <p className={`max-w-xs text-xs text-[#64788C] dark:text-slate-400 ${title ? "mt-1" : "mt-3"}`}>{text}</p>
     </div>
   );
 }
 
 /* ============================================================
-   GRILLE DE STATISTIQUES (remplace les cartes-boutons)
+   STATISTIQUES
 ============================================================ */
 
 function StatsGrid({ cards }) {
+  const cols = STATS_COLS[cards.length] || "sm:grid-cols-2 lg:grid-cols-4";
   return (
-    <section aria-label="Statistiques" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      {cards.map((c) => (
-        <StatTile key={c.key} card={c} />
+    <section aria-label="Statistiques" className={`grid grid-cols-1 gap-4 ${cols}`}>
+      {cards.map((c, i) => (
+        <StatTile key={c.key} card={c} featured={i === 0} />
       ))}
     </section>
   );
 }
 
-function StatTile({ card }) {
-  const { title, value, suffix = "", icon: Icon, accent = "emerald" } = card;
+function StatTile({ card, featured }) {
+  const { title, value, suffix = "", icon: Icon, accent = "emerald", to } = card;
   const palette = COLORS[accent] || COLORS.emerald;
   const num = number(value);
-  const pct = Math.min(100, Math.max(6, num));
 
-  return (
-    <article className="group flex flex-col gap-3 rounded-2xl border border-[#E4EBF1] bg-white p-4 transition hover:border-[#D5DFE8] hover:shadow-sm">
-      <div className="flex items-center justify-between gap-2">
-        <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${palette.icon}`}>
-          <Icon size={17} strokeWidth={1.9} />
+  const body = (
+    <>
+      {featured && (
+        <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-emerald-400/25 blur-2xl" />
+      )}
+      <div className="relative flex items-start justify-between">
+        <span
+          className={`flex h-11 w-11 items-center justify-center rounded-2xl ${
+            featured ? "bg-emerald-400 text-[#04201C] shadow-[0_0_22px_rgba(52,211,153,0.5)]" : palette.icon
+          }`}
+        >
+          <Icon size={20} strokeWidth={1.9} />
         </span>
-        <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8A9BB0]">
-          {title.split(" ").slice(-1)[0]}
-        </span>
+        {to && (
+          <span
+            className={`flex h-8 w-8 items-center justify-center rounded-full transition group-hover:rotate-12 ${
+              featured ? "bg-white/10 text-white" : "bg-slate-100 text-slate-500 group-hover:bg-emerald-50 group-hover:text-emerald-600 dark:bg-white/5 dark:text-slate-400 dark:group-hover:bg-emerald-500/20 dark:group-hover:text-emerald-400"
+            }`}
+          >
+            <ArrowUpRight size={15} />
+          </span>
+        )}
       </div>
 
-      <div>
-        <p className="text-[26px] font-bold leading-none tracking-tight text-[#0B1F33]">
+      <div className="relative mt-6">
+        <p className={`text-[34px] font-extrabold leading-none tracking-tight ${featured ? "text-white" : "text-[#0B1F33] dark:text-white"}`}>
           {num.toLocaleString("fr-FR")}
-          <span className="ml-0.5 text-base font-semibold text-[#8A9BB0]">{suffix}</span>
+          {suffix && <span className={`ml-0.5 text-lg font-bold ${featured ? "text-emerald-300" : "text-[#8A9BB0] dark:text-slate-400"}`}>{suffix}</span>}
         </p>
-        <p className="mt-1 truncate text-[13px] font-medium text-[#334B63]">{title}</p>
+        <p className={`mt-2 truncate text-[13px] font-semibold ${featured ? "text-white/70" : "text-[#52677C] dark:text-slate-400"}`}>{title}</p>
       </div>
+    </>
+  );
 
-      <div className="h-1 w-full overflow-hidden rounded-full bg-[#F1F6FA]">
-        <div
-          className="h-full rounded-full transition-all duration-500"
-          style={{ width: `${pct}%`, backgroundColor: palette.hex }}
-        />
-      </div>
-    </article>
+  const cls = `group relative block overflow-hidden rounded-3xl p-5 transition duration-200 hover:-translate-y-0.5 ${
+    featured
+      ? "bg-gradient-to-br from-[#0B2A35] via-[#0B3A36] to-[#0E4B42] shadow-[0_16px_40px_rgba(8,60,55,0.35)]"
+      : "border border-white bg-white/85 shadow-[0_10px_40px_rgba(15,60,60,0.06)] ring-1 ring-slate-900/[0.04] hover:shadow-[0_16px_44px_rgba(15,60,60,0.12)] dark:bg-[#112A3A] dark:border-white/10 dark:ring-white/5"
+  }`;
+
+  return to ? (
+    <Link to={to} className={`${cls} focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400`}>
+      {body}
+    </Link>
+  ) : (
+    <article className={cls}>{body}</article>
   );
 }
 
 /* ============================================================
-   GRAPHIQUE D'ÉVOLUTION
+   GRAPHIQUE D'ÉVOLUTION (courbes lissées)
 ============================================================ */
 
-function EvolutionChart({ series, className = "" }) {
+function smoothPath(pts) {
+  if (pts.length < 2) return "";
+  let d = `M${pts[0][0]},${pts[0][1]}`;
+  for (let i = 1; i < pts.length; i++) {
+    const [x0, y0] = pts[i - 1];
+    const [x1, y1] = pts[i];
+    const cx = (x0 + x1) / 2;
+    d += ` C${cx},${y0} ${cx},${y1} ${x1},${y1}`;
+  }
+  return d;
+}
+
+function EvolutionChart({ series, className = "", isDark }) {
   const [weeks, setWeeks] = useState(8);
 
   const { buckets, lines } = useMemo(() => {
@@ -835,7 +881,7 @@ function EvolutionChart({ series, className = "" }) {
   const maxY = Math.max(4, Math.ceil(max / 4) * 4);
 
   const W = 640;
-  const H = 230;
+  const H = 240;
   const pl = 34;
   const pr = 12;
   const pt = 14;
@@ -844,21 +890,24 @@ function EvolutionChart({ series, className = "" }) {
   const y = (v) => pt + (H - pt - pb) * (1 - v / maxY);
   const labelStep = weeks > 8 ? 2 : 1;
 
+  const axisColor = isDark ? "#94A3B8" : "#8A9BB0";
+  const gridColor = isDark ? "rgba(255,255,255,0.08)" : "#E8EEF3";
+
   return (
     <Panel
       title="Évolution de l'activité"
       description="Nombre d'éléments créés par semaine."
       className={className}
       action={
-        <div role="group" aria-label="Période" className="inline-flex rounded-lg border border-[#E4EBF1] bg-[#F5F8FA] p-0.5">
+        <div role="group" aria-label="Période" className="inline-flex rounded-full bg-[#EEF3F6] p-1 dark:bg-white/5">
           {[4, 8, 12].map((w) => (
             <button
               key={w}
               type="button"
               aria-pressed={weeks === w}
               onClick={() => setWeeks(w)}
-              className={`rounded-md px-2.5 py-1 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 ${
-                weeks === w ? "bg-white text-[#0B1F33] shadow-sm" : "text-[#64788C] hover:text-[#0B1F33]"
+              className={`rounded-full px-3 py-1 text-xs font-bold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 ${
+                weeks === w ? "bg-[#0B2A35] text-white shadow-sm dark:bg-emerald-500 dark:text-white" : "text-[#64788C] hover:text-[#0B1F33] dark:text-slate-400 dark:hover:text-white"
               }`}
             >
               {w} sem.
@@ -867,12 +916,12 @@ function EvolutionChart({ series, className = "" }) {
         </div>
       }
     >
-      <ul className="mb-3 flex flex-wrap gap-x-5 gap-y-1">
+      <ul className="mb-4 flex flex-wrap gap-x-5 gap-y-2">
         {lines.map((l) => (
-          <li key={l.key} className="flex items-center gap-2 text-xs text-[#334B63]">
+          <li key={l.key} className="flex items-center gap-2 rounded-full bg-[#F4F8FA] px-3 py-1 text-xs text-[#334B63] dark:bg-white/5 dark:text-slate-300">
             <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: l.hex }} />
             {l.label}
-            <span className="font-bold text-[#0B1F33]">{l.values.reduce((a, b) => a + b, 0)}</span>
+            <span className="font-extrabold text-[#0B1F33] dark:text-white">{l.values.reduce((a, b) => a + b, 0)}</span>
           </li>
         ))}
       </ul>
@@ -886,12 +935,21 @@ function EvolutionChart({ series, className = "" }) {
           role="img"
           aria-label={`Évolution sur ${weeks} semaines : ${lines.map((l) => `${l.label} ${l.values.join(", ")}`).join(" ; ")}`}
         >
+          <defs>
+            {lines.map((l) => (
+              <linearGradient key={l.key} id={`evo-${l.key}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={l.hex} stopOpacity="0.28" />
+                <stop offset="100%" stopColor={l.hex} stopOpacity="0" />
+              </linearGradient>
+            ))}
+          </defs>
+
           {[0, 1, 2, 3, 4].map((i) => {
             const v = (maxY * i) / 4;
             return (
               <g key={i}>
-                <line x1={pl} x2={W - pr} y1={y(v)} y2={y(v)} stroke="#EDF2F6" strokeWidth="1" />
-                <text x={pl - 6} y={y(v) + 3} textAnchor="end" fontSize="10" fill="#8A9BB0">
+                <line x1={pl} x2={W - pr} y1={y(v)} y2={y(v)} stroke={gridColor} strokeWidth="1" strokeDasharray={i === 0 ? "0" : "4 5"} />
+                <text x={pl - 8} y={y(v) + 3} textAnchor="end" fontSize="10" fill={axisColor}>
                   {v}
                 </text>
               </g>
@@ -900,21 +958,22 @@ function EvolutionChart({ series, className = "" }) {
 
           {buckets.map((b, i) =>
             i % labelStep === 0 ? (
-              <text key={i} x={x(i)} y={H - 8} textAnchor="middle" fontSize="10" fill="#8A9BB0">
+              <text key={i} x={x(i)} y={H - 8} textAnchor="middle" fontSize="10" fill={axisColor}>
                 {b.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" })}
               </text>
             ) : null
           )}
 
           {lines.map((l) => {
-            const points = l.values.map((v, i) => `${x(i)},${y(v)}`).join(" ");
-            const area = `M${x(0)},${y(0)} L${points.replace(/ /g, " L")} L${x(weeks - 1)},${y(0)} Z`;
+            const pts = l.values.map((v, i) => [x(i), y(v)]);
+            const line = smoothPath(pts);
+            const area = `${line} L${x(weeks - 1)},${y(0)} L${x(0)},${y(0)} Z`;
             return (
               <g key={l.key}>
-                <path d={area} fill={l.hex} opacity="0.08" />
-                <polyline points={points} fill="none" stroke={l.hex} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+                <path d={area} fill={`url(#evo-${l.key})`} />
+                <path d={line} fill="none" stroke={l.hex} strokeWidth="2.75" strokeLinecap="round" />
                 {l.values.map((v, i) => (
-                  <circle key={i} cx={x(i)} cy={y(v)} r="3.5" fill="#fff" stroke={l.hex} strokeWidth="2">
+                  <circle key={i} cx={x(i)} cy={y(v)} r="3.5" fill={isDark ? "#112A3A" : "#fff"} stroke={l.hex} strokeWidth="2">
                     <title>{`${l.label} — semaine du ${buckets[i].toLocaleDateString("fr-FR")} : ${v}`}</title>
                   </circle>
                 ))}
@@ -931,11 +990,12 @@ function EvolutionChart({ series, className = "" }) {
    DONUT
 ============================================================ */
 
-function StatusDonut({ title, description, items }) {
+function StatusDonut({ title, description, items, isDark }) {
   const visible = items.filter((i) => i.value > 0);
   const total = visible.reduce((sum, i) => sum + i.value, 0);
-  const radius = 44;
+  const radius = 42;
   const circumference = 2 * Math.PI * radius;
+  const gap = visible.length > 1 ? 3 : 0;
   let acc = 0;
 
   return (
@@ -945,14 +1005,15 @@ function StatusDonut({ title, description, items }) {
       ) : (
         <div className="flex flex-col items-center">
           <div
-            className="relative h-36 w-36"
+            className="relative h-40 w-40"
             role="img"
             aria-label={`Répartition : ${visible.map((i) => `${i.title} ${i.value}`).join(", ")}`}
           >
             <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
-              <circle cx="50" cy="50" r={radius} fill="none" stroke="#E8EEF3" strokeWidth="10" />
+              <circle cx="50" cy="50" r={radius} fill="none" stroke={isDark ? "rgba(255,255,255,0.08)" : "#EEF3F6"} strokeWidth="11" />
               {visible.map((item) => {
                 const len = (item.value / total) * circumference;
+                const dash = Math.max(len - gap, 0.5);
                 const circle = (
                   <circle
                     key={item.key}
@@ -961,8 +1022,9 @@ function StatusDonut({ title, description, items }) {
                     r={radius}
                     fill="none"
                     stroke={item.hex}
-                    strokeWidth="10"
-                    strokeDasharray={`${len} ${circumference - len}`}
+                    strokeWidth="11"
+                    strokeLinecap="round"
+                    strokeDasharray={`${dash} ${circumference - dash}`}
                     strokeDashoffset={-acc}
                   />
                 );
@@ -971,20 +1033,20 @@ function StatusDonut({ title, description, items }) {
               })}
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-2xl font-bold text-[#0B1F33]">{total.toLocaleString("fr-FR")}</span>
-              <span className="text-xs text-[#64788C]">au total</span>
+              <span className={`text-3xl font-extrabold ${isDark ? "text-white" : "text-[#0B1F33]"}`}>{total.toLocaleString("fr-FR")}</span>
+              <span className={`text-xs font-medium ${isDark ? "text-slate-400" : "text-[#64788C]"}`}>au total</span>
             </div>
           </div>
 
-          <ul className="mt-4 w-full space-y-1.5">
+          <ul className="mt-5 w-full space-y-2">
             {visible.map((item) => (
-              <li key={item.key} className="flex items-center justify-between gap-2 text-sm">
-                <span className="flex items-center gap-2 text-[#334B63]">
+              <li key={item.key} className={`flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-sm ${isDark ? "bg-[#112A3A]" : "bg-[#F6F9FB]"}`}>
+                <span className={`flex items-center gap-2 font-medium ${isDark ? "text-slate-300" : "text-[#334B63]"}`}>
                   <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.hex }} />
                   {item.title}
                 </span>
-                <span className="font-semibold text-[#0B1F33]">
-                  {item.value} · {Math.round((item.value / total) * 100)} %
+                <span className={`font-bold ${isDark ? "text-white" : "text-[#0B1F33]"}`}>
+                  {item.value} <span className={`font-medium ${isDark ? "text-slate-500" : "text-[#8A9BB0]"}`}>· {Math.round((item.value / total) * 100)} %</span>
                 </span>
               </li>
             ))}
@@ -1003,7 +1065,7 @@ function SkeletonRows() {
   return (
     <div className="space-y-3" role="status" aria-label="Chargement">
       {[1, 2, 3].map((i) => (
-        <div key={i} className="h-12 animate-pulse rounded-xl bg-[#F1F6FA] motion-reduce:animate-none" />
+        <div key={i} className="h-14 animate-pulse rounded-2xl bg-[#F1F6FA] motion-reduce:animate-none dark:bg-white/5" />
       ))}
     </div>
   );
@@ -1011,23 +1073,23 @@ function SkeletonRows() {
 
 function Row({ icon: Icon, tone = "slate", title, subtitle, meta, badge, to }) {
   const body = (
-    <div className="group flex items-center gap-3 rounded-xl px-2 py-2.5 transition hover:bg-[#F5F8FA]">
-      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${TONES[tone]}`}>
+    <div className="group flex items-center gap-3 rounded-2xl px-2.5 py-2.5 transition hover:bg-[#F2F8F7] dark:hover:bg-white/5">
+      <span className={`relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-4 ring-white dark:ring-[#112A3A] ${TONES[tone]}`}>
         <Icon size={17} strokeWidth={1.9} />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-[#0B1F33]">{title}</p>
-        {subtitle && <p className="truncate text-xs text-[#64788C]">{subtitle}</p>}
+        <p className="truncate text-sm font-bold text-[#0B1F33] dark:text-slate-200">{title}</p>
+        {subtitle && <p className="truncate text-xs text-[#64788C] dark:text-slate-400">{subtitle}</p>}
       </div>
       <div className="flex shrink-0 flex-col items-end gap-1">
-        {badge && <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${badge.cls}`}>{badge.label}</span>}
-        {meta && <span className="text-[11px] text-[#8A9BB0]">{meta}</span>}
+        {badge && <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${badge.cls}`}>{badge.label}</span>}
+        {meta && <span className="text-[11px] text-[#8A9BB0] dark:text-slate-500">{meta}</span>}
       </div>
     </div>
   );
 
   return to ? (
-    <Link to={to} className="block rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400">
+    <Link to={to} className="block rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400">
       {body}
     </Link>
   ) : (
@@ -1043,7 +1105,9 @@ function RecentActivity({ events, loading, className = "" }) {
       ) : events.length === 0 ? (
         <EmptyState icon={Activity} title="Aucune activité récente" text="Tes candidatures, publications et notifications apparaîtront ici." />
       ) : (
-        <ul className="divide-y divide-[#EDF2F6]">
+        <ul className="relative">
+          {/* ligne de timeline */}
+          <span className="absolute bottom-6 left-[30px] top-6 w-px bg-gradient-to-b from-emerald-200 via-slate-200 to-transparent dark:from-emerald-500/20 dark:via-white/5" aria-hidden="true" />
           {events.map((e) => (
             <li key={e.key}>
               <Row icon={e.icon} tone={e.tone} title={e.text} subtitle={e.detail} meta={timeAgo(e.date)} to={e.to} />
@@ -1063,7 +1127,7 @@ function ListPanel({ title, description, to, linkLabel, state, items, emptyIcon,
       action={
         <Link
           to={to}
-          className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-emerald-700 hover:text-emerald-800 focus:outline-none focus-visible:underline"
+          className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-emerald-500/20"
         >
           {linkLabel} <ChevronRight size={13} />
         </Link>
@@ -1076,7 +1140,7 @@ function ListPanel({ title, description, to, linkLabel, state, items, emptyIcon,
       ) : items.length === 0 ? (
         <EmptyState compact icon={emptyIcon} text={emptyText} />
       ) : (
-        <ul className="divide-y divide-[#EDF2F6]">
+        <ul className="space-y-0.5">
           {items.map((item, index) => (
             <li key={item.id ?? index}>
               <Row {...row(item)} tone="slate" />
@@ -1099,8 +1163,15 @@ function ProfilePanel({ completion, nextStep, breakdown }) {
   const missing = Array.isArray(breakdown) ? breakdown.filter((item) => !item.done).slice(0, 4) : [];
 
   return (
-    <Panel title="Complétion du profil" description="Calculée à partir de ton profil.">
-      <div className="flex items-center gap-4">
+    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0B2A35] via-[#0B3A36] to-[#0E4B42] p-5 text-white shadow-[0_16px_40px_rgba(8,60,55,0.35)] sm:p-6">
+      <div className="pointer-events-none absolute -right-10 -top-10 h-44 w-44 rounded-full bg-emerald-400/25 blur-3xl" />
+
+      <div className="relative">
+        <h2 className="text-[15px] font-extrabold tracking-tight">Complétion du profil</h2>
+        <p className="mt-0.5 text-xs text-white/55">Calculée à partir de ton profil.</p>
+      </div>
+
+      <div className="relative mt-5 flex items-center gap-4">
         <div
           className="relative h-24 w-24 shrink-0"
           role="progressbar"
@@ -1110,13 +1181,13 @@ function ProfilePanel({ completion, nextStep, breakdown }) {
           aria-label="Complétion du profil"
         >
           <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
-            <circle cx="50" cy="50" r={radius} fill="none" stroke="#E8EEF3" strokeWidth="10" />
+            <circle cx="50" cy="50" r={radius} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="10" />
             <circle
               cx="50"
               cy="50"
               r={radius}
               fill="none"
-              stroke="#16B8B1"
+              stroke="#34D399"
               strokeWidth="10"
               strokeLinecap="round"
               strokeDasharray={circumference}
@@ -1124,21 +1195,19 @@ function ProfilePanel({ completion, nextStep, breakdown }) {
               className="transition-all duration-700 motion-reduce:transition-none"
             />
           </svg>
-          <span className="absolute inset-0 flex items-center justify-center text-lg font-bold text-[#0B1F33]">
-            {completion} %
-          </span>
+          <span className="absolute inset-0 flex items-center justify-center text-lg font-extrabold">{completion} %</span>
         </div>
 
-        <p className="text-sm leading-6 text-[#64788C]">
+        <p className="text-sm leading-6 text-white/70">
           {nextStep || "Un profil complet met en valeur tes compétences."}
         </p>
       </div>
 
       {missing.length > 0 && (
-        <ul className="mt-4 space-y-2">
+        <ul className="relative mt-5 space-y-2">
           {missing.map((item) => (
-            <li key={item.key} className="flex items-center gap-2 text-sm text-[#334B63]">
-              <span className="h-4 w-4 shrink-0 rounded-full border-2 border-slate-300" />
+            <li key={item.key} className="flex items-center gap-2.5 rounded-xl bg-white/[0.07] px-3 py-2 text-sm text-white/85">
+              <span className="h-4 w-4 shrink-0 rounded-full border-2 border-emerald-300/60" />
               {item.label}
             </li>
           ))}
@@ -1147,30 +1216,32 @@ function ProfilePanel({ completion, nextStep, breakdown }) {
 
       <Link
         to="/profile"
-        className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#0B1F33] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#17284B] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+        className="relative mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-emerald-400 px-4 py-3 text-sm font-extrabold text-[#04201C] transition hover:bg-emerald-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
       >
         Compléter mon profil
         <ChevronRight size={16} />
       </Link>
-    </Panel>
+    </div>
   );
 }
 
 function QuickLinksPanel({ links, wide = false, className = "" }) {
   return (
     <Panel title="Actions rapides" description="Va directement où tu veux." className={className}>
-      <ul className={wide ? "grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3" : "space-y-1.5"}>
+      <ul className={`grid gap-3 ${wide ? "grid-cols-2 lg:grid-cols-3 xl:grid-cols-6" : "grid-cols-2"}`}>
         {links.map(({ to, icon: Icon, title }) => (
           <li key={to}>
             <Link
               to={to}
-              className="group flex items-center gap-3 rounded-xl px-2.5 py-2 transition hover:bg-emerald-50/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+              className="group flex h-full flex-col items-start gap-3 rounded-2xl bg-[#F4F8FA] p-4 transition hover:-translate-y-0.5 hover:bg-emerald-50 hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 dark:bg-[#0B1F33] dark:hover:bg-white/5"
             >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#F1F6FA] text-[#334B63] transition group-hover:bg-emerald-100 group-hover:text-emerald-700">
-                <Icon size={17} strokeWidth={1.9} />
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#334B63] shadow-sm transition group-hover:bg-emerald-500 group-hover:text-white dark:bg-white/10 dark:text-white">
+                <Icon size={18} strokeWidth={1.9} />
               </span>
-              <span className="min-w-0 flex-1 truncate text-sm font-semibold text-[#0B1F33]">{title}</span>
-              <ChevronRight size={15} className="shrink-0 text-slate-300 group-hover:text-emerald-600" />
+              <span className="flex w-full items-center justify-between gap-2 text-[13px] font-bold leading-tight text-[#0B1F33] dark:text-slate-200">
+                {title}
+                <ArrowUpRight size={14} className="shrink-0 text-slate-300 transition group-hover:text-emerald-600 dark:text-slate-500 dark:group-hover:text-emerald-400" />
+              </span>
             </Link>
           </li>
         ))}

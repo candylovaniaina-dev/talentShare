@@ -1,4 +1,5 @@
 import React from "react";
+import { MapPin, Mail, Phone } from "lucide-react";
 import PortfolioContent from "./PortfolioContent";
 
 const STORAGE_URL = "/storage";
@@ -15,13 +16,13 @@ export default function BoldTheme({ portfolio, profile, accent = "#27C7B7" }) {
     .toUpperCase();
 
   return (
-    <div className="min-h-screen bg-[#08152E] font-sans text-white">
+    <div className="min-h-screen bg-[#08152E] font-sans text-white dark:bg-[#0B1F33]">
       <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
-        <article className="overflow-hidden rounded-2xl border border-white/10 bg-[#0D1C36] shadow-2xl">
+        <article className="overflow-hidden rounded-2xl border border-white/10 bg-[#0D1C36] shadow-2xl dark:bg-[#112A3A] dark:border-white/10 dark:shadow-none">
           <div className="h-1.5 w-full" style={{ backgroundColor: accent }} />
 
           {/* EN-TÊTE */}
-          <header className="border-b border-white/10 px-6 py-5">
+          <header className="border-b border-white/10 px-6 py-5 dark:border-white/10">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
               {profile.avatar_path ? (
                 <img
@@ -48,12 +49,26 @@ export default function BoldTheme({ portfolio, profile, accent = "#27C7B7" }) {
                     {profile.headline}
                   </p>
                 )}
-                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-slate-400">
+
+                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-400">
                   {(profile.city || profile.country) && (
-                    <span>{[profile.city, profile.country].filter(Boolean).join(", ")}</span>
+                    <span className="flex items-center gap-1">
+                      <MapPin size={12} />
+                      {[profile.city, profile.country].filter(Boolean).join(", ")}
+                    </span>
                   )}
-                  {profile.user?.email && <span>{profile.user.email}</span>}
-                  {profile.user?.phone && <span>{profile.user.phone}</span>}
+                  {profile.user?.email && (
+                    <span className="flex items-center gap-1">
+                      <Mail size={12} />
+                      {profile.user.email}
+                    </span>
+                  )}
+                  {profile.user?.phone && (
+                    <span className="flex items-center gap-1">
+                      <Phone size={12} />
+                      {profile.user.phone}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -71,7 +86,7 @@ export default function BoldTheme({ portfolio, profile, accent = "#27C7B7" }) {
           </div>
         </article>
 
-        <footer className="py-4 text-center text-[10px] text-slate-500">
+        <footer className="py-4 text-center text-[10px] text-slate-500 dark:text-slate-500">
           Portfolio présenté sur TalentShare
         </footer>
       </main>

@@ -7,6 +7,7 @@ use App\Models\Mission;
 use App\Models\ResourceOffer;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class MissionController extends Controller
 {
@@ -29,6 +30,7 @@ class MissionController extends Controller
                 'supplyingCompany:id,name,owner_user_id',
                 'profile.user:id,name,first_name,last_name',
                 'resourceOffer:id,title',
+                'proposal.resourceRequest:id,title',
             ])
             ->latest()
             ->get();
@@ -66,7 +68,6 @@ class MissionController extends Controller
             return response()->json(['message' => 'Seule l\'entreprise prêteuse peut créer la mission.'], 403);
         }
 
-        // ✅ Vérifier mission existante
         $existing = Mission::where('resource_offer_id', $offer->id)
             ->whereIn('status', ['pending_employee', 'planned', 'active'])
             ->exists();
@@ -75,7 +76,6 @@ class MissionController extends Controller
             return response()->json(['message' => 'Une mission est déjà en cours pour cette offre.'], 409);
         }
 
-        // ✅ Vérifier que l'offre est bien publiée
         if ($offer->status !== 'published') {
             return response()->json(['message' => 'Cette offre n\'est plus disponible.'], 409);
         }
@@ -91,9 +91,6 @@ class MissionController extends Controller
             'remote'                  => in_array($offer->location_type, ['remote', 'hybrid']),
             'status'                  => 'pending_employee',
         ]);
-
-        // ❌ SUPPRIMÉ : plus de $offer->update(['status' => 'closed'])
-        // ✅ L'offre reste publiée pendant la phase pending_employee.
 
         if ($offer->profile->user) {
             $notifications->notify(
@@ -138,8 +135,6 @@ class MissionController extends Controller
         }
 
         $mission->update(['status' => 'planned']);
-
-        // ✅ Maintenant on ferme l'offre (plus personne ne peut postuler)
         $mission->resourceOffer?->update(['status' => 'closed']);
 
         if ($mission->supplyingCompany?->owner) {
@@ -181,9 +176,6 @@ class MissionController extends Controller
 
         $mission->update(['status' => 'cancelled']);
 
-        // ✅ L'offre reste publiée (elle n'a jamais été fermée)
-        // Pas besoin de update car on ne la ferme plus dans store()
-
         if ($mission->supplyingCompany?->owner) {
             $notifications->notify(
                 $mission->supplyingCompany->owner,
@@ -197,124 +189,155 @@ class MissionController extends Controller
         return response()->json($mission);
     }
 
-    public function updateStatus(Request $request, Mission $mission, NotificationService $notifications)
-{
-    $user = $request->user();
-    $companyIds = $user->companies()->pluck('id');
+    public function updateStatus(Request $request, Mission $mission)
+    {
+        $request->validate(['status' => 'required|string|in:active,completed,cancelled']);
+        $user = $request->user();
+        $companyIds = $user->companies()->pluck('id')->toArray();
 
-    $isSupplying  = $companyIds->contains($mission->supplying_company_id);
-    $isRequesting = $companyIds->contains($mission->requesting_company_id);
+        $isSupplying = in_array($mission->supplying_company_id, $companyIds);
+        $isRequesting = in_array($mission->requesting_company_id, $companyIds);
+        $isEmployee = $user->professionalProfile && $user->professionalProfile->id === $mission->professional_profile_id;
 
-    abort_unless($isSupplying || $isRequesting, 403, 'Non autorisé.');
+        $isDirectHire = empty($mission->supplying_company_id);
 
-    $data = $request->validate([
-        'status' => ['required', 'in:planned,active,completed,cancelled']
-    ]);
+        if ($request->status === 'active') {
+            if ($isDirectHire) {
+                abort_unless($isRequesting, 403, 'Seul le recruteur peut démarrer la mission.');
+            } else {
+                abort_unless($isSupplying, 403, 'Seule l\'entreprise prêteuse peut démarrer la mission.');
+            }
+        }
 
-    $newStatus = $data['status'];
-    $oldStatus = $mission->status;
+        $mission->update(['status' => $request->status]);
 
-    // ============================================
-    // ✅ RÈGLES MÉTIER PAR TRANSITION
-    // ============================================
+        return response()->json([
+            'message' => 'Statut mis à jour',
+            'mission' => $mission->fresh(['requestingCompany', 'supplyingCompany', 'profile.user', 'resourceOffer', 'proposal.resourceRequest'])
+        ]);
+    }
 
-    // ▶️ planned → active : SEUL LE PRÊTEUR peut démarrer
-    if ($newStatus === 'active' && $oldStatus === 'planned') {
+    // ============================================================
+    // ✅ EMPLOI : fin de la période d'essai
+    // ============================================================
+
+    /** Le recruteur confirme le talent → CDI (sans date de fin) + il devient SALARIÉ de l'entreprise */
+    public function validateTrial(Request $request, Mission $mission, NotificationService $notifications)
+    {
+        $this->authorizeRequestingCompany($request, $mission, 'valider la période d\'essai');
+
+        if ($mission->status !== 'trial') {
+            return response()->json(['message' => 'Cette mission n\'est pas en période d\'essai.'], 409);
+        }
+
+        DB::transaction(function () use ($mission) {
+            $mission->update([
+                'status'   => 'active',
+                'end_at'   => null,   // CDI : pas de date de fin
+                'is_trial' => false,
+            ]);
+
+            $this->makeEmployee($mission);
+        });
+
+        try {
+            $companyName = $mission->requestingCompany?->name ?? "l'entreprise";
+            $notifications->notify(
+                $mission->profile->user,
+                'mission_accepted',
+                '🎉 Période d\'essai validée !',
+                "Félicitations, vous êtes maintenant salarié chez {$companyName} en CDI.",
+                $mission,
+                ['url' => "/missions/{$mission->id}", 'mission_id' => $mission->id]
+            );
+        } catch (\Exception $e) {
+            \Log::warning('Notification failed: ' . $e->getMessage());
+        }
+
+        return response()->json([
+            'message' => 'Période d\'essai validée : le talent est maintenant salarié en CDI.',
+            'mission' => $mission->fresh(['requestingCompany', 'profile.user', 'proposal.resourceRequest']),
+        ]);
+    }
+
+    /** Le recruteur ne confirme pas le talent → fin de la collaboration */
+    public function rejectTrial(Request $request, Mission $mission, NotificationService $notifications)
+    {
+        $this->authorizeRequestingCompany($request, $mission, 'mettre fin à la période d\'essai');
+
+        if ($mission->status !== 'trial') {
+            return response()->json(['message' => 'Cette mission n\'est pas en période d\'essai.'], 409);
+        }
+
+        $mission->update([
+            'status'   => 'cancelled',
+            'is_trial' => false,
+        ]);
+
+        try {
+            $companyName = $mission->requestingCompany?->name ?? "L'entreprise";
+            $notifications->notify(
+                $mission->profile->user,
+                'mission_declined',
+                'Période d\'essai non confirmée',
+                "{$companyName} n'a pas confirmé votre embauche à l'issue de la période d'essai.",
+                $mission,
+                ['url' => "/missions/{$mission->id}", 'mission_id' => $mission->id]
+            );
+        } catch (\Exception $e) {
+            \Log::warning('Notification failed: ' . $e->getMessage());
+        }
+
+        return response()->json([
+            'message' => 'La période d\'essai n\'a pas été confirmée.',
+            'mission' => $mission->fresh(),
+        ]);
+    }
+
+    // ============================================================
+    // HELPERS
+    // ============================================================
+
+    private function authorizeRequestingCompany(Request $request, Mission $mission, string $action): void
+    {
+        $companyIds = $request->user()->companies()->pluck('id')->toArray();
+
         abort_unless(
-            $isSupplying,
+            in_array($mission->requesting_company_id, $companyIds),
             403,
-            'Seule l\'entreprise prêteuse peut démarrer la mission.'
+            "Seul le recruteur peut {$action}."
         );
     }
 
-    // ✅ active → completed : prêteur OU emprunteur
-    if ($newStatus === 'completed' && $oldStatus === 'active') {
-        abort_unless(
-            $isSupplying || $isRequesting,
-            403,
-            'Seule une entreprise liée peut terminer la mission.'
+    /** Ajoute le talent aux salariés (+ membres) de l'entreprise, comme CompanyController@addEmployee */
+    private function makeEmployee(Mission $mission): void
+    {
+        $company = $mission->requestingCompany;
+        $talent  = $mission->profile?->user;
+
+        if (!$company || !$talent) {
+            return;
+        }
+
+        $position = $mission->profile?->headline
+            ?? $mission->proposal?->resourceRequest?->title
+            ?? 'Salarié';
+
+        $company->employees()->firstOrCreate(
+            ['user_id' => $talent->id],
+            [
+                'position'    => $position,
+                'status'      => 'active',
+                'email'       => $talent->email,
+                'first_name'  => $talent->first_name ?: $talent->name,
+                'last_name'   => $talent->last_name ?: '',
+                'has_account' => true,
+            ]
+        );
+
+        $company->members()->firstOrCreate(
+            ['user_id' => $talent->id],
+            ['role' => 'member', 'status' => 'active']
         );
     }
-
-    // ❌ Transition invalide
-    if (!in_array($newStatus, ['active', 'completed', 'cancelled'])) {
-        return response()->json(['message' => 'Transition non autorisée.'], 422);
-    }
-
-    $mission->update(['status' => $newStatus]);
-
-    // ============================================
-    // ✅ NOTIFICATIONS
-    // ============================================
-
-    try {
-        // 🚀 Mission démarrée → notifier le salarié
-        if ($newStatus === 'active' && $oldStatus === 'planned') {
-            if ($mission->profile?->user) {
-                $notifications->notify(
-                    $mission->profile->user,
-                    'mission_started',
-                    '🚀 La mission a démarré',
-                    "L'entreprise {$mission->supplyingCompany?->name} a démarré la mission du " .
-                    $mission->start_at->format('d/m/Y') . " au " .
-                    $mission->end_at->format('d/m/Y') . ". Bonne mission !",
-                    $mission,
-                    ['mission_id' => $mission->id]
-                );
-            }
-
-            // Notifier aussi l'emprunteur s'il existe
-            if ($mission->requestingCompany?->owner) {
-                $notifications->notify(
-                    $mission->requestingCompany->owner,
-                    'mission_started',
-                    '🚀 Mission démarrée',
-                    "La mission avec {$mission->profile?->user?->name} a démarré.",
-                    $mission
-                );
-            }
-        }
-
-        // ✅ Mission terminée → notifier le salarié
-        if ($newStatus === 'completed') {
-            if ($mission->profile?->user) {
-                $notifications->notify(
-                    $mission->profile->user,
-                    'mission_completed',
-                    '✅ Mission terminée',
-                    "La mission du " . $mission->start_at->format('d/m/Y') .
-                    " au " . $mission->end_at->format('d/m/Y') . " est terminée.",
-                    $mission
-                );
-            }
-        }
-
-        // ❌ Mission annulée → notifier le salarié
-        if ($newStatus === 'cancelled' && $oldStatus !== 'cancelled') {
-            if ($mission->profile?->user) {
-                $notifications->notify(
-                    $mission->profile->user,
-                    'mission_cancelled',
-                    '❌ Mission annulée',
-                    "La mission a été annulée par l'entreprise.",
-                    $mission
-                );
-            }
-        }
-    } catch (\Exception $e) {
-        \Log::warning('Notification failed: ' . $e->getMessage());
-    }
-
-    // Rouvrir l'offre si annulée après acceptation
-    if ($newStatus === 'cancelled' && $mission->resourceOffer?->status === 'closed') {
-        $mission->resourceOffer->update(['status' => 'published']);
-    }
-
-    // Fermer l'offre à la complétion
-    if ($newStatus === 'completed') {
-        $mission->resourceOffer?->update(['status' => 'closed']);
-    }
-
-    return $mission->load(['profile.user', 'supplyingCompany', 'requestingCompany']);
-}
 }

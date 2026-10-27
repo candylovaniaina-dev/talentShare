@@ -22,18 +22,17 @@ class ResourceRequestController extends Controller
     {
         $user = auth('sanctum')->user();
 
-        // ✅ Mes demandes (entreprises + talents)
+        // ✅ Mes demandes
         if ($request->boolean('my')) {
             abort_unless($user, 401);
 
             $companyIds = $user->companies()->pluck('id')->toArray();
 
-            // ✅ FIX : retiré published() — myPublications fait déjà le filtre
             return ResourceRequest::myPublications($user->id, $companyIds)
                 ->with([
                     'company:id,name,logo_path',
                     'author:id,name,role',
-                    'author.professionalProfile:id,user_id,avatar_path,headline',  // ✅ FIX
+                    'author.professionalProfile:id,user_id,avatar_path,headline',
                     'skills',
                 ])
                 ->withCount(['proposals', 'likes', 'comments'])
@@ -47,7 +46,7 @@ class ResourceRequestController extends Controller
             ->with([
                 'company:id,name,logo_path,city,country,is_verified',
                 'author:id,name,role',
-                'author.professionalProfile:id,user_id,avatar_path,headline',  // ✅ FIX
+                'author.professionalProfile:id,user_id,avatar_path,headline',
                 'skills.category.parent',
                 'skills.category',
             ])
@@ -75,6 +74,47 @@ class ResourceRequestController extends Controller
     }
 
     // ============================================
+    // MATCHING
+    // ============================================
+    public function matchingForMe(Request $request, MatchingService $matching)
+    {
+        $user = $request->user();
+        $profile = $user->professionalProfile;
+
+        if (!$profile) {
+            return response()->json(['data' => [], 'match_count' => 0, 'profile_found' => false]);
+        }
+
+        $requests = ResourceRequest::published()
+            ->where('created_by', '!=', $user->id)
+            ->with([
+                'company:id,name,logo_path,city,country,is_verified',
+                'author:id,name,role',
+                'author.professionalProfile:id,user_id,avatar_path,headline',
+                'skills',
+            ])
+            ->withCount(['proposals', 'likes', 'comments'])
+            ->latest()
+            ->limit(50)
+            ->get();
+
+        $ranked = $requests->map(function ($r) use ($profile, $matching) {
+            $r->match_score = $matching->score($r, $profile)['total'];
+            $r->is_liked = false;
+            return $this->appendDisplayData($r);
+        })
+        ->filter(fn ($r) => $r->match_score > 0)
+        ->sortByDesc('match_score')
+        ->values();
+
+        return response()->json([
+            'data' => $ranked,
+            'match_count' => $ranked->count(),
+            'profile_found' => true,
+        ]);
+    }
+
+    // ============================================
     // SHOW
     // ============================================
     public function show(Request $request, ResourceRequest $resourceRequest)
@@ -94,7 +134,7 @@ class ResourceRequestController extends Controller
         $resourceRequest->load([
             'company:id,name,logo_path,city,country,is_verified,description',
             'author:id,name,role',
-            'author.professionalProfile:id,user_id,avatar_path,headline',  // ✅ FIX
+            'author.professionalProfile:id,user_id,avatar_path,headline',
             'skills.category.parent',
             'skills.category',
             'creator:id,name',
@@ -107,24 +147,21 @@ class ResourceRequestController extends Controller
     }
 
     // ============================================
-    // STORE — Entreprise OU Talent
+    // STORE
     // ============================================
-    public function store(ResourceRequestRequest $request, NotificationService $notifications)
+       public function store(ResourceRequestRequest $request, NotificationService $notifications)
     {
         $user = $request->user();
         $data = $request->validated();
         $skills = $data['skills'] ?? [];
         unset($data['skills']);
 
-        // ✅ Cas 1 : Entreprise (company_id fourni)
         if (!empty($data['company_id'])) {
             if ($user->companies()->where('id', $data['company_id'])->doesntExist()) {
                 return response()->json(['message' => 'Cette entreprise ne vous appartient pas.'], 403);
             }
             $data['author_type'] = 'company';
-        }
-        // ✅ Cas 2 : Talent (pas de company_id)
-        else {
+        } else {
             if (!$user->isTalent()) {
                 return response()->json([
                     'message' => 'Seules les entreprises ou les talents peuvent publier.',
@@ -136,31 +173,49 @@ class ResourceRequestController extends Controller
 
         $data['created_by'] = $user->id;
 
-        // ✅ Auto-expiration 60 jours
         if (empty($data['expires_at']) && ($data['status'] ?? 'draft') === 'published') {
             $data['expires_at'] = now()->addDays(60)->toDateString();
         }
 
-        // ✅ Tags
         if (isset($data['tags']) && !is_array($data['tags'])) {
             $data['tags'] = $data['tags'] ? [$data['tags']] : null;
         }
 
-        // ✅ Positions par défaut
         if (empty($data['positions_count'])) {
             $data['positions_count'] = 1;
         }
 
-        // ✅ Urgency par défaut
         if (empty($data['urgency'])) {
             $data['urgency'] = 'normal';
         }
-
+        // ✅ SÉCURITÉ CDI
+        if (isset($data['contract_type']) && in_array(strtolower($data['contract_type']), ['emploi', 'cdi'])) {
+            $data['contract_type'] = 'emploi';
+            $data['end_at'] = null;
+        }
         $resourceRequest = ResourceRequest::create($data);
         $this->syncSkills($resourceRequest, $skills);
 
-        // ✅ Notifier les talents matching si publiée
         if ($resourceRequest->status === 'published') {
+            // 1. ✅ Notification pour l'auteur (toi)
+            try {
+                $notifications->notify(
+                    $user,
+                    'resource_request_published_self',
+                    '✅ Votre besoin a été publié',
+                    "Votre demande « {$resourceRequest->title} » est maintenant en ligne.",
+                    $resourceRequest,
+                    [
+                        'url' => "/resource-requests/{$resourceRequest->id}",
+                        'resource_request_id' => $resourceRequest->id,
+                        'actor_id' => $user->id,
+                    ]
+                );
+            } catch (\Exception $e) {
+                \Log::warning('Erreur notif self: ' . $e->getMessage());
+            }
+
+            // 2. ✅ Notification pour les autres talents (matching)
             try {
                 $this->notifyMatchingTalents($resourceRequest, $notifications);
             } catch (\Exception $e) {
@@ -173,7 +228,7 @@ class ResourceRequestController extends Controller
                 'skills',
                 'company',
                 'author',
-                'author.professionalProfile:id,user_id,avatar_path,headline',  // ✅ FIX
+                'author.professionalProfile:id,user_id,avatar_path,headline',
             ])),
             201
         );
@@ -213,7 +268,7 @@ class ResourceRequestController extends Controller
             'skills',
             'company',
             'author',
-            'author.professionalProfile:id,user_id,avatar_path,headline',  // ✅ FIX
+            'author.professionalProfile:id,user_id,avatar_path,headline',
         ]));
     }
 
@@ -259,7 +314,7 @@ class ResourceRequestController extends Controller
             'skills',
             'company',
             'author',
-            'author.professionalProfile:id,user_id,avatar_path,headline',  // ✅ FIX
+            'author.professionalProfile:id,user_id,avatar_path,headline',
         ]));
     }
 
@@ -349,7 +404,7 @@ class ResourceRequestController extends Controller
     }
 
     // ============================================
-    // CANDIDATS MATCHÉS
+    // CANDIDATS
     // ============================================
     public function candidates(ResourceRequest $resourceRequest, MatchingService $matching)
     {
@@ -377,9 +432,8 @@ class ResourceRequestController extends Controller
     }
 
     // ============================================
-    // ✅ INTERACTIONS SOCIALES
+    // INTERACTIONS SOCIALES
     // ============================================
-
     public function toggleLike(Request $request, ResourceRequest $resourceRequest)
     {
         $user = $request->user();
@@ -408,10 +462,11 @@ class ResourceRequestController extends Controller
                         'body' => "{$user->name} a aimé votre demande « {$resourceRequest->title} »",
                         'subject_type' => ResourceRequest::class,
                         'subject_id' => $resourceRequest->id,
-                        'data' => json_encode([
+                        'data' => [
                             'url' => "/resource-requests/{$resourceRequest->id}",
                             'request_id' => $resourceRequest->id,
-                        ]),
+                            'actor_id' => $user->id, // ✅ Acteur ajouté
+                        ],
                     ]);
                 } catch (\Exception $e) {
                     \Log::warning('Erreur notif like: ' . $e->getMessage());
@@ -452,11 +507,12 @@ class ResourceRequestController extends Controller
                               . Str::limit($data['content'], 60),
                     'subject_type' => ResourceRequest::class,
                     'subject_id' => $resourceRequest->id,
-                    'data' => json_encode([
+                    'data' => [
                         'url' => "/resource-requests/{$resourceRequest->id}",
                         'request_id' => $resourceRequest->id,
                         'comment_id' => $comment->id,
-                    ]),
+                        'actor_id' => $user->id, // ✅ Acteur ajouté
+                    ],
                 ]);
             } catch (\Exception $e) {
                 \Log::warning('Erreur notif comment: ' . $e->getMessage());
@@ -469,16 +525,19 @@ class ResourceRequestController extends Controller
         ], 201);
     }
 
-    public function comments(Request $request, ResourceRequest $resourceRequest)
-    {
-        $comments = ResourceRequestComment::where('resource_request_id', $resourceRequest->id)
-            ->with('user:id,name,avatar_path')
-            ->latest()
-            ->limit(50)
-            ->get();
+   public function comments(Request $request, ResourceRequest $resourceRequest)
+{
+    $comments = ResourceRequestComment::where('resource_request_id', $resourceRequest->id)
+        ->with([
+            'user:id,name,avatar_path',
+            'user.professionalProfile:id,user_id,avatar_path' // ✅ AJOUTE CETTE LIGNE
+        ])
+        ->latest()
+        ->limit(50)
+        ->get();
 
-        return response()->json(['data' => $comments]);
-    }
+    return response()->json(['data' => $comments]);
+}
 
     public function share(Request $request, ResourceRequest $resourceRequest)
     {
@@ -488,6 +547,34 @@ class ResourceRequestController extends Controller
             'success' => true,
             'shares_count' => $resourceRequest->fresh()->shares_count,
         ]);
+    }
+
+    // ============================================
+    // COUNT-NEW / MARK-SEEN
+    // ============================================
+    public function countNew(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) return response()->json(['count' => 0]);
+
+        $since = $user->resource_requests_last_seen_at;
+
+        $count = ResourceRequest::published()
+            ->when($since, fn ($q) => $q->where('created_at', '>', $since))
+            ->when(!$since, fn ($q) => $q->where('created_at', '>', now()->subDays(30)))
+            ->where('created_by', '!=', $user->id)
+            ->count();
+
+        return response()->json(['count' => $count]);
+    }
+
+    public function markSeen(Request $request)
+    {
+        $request->user()?->update([
+            'resource_requests_last_seen_at' => now(),
+        ]);
+
+        return response()->json(['success' => true]);
     }
 
     // ============================================
@@ -508,7 +595,7 @@ class ResourceRequestController extends Controller
         return $r;
     }
 
-    private function notifyMatchingTalents(ResourceRequest $request, NotificationService $notifications): void
+          private function notifyMatchingTalents(ResourceRequest $request, NotificationService $notifications): void
     {
         try {
             $matcher = app(MatchingService::class);
@@ -519,19 +606,21 @@ class ResourceRequestController extends Controller
                 $user = $item['profile']->user;
                 if (!$user) continue;
 
-                $authorName = $request->author_type === 'talent'
-                    ? ($request->author?->name ?? 'Un talent')
-                    : ($request->company?->name ?? 'Une entreprise');
+                if ($user->id === $request->created_by) {
+                    continue;
+                }
 
                 $notifications->notify(
                     $user,
                     'resource_request_published',
-                    '🎯 Nouvelle demande correspondant à votre profil',
-                    "{$authorName} recherche : {$request->title}",
+                    'a publié une nouvelle demande', // ✅ Titre neutre
+                    $request->title, // ✅ Body = juste le titre
                     $request,
                     [
+                        'url' => "/resource-requests/{$request->id}",
                         'resource_request_id' => $request->id,
                         'match_score' => $item['match']['total'],
+                        'actor_id' => $request->created_by,
                     ]
                 );
             }
@@ -539,7 +628,6 @@ class ResourceRequestController extends Controller
             \Log::warning('notifyMatchingTalents failed: ' . $e->getMessage());
         }
     }
-
     private function syncSkills(ResourceRequest $resourceRequest, array $skills): void
     {
         if (empty($skills)) {
@@ -567,7 +655,9 @@ class ResourceRequestController extends Controller
                 if (!$skill) {
                     $skill = \App\Models\Skill::create([
                         'name' => $name,
-                        'category_id' => null,
+                        'slug' => \Str::slug($name),
+                        'position' => 100,
+                        'skill_category_id' => null,
                     ]);
                 }
                 $syncData[$skill->id] = ['min_level' => $minLevel];
@@ -575,37 +665,5 @@ class ResourceRequestController extends Controller
         }
 
         $resourceRequest->skills()->sync($syncData);
-    }
-        /**
-     * ✅ Compte les nouvelles demandes depuis la dernière visite
-     */
-    public function countNew(Request $request)
-    {
-        $user = $request->user();
-        if (!$user) {
-            return response()->json(['count' => 0]);
-        }
-
-        $since = $user->resource_requests_last_seen_at;
-
-        $count = ResourceRequest::published()
-            ->when($since, fn ($q) => $q->where('created_at', '>', $since))
-            ->when(!$since, fn ($q) => $q->where('created_at', '>', now()->subDays(30)))
-            ->where('created_by', '!=', $user->id)
-            ->count();
-
-        return response()->json(['count' => $count]);
-    }
-
-    /**
-     * ✅ Marque les demandes comme vues
-     */
-    public function markSeen(Request $request)
-    {
-        $request->user()?->update([
-            'resource_requests_last_seen_at' => now(),
-        ]);
-
-        return response()->json(['success' => true]);
     }
 }

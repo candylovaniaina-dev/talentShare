@@ -10,9 +10,26 @@ use Illuminate\Support\Str;
 
 class SkillController extends Controller
 {
-    public function categories()
+    // ✅ CORRECTION ICI : Ajout de Request $request pour gérer parent_id
+    public function categories(Request $request)
     {
-        return SkillCategory::whereNull('parent_id')
+        $query = SkillCategory::query();
+
+        // Si React demande les sous-catégories d'une catégorie précise
+        if ($request->has('parent_id')) {
+            $parentId = $request->query('parent_id');
+            
+            if ($parentId === 'null' || $parentId === null || $parentId === '') {
+                $query->whereNull('parent_id');
+            } else {
+                $query->where('parent_id', $parentId);
+            }
+        } else {
+            // Par défaut (si aucun paramètre n'est envoyé), on renvoie les catégories racines
+            $query->whereNull('parent_id');
+        }
+
+        return $query
             ->with(['children.skills', 'skills'])
             ->orderBy('position')
             ->orderBy('name')
@@ -20,18 +37,18 @@ class SkillController extends Controller
     }
 
     public function index(Request $request)
-{
-    return Skill::query()
-        ->with(['category', 'category.parent'])  // ✅ CHARGE AUSSI LE PARENT
-        ->when($request->search, fn ($q, $search) => $q->where('name', 'ilike', "%{$search}%"))
-        ->when($request->category_id, fn ($q, $id) => $q->where('skill_category_id', $id))
-        ->when($request->sort === 'popular', fn ($q) =>
-            $q->withCount('profiles')->orderByDesc('profiles_count')
-        )
-        ->when($request->sort !== 'popular', fn ($q) => $q->orderBy('name'))
-        ->limit($request->limit ?? 500)
-        ->get();
-}
+    {
+        return Skill::query()
+            ->with(['category', 'category.parent'])
+            ->when($request->search, fn ($q, $search) => $q->where('name', 'ilike', "%{$search}%"))
+            ->when($request->category_id, fn ($q, $id) => $q->where('skill_category_id', $id))
+            ->when($request->sort === 'popular', fn ($q) =>
+                $q->withCount('profiles')->orderByDesc('profiles_count')
+            )
+            ->when($request->sort !== 'popular', fn ($q) => $q->orderBy('name'))
+            ->limit($request->limit ?? 500)
+            ->get();
+    }
 
     public function attach(Request $request)
     {
@@ -92,30 +109,34 @@ class SkillController extends Controller
         return response()->json(['message' => 'Compétence retirée.']);
     }
 
-    public function store(Request $request)
-    {
-        $data = $request->validate([
-            'name'              => ['required', 'string', 'max:100'],
-            'skill_category_id' => ['nullable', 'exists:skill_categories,id'],
-            'description'       => ['nullable', 'string', 'max:500'],
-        ]);
+   public function store(Request $request)
+{
+    $data = $request->validate([
+        'name'              => ['required', 'string', 'max:100'],
+        // ✅ On accepte les deux noms de champs
+        'skill_category_id' => ['nullable', 'exists:skill_categories,id'],
+        'category_id'       => ['nullable', 'exists:skill_categories,id'],
+        'description'       => ['nullable', 'string', 'max:500'],
+    ]);
 
-        $slug = Str::slug($data['name']);
-        $original = $slug;
-        $i = 1;
-        while (Skill::where('slug', $slug)->exists()) {
-            $slug = $original . '-' . $i++;
-        }
+    $categoryId = $data['skill_category_id'] ?? $data['category_id'] ?? null;
 
-        $skill = Skill::create([
-            'name'              => $data['name'],
-            'slug'              => $slug,
-            'skill_category_id' => $data['skill_category_id'] ?? null,
-            'description'       => $data['description'] ?? null,
-        ]);
-
-        return response()->json($skill->load('category'), 201);
+    $slug = Str::slug($data['name']);
+    $original = $slug;
+    $i = 1;
+    while (Skill::where('slug', $slug)->exists()) {
+        $slug = $original . '-' . $i++;
     }
+
+    $skill = Skill::create([
+        'name'              => $data['name'],
+        'slug'              => $slug,
+        'skill_category_id' => $categoryId,
+        'description'       => $data['description'] ?? null,
+    ]);
+
+    return response()->json($skill->load('category'), 201);
+}
 
     public function stats()
     {
@@ -123,5 +144,28 @@ class SkillController extends Controller
             ->withCount(['skills'])
             ->orderBy('position')
             ->get();
+    }
+        public function storeCategory(Request $request)
+    {
+        $data = $request->validate([
+            'name'      => ['required', 'string', 'max:100'],
+            'parent_id' => ['nullable', 'exists:skill_categories,id'],
+        ]);
+
+        // ✅ Génération du slug unique pour éviter l'erreur NOT NULL
+        $slug = Str::slug($data['name']);
+        $originalSlug = $slug;
+        $i = 1;
+        while (SkillCategory::where('slug', $slug)->exists()) {
+            $slug = $originalSlug . '-' . $i++;
+        }
+
+        $category = SkillCategory::create([
+            'name'      => $data['name'],
+            'slug'      => $slug, // ✅ On ajoute le slug ici
+            'parent_id' => $data['parent_id'] ?? null,
+        ]);
+
+        return response()->json($category, 201);
     }
 }

@@ -10,9 +10,6 @@ use Illuminate\Http\Request;
 
 class ConversationController extends Controller
 {
-    /**
-     * ✅ Liste des conversations avec compteur non-lus
-     */
     public function index(Request $request)
     {
         $userId = $request->user()->id;
@@ -44,9 +41,6 @@ class ConversationController extends Controller
         return $conversations;
     }
 
-    /**
-     * ✅ Détails d'une conversation
-     */
     public function show(Request $request, Conversation $conversation)
     {
         abort_unless(
@@ -60,47 +54,45 @@ class ConversationController extends Controller
         ]);
     }
 
-    /**
-     * ✅ Créer une conversation DIRECTE
-     */
     public function createDirect(Request $request)
-{
-    $data = $request->validate([
-        'user_id' => ['required', 'exists:users,id', 'not_in:' . $request->user()->id],
-    ]);
+    {
+        $data = $request->validate([
+            'user_id' => ['required', 'exists:users,id', 'not_in:' . $request->user()->id],
+        ]);
 
-    $me = $request->user()->id;
-    $other = (int) $data['user_id'];
+        $me = $request->user()->id;
+        $other = (int) $data['user_id'];
 
-    // ✅ Cherche une conversation existante
-    $existing = Conversation::whereHas('participants', fn ($q) => $q->where('users.id', $me))
-        ->whereHas('participants', fn ($q) => $q->where('users.id', $other))
-        ->has('participants', '=', 2)
-        ->first();
-
-    if ($existing) {
-        return response()->json([
-            'exists' => true,
-            'conversation' => $existing->load([
+        $existing = Conversation::whereHas('participants', fn ($q) => $q->where('users.id', $me))
+            ->whereHas('participants', fn ($q) => $q->where('users.id', $other))
+            ->has('participants', '=', 2)
+            ->with([
                 'participants:id,name,email,avatar_path,role',
                 'participants.professionalProfile:id,user_id,avatar_path,headline',
-            ]),
+            ])
+            ->first();
+
+        if ($existing) {
+            return response()->json([
+                'exists' => true,
+                'conversation' => $existing,
+            ]);
+        }
+
+        $conversation = Conversation::create(['title' => null]);
+        $conversation->participants()->attach([$me, $other]);
+
+        $conversation->load([
+            'participants:id,name,email,avatar_path,role',
+            'participants.professionalProfile:id,user_id,avatar_path,headline',
         ]);
+
+        return response()->json([
+            'exists' => false,
+            'conversation' => $conversation,
+        ], 201);
     }
 
-    // ✅ NE PAS CRÉER : retourner juste les infos du destinataire
-    $recipient = User::with('professionalProfile:id,user_id,avatar_path,headline')
-        ->select('id', 'name', 'email', 'avatar_path', 'role')
-        ->findOrFail($other);
-
-    return response()->json([
-        'exists' => false,
-        'recipient' => $recipient,
-    ]);
-}
-    /**
-     * ✅ Créer un groupe
-     */
     public function createGroup(Request $request)
     {
         $data = $request->validate([
@@ -124,42 +116,39 @@ class ConversationController extends Controller
         );
     }
 
-    /**
-     * ✅ Créer une conversation + message
-     */
     public function store(Request $request, NotificationService $notifications)
-    {$data = $request->validate([
-    'participant_ids'    => ['required', 'array', 'min:1'],
-    'participant_ids.*'  => ['exists:users,id'],
-    'title'              => ['nullable', 'string', 'max:180'],
-    'body'               => ['nullable', 'string'],
-    'attachment'         => ['nullable', 'file', 'max:5120', 'mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx'],
-    'resource_offer_id'  => ['nullable', 'exists:resource_offers,id'],
-]);
+    {
+        $data = $request->validate([
+            'participant_ids'    => ['required', 'array', 'min:1'],
+            'participant_ids.*'  => ['exists:users,id'],
+            'title'              => ['nullable', 'string', 'max:180'],
+            'body'               => ['nullable', 'string'],
+            'attachment'         => ['nullable', 'file', 'max:5120', 'mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx'],
+            'resource_offer_id'  => ['nullable', 'exists:resource_offers,id'],
+        ]);
 
-if (empty($data['body']) && !$request->hasFile('attachment')) {
-    return response()->json(['message' => 'Message vide.'], 422);
-}
+        if (empty($data['body']) && !$request->hasFile('attachment')) {
+            return response()->json(['message' => 'Message vide.'], 422);
+        }
 
         $conversation = Conversation::create(['title' => $data['title'] ?? null]);
-
         $participantIds = array_unique([...$data['participant_ids'], $request->user()->id]);
         $conversation->participants()->attach($participantIds);
 
-      $payload = [
-    'sender_id' => $request->user()->id,
-    'body'      => $data['body'] ?? '',
-];
+        $payload = [
+            'sender_id' => $request->user()->id,
+            'body'      => $data['body'] ?? '',
+        ];
 
-if ($request->hasFile('attachment')) {
-    $file = $request->file('attachment');
-    $path = $file->store('messages', 'public');
-    $payload['attachment_path'] = $path;
-    $payload['attachment_name'] = $file->getClientOriginalName();
-    $payload['attachment_type'] = $file->getMimeType();
-}
+        if ($request->hasFile('attachment')) {
+            $file = $request->file('attachment');
+            $path = $file->store('messages', 'public');
+            $payload['attachment_path'] = $path;
+            $payload['attachment_name'] = $file->getClientOriginalName();
+            $payload['attachment_type'] = $file->getMimeType();
+        }
 
-$message = $conversation->messages()->create($payload);
+        $message = $conversation->messages()->create($payload);
 
         foreach (array_diff($participantIds, [$request->user()->id]) as $userId) {
             $recipient = User::find($userId);
@@ -175,20 +164,17 @@ $message = $conversation->messages()->create($payload);
             );
         }
 
-     return response()->json(
-    $conversation->fresh()->load([
-        'messages.sender:id,name,email,avatar_path,role',
-        'messages.sender.professionalProfile:id,user_id,avatar_path',
-        'participants:id,name,email,avatar_path,role',
-        'participants.professionalProfile:id,user_id,avatar_path,headline',
-    ]),
-    201
-);
+        return response()->json(
+            $conversation->fresh()->load([
+                'messages.sender:id,name,email,avatar_path,role',
+                'messages.sender.professionalProfile:id,user_id,avatar_path',
+                'participants:id,name,email,avatar_path,role',
+                'participants.professionalProfile:id,user_id,avatar_path,headline',
+            ]),
+            201
+        );
     }
 
-    /**
-     * ✅ Récupérer les messages + marquer comme lu
-     */
     public function messages(Request $request, Conversation $conversation)
     {
         abort_unless(
@@ -209,9 +195,6 @@ $message = $conversation->messages()->create($payload);
             ->get();
     }
 
-    /**
-     * ✅ Envoyer un message
-     */
     public function sendMessage(Request $request, Conversation $conversation, NotificationService $notifications)
     {
         abort_unless(
@@ -274,23 +257,14 @@ $message = $conversation->messages()->create($payload);
         );
     }
 
-    /**
-     * ✅ Compteur total non-lus
-     */
     public function unreadCount(Request $request)
     {
         $userId = $request->user()->id;
-
-        $conversations = $request->user()
-            ->conversations()
-            ->wherePivot('is_archived', false)
-            ->get();
-
+        $conversations = $request->user()->conversations()->wherePivot('is_archived', false)->get();
         $total = 0;
 
         foreach ($conversations as $conv) {
             $lastReadAt = $conv->pivot->last_read_at ?? null;
-
             $total += \App\Models\Message::where('conversation_id', $conv->id)
                 ->where('sender_id', '!=', $userId)
                 ->when($lastReadAt, fn ($q) => $q->where('created_at', '>', $lastReadAt))
@@ -300,64 +274,26 @@ $message = $conversation->messages()->create($payload);
         return response()->json(['unread_count' => $total]);
     }
 
-    /**
-     * ✅ Marquer comme NON LUE
-     */
     public function markUnread(Request $request, Conversation $conversation)
     {
-        abort_unless(
-            $conversation->participants()->where('users.id', $request->user()->id)->exists(),
-            403
-        );
-
-        $conversation->participants()->updateExistingPivot(
-            $request->user()->id,
-            ['last_read_at' => null]
-        );
-
+        abort_unless($conversation->participants()->where('users.id', $request->user()->id)->exists(), 403);
+        $conversation->participants()->updateExistingPivot($request->user()->id, ['last_read_at' => null]);
         return response()->json(['message' => 'Marquée comme non lue']);
     }
 
-    /**
-     * ✅ Archiver / Désarchiver
-     */
     public function archive(Request $request, Conversation $conversation)
     {
-        abort_unless(
-            $conversation->participants()->where('users.id', $request->user()->id)->exists(),
-            403
-        );
-
-        $pivot = $conversation->participants()
-            ->where('users.id', $request->user()->id)
-            ->first()?->pivot;
-
+        abort_unless($conversation->participants()->where('users.id', $request->user()->id)->exists(), 403);
+        $pivot = $conversation->participants()->where('users.id', $request->user()->id)->first()?->pivot;
         $newState = !($pivot->is_archived ?? false);
-
-        $conversation->participants()->updateExistingPivot(
-            $request->user()->id,
-            ['is_archived' => $newState]
-        );
-
-        return response()->json([
-            'message' => $newState ? 'Conversation archivée' : 'Conversation désarchivée',
-            'is_archived' => $newState,
-        ]);
+        $conversation->participants()->updateExistingPivot($request->user()->id, ['is_archived' => $newState]);
+        return response()->json(['message' => $newState ? 'Conversation archivée' : 'Conversation désarchivée', 'is_archived' => $newState]);
     }
 
-    /**
-     * ✅ Ajouter un participant au groupe
-     */
     public function addParticipant(Request $request, Conversation $conversation)
     {
-        abort_unless(
-            $conversation->participants()->where('users.id', $request->user()->id)->exists(),
-            403
-        );
-
-        $data = $request->validate([
-            'user_id' => ['required', 'exists:users,id'],
-        ]);
+        abort_unless($conversation->participants()->where('users.id', $request->user()->id)->exists(), 403);
+        $data = $request->validate(['user_id' => ['required', 'exists:users,id']]);
 
         if ($conversation->participants()->where('users.id', $data['user_id'])->exists()) {
             return response()->json(['message' => 'Déjà membre'], 409);
@@ -374,16 +310,9 @@ $message = $conversation->messages()->create($payload);
         ]);
     }
 
-    /**
-     * ✅ Retirer un participant du groupe
-     */
     public function removeParticipant(Request $request, Conversation $conversation, $userId)
     {
-        abort_unless(
-            $conversation->participants()->where('users.id', $request->user()->id)->exists(),
-            403
-        );
-
+        abort_unless($conversation->participants()->where('users.id', $request->user()->id)->exists(), 403);
         $conversation->participants()->detach($userId);
 
         return response()->json([
@@ -395,16 +324,9 @@ $message = $conversation->messages()->create($payload);
         ]);
     }
 
-    /**
-     * ✅ Quitter un groupe
-     */
     public function leave(Request $request, Conversation $conversation)
     {
-        abort_unless(
-            $conversation->participants()->where('users.id', $request->user()->id)->exists(),
-            403
-        );
-
+        abort_unless($conversation->participants()->where('users.id', $request->user()->id)->exists(), 403);
         $conversation->participants()->detach($request->user()->id);
 
         if ($conversation->participants()->count() === 0) {
@@ -415,20 +337,10 @@ $message = $conversation->messages()->create($payload);
         return response()->json(['message' => 'Vous avez quitté le groupe']);
     }
 
-    /**
-     * ✅ Modifier le titre d'un groupe
-     */
     public function update(Request $request, Conversation $conversation)
     {
-        abort_unless(
-            $conversation->participants()->where('users.id', $request->user()->id)->exists(),
-            403
-        );
-
-        $data = $request->validate([
-            'title' => ['required', 'string', 'max:180'],
-        ]);
-
+        abort_unless($conversation->participants()->where('users.id', $request->user()->id)->exists(), 403);
+        $data = $request->validate(['title' => ['required', 'string', 'max:180']]);
         $conversation->update(['title' => $data['title']]);
 
         return response()->json([
@@ -437,16 +349,9 @@ $message = $conversation->messages()->create($payload);
         ]);
     }
 
-    /**
-     * ✅ Supprimer une conversation
-     */
     public function destroy(Request $request, Conversation $conversation)
     {
-        abort_unless(
-            $conversation->participants()->where('users.id', $request->user()->id)->exists(),
-            403
-        );
-
+        abort_unless($conversation->participants()->where('users.id', $request->user()->id)->exists(), 403);
         $conversation->participants()->detach($request->user()->id);
 
         if ($conversation->participants()->count() === 0) {

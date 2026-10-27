@@ -20,15 +20,27 @@ class User extends Authenticatable
      *
      * @var array<int, string>
      */
-   protected $fillable = [
+  protected $fillable = [
     'name',
     'email',
     'password',
     'role',
     'phone',
     'avatar_path',
-    'status', 'first_name', 'last_name', 'country',
-    'theme_preference', 'font_size', 'high_contrast', 'reduce_motion','provider', 'provider_id', 'last_login_at', 
+    'status',
+    'first_name',
+    'last_name',
+    'country',
+    'theme_preference',
+    'font_size',
+    'high_contrast',
+    'reduce_motion',
+    'provider',
+    'provider_id',
+    'last_login_at',
+    'proposals_last_seen_at',           // ✅ AJOUT
+    'resource_requests_last_seen_at',   // ✅ AJOUT
+    'job_offers_last_seen_at',          // ✅ AJOUT (pour les offres)
 ];
 
     /**
@@ -65,6 +77,11 @@ protected function casts(): array
     {
         return $this->hasMany(Company::class, 'owner_user_id');
     }
+public function company()
+{
+    // Puisque tu es le propriétaire (owner_user_id), on récupère la première entreprise
+    return $this->hasOne(Company::class, 'owner_user_id');
+}
 
     /**
      * Relation avec les universités (pour un propriétaire d'université)

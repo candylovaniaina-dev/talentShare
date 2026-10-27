@@ -70,11 +70,11 @@ class InterviewScheduled extends Mailable
     }
 
     /**
-     * Génère un fichier .ics VALIDE RFC 5545 :
-     * ✅ Bloc VTIMEZONE pour Indian/Antananarivo (Madagascar UTC+3)
-     * ✅ ORGANIZER + ATTENDEE
-     * ✅ Folding à 75 octets
-     * ✅ Échappement complet
+     * ✅ Génère un fichier .ics SIMPLIFIÉ et 100% compatible Gmail / Outlook.
+     * 
+     * - Tout est en UTC (avec le Z à la fin) pour éviter les problèmes de fuseaux.
+     * - Pas de bloc VTIMEZONE (inutile si on est en UTC).
+     * - Toutes les lignes respectent le format RFC 5545.
      */
     private function buildIcs(): string
     {
@@ -91,16 +91,21 @@ class InterviewScheduled extends Mailable
         $company = $offer->company;
         $applicant = $this->application->profile->user;
 
-        // ✅ Heure locale Madagascar
-        $start = $this->application->interview_at->copy()->setTimezone('Indian/Antananarivo');
+        // ✅ On convertit TOUTES les dates en UTC (Gmail exige ça pour être sûr)
+        $start = $this->application->interview_at->copy()->utc();
         $end = $start->copy()->addHour();
 
-        $uid = 'talentshare-' . $this->application->id . '-' . $this->application->interview_at->timestamp . '@talentshare.local';
+        // ✅ Identifiant unique basé sur l'ID et le timestamp
+        $uid = 'talentshare-entretien-' . $this->application->id . '@talentshare.com';
         $dtstamp = now()->utc()->format('Ymd\THis\Z');
 
-        $summary = 'Entretien – ' . $offer->title;
-        $description = "Entretien pour le poste « {$offer->title} » chez {$company?->name}.\n\n"
-            . "Rejoindre la visioconférence : {$this->application->interview_link}";
+        // ✅ Nettoyage des textes pour éviter les caractères spéciaux
+        $summary = 'Entretien programmé : ' . $offer->title;
+        $description = "Bonjour {$applicant->name},\n\n"
+            . "Votre entretien pour le poste « {$offer->title} » est programmé.\n\n"
+            . "Entreprise : " . ($company?->name ?? 'TalentShare') . "\n"
+            . "Lien de visioconférence : {$this->application->interview_link}\n\n"
+            . "À bientôt !";
 
         $organizerEmail = $company?->email ?: config('mail.from.address', 'noreply@talentshare.com');
         $organizerName  = $company?->name ?: config('mail.from.name', 'TalentShare');
@@ -112,37 +117,28 @@ class InterviewScheduled extends Mailable
             "CALSCALE:GREGORIAN",
             "METHOD:REQUEST",
 
-            // ✅ BLOC VTIMEZONE OBLIGATOIRE pour Indian/Antananarivo
-            "BEGIN:VTIMEZONE",
-            "TZID:Indian/Antananarivo",
-            "X-LIC-LOCATION:Indian/Antananarivo",
-            "BEGIN:STANDARD",
-            "DTSTART:19700101T000000",
-            "TZOFFSETFROM:+0300",
-            "TZOFFSETTO:+0300",
-            "TZNAME:EAT",
-            "END:STANDARD",
-            "END:VTIMEZONE",
-
             "BEGIN:VEVENT",
             "UID:{$uid}",
             "DTSTAMP:{$dtstamp}",
-            // ✅ DTSTART/DTEND avec TZID (plus fiable que Z)
-            "DTSTART;TZID=Indian/Antananarivo:" . $start->format('Ymd\THis'),
-            "DTEND;TZID=Indian/Antananarivo:" . $end->format('Ymd\THis'),
+            
+            // ✅ LIGNE LA PLUS IMPORTANTE : tout en UTC
+            "DTSTART:" . $start->format('Ymd\THis\Z'),
+            "DTEND:" . $end->format('Ymd\THis\Z'),
+            
             $this->foldLine("SUMMARY:" . $this->escapeIcs($summary)),
             $this->foldLine("DESCRIPTION:" . $this->escapeIcs($description)),
-            "LOCATION:Visioconférence",
-            "URL:" . $this->application->interview_link,
-            $this->foldLine("ORGANIZER;CN=" . $this->escapeIcs($organizerName) . ":MAILTO:{$organizerEmail}"),
-            $this->foldLine("ATTENDEE;CN=" . $this->escapeIcs($applicant->name) . ";RSVP=TRUE:MAILTO:{$applicant->email}"),
+            $this->foldLine("LOCATION:Visioconférence"),
+            $this->foldLine("URL:" . $this->application->interview_link),
+            
+            // ✅ ORGANIZER : obligatoire pour Gmail
+            $this->foldLine("ORGANIZER;CN=" . $this->escapeIcs($organizerName) . ":mailto:{$organizerEmail}"),
+            
+            // ✅ ATTENDEE : le destinataire (RSVP=TRUE pour avoir les boutons de réponse)
+            $this->foldLine("ATTENDEE;CN=" . $this->escapeIcs($applicant->name) . ";ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:{$applicant->email}"),
+            
             "STATUS:CONFIRMED",
             "SEQUENCE:0",
-            "BEGIN:VALARM",
-            "TRIGGER:-PT15M",
-            "ACTION:DISPLAY",
-            "DESCRIPTION:Rappel entretien",
-            "END:VALARM",
+            "TRANSP:OPAQUE",
             "END:VEVENT",
             "END:VCALENDAR",
         ];
@@ -150,32 +146,37 @@ class InterviewScheduled extends Mailable
         return implode("\r\n", $lines);
     }
 
+    /**
+     * ✅ Échappe les caractères spéciaux selon RFC 5545
+     */
     private function escapeIcs(string $text): string
     {
+        // Nettoyer d'abord les sauts de ligne Windows
+        $text = str_replace(["\r\n", "\r"], "\n", $text);
+        
         return str_replace(
-            ["\\", ",", ";", "\r\n", "\n", "\r"],
-            ["\\\\", "\\,", "\\;", "\\n", "\\n", "\\n"],
+            ["\\", ",", ";", "\n"],
+            ["\\\\", "\\,", "\\;", "\\n"],
             $text
         );
     }
 
     /**
-     * Replie une ligne iCalendar à 75 octets max (RFC 5545 §3.1).
+     * ✅ Replie une ligne à 75 octets max (RFC 5545 §3.1)
      */
     private function foldLine(string $line): string
     {
-        $maxLen = 75;
-        if (strlen($line) <= $maxLen) {
+        if (strlen($line) <= 75) {
             return $line;
         }
 
-        $folded = substr($line, 0, $maxLen);
-        $rest = substr($line, $maxLen);
+        $folded = substr($line, 0, 75);
+        $rest = substr($line, 75);
 
         while (strlen($rest) > 0) {
-            $chunk = substr($rest, 0, $maxLen - 1);
+            $chunk = substr($rest, 0, 74);
             $folded .= "\r\n " . $chunk;
-            $rest = substr($rest, $maxLen - 1);
+            $rest = substr($rest, 74);
         }
 
         return $folded;

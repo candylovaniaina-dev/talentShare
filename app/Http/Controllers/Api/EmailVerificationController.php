@@ -11,28 +11,57 @@ use Illuminate\Support\Facades\Mail;
 
 class EmailVerificationController extends Controller
 {
-    public function verify(Request $request, $id, $hash)
-    {
-        $user = User::findOrFail($id);
+   public function verify(Request $request, $id, $hash)
+{
+    $user = User::findOrFail($id);
 
-        // Vérifie le hash
-        if (!hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
-            return response()->json(['message' => 'Lien invalide.'], 403);
-        }
-
-        // Marque comme vérifié
-        if (!$user->hasVerifiedEmail()) {
-            $user->markEmailAsVerified();
-        }
-
-        // ═══════════════════════════════════════════════
-        // ✅ ÉTAPE CLÉ : Envoyer les emails d'entretien EN ATTENTE
-        // ═══════════════════════════════════════════════
-        $this->sendPendingInterviewEmails($user);
-
-        return response()->json(['message' => 'Email vérifié.']);
+    if (!hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
+        return $this->renderResult(false, "Lien invalide", "Le lien de vérification est invalide ou a expiré.");
     }
 
+    if (!$user->hasVerifiedEmail()) {
+        $user->markEmailAsVerified();
+    }
+
+    // ✅ Envoie le mail d'entretien + SMS
+    $this->sendPendingInterviewEmails($user);
+
+    return $this->renderResult(true, "Adresse vérifiée !", "Votre email est confirmé. L'invitation à l'entretien vient de vous être envoyée par email.");
+}
+
+private function renderResult(bool $success, string $title, string $message)
+{
+    $color = $success ? '#34D399' : '#F87171';
+    $icon = $success ? '✓' : '✕';
+    $frontend = env('FRONTEND_URL', 'http://localhost:5173');
+
+    return response(<<<HTML
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>{$title} | TalentShare</title>
+<style>
+  body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; font-family: sans-serif; background: #0B1F33; color: #fff; padding: 24px; }
+  .card { max-width: 480px; width: 100%; background: #111B35; border-radius: 24px; padding: 48px 32px; text-align: center; border: 1px solid rgba(255,255,255,0.08); }
+  .icon { width: 72px; height: 72px; margin: 0 auto 24px; border-radius: 50%; background: {$color}22; color: {$color}; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 700; }
+  h1 { font-size: 24px; margin: 0 0 12px; font-weight: 700; }
+  p { color: #94A3B8; font-size: 14px; line-height: 1.7; }
+  .btn { display: inline-block; margin-top: 28px; padding: 14px 32px; background: #34D399; color: #0A1229 !important; text-decoration: none; font-weight: 700; border-radius: 999px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">{$icon}</div>
+    <h1>{$title}</h1>
+    <p>{$message}</p>
+    <a href="{$frontend}/login" class="btn">Continuer vers la connexion</a>
+  </div>
+</body>
+</html>
+HTML
+    );
+}
     /**
      * Envoie tous les emails d'entretien en attente pour cet utilisateur
      */

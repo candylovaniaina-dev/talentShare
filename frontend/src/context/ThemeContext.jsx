@@ -19,10 +19,18 @@ const getStoredValue = (key, fallback) => {
 
 const getStoredBoolean = (key) => getStoredValue(key, "false") === "true";
 
+// Thème du système (si aucun choix n'a encore été enregistré)
+const getSystemTheme = () =>
+  typeof window !== "undefined" &&
+  window.matchMedia?.("(prefers-color-scheme: light)").matches
+    ? "light"
+    : "dark";
+
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState(() =>
-    getStoredValue("theme", "dark")
-  );
+  const [theme, setTheme] = useState(() => {
+    const stored = getStoredValue("theme", null);
+    return stored === "dark" || stored === "light" ? stored : getSystemTheme();
+  });
   const [fontSize, setFontSize] = useState(() =>
     getStoredValue("font_size", "normal")
   );
@@ -38,6 +46,8 @@ export const ThemeProvider = ({ children }) => {
 
     root.classList.toggle("dark", theme === "dark");
     root.classList.toggle("light", theme === "light");
+    // Barres de défilement, champs et menus natifs suivent le thème
+    root.style.colorScheme = theme;
 
     root.classList.remove("font-small", "font-normal", "font-large");
     root.classList.add(`font-${fontSize}`);
@@ -58,10 +68,7 @@ export const ThemeProvider = ({ children }) => {
   const syncFromUser = useCallback((user) => {
     if (!user) return;
 
-    if (
-      user.theme_preference === "dark" ||
-      user.theme_preference === "light"
-    ) {
+    if (user.theme_preference === "dark" || user.theme_preference === "light") {
       setTheme(user.theme_preference);
     }
 
@@ -99,20 +106,25 @@ export const ThemeProvider = ({ children }) => {
     }
 
     // Applique immédiatement la préférence à l'interface.
-    // "system" reste accepté pour compatibilité avec le backend.
     if (key === "theme_preference" && value === "system") {
-      const prefersDark =
-        window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? true;
-
-      setTheme(prefersDark ? "dark" : "light");
+      setTheme(getSystemTheme());
     } else {
       setters[key](value);
     }
 
+    // Sauvegarde sur le serveur uniquement si l'utilisateur est connecté
+    let token = null;
     try {
-      await api.patch("/account/preferences", { [key]: value });
-    } catch (error) {
-      console.error("Erreur sauvegarde préférence :", error);
+      token = localStorage.getItem("token");
+    } catch {
+      token = null;
+    }
+    if (token) {
+      try {
+        await api.patch("/account/preferences", { [key]: value });
+      } catch (error) {
+        console.error("Erreur sauvegarde préférence :", error);
+      }
     }
   }, []);
 
@@ -140,12 +152,10 @@ export const ThemeProvider = ({ children }) => {
 
 export const useTheme = () => {
   const context = useContext(ThemeContext);
-
   if (!context) {
     throw new Error(
       "useTheme doit être utilisé dans un composant enveloppé par ThemeProvider."
     );
   }
-
   return context;
 };

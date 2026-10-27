@@ -17,23 +17,26 @@ class InterviewScheduledVerificationNeeded extends Mailable
     public $company;
     public string $verificationUrl;
 
-    public function __construct(Application $application)
-    {
-        $this->application = $application;
-        $this->candidate = $application->profile?->user;
-        $this->offer = $application->jobOffer;
-        $this->company = $this->offer?->company;
+   public function __construct(Application $application)
+{
+    $this->application = $application;
+    $this->candidate = $application->profile?->user;
+    $this->offer = $application->jobOffer;
+    $this->company = $this->offer?->company;
 
-        // Génère le lien de vérification signé
-        $this->verificationUrl = \URL::temporarySignedRoute(
-            'verification.verify',
-            now()->addDays(7),
-            [
-                'id' => $this->candidate->id,
-                'hash' => sha1($this->candidate->email),
-            ]
-        );
-    }
+    // ✅ Lien direct vers le BACKEND (port 8001), en gardant la signature
+    $this->verificationUrl = \URL::temporarySignedRoute(
+        'verification.verify',
+        now()->addDays(7),
+        [
+            'id' => $this->candidate->id,
+            'hash' => sha1($this->candidate->email),
+        ]
+    );
+    
+    // Sécurité : s'assurer qu'on pointe bien vers le backend 8001 et non le frontend 5173
+    $this->verificationUrl = str_replace('localhost:5173', 'localhost:8001', $this->verificationUrl);
+}
 
     public function envelope(): \Illuminate\Mail\Mailables\Envelope
     {

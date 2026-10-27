@@ -6,8 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Application\ApplicationRequest;
 use App\Mail\InterviewScheduled;
 use App\Mail\ApplicationShortlisted;
+use App\Mail\ApplicationAccepted;
+use App\Mail\ApplicationRejected;
 use App\Models\Application;
 use App\Models\Notification;
+use App\Models\Employee;
+use App\Models\Conversation;
+use App\Models\Message;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
@@ -15,16 +20,10 @@ use Illuminate\Support\Str;
 
 class ApplicationController extends Controller
 {
-    /**
-     * Liste les candidatures de l'utilisateur connecté (Young Talent)
-     */
     public function index(Request $request)
     {
         $profile = $request->user()->professionalProfile;
-
-        if (!$profile) {
-            return response()->json([]);
-        }
+        if (!$profile) return response()->json([]);
 
         return Application::forProfile($profile->id)
             ->with(['jobOffer.company:id,name,logo_path,city,country', 'portfolio:id,title,public_slug'])
@@ -33,15 +32,10 @@ class ApplicationController extends Controller
             ->get();
     }
 
-    /**
-     * Stats rapides pour le dashboard
-     */
     public function stats(Request $request)
     {
         $profile = $request->user()->professionalProfile;
-        if (!$profile) {
-            return response()->json(['total' => 0]);
-        }
+        if (!$profile) return response()->json(['total' => 0]);
 
         $counts = Application::forProfile($profile->id)
             ->selectRaw('status, count(*) as count')
@@ -60,13 +54,9 @@ class ApplicationController extends Controller
         ]);
     }
 
-    /**
-     * Détail d'une candidature
-     */
     public function show(Request $request, Application $application)
     {
         $profile = $request->user()->professionalProfile;
-
         $isOwner = $profile && $application->professional_profile_id === $profile->id;
         $isRecruiter = $request->user()->companies()
             ->where('id', $application->jobOffer->company_id)->exists();
@@ -85,22 +75,14 @@ class ApplicationController extends Controller
         return $application;
     }
 
-    /**
-     * Créer une candidature (Young Talent)
-     */
     public function store(ApplicationRequest $request)
     {
         if ($request->user()->role === "company") {
-            return response()->json([
-                'message' => 'Une entreprise ne peut pas postuler à une offre. Utilisez la messagerie.',
-            ], 403);
+            return response()->json(['message' => 'Une entreprise ne peut pas postuler.'], 403);
         }
 
         $profile = $request->user()->professionalProfile;
-
-        if (!$profile) {
-            return response()->json(['message' => 'Créez d\'abord votre profil professionnel.'], 422);
-        }
+        if (!$profile) return response()->json(['message' => 'Créez d\'abord votre profil professionnel.'], 422);
 
         $existing = Application::where('job_offer_id', $request->job_offer_id)
             ->where('professional_profile_id', $profile->id)
@@ -155,15 +137,9 @@ class ApplicationController extends Controller
             \Log::warning('Erreur notification new_application: ' . $e->getMessage());
         }
 
-        return response()->json(
-            $application->load('jobOffer.company'),
-            201
-        );
+        return response()->json($application->load('jobOffer.company'), 201);
     }
 
-    /**
-     * Retirer une candidature (candidat)
-     */
     public function withdraw(Request $request, Application $application)
     {
         $profile = $request->user()->professionalProfile;
@@ -172,13 +148,9 @@ class ApplicationController extends Controller
         abort_if(in_array($application->status, ['accepted', 'rejected']), 422, 'Impossible de retirer cette candidature.');
 
         $application->delete();
-
         return response()->json(['message' => 'Candidature retirée.']);
     }
 
-    /**
-     * Changer le statut (recruteur uniquement)
-     */
     public function updateStatus(Request $request, Application $application)
     {
         $isOwnerCompany = $request->user()->companies()
@@ -192,19 +164,127 @@ class ApplicationController extends Controller
         ]);
 
         if ($data['status'] === 'interview') {
-            return response()->json([
-                'message' => 'Utilisez la programmation d\'entretien pour ce statut (date + lien requis).',
-            ], 422);
+            return response()->json(['message' => 'Utilisez la programmation d\'entretien.'], 422);
         }
 
         $previousStatus = $application->status;
 
+        // ✅ LOGIQUE ACCEPTATION (SANS VÉRIFICATION D'EMAIL)
+        if ($data['status'] === 'accepted' && $previousStatus !== 'accepted') {
+            
+            $applicant = $application->profile->user;
+
+            // 1. On envoie le mail sans vérifier email_verified_at
+            try {
+                Mail::to($applicant->email)->send(new ApplicationAccepted($application->fresh()));
+                \Log::info("✅ Email d'acceptation envoyé à {$applicant->email}");
+            } catch (\Exception $e) {
+                \Log::error("Erreur email acceptation: " . $e->getMessage());
+                
+                // ❌ SI LE MAIL ÉCHOUE, ON REMET LE STATUT À "PRÉSÉLECTIONNÉE"
+                $application->update(['status' => 'shortlisted']);
+                
+                return response()->json([
+                    'message' => "L'acceptation a échoué car l'email n'a pas pu être envoyé. Le statut reste 'Présélectionnée'.",
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            // 2. Si le mail est parti, on exécute la logique
+            try {
+                $offer = $application->jobOffer;
+                $company = $offer->company;
+                $recruiter = $company->owner;
+
+                // Ajouter le talent comme salarié
+                Employee::firstOrCreate(
+                    [
+                        'company_id' => $company->id,
+                        'user_id'    => $applicant->id,
+                    ],
+                    [
+                        'position'    => $offer->title,
+                        'status'      => 'active',
+                        'has_account' => true,
+                        'first_name'  => $applicant->first_name ?? explode(' ', $applicant->name)[0] ?? '',
+                        'last_name'   => $applicant->last_name ?? explode(' ', $applicant->name)[1] ?? '',
+                        'email'       => $applicant->email,
+                        'phone'       => $applicant->phone,
+                    ]
+                );
+
+                // Fermer l'offre
+                $offer->update(['status' => 'closed']);
+
+                // Rejeter les autres candidatures
+                Application::where('job_offer_id', $offer->id)
+                    ->where('id', '!=', $application->id)
+                    ->whereNotIn('status', ['rejected', 'accepted'])
+                    ->update([
+                        'status'     => 'rejected',
+                        'decided_at' => now(),
+                    ]);
+
+                // Créer la conversation
+                $conversation = Conversation::where('subject_type', 'App\Models\Company')
+                    ->where('subject_id', $company->id)
+                    ->whereHas('participants', fn($q) => $q->where('user_id', $applicant->id))
+                    ->first();
+
+                if (!$conversation) {
+                    $conversation = Conversation::create([
+                        'subject_type' => 'App\Models\Company',
+                        'subject_id'   => $company->id,
+                        'title'        => "Collaboration – {$offer->title}",
+                    ]);
+
+                    $conversation->participants()->attach([
+                        $recruiter->id,
+                        $applicant->id,
+                    ]);
+                }
+
+                // Message de bienvenue
+                Message::create([
+                    'conversation_id' => $conversation->id,
+                    'sender_id'       => $recruiter->id,
+                    'body'            => "Bienvenue dans l'équipe ! 🎉\n\n"
+                        . "Nous sommes ravis de vous compter parmi nous pour le poste de « {$offer->title} ».\n\n"
+                        . "N'hésitez pas à nous contacter ici pour discuter des détails pratiques (date de début, matériel, etc.).\n\n"
+                        . "À très vite !",
+                ]);
+
+                // Refus aux autres (emails)
+                $rejectedApps = Application::where('job_offer_id', $offer->id)
+                    ->where('status', 'rejected')
+                    ->where('id', '!=', $application->id)
+                    ->with('profile.user')
+                    ->get();
+
+                foreach ($rejectedApps as $rejApp) {
+                    $rejUser = $rejApp->profile?->user;
+                    if ($rejUser) {
+                        try {
+                            Mail::to($rejUser->email)->send(new ApplicationRejected($rejApp));
+                        } catch (\Exception $e) {
+                            \Log::error("Erreur email refus: " . $e->getMessage());
+                        }
+                    }
+                }
+
+            } catch (\Exception $e) {
+                \Log::error('Erreur logique acceptation: ' . $e->getMessage());
+            }
+        }
+
+        // 3. Mise à jour du statut
         $application->transitionTo($data['status']);
 
         if (array_key_exists('recruiter_notes', $data)) {
             $application->update(['recruiter_notes' => $data['recruiter_notes']]);
         }
 
+        // Notifications
         try {
             $fresh = $application->fresh();
             $applicant = $fresh->profile?->user;
@@ -223,7 +303,7 @@ class ApplicationController extends Controller
                     'accepted' => [
                         'type' => 'application_accepted',
                         'title' => '✅ Candidature acceptée',
-                        'body' => "{$company?->name} a accepté votre candidature pour « {$offer?->title} »",
+                        'body' => "Félicitations ! {$company?->name} a accepté votre candidature pour « {$offer?->title} ». Bienvenue dans l'équipe !",
                     ],
                     'rejected' => [
                         'type' => 'application_rejected',
@@ -234,7 +314,6 @@ class ApplicationController extends Controller
 
                 $cfg = $config[$data['status']];
 
-                // 📬 Notification interne (cloche)
                 Notification::create([
                     'user_id' => $applicant->id,
                     'type' => $cfg['type'],
@@ -249,14 +328,11 @@ class ApplicationController extends Controller
                     ],
                 ]);
 
-                // 📧 EMAIL : Présélection (uniquement si on passe à ce statut pour la première fois)
                 if ($data['status'] === 'shortlisted' && $previousStatus !== 'shortlisted') {
                     try {
-                        Mail::to($applicant->email)
-                            ->send(new ApplicationShortlisted($fresh));
-                        \Log::info("✅ Email présélection envoyé à {$applicant->email}");
+                        Mail::to($applicant->email)->send(new ApplicationShortlisted($fresh));
                     } catch (\Exception $e) {
-                        \Log::error("❌ Erreur envoi email présélection: " . $e->getMessage());
+                        \Log::error("Erreur email présélection: " . $e->getMessage());
                     }
                 }
             }
@@ -264,13 +340,13 @@ class ApplicationController extends Controller
             \Log::warning('Erreur notification updateStatus: ' . $e->getMessage());
         }
 
-        return $application->fresh();
+        return response()->json([
+            'message' => $data['status'] === 'accepted' ? 'Candidature acceptée. Le talent a été ajouté à votre équipe.' : 'Statut mis à jour.',
+            'application' => $application->fresh(),
+        ]);
     }
 
-    /**
-     * ✅ Programme un entretien avec vérification automatique de l'email
-     */
-        public function scheduleInterview(Request $request, Application $application)
+    public function scheduleInterview(Request $request, Application $application)
     {
         $isOwnerCompany = $request->user()->companies()
             ->where('id', $application->jobOffer->company_id)->exists();
@@ -288,7 +364,6 @@ class ApplicationController extends Controller
             return response()->json(['message' => 'Candidat introuvable.'], 422);
         }
 
-        // Vérification email (RFC + MX)
         $emailValidation = Validator::make(
             ['email' => $applicant->email],
             ['email' => 'required|email:rfc,dns']
@@ -296,7 +371,7 @@ class ApplicationController extends Controller
 
         if ($emailValidation->fails()) {
             return response()->json([
-                'message' => "L'adresse email du candidat « {$applicant->email} » est invalide.",
+                'message' => "L'adresse email du candidat est invalide.",
                 'errors' => $emailValidation->errors(),
             ], 422);
         }
@@ -326,12 +401,8 @@ class ApplicationController extends Controller
             ], 422);
         }
 
-        // ═══════════════════════════════════════════════
-        // ÉTAPE CLÉ : On détecte si l'email est vérifié ou non
-        // ═══════════════════════════════════════════════
         $emailNotVerified = !$applicant->email_verified_at;
 
-        // Génération lien visio
         $roomId = 'talentshare-' . $application->id . '-' . Str::random(10);
         $meetLink = "https://meet.jit.si/{$roomId}";
 
@@ -345,13 +416,8 @@ class ApplicationController extends Controller
         $emailError = null;
         $waitingForVerification = false;
 
-        // ═══════════════════════════════════════════════
-        // 🔴 CAS 1 : Email NON VÉRIFIÉ → on n'envoie PAS l'email d'entretien
-        // ═══════════════════════════════════════════════
         if ($emailNotVerified) {
             $waitingForVerification = true;
-
-            // On envoie SEULEMENT un email "Vérifiez votre email"
             try {
                 Mail::to($applicant->email)->send(
                     new \App\Mail\InterviewScheduledVerificationNeeded($application->fresh())
@@ -361,14 +427,7 @@ class ApplicationController extends Controller
                 \Log::error('❌ Erreur envoi email "vérification requise": ' . $e->getMessage());
                 $emailError = $e->getMessage();
             }
-
-            // Pas d'email d'entretien tant que pas vérifié → on saute
-            // Le mail d'entretien partira automatiquement quand l'email sera vérifié
-
         } else {
-            // ═══════════════════════════════════════════════
-            // 🟢 CAS 2 : Email VÉRIFIÉ → on envoie normalement
-            // ═══════════════════════════════════════════════
             try {
                 Mail::to($applicant->email)->send(
                     new InterviewScheduled($application->fresh(), false)
@@ -381,9 +440,6 @@ class ApplicationController extends Controller
             }
         }
 
-        // ═══════════════════════════════════════════════
-        // SMS — envoyé UNIQUEMENT si l'email est vérifié
-        // ═══════════════════════════════════════════════
         $smsSent = false;
 
         if (!$emailNotVerified && !empty($applicant->phone)) {
@@ -403,7 +459,6 @@ class ApplicationController extends Controller
             }
         }
 
-        // Email au recruteur (toujours envoyé)
         try {
             $company = $application->jobOffer->company;
             if ($company && $company->owner_user_id) {
@@ -418,7 +473,6 @@ class ApplicationController extends Controller
             \Log::warning('Erreur envoi email recruteur: ' . $e->getMessage());
         }
 
-        // Notification interne (cloche)
         try {
             Notification::create([
                 'user_id' => $applicant->id,
@@ -437,16 +491,12 @@ class ApplicationController extends Controller
             \Log::warning('Erreur notification interview: ' . $e->getMessage());
         }
 
-        // ═══════════════════════════════════════════════
-        // RÉPONSE FINALE
-        // ═══════════════════════════════════════════════
         if ($waitingForVerification) {
             return response()->json([
-                'message' => "Entretien programmé. Le candidat n'a pas encore vérifié son email — un email de vérification lui a été envoyé. L'invitation d'entretien partira automatiquement après vérification.",
-                'warning' => "Le candidat doit confirmer son adresse email pour recevoir l'invitation.",
+                'message' => "Entretien programmé. Le candidat doit vérifier son email.",
                 'application' => $application->fresh(),
                 'waiting_for_verification' => true,
-            ], 202); // 202 Accepted
+            ], 202);
         }
 
         if (!$emailSent) {
@@ -462,13 +512,9 @@ class ApplicationController extends Controller
             'application' => $application->fresh(),
             'email_sent_to' => $applicant->email,
             'sms_sent' => $smsSent,
-            'sms_sent_to' => $smsSent ? $applicant->phone : null,
         ]);
     }
 
-    /**
-     * Marquer comme consultée
-     */
     public function markAsViewed(Request $request, Application $application)
     {
         $isOwnerCompany = $request->user()->companies()

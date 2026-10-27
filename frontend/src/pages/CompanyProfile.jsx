@@ -7,19 +7,17 @@ import { useToast } from "../context/ToastContext";
 import { countries } from "../utils/countries";
 import { cities } from "../utils/cities";
 import SuggestedTalentsSection from "../components/talents/SuggestedTalentsSection";
+import CompanyOnboarding from "./CreateCompanyPage";
 import {
   Building2, MapPin, Globe, Phone, Users, Edit, Camera, X, Plus,
   Trash2, CheckCircle, AlertCircle, Loader2, Save, Building,
-  Link2, Briefcase, Hash, ShieldCheck, Eye, ExternalLink,
-  TrendingUp, Search, Mail, ArrowRight, UserPlus, Award,
-  Sparkles, Layers, Star, Calendar, FileText,
-  Home, Clock, Heart, MessageCircle, Send, BadgeCheck,
-  Quote, Zap, Euro,
+  Link2, Briefcase, ShieldCheck, TrendingUp, Search, Mail, ArrowRight, 
+  Sparkles, Layers, Star, Calendar, FileText, Home, Clock, Heart, 
+  MessageCircle, Send, Zap, Euro, Quote, UserPlus, BadgeCheck
 } from "lucide-react";
 
-/* ============================================
-   CONFIG
-============================================ */
+/* ---------------------------------- CONFIG --------------------------------- */
+
 const COMPANY_SIZES = [
   { value: "1-10",     label: "1-10 employés" },
   { value: "11-50",    label: "11-50 employés" },
@@ -35,18 +33,15 @@ const EMPTY_FORM = {
 };
 
 const TABS = [
-  { id: "home",     label: "Accueil",   icon: Home,     color: "text-emerald-400" },
-  { id: "team",     label: "Équipe",    icon: Users,    color: "text-violet-400" },
-  { id: "requests", label: "Demande",   icon: Layers,   color: "text-amber-400" },
-  { id: "feed",     label: "Actualité", icon: Sparkles, color: "text-blue-400" },
+  { id: "home",     label: "Accueil",   icon: Home,     color: "text-[#0F9691]" },
+  { id: "team",     label: "Équipe",    icon: Users,    color: "text-[#0F9691]" },
+  { id: "requests", label: "Demande",   icon: Layers,   color: "text-[#0F9691]" },
+  { id: "feed",     label: "Actualité", icon: Sparkles, color: "text-[#0F9691]" },
 ];
 
 const API_BASE = "http://localhost:8001";
 
-/* ============================================
-   UI HELPERS
-============================================ */
-const inputCls = "w-full rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-3 py-2 text-sm text-[var(--text-app)] placeholder:text-[var(--text-faint)] transition focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20";
+const inputCls = "w-full rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-3 py-2 text-sm text-[var(--text-app)] placeholder:text-[var(--text-faint)] transition focus:border-teal-500/50 focus:outline-none focus:ring-2 focus:ring-teal-500/20";
 
 function Field({ label, icon: Icon, children }) {
   return (
@@ -59,18 +54,12 @@ function Field({ label, icon: Icon, children }) {
   );
 }
 
-/* ============================================
-   HELPERS : construit une URL d'image absolue
-============================================ */
 function buildImageUrl(pathOrUrl, fallback = null) {
   if (!pathOrUrl) return fallback;
   if (pathOrUrl.startsWith("http")) return pathOrUrl;
   return `${API_BASE}/storage/${pathOrUrl}`;
 }
 
-/* ============================================
-   AVATAR — accepte un chemin OU une URL complète
-============================================ */
 function Avatar({ path, name, size = "md", rounded = "full" }) {
   const sizes = {
     xs: "h-7 w-7 text-[10px]",
@@ -91,7 +80,7 @@ function Avatar({ path, name, size = "md", rounded = "full" }) {
 
   if (!path || error) {
     return (
-      <div className={`${sizes[size]} ${roundedCls} flex shrink-0 items-center justify-center bg-gradient-to-br from-emerald-400 to-emerald-600 font-bold text-white`}>
+      <div className={`${sizes[size]} ${roundedCls} flex shrink-0 items-center justify-center bg-gradient-to-br from-teal-400 to-teal-600 font-bold text-white`}>
         {initials}
       </div>
     );
@@ -107,9 +96,6 @@ function Avatar({ path, name, size = "md", rounded = "full" }) {
   );
 }
 
-/* ============================================
-   TESTIMONIALS SECTION
-============================================ */
 function TestimonialsSection({ companyId }) {
   const [testimonials, setTestimonials] = useState(() => {
     try {
@@ -192,9 +178,6 @@ function TestimonialsSection({ companyId }) {
   );
 }
 
-/* ============================================
-   MODAL : Ajouter un témoignage
-============================================ */
 function AddTestimonialModal({ onClose, onSuccess }) {
   const [author, setAuthor] = useState("");
   const [role, setRole] = useState("");
@@ -232,11 +215,11 @@ function AddTestimonialModal({ onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="ts-modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
       <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-3 border-b border-[var(--border-app)] px-6 py-5">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Nouveau témoignage</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#0F9691]">Nouveau témoignage</p>
             <h2 className="mt-0.5 text-xl font-bold text-[var(--text-app)]">Ajouter un témoignage</h2>
             <p className="mt-1 text-xs text-[var(--text-muted)]">Partagez votre expérience avec cette entreprise.</p>
           </div>
@@ -283,7 +266,7 @@ function AddTestimonialModal({ onClose, onSuccess }) {
           <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-[var(--text-muted)] transition hover:bg-[var(--bg-surface-hover)]">
             Annuler
           </button>
-          <button type="button" onClick={submit} className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400">
+          <button type="button" onClick={submit} className="inline-flex items-center gap-2 rounded-lg bg-[#0F9691] px-5 py-2 text-sm font-bold text-[#0B1F33] transition hover:bg-[#0B7D79]">
             <CheckCircle size={14} />
             Publier le témoignage
           </button>
@@ -293,9 +276,6 @@ function AddTestimonialModal({ onClose, onSuccess }) {
   );
 }
 
-/* ============================================
-   PAGE PRINCIPALE
-============================================ */
 export default function CompanyProfile() {
   const { user } = useAuth();
   const { showToast } = useToast();
@@ -315,79 +295,43 @@ export default function CompanyProfile() {
   const [showCreateOffer, setShowCreateOffer] = useState(false);
   const [applyOffer, setApplyOffer] = useState(null);
   const fileInputRef = useRef(null);
-
-  const [activeTab, setActiveTab] = useState("home");
-
+  const [activeTab, setActiveTab] = useState("profile");
+  const [newsFilter, setNewsFilter] = useState("all");
   const [myOffers, setMyOffers] = useState([]);
   const [otherRequests, setOtherRequests] = useState([]);
   const [feedOffers, setFeedOffers] = useState([]);
   const [feedRequests, setFeedRequests] = useState([]);
-
   const [loadingFeed, setLoadingFeed] = useState(false);
   const [loadingRequests, setLoadingRequests] = useState(false);
+  const [offerSuccess, setOfferSuccess] = useState(false);
 
   useEffect(() => { loadCompany(); }, []);
-
   useEffect(() => {
     if (!company) return;
-    if (activeTab === "home")  loadHome();
-    if (activeTab === "feed")  loadActualite();
-    if (activeTab === "requests") loadOtherRequests();
+    if (activeTab === "profile") loadHome();
+    if (activeTab === "news") loadActualite();
   }, [company, activeTab]);
 
   const loadHome = async () => {
     try {
       setLoadingFeed(true);
-      const offersRes = await api.get("/job-offers", { params: { only_mine: 1, per_page: 20 } })
-        .catch(() => ({ data: { data: [] } }));
+      const offersRes = await api.get("/job-offers", { params: { only_mine: 1, per_page: 20 } }).catch(() => ({ data: { data: [] } }));
       setMyOffers(offersRes.data.data || []);
-    } catch (err) {
-      console.error("Erreur chargement home:", err);
-      setMyOffers([]);
-    } finally {
-      setLoadingFeed(false);
-    }
-  };
-
-  const loadOtherRequests = async () => {
-    try {
-      setLoadingRequests(true);
-      const res = await api.get("/resource-requests", { params: { per_page: 30 } });
-      const all = res.data.data || res.data || [];
-      const others = all.filter(
-        (r) => r.author_type !== "talent" && r.company_id !== company?.id
-      );
-      setOtherRequests(others);
-    } catch (err) {
-      console.error("Erreur chargement demandes:", err);
-      setOtherRequests([]);
-    } finally {
-      setLoadingRequests(false);
-    }
+    } catch { setMyOffers([]); } finally { setLoadingFeed(false); }
   };
 
   const loadActualite = async () => {
     try {
       setLoadingFeed(true);
       const [offersRes, requestsRes] = await Promise.all([
-        api.get("/job-offers", { params: { exclude_mine: 1, per_page: 20 } }).catch(() => ({ data: { data: [] } })),
-        api.get("/resource-requests", { params: { per_page: 30 } }).catch(() => ({ data: { data: [] } })),
+        api.get("/job-offers", { params: { exclude_mine: 1, per_page: 30 } }).catch(() => ({ data: { data: [] } })),
+        api.get("/resource-requests", { params: { per_page: 40 } }).catch(() => ({ data: { data: [] } })),
       ]);
-
       const offers = offersRes.data.data || offersRes.data || [];
       const requests = requestsRes.data.data || requestsRes.data || [];
-
-      const otherReqs = requests.filter((r) => r.company_id !== company?.id);
-
-      setFeedOffers(offers);
-      setFeedRequests(otherReqs);
-    } catch (err) {
-      console.error("Erreur chargement actualité:", err);
-      setFeedOffers([]);
-      setFeedRequests([]);
-    } finally {
-      setLoadingFeed(false);
-    }
+      setFeedOffers(offers.filter((o) => o.company_id !== company?.id));
+      setFeedRequests(requests.filter((r) => r.company_id !== company?.id));
+    } catch { setFeedOffers([]); setFeedRequests([]); } finally { setLoadingFeed(false); }
   };
 
   const loadCompany = async () => {
@@ -396,723 +340,293 @@ export default function CompanyProfile() {
       const res = await api.get("/companies/me");
       const data = res.data;
       setCompany(data);
-
-      try {
-        const membersRes = await api.get(`/companies/${data.id}/members`);
-        setMembers(membersRes.data.data || []);
-      } catch { setMembers([]); }
-
-      try {
-        const employeesRes = await api.get(`/companies/${data.id}/employees`);
-        setEmployees(employeesRes.data.data || []);
-      } catch { setEmployees([]); }
+      try { const r = await api.get(`/companies/${data.id}/members`); setMembers(r.data.data || []); } catch { setMembers([]); }
+      try { const r = await api.get(`/companies/${data.id}/employees`); setEmployees(r.data.data || []); } catch { setEmployees([]); }
     } catch (err) {
-      if (err.response?.status === 404) {
-        setCompany(null);
-        setShowFormModal(true);
-      } else {
-        showToast("Erreur de chargement", "error");
-      }
-    } finally {
-      setLoading(false);
-    }
+      if (err.response?.status === 404) setCompany(null);
+      else showToast("Erreur de chargement", "error");
+    } finally { setLoading(false); }
   };
 
   const handleLogoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!["image/jpeg", "image/png", "image/jpg", "image/webp"].includes(file.type)) {
-      showToast("Format non supporté", "error");
-      e.target.value = "";
-      return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      showToast("Image trop lourde (2 Mo max)", "error");
-      e.target.value = "";
-      return;
-    }
+    if (!["image/jpeg", "image/png", "image/jpg", "image/webp"].includes(file.type)) { showToast("Format non supporté", "error"); e.target.value = ""; return; }
+    if (file.size > 2 * 1024 * 1024) { showToast("Image trop lourde (2 Mo max)", "error"); e.target.value = ""; return; }
     setUploadingLogo(true);
-    const formData = new FormData();
-    formData.append("logo", file);
+    const formData = new FormData(); formData.append("logo", file);
     try {
-      const response = await api.post(`/companies/${company.id}/logo`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      setCompany(response.data.data || response.data);
-      showToast("Logo mis à jour", "success");
-    } catch (err) {
-      showToast(err.response?.data?.message || "Erreur upload", "error");
-    } finally {
-      setUploadingLogo(false);
-      e.target.value = "";
-    }
-  };
-
-  const handleDeleteLogo = async () => {
-    if (!confirm("Supprimer le logo ?")) return;
-    try {
-      const res = await api.delete(`/companies/${company.id}/logo`);
-      setCompany(res.data.data);
-      showToast("Logo supprimé", "success");
-    } catch (err) {
-      showToast(err.response?.data?.message || "Erreur", "error");
-    }
+      const response = await api.post(`/companies/${company.id}/logo`, formData, { headers: { "Content-Type": "multipart/form-data" } });
+      setCompany(response.data.data || response.data); showToast("Logo mis à jour", "success");
+    } catch (err) { showToast(err.response?.data?.message || "Erreur upload", "error"); }
+    finally { setUploadingLogo(false); e.target.value = ""; }
   };
 
   const handleRemoveMember = async (memberId) => {
     if (!confirm("Retirer ce membre ?")) return;
-    try {
-      await api.delete(`/companies/${company.id}/members/${memberId}`);
-      showToast("Membre retiré", "success");
-      loadCompany();
-    } catch { showToast("Erreur", "error"); }
+    try { await api.delete(`/companies/${company.id}/members/${memberId}`); showToast("Membre retiré", "success"); loadCompany(); }
+    catch { showToast("Erreur", "error"); }
   };
-
   const handleRemoveEmployee = async (employeeId) => {
     if (!confirm("Retirer ce salarié ?")) return;
-    try {
-      await api.delete(`/companies/${company.id}/employees/${employeeId}`);
-      showToast("Salarié retiré", "success");
-      loadCompany();
-    } catch { showToast("Erreur", "error"); }
+    try { await api.delete(`/companies/${company.id}/employees/${employeeId}`); showToast("Salarié retiré", "success"); loadCompany(); }
+    catch { showToast("Erreur", "error"); }
   };
-
   const handleRequestVerification = async () => {
-    try {
-      await api.post(`/companies/${company.id}/verify`);
-      showToast("Demande envoyée", "success");
-      loadCompany();
-    } catch (err) {
-      showToast(err.response?.data?.message || "Erreur", "error");
-    }
+    try { await api.post(`/companies/${company.id}/verify`); showToast("Demande envoyée", "success"); loadCompany(); }
+    catch (err) { showToast(err.response?.data?.message || "Erreur", "error"); }
   };
 
-  if (loading) {
-    return (
-      <AppShell>
-        <div className="flex h-64 items-center justify-center">
-          <Loader2 className="animate-spin text-emerald-400" size={40} />
-        </div>
-      </AppShell>
-    );
-  }
+  const sizeLabel = COMPANY_SIZES.find((s) => s.value === company?.size)?.label || company?.size || "Taille non renseignée";
+  const completionItems = [
+    ["Logo de l’entreprise", !!(company?.logo_url || company?.logo_path)],
+    ["Présentation de l’activité", !!company?.description],
+    ["Site web", !!company?.website],
+    ["Coordonnées", !!(company?.phone || company?.address)],
+    ["Entreprise vérifiée", !!company?.is_verified],
+  ];
+  const completion = Math.round((completionItems.filter((i) => i[1]).length / completionItems.length) * 100);
 
-  if (!company) {
-    return (
-      <AppShell>
-        <div className="mx-auto max-w-xl">
-          <div className="rounded-2xl border border-dashed border-[var(--border-app)] bg-[var(--bg-surface)] p-12 text-center">
-            <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-400">
-              <Building2 size={30} />
-            </span>
-            <h1 className="mt-4 text-xl font-bold text-[var(--text-app)]">
-              Créez votre entreprise
-            </h1>
-            <p className="mt-2 text-sm text-[var(--text-muted)]">
-              Rejoignez le réseau TalentShare et commencez à recruter.
-            </p>
-            <button
-              onClick={() => setShowFormModal(true)}
-              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400"
-            >
-              <Plus size={15} /> Créer mon entreprise
-            </button>
-          </div>
-        </div>
-        {showFormModal && (
-          <CompanyFormModal company={null} onClose={() => setShowFormModal(false)} onSuccess={() => { setShowFormModal(false); loadCompany(); }} />
-        )}
-      </AppShell>
-    );
-  }
+  if (loading) return <AppShell><div className="flex min-h-[55vh] items-center justify-center"><div className="flex flex-col items-center gap-3 text-slate-500"><Loader2 className="animate-spin text-teal-600" size={34} /><span className="text-sm font-medium">Préparation de votre espace entreprise…</span></div></div></AppShell>;
+  if (!company) return <AppShell><CompanyOnboarding onCreated={loadCompany} /></AppShell>;
 
   return (
     <AppShell>
-      <div className="grid gap-5 lg:grid-cols-[240px_1fr_280px]">
+      <style>{`
+        @keyframes tsCompanyEnter { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:translateY(0) } }
+        .ts-company-page {
+          --bg-surface:#ffffff; --bg-surface-hover:#f7fafb; --border-app:#e4ebef;
+          --text-app:#102a43; --text-muted:#5f7384; --text-faint:#91a0ad;
+          animation:tsCompanyEnter .28s ease-out both; color:#102a43;
+        }
+        .ts-company-card { background:#fff; border:1px solid #e4ebef; border-radius:18px; box-shadow:0 5px 20px rgba(16,42,67,.045); transition:border-color .18s ease,box-shadow .18s ease; }
+        .ts-company-card:hover { border-color:#d5e4e7; }
+        .ts-company-muted { color:#64788c; }
+        .ts-company-eyebrow { color:#0f8179; font-size:10px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; }
+        .ts-company-btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; border-radius:11px; padding:10px 15px; font-size:12px; font-weight:700; transition:all .18s ease; }
+        .ts-company-primary { color:#fff; background:#0f9691; box-shadow:0 4px 12px rgba(15,150,145,.16); }
+        .ts-company-primary:hover { background:#0b7d79; box-shadow:0 7px 18px rgba(15,150,145,.22); transform:translateY(-1px); }
+        .ts-company-secondary { background:#fff; border:1px solid #dce5e9; color:#334b63; }
+        .ts-company-secondary:hover { background:#f2faf9; border-color:#b9ded9; color:#0b716b; }
+        .ts-company-page button:focus-visible { outline:3px solid rgba(15,150,145,.24); outline-offset:2px; }
+        .ts-company-page input, .ts-company-page textarea, .ts-company-page select { accent-color:#0f9691; }
+        .ts-modal-overlay { background:rgba(8,29,45,.58)!important; backdrop-filter:blur(7px)!important; }
+        .ts-modal-overlay > div { border-radius:18px!important; border:1px solid #dfe8ec!important; box-shadow:0 24px 70px rgba(8,29,45,.24)!important; }
+        .ts-modal-overlay > div > div:first-child { background:#0b2638!important; border-bottom:1px solid rgba(255,255,255,.08)!important; padding:18px 22px!important; }
+        .ts-modal-overlay > div > div:first-child h1, .ts-modal-overlay > div > div:first-child h2, .ts-modal-overlay > div > div:first-child h3 { color:#fff!important; letter-spacing:-.02em; }
+        .ts-modal-overlay > div > div:first-child p { color:#a9c0ce!important; }
+        .ts-modal-overlay > div > div:first-child button { color:#fff!important; background:rgba(255,255,255,.08)!important; border:1px solid rgba(255,255,255,.1)!important; border-radius:10px!important; }
+        .ts-modal-overlay input:not([type=checkbox]):not([type=radio]), .ts-modal-overlay textarea, .ts-modal-overlay select { border-radius:10px!important; border-color:#dce6eb!important; background:#f8fbfc!important; color:#163244!important; }
+        .ts-modal-overlay input:focus, .ts-modal-overlay textarea:focus, .ts-modal-overlay select:focus { border-color:#0f9691!important; box-shadow:0 0 0 3px rgba(15,150,145,.12)!important; outline:none!important; }
+        .ts-modal-overlay form { scrollbar-width:thin; scrollbar-color:#bfd8d5 transparent; }
+        @media(prefers-reduced-motion:reduce){.ts-company-page,*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+      `}</style>
 
-        {/* ============ COLONNE GAUCHE ============ */}
-        <aside className="hidden space-y-4 lg:block">
-          <div className="overflow-hidden rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)]">
-            <div className="h-16 bg-gradient-to-r from-emerald-500/40 to-blue-500/30" />
-
-            <div className="-mt-9 px-4 pb-4">
-              <div
-                className="group relative inline-block cursor-pointer"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                {/* ✅ LOGO : utilise logo_url, fallback logo_path, sinon initiale */}
-                {company.logo_url || company.logo_path ? (
-                  <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg border-4 border-[var(--bg-surface)] bg-white shadow-lg">
-                    <img
-                      src={buildImageUrl(company.logo_url || company.logo_path)}
-                      alt={company.name}
-                      onError={(e) => {
-                        e.target.style.display = "none";
-                      }}
-                      className="h-full w-full object-contain"
-                    />
-                  </div>
-                ) : (
-                  <div className="flex h-16 w-16 items-center justify-center rounded-lg border-4 border-[var(--bg-surface)] bg-gradient-to-br from-emerald-400 to-emerald-600 text-2xl font-bold text-white shadow-lg">
-                    {company.name?.charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/60 opacity-0 transition group-hover:opacity-100">
-                  {uploadingLogo ? <Loader2 size={16} className="animate-spin text-white" /> : <Camera size={16} className="text-white" />}
-                </div>
-                <input ref={fileInputRef} type="file" onChange={handleLogoUpload} accept="image/*" className="hidden" />
-              </div>
-
-              <h2 className="mt-3 truncate text-base font-bold text-[var(--text-app)]">
-                {company.name}
-              </h2>
-              {company.industry && (
-                <p className="mt-0.5 truncate text-xs text-[var(--text-muted)]">
-                  {company.industry}
-                </p>
-              )}
-              {(company.city || company.country) && (
-                <p className="mt-2 flex items-center gap-1 text-[11px] text-[var(--text-faint)]">
-                  <MapPin size={10} />
-                  <span className="truncate">
-                    {company.city && company.country
-                      ? `${company.city}, ${company.country}`
-                      : company.city || company.country}
-                  </span>
-                </p>
-              )}
-
-              {company.is_verified ? (
-                <div className="mt-3 flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2 py-1.5 text-[10px] font-semibold text-emerald-400">
-                  <ShieldCheck size={11} /> Entreprise vérifiée
-                </div>
-              ) : (
-                <button
-                  onClick={handleRequestVerification}
-                  className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2 py-1.5 text-[10px] font-semibold text-amber-400 transition hover:bg-amber-500/20"
-                >
-                  <AlertCircle size={11} /> Demander la vérification
-                </button>
-              )}
-            </div>
-
-            <div className="border-t border-[var(--border-app)] p-3">
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => setShowAllMembers(true)}
-                  className="rounded-lg bg-[var(--bg-surface-hover)] p-2.5 text-left transition hover:bg-[var(--bg-surface)]"
-                >
-                  <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--text-faint)]">Membres</p>
-                  <p className="mt-0.5 text-lg font-bold text-emerald-400">{members.length}</p>
-                </button>
-                <button
-                  onClick={() => setShowAllEmployees(true)}
-                  className="rounded-lg bg-[var(--bg-surface-hover)] p-2.5 text-left transition hover:bg-[var(--bg-surface)]"
-                >
-                  <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--text-faint)]">Salariés</p>
-                  <p className="mt-0.5 text-lg font-bold text-blue-400">{employees.length}</p>
-                </button>
-              </div>
-            </div>
-
-            <div className="border-t border-[var(--border-app)] p-3 space-y-2">
-              <button
-                onClick={() => setShowFormModal(true)}
-                className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-3 py-2 text-xs font-semibold text-[var(--text-app)] transition hover:bg-[var(--bg-surface)]"
-              >
-                <Edit size={12} /> Modifier
-              </button>
-            </div>
+      <div className="ts-company-page mx-auto max-w-[1500px] space-y-4 px-1 pb-8 sm:px-2">
+        <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div>
+          
+           <h1 className="text-2xl font-bold tracking-tight text-[#102A43] sm:text-3xl">Votre présence professionnelle</h1>
+            <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-500">Présentez votre entreprise, suivez vos publications et découvrez les opportunités du réseau TalentShare.</p>
           </div>
+          <button onClick={() => setShowCreateOffer(true)} className="ts-company-btn ts-company-primary self-start sm:self-auto"><Plus size={16}/> Publier une offre </button>
+        </header>
 
-          <div className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-4">
-            <p className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-app)]">
-              <Building size={13} className="text-emerald-400" /> Informations
-            </p>
-            <div className="mt-3 space-y-2.5 text-xs">
-              {company.size && (
-                <div className="flex items-start gap-2">
-                  <Users size={12} className="mt-0.5 shrink-0 text-[var(--text-faint)]" />
-                  <span className="text-[var(--text-muted)]">
-                    {COMPANY_SIZES.find((s) => s.value === company.size)?.label || company.size}
-                  </span>
-                </div>
-              )}
-              {company.website && (
-                <div className="flex items-start gap-2">
-                  <Globe size={12} className="mt-0.5 shrink-0 text-[var(--text-faint)]" />
-                  <a href={company.website} target="_blank" rel="noreferrer" className="truncate text-emerald-400 hover:underline">
-                    {company.website}
-                  </a>
-                </div>
-              )}
-              {company.phone && (
-                <div className="flex items-start gap-2">
-                  <Phone size={12} className="mt-0.5 shrink-0 text-[var(--text-faint)]" />
-                  <span className="text-[var(--text-muted)]">{company.phone}</span>
-                </div>
-              )}
-              {company.address && (
-                <div className="flex items-start gap-2">
-                  <MapPin size={12} className="mt-0.5 shrink-0 text-[var(--text-faint)]" />
-                  <span className="text-[var(--text-muted)]">{company.address}</span>
-                </div>
-              )}
-            </div>
+        <nav className="ts-company-card flex flex-col gap-3 p-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex gap-2">
+            {[{id:"profile",label:"Profil & activité",icon:Building2,sub:"Votre vitrine professionnelle"},{id:"news",label:"Actualités du réseau",icon:Sparkles,sub:"Offres et demandes externes"}].map((tab) => {
+              const Icon = tab.icon; const active = activeTab === tab.id;
+              return <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex min-w-0 flex-1 items-center gap-3 rounded-[16px] px-4 py-3 text-left sm:min-w-[230px] ${active ? "bg-[#e8f8f5] text-[#087f75]" : "text-slate-500 hover:bg-slate-50"}`}>
+                <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${active ? "bg-white text-[#0F8179] shadow-sm" : "bg-slate-100 text-slate-500"}`}><Icon size={18}/></span>
+                <span className="min-w-0"><span className="block text-sm font-bold">{tab.label}</span><span className={`mt-0.5 hidden text-[11px] sm:block ${active ? "text-[#0F8179]/75" : "text-slate-400"}`}>{tab.sub}</span></span>
+                {active && <span className="ml-auto h-2 w-2 shrink-0 rounded-full bg-[#0F9691]"/>}
+              </button>;
+            })}
           </div>
-        </aside>
+          <button onClick={() => setShowFormModal(true)} className="ts-company-btn ts-company-secondary mx-1"><Edit size={14}/> Modifier le profil</button>
+        </nav>
 
-        {/* ============ COLONNE CENTRALE ============ */}
-        <div className="min-w-0 space-y-4">
+        {activeTab === "profile" && <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,.85fr)]">
+          <div className="min-w-0 space-y-5">
+        <section className="ts-company-card overflow-hidden">
+ {/* Un dégradé de vert profond mais lumineux, avec des halos de lumière pour un effet premium */}
+<div className="relative h-48 overflow-hidden bg-gradient-to-br from-[#0B2638] via-[#10384A] to-[#0F766E] sm:h-52">
+  <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(255,255,255,0.10),transparent_60%)]" />
+  <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_100%,rgba(22,184,177,0.18),transparent_50%)]" />
+   <span className="absolute right-5 top-5 rounded-full border border-white/20 bg-white/15 px-4 py-1.5 text-[10px] font-bold tracking-widest text-white shadow-sm backdrop-blur-md">
+  VITRINE ENTREPRISE
+</span>
 
-          <div className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-4">
-            <div className="flex items-center gap-3">
-              <Avatar path={company.logo_url || company.logo_path} name={company.name} size="md" rounded="lg" />
-              <button
-                onClick={() => setShowCreateOffer(true)}
-                className="flex-1 rounded-full border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-4 py-2.5 text-left text-sm text-[var(--text-muted)] transition hover:bg-[var(--bg-surface)] hover:border-emerald-500/40"
-              >
-                Publier une offre...
-              </button>
-            </div>
+    {/* 👇 2. LE NOM DE L'ENTREPRISE EN GRAND SUR LA BANNIÈRE */}
+    <div className="absolute bottom-6 left-6 sm:left-40">
+      <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl drop-shadow-sm">
+        {company.name}
+      </h1>
+    </div>
+  </div>
 
-            <div className="mt-3 flex items-center justify-around border-t border-[var(--border-app)] pt-3">
-              {TABS.map((t) => {
-                const Icon = t.icon;
-                const active = activeTab === t.id;
-                return (
-                  <button
-                    key={t.id}
-                    onClick={() => setActiveTab(t.id)}
-                    className={`relative flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                      active ? t.color : "text-[var(--text-muted)] hover:bg-[var(--bg-surface-hover)]"
-                    }`}
-                  >
-                    <Icon size={14} className={active ? t.color : "text-[var(--text-faint)]"} />
-                    {t.label}
-                    {active && (
-                      <span className={`absolute inset-x-2 -bottom-[13px] h-[2px] rounded-full ${
-                        t.id === "home" ? "bg-emerald-400"
-                        : t.id === "team" ? "bg-violet-400"
-                        : t.id === "requests" ? "bg-amber-400"
-                        : "bg-blue-400"
-                      }`} />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+  <div className="px-5 pb-5 sm:px-7">
+    <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end">
+      
+      {/* 👇 3. LE LOGO (Qui chevauche la bannière) */}
+      <button 
+        type="button" 
+        onClick={() => fileInputRef.current?.click()} 
+        title="Modifier le logo" 
+        className="group absolute -top-16 sm:-top-20 left-0 flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-[22px] border-4 border-white bg-white text-3xl font-extrabold text-[#0F8179] shadow-lg sm:h-32 sm:w-32"
+      >
+        {company.logo_url || company.logo_path ? (
+          <img 
+            src={buildImageUrl(company.logo_url || company.logo_path)} 
+            alt={company.name} 
+            className="h-full w-full object-contain p-2" 
+            onError={(e)=>{e.currentTarget.style.display="none";}}
+          />
+        ) : company.name?.charAt(0)?.toUpperCase()}
+        <span className="absolute inset-0 flex items-center justify-center bg-slate-950/55 text-white opacity-0 transition group-hover:opacity-100">
+          {uploadingLogo ? <Loader2 className="animate-spin" size={20}/> : <Camera size={20}/>}
+        </span>
+      </button>
+      <input ref={fileInputRef} type="file" onChange={handleLogoUpload} accept="image/jpeg,image/png,image/webp" className="hidden"/>
 
-          {/* ONGLET ACCUEIL */}
-          {activeTab === "home" && (
-            <>
-              {company.description && (
-                <div className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-5">
-                  <p className="mb-3 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                    <Building size={12} /> À propos
-                  </p>
-                  <p className="text-sm leading-relaxed text-[var(--text-muted)]">
-                    {company.description}
-                  </p>
-                </div>
-              )}
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between px-1">
-                  <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                    <Briefcase size={12} /> Mes offres publiées
-                  </p>
-                  <button onClick={loadHome} className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300">
-                    Rafraîchir
-                  </button>
-                </div>
-
-                {loadingFeed ? (
-                  <div className="flex h-40 items-center justify-center rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)]">
-                    <Loader2 className="animate-spin text-emerald-400" size={24} />
-                  </div>
-                ) : myOffers.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-[var(--border-app)] bg-[var(--bg-surface)] p-10 text-center">
-                    <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--bg-surface-hover)] text-[var(--text-faint)]">
-                      <Briefcase size={22} />
-                    </span>
-                    <p className="mt-3 text-sm font-semibold text-[var(--text-app)]">
-                      Vous n'avez publié aucune offre pour le moment
-                    </p>
-                    <p className="mt-1 text-xs text-[var(--text-muted)]">
-                      Cliquez sur « Publier une offre... » pour commencer.
-                    </p>
-                  </div>
-                ) : (
-                  myOffers.map((offer) => (
-                    <OfferFeedCard
-                      key={offer.id}
-                      offer={offer}
-                      currentCompanyId={company.id}
-                      currentUser={user}
-                      onDeleted={loadHome}
-                      onApply={(o) => setApplyOffer(o)}
-                    />
-                  ))
-                )}
-              </div>
-
-              <TestimonialsSection companyId={company.id} />
-
-              <div className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-5">
-                <p className="mb-4 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                  <TrendingUp size={12} /> Activité récente
-                </p>
-
-                <div className="space-y-4">
-                  {employees.length > 0 && (
-                    <div className="flex gap-3">
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400">
-                        <UserPlus size={16} />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-[var(--text-app)]">
-                          <span className="font-bold text-blue-400">{employees.length} nouveau{employees.length > 1 ? "x" : ""} salarié{employees.length > 1 ? "s" : ""}</span>
-                          {" "}ajouté{employees.length > 1 ? "s" : ""} à votre équipe
-                        </p>
-                        <p className="mt-0.5 text-xs text-[var(--text-faint)]">
-                          {employees.slice(0, 3).map((e) => e.user?.name || `${e.first_name} ${e.last_name}`).join(", ")}
-                          {employees.length > 3 && ` +${employees.length - 3}`}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {members.length > 0 && (
-                    <div className="flex gap-3">
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
-                        <Users size={16} />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-[var(--text-app)]">
-                          <span className="font-bold text-emerald-400">{members.length} membre{members.length > 1 ? "s" : ""}</span>
-                          {" "}actif{members.length > 1 ? "s" : ""} dans votre entreprise
-                        </p>
-                        <p className="mt-0.5 text-xs text-[var(--text-faint)]">
-                          {members.slice(0, 3).map((m) => m.user?.name).filter(Boolean).join(", ")}
-                          {members.length > 3 && ` +${members.length - 3}`}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex gap-3">
-                    <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
-                      company.is_verified ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-400"
-                    }`}>
-                      <ShieldCheck size={16} />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-[var(--text-app)]">
-                        Vérification :{" "}
-                        <span className={company.is_verified ? "font-bold text-emerald-400" : "font-bold text-amber-400"}>
-                          {company.is_verified ? "Vérifiée" : "En attente"}
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* ONGLET ÉQUIPE */}
-          {activeTab === "team" && (
-            <>
-              <div className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-5">
-                <div className="mb-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-bold text-[var(--text-app)]">Membres</p>
-                    <p className="text-xs text-[var(--text-faint)]">
-                      {members.length} membre{members.length > 1 ? "s" : ""}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setShowAddMember(true)}
-                    className="inline-flex items-center gap-1 rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-2.5 py-1.5 text-[10px] font-semibold text-[var(--text-app)] transition hover:bg-[var(--bg-surface)]"
-                  >
-                    <Plus size={11} /> Ajouter
-                  </button>
-                </div>
-
-                {members.length === 0 ? (
-                  <div className="py-6 text-center">
-                    <p className="text-xs text-[var(--text-faint)]">Aucun membre pour l'instant</p>
-                  </div>
-                ) : (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {members.map((member) => (
-                      <MemberCard key={member.id} member={member} onRemove={handleRemoveMember} onClick={(m) => setSelectedMember(m)} />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-5">
-                <div className="mb-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-bold text-[var(--text-app)]">Salariés</p>
-                    <p className="text-xs text-[var(--text-faint)]">
-                      {employees.length} salarié{employees.length > 1 ? "s" : ""}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setShowAddEmployee(true)}
-                    className="inline-flex items-center gap-1 rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-2.5 py-1.5 text-[10px] font-semibold text-[var(--text-app)] transition hover:bg-[var(--bg-surface)]"
-                  >
-                    <Plus size={11} /> Ajouter
-                  </button>
-                </div>
-
-                {employees.length === 0 ? (
-                  <div className="py-6 text-center">
-                    <p className="text-xs text-[var(--text-faint)]">Aucun salarié pour le moment</p>
-                  </div>
-                ) : (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {employees.map((emp) => (
-                      <EmployeeCard key={emp.id} employee={emp} onRemove={handleRemoveEmployee} onClick={(e) => setSelectedEmployee(e)} />
-                    ))}
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-
-          {/* ONGLET DEMANDE */}
-          {activeTab === "requests" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between px-1">
-                <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                  <Layers size={12} /> Demandes des autres entreprises
-                </p>
-                <button onClick={loadOtherRequests} className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300">
-                  Rafraîchir
-                </button>
-              </div>
-
-              {loadingRequests ? (
-                <div className="flex h-40 items-center justify-center rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)]">
-                  <Loader2 className="animate-spin text-emerald-400" size={24} />
-                </div>
-              ) : otherRequests.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-[var(--border-app)] bg-[var(--bg-surface)] p-10 text-center">
-                  <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--bg-surface-hover)] text-[var(--text-faint)]">
-                    <Layers size={22} />
-                  </span>
-                  <p className="mt-3 text-sm font-semibold text-[var(--text-app)]">Aucune demande pour le moment</p>
-                  <p className="mt-1 text-xs text-[var(--text-muted)]">Les autres entreprises n'ont pas encore publié de besoins.</p>
-                </div>
-              ) : (
-                otherRequests.map((r) => (
-                  <RequestFeedCard key={r.id} request={r} currentUser={user} />
-                ))
-              )}
-            </div>
-          )}
-
-          {/* ONGLET ACTUALITÉ */}
-          {activeTab === "feed" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between px-1">
-                <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                  <Sparkles size={12} /> Actualité du réseau
-                </p>
-                <button onClick={loadActualite} className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300">
-                  Rafraîchir
-                </button>
-              </div>
-
-              {loadingFeed ? (
-                <div className="flex h-40 items-center justify-center rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)]">
-                  <Loader2 className="animate-spin text-emerald-400" size={24} />
-                </div>
-              ) : feedOffers.length === 0 && feedRequests.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-[var(--border-app)] bg-[var(--bg-surface)] p-10 text-center">
-                  <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--bg-surface-hover)] text-[var(--text-faint)]">
-                    <Sparkles size={22} />
-                  </span>
-                  <p className="mt-3 text-sm font-semibold text-[var(--text-app)]">Aucune actualité pour le moment</p>
-                  <p className="mt-1 text-xs text-[var(--text-muted)]">Revenez plus tard pour voir les publications du réseau.</p>
-                </div>
-              ) : (
-                <>
-                  {feedRequests.length > 0 && (
-                    <div className="space-y-3">
-                      <p className="flex items-center gap-1.5 px-1 text-[10px] font-bold uppercase tracking-wider text-amber-400">
-                        <Layers size={11} /> Demandes du réseau
-                      </p>
-                      {feedRequests.map((r) => (
-                        <RequestFeedCard key={`req-${r.id}`} request={r} currentUser={user} />
-                      ))}
-                    </div>
-                  )}
-
-                  {feedOffers.length > 0 && (
-                    <div className="space-y-3">
-                      <p className="flex items-center gap-1.5 px-1 text-[10px] font-bold uppercase tracking-wider text-emerald-400">
-                        <Briefcase size={11} /> Offres d'emploi
-                      </p>
-                      {feedOffers.map((offer) => (
-                        <OfferFeedCard
-                          key={`offer-${offer.id}`}
-                          offer={offer}
-                          currentCompanyId={company.id}
-                          currentUser={user}
-                          onDeleted={loadActualite}
-                          onApply={(o) => setApplyOffer(o)}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+      {/* 👇 4. LES INFOS DE L'ENTREPRISE (À côté du logo, en dessous du nom) */}
+      <div className="min-w-0 flex-1 pt-14 sm:pl-36 sm:pt-4">
+        <div className="flex flex-wrap items-center gap-2">
+          {company.is_verified && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-2.5 py-1 text-[10px] font-bold text-[#0F8179]">
+              <BadgeCheck size={13}/> Vérifiée
+            </span>
           )}
         </div>
-
-        {/* ============ COLONNE DROITE ============ */}
-        <aside className="hidden space-y-4 lg:block">
-          <SuggestedTalentsSection />
-
-          <div className="rounded-xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/[0.08] to-transparent p-4">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400">
-              <Sparkles size={14} />
-            </span>
-            <p className="mt-3 text-sm font-bold text-[var(--text-app)]">Complétez votre profil</p>
-            <p className="mt-1 text-xs leading-relaxed text-[var(--text-muted)]">
-              Une entreprise complète attire 3x plus de candidatures.
-            </p>
-            <ul className="mt-3 space-y-2 text-[11px] text-[var(--text-muted)]">
-              <li className="flex gap-2"><span className="text-emerald-400">•</span> Ajoutez votre logo</li>
-              <li className="flex gap-2"><span className="text-emerald-400">•</span> Décrivez votre activité</li>
-              <li className="flex gap-2"><span className="text-emerald-400">•</span> Demandez la vérification</li>
-            </ul>
-          </div>
-
-          <div className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-4">
-            <p className="text-sm font-bold text-[var(--text-app)]">Statistiques</p>
-            <div className="mt-3 space-y-2.5 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-[var(--text-muted)]">Membres</span>
-                <span className="font-bold text-emerald-400">{members.length}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[var(--text-muted)]">Salariés</span>
-                <span className="font-bold text-blue-400">{employees.length}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[var(--text-muted)]">Taille</span>
-                <span className="font-bold text-violet-400">
-                  {COMPANY_SIZES.find((s) => s.value === company.size)?.label || "—"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[var(--text-muted)]">Vérifiée</span>
-                <span className={company.is_verified ? "font-bold text-emerald-400" : "font-bold text-amber-400"}>
-                  {company.is_verified ? "Oui" : "Non"}
-                </span>
-              </div>
-            </div>
-          </div>
-        </aside>
+        <p className="mt-1 text-sm font-medium text-slate-500">
+          {company.industry || "Secteur d’activité à renseigner"}
+        </p>
+        <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+          <MapPin size={13} className="text-teal-600"/>
+          {[company.city, company.country].filter(Boolean).join(", ") || "Localisation non renseignée"}
+          <span className="text-slate-300">•</span>
+          <Users size={13}/>
+          {sizeLabel}
+        </p>
       </div>
 
-      {/* ============ MODALS ============ */}
-      {showAllMembers && (
-        <AllPeopleModal
-          title="Tous les membres"
-          subtitle={`${members.length} membre${members.length > 1 ? "s" : ""}`}
-          icon={Users}
-          people={members}
-          type="member"
-          onClose={() => setShowAllMembers(false)}
-          onRemove={handleRemoveMember}
-          onClick={(m) => { setShowAllMembers(false); setSelectedMember(m); }}
-          onAdd={() => { setShowAllMembers(false); setShowAddMember(true); }}
-        />
-      )}
+     <button onClick={() => setShowFormModal(true)} className="mb-1 inline-flex items-center justify-center gap-2 rounded-xl border border-teal-100 bg-teal-50/80 px-4 py-2.5 text-xs font-bold text-[#0F8179] transition hover:bg-teal-100 sm:mb-0">
+  <Edit size={14}/> Éditer
+</button>
+    </div>
 
-      {showAllEmployees && (
-        <AllPeopleModal
-          title="Tous les salariés"
-          subtitle={`${employees.length} salarié${employees.length > 1 ? "s" : ""}`}
-          icon={Briefcase}
-          people={employees}
-          type="employee"
-          onClose={() => setShowAllEmployees(false)}
-          onRemove={handleRemoveEmployee}
-          onAdd={() => { setShowAllEmployees(false); setShowAddEmployee(true); }}
-        />
-      )}
+    {/* 👇 5. LES CARTES DE STATISTIQUES (En bas) */}
+    <div className="mt-6 grid grid-cols-2 gap-3 border-t border-slate-100 pt-5 sm:grid-cols-4">
+      {[
+        {label:"Offres publiées",value:myOffers.length,icon:Briefcase},
+        {label:"Membres",value:members.length,icon:Users},
+        {label:"Salariés",value:employees.length,icon:UserPlus},
+        {label:"Profil complété",value:`${completion}%`,icon:TrendingUp}
+      ].map((stat)=>{
+        const Icon=stat.icon;
+        return (
+          <div key={stat.label} className="rounded-xl border border-slate-100 bg-[#F7FAFB] p-3.5">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-[#0F8179] shadow-sm">
+              <Icon size={15}/>
+            </span>
+            <p className="mt-3 text-xl font-extrabold text-slate-900">{stat.value}</p>
+            <p className="mt-0.5 text-[11px] font-medium text-slate-500">{stat.label}</p>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+</section>
 
-      {showFormModal && (
-        <CompanyFormModal
-          company={company}
-          onClose={() => setShowFormModal(false)}
-          onSuccess={() => { setShowFormModal(false); showToast("Entreprise mise à jour", "success"); loadCompany(); }}
-        />
-      )}
+            <section className="ts-company-card p-5 sm:p-7">
+              <div className="mb-5 flex items-start justify-between gap-3"><div><p className="ts-company-eyebrow">L’entreprise en bref</p><h3 className="mt-1 text-lg font-extrabold text-slate-900">Notre identité & notre expertise</h3></div><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-50 text-[#0F8179]"><Building size={18}/></span></div>
+              <p className="whitespace-pre-line text-sm leading-7 text-slate-600">{company.description || "Présentez ici votre entreprise, vos domaines d’expertise, vos valeurs et ce qui vous distingue. Une description claire aide les talents et les partenaires à mieux vous connaître."}</p>
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                {[{label:"Secteur d’activité",value:company.industry,icon:Layers},{label:"Taille de l’équipe",value:sizeLabel,icon:Users},{label:"Pays / ville",value:[company.city,company.country].filter(Boolean).join(", "),icon:MapPin},{label:"Téléphone professionnel",value:company.phone,icon:Phone},{label:"Adresse",value:company.address,icon:Building2},{label:"Site internet",value:company.website,icon:Globe}].map((item)=>{const Icon=item.icon;return <div key={item.label} className="flex min-w-0 items-start gap-3 rounded-2xl border border-slate-100 p-3.5"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-[#0F8179]"><Icon size={16}/></span><div className="min-w-0"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{item.label}</p>{item.label==="Site internet"&&item.value?<a href={item.value.startsWith("http")?item.value:`https://${item.value}`} target="_blank" rel="noreferrer" className="mt-1 block break-all text-sm font-semibold text-[#0F8179] hover:underline">{item.value}</a>:<p className="mt-1 break-words text-sm font-semibold text-slate-700">{item.value || "À compléter"}</p>}</div></div>;})}
+              </div>
+            </section>
 
-      {showAddMember && (
-        <AddMemberModal companyId={company.id} onClose={() => setShowAddMember(false)} onSuccess={() => { setShowAddMember(false); loadCompany(); }} />
-      )}
+            <section className="ts-company-card p-5 sm:p-7">
 
-      {showAddEmployee && (
-        <AddEmployeeModal
-          companyId={company.id}
-          onClose={() => setShowAddEmployee(false)}
-          onSuccess={() => { setShowAddEmployee(false); loadCompany(); }}
-        />
-      )}
+              {loadingFeed ? <div className="flex justify-center py-12"><Loader2 className="animate-spin text-teal-600" size={25}/></div> : myOffers.length===0 ? <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 px-5 py-10 text-center"><span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-[#0F8179] shadow-sm"><FileText size={22}/></span><h4 className="mt-3 text-sm font-bold text-slate-800">Votre première publication commence ici</h4><p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-slate-500">Publiez une offre pour présenter un besoin et entrer en contact avec des profils adaptés.</p><button onClick={() => setShowCreateOffer(true)} className="ts-company-btn ts-company-primary mt-4"><Plus size={14}/> Publier une offre</button></div> : <div className="space-y-3">{myOffers.map((offer)=><OfferFeedCard key={offer.id} offer={offer} currentCompanyId={company.id} currentUser={user} onDeleted={loadHome} onApply={(o)=>setApplyOffer(o)}/>)}</div>}
+            </section>
 
-      {selectedEmployee && (
-        <EmployeeDetailModal employee={selectedEmployee} onClose={() => setSelectedEmployee(null)} />
-      )}
+            <TestimonialsSection companyId={company.id}/>
+          </div>
 
-      {selectedMember && (
-        <MemberDetailModal
-          member={selectedMember}
-          companyId={company.id}
-          onClose={() => setSelectedMember(null)}
-          onPhotoUpdated={() => { setSelectedMember(null); loadCompany(); }}
-        />
-      )}
+          <aside className="space-y-5">
+            <section className="ts-company-card p-5"><div className="flex items-start justify-between"><div><p className="ts-company-eyebrow">Votre progression</p><h3 className="mt-1 text-base font-extrabold text-slate-900">Un profil qui inspire confiance</h3></div><span className="text-2xl font-extrabold text-[#0F8179]">{completion}%</span></div><div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-gradient-to-r from-[#0F9691] to-[#16B8B1] transition-all" style={{width:`${completion}%`}}/></div><div className="mt-4 space-y-3">{completionItems.map(([label,done])=><div key={label} className="flex items-center gap-2.5 text-xs"><span className={`flex h-5 w-5 items-center justify-center rounded-full ${done?"bg-teal-100 text-[#0F8179]":"bg-slate-100 text-slate-400"}`}>{done?<CheckCircle size={12}/>:<span className="h-1.5 w-1.5 rounded-full bg-current"/>}</span><span className={done?"text-slate-500 line-through":"font-semibold text-slate-700"}>{label}</span></div>)}</div>{!company.is_verified&&<button onClick={handleRequestVerification} className="ts-company-btn ts-company-secondary mt-5 w-full"><ShieldCheck size={14}/> Demander la vérification</button>}</section>
 
-      {showCreateOffer && (
-        <CreateOfferModal
-          company={company}
-          onClose={() => setShowCreateOffer(false)}
-          onSuccess={() => {
-            setShowCreateOffer(false);
-            showToast("Offre publiée ✅", "success");
-            loadHome();
-          }}
-        />
-      )}
-      {applyOffer && (
-        <ApplyOfferModal
-          offer={applyOffer}
-          onClose={() => setApplyOffer(null)}
-          onSuccess={() => {
-            setApplyOffer(null);
-            showToast("Candidature envoyée ✅", "success");
-          }}
-        />
-      )}
+            <section className="ts-company-card p-5"><div className="mb-4 flex items-center justify-between"><div><p className="ts-company-eyebrow">Vie d’équipe</p><h3 className="mt-1 text-base font-extrabold text-slate-900">Collaborateurs</h3></div><Users className="text-[#0F8179]" size={19}/></div><div className="grid grid-cols-2 gap-3"><button onClick={()=>setShowAllMembers(true)} className="rounded-2xl bg-slate-50 p-4 text-left hover:bg-teal-50"><span className="text-2xl font-extrabold text-slate-900">{members.length}</span><span className="mt-1 block text-[11px] font-medium text-slate-500">Membres</span></button><button onClick={()=>setShowAllEmployees(true)} className="rounded-2xl bg-slate-50 p-4 text-left hover:bg-teal-50"><span className="text-2xl font-extrabold text-slate-900">{employees.length}</span><span className="mt-1 block text-[11px] font-medium text-slate-500">Salariés</span></button></div><div className="mt-4 flex flex-wrap gap-2"><button onClick={()=>setShowAddMember(true)} className="ts-company-btn ts-company-secondary flex-1"><Plus size={13}/> Ajouter un membre</button><button onClick={()=>setShowAddEmployee(true)} className="ts-company-btn ts-company-secondary flex-1"><Plus size={13}/> Ajouter un salarié</button></div><button onClick={()=>setShowAllMembers(true)} className="mt-3 flex w-full items-center justify-between border-t border-slate-100 pt-3 text-xs font-bold text-[#0F8179]">Gérer les membres <ArrowRight size={14}/></button></section>
+
+            <section className="overflow-hidden rounded-[18px] bg-gradient-to-br from-[#0B2638] to-[#0F766E] p-5 text-white shadow-lg shadow-teal-900/10"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15"><Sparkles size={18}/></span><h3 className="mt-4 text-lg font-extrabold">Développez votre réseau</h3><p className="mt-2 text-xs leading-5 text-teal-50/80">Découvrez les demandes de ressources et les offres publiées par les autres acteurs de TalentShare.</p><button onClick={()=>setActiveTab("news")} className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-extrabold text-teal-800 hover:bg-teal-50">Explorer l’actualité <ArrowRight size={14}/></button></section>
+            <SuggestedTalentsSection/>
+          </aside>
+        </div>}
+
+        {activeTab === "news" && <div className="space-y-5">
+          <div className="ts-company-card flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-5"><div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e5f6f2] text-[#087f75]"><Layers size={18}/></span><div><h2 className="text-base font-extrabold text-slate-900">Actualités du réseau</h2><p className="mt-0.5 text-xs text-slate-500">Les offres et les demandes des autres acteurs de TalentShare.</p></div></div><div className="flex flex-wrap items-center gap-2"><span className="mr-1 hidden text-xs text-slate-400 sm:inline">{feedOffers.length} offres · {feedRequests.length} demandes</span><button onClick={loadActualite} className="ts-company-btn ts-company-secondary"><TrendingUp size={14}/> Actualiser</button></div></div>
+          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div><p className="ts-company-eyebrow">Explorer</p><h3 className="mt-1 text-lg font-extrabold text-slate-900">Publications récentes</h3></div><div className="flex flex-wrap gap-2">{[{id:"all",label:"Tout voir"},{id:"offers",label:"Offres d’emploi"},{id:"requests",label:"Demandes de ressources"}].map((f)=><button key={f.id} onClick={()=>setNewsFilter(f.id)} className={`rounded-xl px-4 py-2.5 text-xs font-bold ${newsFilter===f.id?"bg-[#0d9488] text-white shadow-md shadow-teal-700/15":"border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}>{f.label}</button>)}</div></div>
+          {loadingFeed ? <div className="ts-company-card flex min-h-56 items-center justify-center"><Loader2 className="animate-spin text-teal-600" size={28}/></div> : (newsFilter==="all"?feedOffers.length+feedRequests.length:newsFilter==="offers"?feedOffers.length:feedRequests.length)===0 ? <div className="ts-company-card px-5 py-16 text-center"><span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-50 text-[#0F8179]"><Search size={24}/></span><h4 className="mt-4 text-base font-extrabold text-slate-900">Rien à afficher pour le moment</h4><p className="mt-2 text-sm text-slate-500">Les nouvelles offres et demandes apparaîtront ici dès leur publication.</p><button onClick={loadActualite} className="ts-company-btn ts-company-secondary mt-5"><TrendingUp size={14}/> Actualiser</button></div> : <div className="grid items-start gap-5 xl:grid-cols-2">
+            {(newsFilter==="all"||newsFilter==="offers")&&<section className="space-y-3"><div className="flex items-center gap-3 px-1"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-700"><Briefcase size={18}/></span><div><h4 className="text-sm font-extrabold text-slate-900">Offres d’emploi</h4><p className="text-xs text-slate-500">Des opportunités publiées par les autres entreprises</p></div><span className="ml-auto rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">{feedOffers.length}</span></div>{feedOffers.length?feedOffers.map((offer)=><OfferFeedCard key={`news-offer-${offer.id}`} offer={offer} currentCompanyId={company.id} currentUser={user} onDeleted={loadActualite} onApply={(o)=>setApplyOffer(o)}/>):<div className="ts-company-card p-7 text-center text-xs text-slate-500">Aucune offre à afficher.</div>}</section>}
+            {(newsFilter==="all"||newsFilter==="requests")&&<section className="space-y-3"><div className="flex items-center gap-3 px-1"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-700"><Layers size={18}/></span><div><h4 className="text-sm font-extrabold text-slate-900">Demandes de ressources</h4><p className="text-xs text-slate-500">Besoins partagés par les entreprises et les talents</p></div><span className="ml-auto rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700">{feedRequests.length}</span></div>{feedRequests.length?feedRequests.map((request)=><RequestFeedCard key={`news-request-${request.id}`} request={request} currentUser={user}/>):<div className="ts-company-card p-7 text-center text-xs text-slate-500">Aucune demande à afficher.</div>}</section>}
+          </div>}
+        </div>}
+      </div>
+
+      {showAllMembers && <AllPeopleModal title="Tous les membres" subtitle={`${members.length} membre${members.length>1?"s":""}`} icon={Users} people={members} type="member" onClose={()=>setShowAllMembers(false)} onRemove={handleRemoveMember} onClick={(m)=>{setShowAllMembers(false);setSelectedMember(m);}} onAdd={()=>{setShowAllMembers(false);setShowAddMember(true);}}/>}
+      {showAllEmployees && <AllPeopleModal title="Tous les salariés" subtitle={`${employees.length} salarié${employees.length>1?"s":""}`} icon={Briefcase} people={employees} type="employee" onClose={()=>setShowAllEmployees(false)} onRemove={handleRemoveEmployee} onAdd={()=>{setShowAllEmployees(false);setShowAddEmployee(true);}}/>}
+      {showFormModal && <CompanyFormModal company={company} onClose={()=>setShowFormModal(false)} onSuccess={()=>{setShowFormModal(false);showToast("Entreprise mise à jour","success");loadCompany();}}/>}
+      {showAddMember && <AddMemberModal companyId={company.id} onClose={()=>setShowAddMember(false)} onSuccess={()=>{setShowAddMember(false);loadCompany();}}/>}
+      {showAddEmployee && <AddEmployeeModal companyId={company.id} onClose={()=>setShowAddEmployee(false)} onSuccess={()=>{setShowAddEmployee(false);loadCompany();}}/>}
+      {selectedEmployee && <EmployeeDetailModal employee={selectedEmployee} onClose={()=>setSelectedEmployee(null)}/>}
+      {selectedMember && <MemberDetailModal member={selectedMember} companyId={company.id} onClose={()=>setSelectedMember(null)} onPhotoUpdated={()=>{setSelectedMember(null);loadCompany();}}/>}
+   {showCreateOffer && (
+  <CreateOfferModal 
+    company={company} 
+    onClose={() => setShowCreateOffer(false)} 
+    onSuccess={() => {
+      setShowCreateOffer(false);
+      setOfferSuccess(true); // 👈 Affiche l'écran de succès
+      loadHome();
+    }}
+  />
+)}
+
+{/* 👇 AJOUTE L'ÉCRAN DE SUCCÈS ICI */}
+{offerSuccess && (
+  <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-900/80 p-6 backdrop-blur-md">
+    <div className="relative flex w-full max-w-md flex-col items-center text-center">
+      <style>{`
+        @keyframes scaleUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .animate-success { animation: scaleUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+      `}</style>
+      
+      <div className="animate-success flex h-24 w-24 items-center justify-center rounded-full bg-[#0F9691] shadow-[0_0_50px_rgba(16,185,129,0.5)]">
+        <CheckCircle size={48} className="text-white" />
+      </div>
+      
+      <h2 className="mt-8 text-3xl font-black text-white">Offre publiée !</h2>
+      <p className="mt-3 text-sm text-slate-300">
+        Votre offre a bien été publiée. Elle est maintenant visible par tous les talents du réseau.
+      </p>
+      
+      <button 
+        onClick={() => setOfferSuccess(false)} 
+        className="mt-8 rounded-xl bg-white px-8 py-3 text-sm font-bold text-slate-900 transition hover:bg-slate-100"
+      >
+        Fermer
+      </button>
+    </div>
+  </div>
+)}
+      {applyOffer && <ApplyOfferModal offer={applyOffer} onClose={()=>setApplyOffer(null)} onSuccess={()=>{setApplyOffer(null);showToast("Candidature envoyée","success");}}/>}
     </AppShell>
   );
 }
 
-/* ============================================
-   CARTE DEMANDE
-============================================ */
+/* ------------------------------- COMPOSANTS -------------------------------- */
+
 function RequestFeedCard({ request, currentUser }) {
   const { showToast } = useToast();
   const navigate = useNavigate();
@@ -1167,7 +681,7 @@ function RequestFeedCard({ request, currentUser }) {
     const url = `${window.location.origin}/resource-requests/${request.id}`;
     try {
       await navigator.clipboard.writeText(url);
-      showToast("Lien copié ✅", "success");
+      showToast("Lien copié", "success");
       api.post(`/resource-requests/${request.id}/share`).catch(() => {});
     } catch {
       showToast("Impossible de copier", "error");
@@ -1200,7 +714,7 @@ function RequestFeedCard({ request, currentUser }) {
       setComments([res.data.comment, ...comments]);
       setCommentsCount((c) => c + 1);
       setCommentText("");
-      showToast("Commentaire ajouté ✅", "success");
+      showToast("Commentaire ajouté", "success");
     } catch (err) {
       showToast(err.response?.data?.message || `Erreur ${err.response?.status || ""}`, "error");
     } finally {
@@ -1223,11 +737,11 @@ function RequestFeedCard({ request, currentUser }) {
   return (
     <div
       id={`request-${request.id}`}
-      className={`group relative overflow-hidden rounded-xl border bg-[var(--bg-surface)] transition hover:border-amber-500/30 ${
-        isUrgent ? "border-rose-500/30" : "border-[var(--border-app)]"
+      className={`group relative overflow-hidden rounded-xl border bg-[var(--bg-surface)] transition hover:border-teal-500/30 ${
+        isUrgent ? "border-teal-500/30" : "border-[var(--border-app)]"
       }`}
     >
-      <span className={`absolute inset-y-0 left-0 w-[3px] ${isUrgent ? "bg-rose-500" : "bg-amber-500"}`} />
+      <span className={`absolute inset-y-0 left-0 w-[3px] ${isUrgent ? "bg-[#0F9691]" : "bg-[#0F9691]"}`} />
 
       <div className="p-5 pl-6">
         <div className="flex items-start gap-3">
@@ -1247,16 +761,16 @@ function RequestFeedCard({ request, currentUser }) {
                   <p className="truncate text-sm font-semibold text-[var(--text-app)]">
                     {author?.name || "Talent"}
                   </p>
-                  <span className="inline-flex items-center gap-1 rounded-md border border-purple-500/30 bg-purple-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-purple-400">
-                    🎓 Talent
+                  <span className="inline-flex items-center gap-1 rounded-md border border-teal-500/30 bg-[#0F9691]/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#0F9691]">
+                    Talent
                   </span>
                   {isUrgent && (
-                    <span className="inline-flex items-center gap-1 rounded-md border border-rose-500/40 bg-rose-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-rose-400">
+                    <span className="inline-flex items-center gap-1 rounded-md border border-teal-500/40 bg-[#0F9691]/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#0F9691]">
                       <Zap size={9} /> Urgent
                     </span>
                   )}
                   {isOwner && (
-                    <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase text-emerald-400">
+                    <span className="rounded-md border border-teal-500/30 bg-[#0F9691]/10 px-1.5 py-0.5 text-[9px] font-bold uppercase text-[#0F9691]">
                       Ma publication
                     </span>
                   )}
@@ -1281,12 +795,12 @@ function RequestFeedCard({ request, currentUser }) {
                     {company?.name || "Entreprise"}
                   </p>
                   {isUrgent && (
-                    <span className="inline-flex items-center gap-1 rounded-md border border-rose-500/40 bg-rose-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-rose-400">
+                    <span className="inline-flex items-center gap-1 rounded-md border border-teal-500/40 bg-[#0F9691]/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#0F9691]">
                       <Zap size={9} /> Urgent
                     </span>
                   )}
                   {isOwner && (
-                    <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase text-emerald-400">
+                    <span className="rounded-md border border-teal-500/30 bg-[#0F9691]/10 px-1.5 py-0.5 text-[9px] font-bold uppercase text-[#0F9691]">
                       Ma publication
                     </span>
                   )}
@@ -1306,7 +820,7 @@ function RequestFeedCard({ request, currentUser }) {
         </div>
 
         <div className="mt-4">
-          <h3 className="text-base font-bold leading-snug text-[var(--text-app)] transition group-hover:text-amber-400">
+          <h3 className="text-base font-bold leading-snug text-[var(--text-app)] transition group-hover:text-[#0F9691]">
             {request.title}
           </h3>
           {request.description && (
@@ -1318,7 +832,7 @@ function RequestFeedCard({ request, currentUser }) {
 
         <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs">
           {hasBudget && (
-            <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 font-semibold text-emerald-400">
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-teal-500/30 bg-[#0F9691]/10 px-2.5 py-1 font-semibold text-[#0F9691]">
               <Euro size={11} /> {request.budget_min}–{request.budget_max} €/j
             </span>
           )}
@@ -1397,7 +911,7 @@ function RequestFeedCard({ request, currentUser }) {
               {(currentUser?.role === "employee" || currentUser?.role === "student") && (
                 <Link
                   to={`/resource-requests/${request.id}`}
-                  className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-amber-500/10 py-2 text-xs font-bold text-amber-400 transition hover:bg-amber-500/20"
+                  className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-[#0F9691]/10 py-2 text-xs font-bold text-[#0F9691] transition hover:bg-[#0F9691]/20"
                 >
                   <ArrowRight size={14} />
                   Proposer
@@ -1412,7 +926,7 @@ function RequestFeedCard({ request, currentUser }) {
                       : request.company?.owner_user_id;
                     if (ownerId) navigate(`/messages?to=${ownerId}`);
                   }}
-                  className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-blue-500/10 py-2 text-xs font-bold text-blue-400 transition hover:bg-blue-500/20"
+                  className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-[#0F9691]/10 py-2 text-xs font-bold text-[#0F9691] transition hover:bg-[#0F9691]/20"
                 >
                   <MessageCircle size={14} />
                   Contacter
@@ -1431,12 +945,12 @@ function RequestFeedCard({ request, currentUser }) {
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
                 placeholder="Écrivez un commentaire..."
-                className="flex-1 rounded-full border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-3 py-1.5 text-xs text-[var(--text-app)] placeholder:text-[var(--text-faint)] focus:border-amber-500/50 focus:outline-none"
+                className="flex-1 rounded-full border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-3 py-1.5 text-xs text-[var(--text-app)] placeholder:text-[var(--text-faint)] focus:border-teal-500/50 focus:outline-none"
               />
               <button
                 type="submit"
                 disabled={postingComment || !commentText.trim()}
-                className="rounded-full bg-amber-500 p-1.5 text-[#0B1F33] transition hover:bg-amber-400 disabled:opacity-40"
+                className="rounded-full bg-[#0F9691] p-1.5 text-[#0B1F33] transition hover:bg-[#0B7D79] disabled:opacity-40"
               >
                 {postingComment ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
               </button>
@@ -1445,7 +959,7 @@ function RequestFeedCard({ request, currentUser }) {
             <div className="mt-3 space-y-2">
               {loadingComments ? (
                 <div className="flex justify-center py-3">
-                  <Loader2 size={16} className="animate-spin text-amber-400" />
+                  <Loader2 size={16} className="animate-spin text-[#0F9691]" />
                 </div>
               ) : comments.length === 0 ? (
                 <p className="py-2 text-center text-[11px] text-[var(--text-faint)]">Aucun commentaire pour le moment</p>
@@ -1469,9 +983,6 @@ function RequestFeedCard({ request, currentUser }) {
   );
 }
 
-/* ============================================
-   CARTE : Membre
-============================================ */
 function MemberCard({ member, onRemove, onClick }) {
   const name = member.user?.name || "Utilisateur";
   const email = member.user?.email;
@@ -1485,7 +996,7 @@ function MemberCard({ member, onRemove, onClick }) {
   return (
     <div
       onClick={() => onClick?.(member)}
-      className="group flex cursor-pointer items-center gap-3 rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-hover)] p-3 transition hover:border-emerald-500/40 hover:bg-[var(--bg-surface)]"
+      className="group flex cursor-pointer items-center gap-3 rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-hover)] p-3 transition hover:border-teal-500/40 hover:bg-[var(--bg-surface)]"
     >
       <Avatar path={avatar} name={name} size="md" />
       <div className="min-w-0 flex-1">
@@ -1493,8 +1004,8 @@ function MemberCard({ member, onRemove, onClick }) {
         {email && <p className="truncate text-[10px] text-[var(--text-faint)]">{email}</p>}
       </div>
       <span className={`shrink-0 rounded-md border px-1.5 py-0.5 text-[9px] font-bold uppercase ${
-        member.role === "owner" ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
-        : member.role === "admin" ? "border-blue-500/30 bg-blue-500/10 text-blue-400"
+        member.role === "owner" ? "border-teal-500/30 bg-[#0F9691]/10 text-[#0F9691]"
+        : member.role === "admin" ? "border-teal-500/30 bg-[#0F9691]/10 text-[#0F9691]"
         : "border-[var(--border-app)] bg-[var(--bg-surface)] text-[var(--text-muted)]"
       }`}>
         {member.role}
@@ -1504,9 +1015,6 @@ function MemberCard({ member, onRemove, onClick }) {
   );
 }
 
-/* ============================================
-   CARTE : Salarié
-============================================ */
 function EmployeeCard({ employee, onRemove, onClick }) {
   const name = employee.user?.name || `${employee.first_name || ""} ${employee.last_name || ""}`.trim() || "Salarié";
   const position = employee.position || "Poste non défini";
@@ -1519,7 +1027,7 @@ function EmployeeCard({ employee, onRemove, onClick }) {
   return (
     <div
       onClick={() => onClick?.(employee)}
-      className="group flex cursor-pointer items-center gap-3 rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-hover)] p-3 transition hover:border-emerald-500/40 hover:bg-[var(--bg-surface)]"
+      className="group flex cursor-pointer items-center gap-3 rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-hover)] p-3 transition hover:border-teal-500/40 hover:bg-[var(--bg-surface)]"
     >
       <Avatar path={avatar} name={name} size="md" />
       <div className="min-w-0 flex-1">
@@ -1527,7 +1035,7 @@ function EmployeeCard({ employee, onRemove, onClick }) {
         <p className="truncate text-[10px] text-[var(--text-faint)]">{position}</p>
       </div>
       {employee.has_account && (
-        <span className="shrink-0 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase text-emerald-400">
+        <span className="shrink-0 rounded-md border border-teal-500/30 bg-[#0F9691]/10 px-1.5 py-0.5 text-[9px] font-bold uppercase text-[#0F9691]">
           Compte
         </span>
       )}
@@ -1536,9 +1044,6 @@ function EmployeeCard({ employee, onRemove, onClick }) {
   );
 }
 
-/* ============================================
-   MODAL : Détails du salarié
-============================================ */
 function EmployeeDetailModal({ employee, onClose }) {
   const name = employee.user?.name || `${employee.first_name || ""} ${employee.last_name || ""}`.trim() || "Salarié";
   const email = employee.user?.email || employee.email;
@@ -1553,7 +1058,7 @@ function EmployeeDetailModal({ employee, onClose }) {
   const avatar = employee.photo_path || profile?.avatar_path;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="ts-modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
       <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-[var(--border-app)] px-6 py-4">
           <p className="text-sm font-bold text-[var(--text-app)]">Détails du salarié</p>
@@ -1566,15 +1071,15 @@ function EmployeeDetailModal({ employee, onClose }) {
           <div className="flex flex-col items-center text-center">
             <Avatar path={avatar} name={name} size="xl" />
             <h2 className="mt-3 text-lg font-bold text-[var(--text-app)]">{name}</h2>
-            {position && <p className="text-xs text-emerald-400">{position}</p>}
+            {position && <p className="text-xs text-[#0F9691]">{position}</p>}
             {headline && <p className="mt-1 text-xs text-[var(--text-muted)]">{headline}</p>}
 
             {employee.has_account ? (
-              <span className="mt-2 inline-flex items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-400">
+              <span className="mt-2 inline-flex items-center gap-1 rounded-md border border-teal-500/30 bg-[#0F9691]/10 px-2 py-0.5 text-[10px] font-bold uppercase text-[#0F9691]">
                 <CheckCircle size={10} /> Compte actif
               </span>
             ) : (
-              <span className="mt-2 inline-flex items-center gap-1 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-400">
+              <span className="mt-2 inline-flex items-center gap-1 rounded-md border border-teal-500/30 bg-[#0F9691]/10 px-2 py-0.5 text-[10px] font-bold uppercase text-[#0F9691]">
                 <AlertCircle size={10} /> Sans compte
               </span>
             )}
@@ -1598,9 +1103,6 @@ function EmployeeDetailModal({ employee, onClose }) {
   );
 }
 
-/* ============================================
-   MODAL : Détails du membre
-============================================ */
 function MemberDetailModal({ member, companyId, onClose, onPhotoUpdated }) {
   const { showToast } = useToast();
   const [uploading, setUploading] = useState(false);
@@ -1632,7 +1134,7 @@ function MemberDetailModal({ member, companyId, onClose, onPhotoUpdated }) {
       await api.post(`/companies/${companyId}/members/${member.id}/photo`, fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      showToast("Photo mise à jour ✅", "success");
+      showToast("Photo mise à jour", "success");
       onPhotoUpdated?.();
     } catch (err) {
       showToast(err.response?.data?.message || "Erreur upload", "error");
@@ -1643,7 +1145,7 @@ function MemberDetailModal({ member, companyId, onClose, onPhotoUpdated }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="ts-modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
       <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-[var(--border-app)] px-6 py-4">
           <p className="text-sm font-bold text-[var(--text-app)]">Détails du membre</p>
@@ -1666,8 +1168,8 @@ function MemberDetailModal({ member, companyId, onClose, onPhotoUpdated }) {
             {headline && <p className="mt-1 text-xs text-[var(--text-muted)]">{headline}</p>}
 
             <span className={`mt-2 inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase ${
-              role === "owner" ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
-              : role === "admin" ? "border-blue-500/30 bg-blue-500/10 text-blue-400"
+              role === "owner" ? "border-teal-500/30 bg-[#0F9691]/10 text-[#0F9691]"
+              : role === "admin" ? "border-teal-500/30 bg-[#0F9691]/10 text-[#0F9691]"
               : "border-[var(--border-app)] bg-[var(--bg-surface)] text-[var(--text-muted)]"
             }`}>
               {role}
@@ -1687,9 +1189,6 @@ function MemberDetailModal({ member, companyId, onClose, onPhotoUpdated }) {
   );
 }
 
-/* ============================================
-   DetailRow
-============================================ */
 function DetailRow({ icon: Icon, label, value }) {
   return (
     <div className="flex items-start gap-3 rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-hover)] p-3">
@@ -1704,9 +1203,6 @@ function DetailRow({ icon: Icon, label, value }) {
   );
 }
 
-/* ============================================
-   MODAL : Tous les membres / salariés
-============================================ */
 function AllPeopleModal({ title, subtitle, icon: Icon, people, type, onClose, onRemove, onAdd, onClick }) {
   const [search, setSearch] = useState("");
 
@@ -1718,11 +1214,11 @@ function AllPeopleModal({ title, subtitle, icon: Icon, people, type, onClose, on
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="ts-modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
       <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-3 border-b border-[var(--border-app)] px-6 py-5">
           <div className="flex items-start gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0F9691]/15 text-[#0F9691]">
               <Icon size={18} />
             </span>
             <div>
@@ -1736,7 +1232,7 @@ function AllPeopleModal({ title, subtitle, icon: Icon, people, type, onClose, on
         </div>
 
         <div className="flex flex-wrap items-center gap-3 border-b border-[var(--border-app)] px-6 py-3">
-          <div className="flex min-w-[200px] flex-1 items-center gap-2 rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-3 py-2 transition focus-within:border-emerald-500/50">
+          <div className="flex min-w-[200px] flex-1 items-center gap-2 rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-3 py-2 transition focus-within:border-teal-500/50">
             <Search size={14} className="shrink-0 text-[var(--text-faint)]" />
             <input
               type="text"
@@ -1772,7 +1268,7 @@ function AllPeopleModal({ title, subtitle, icon: Icon, people, type, onClose, on
                   <div
                     key={p.id}
                     onClick={() => onClick?.(p)}
-                    className={`rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface-hover)] p-4 ${onClick ? "cursor-pointer transition hover:border-emerald-500/40" : ""}`}
+                    className={`rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface-hover)] p-4 ${onClick ? "cursor-pointer transition hover:border-teal-500/40" : ""}`}
                   >
                     <div className="flex flex-col items-center text-center">
                       <Avatar path={avatar} name={name} size="lg" />
@@ -1795,7 +1291,7 @@ function AllPeopleModal({ title, subtitle, icon: Icon, people, type, onClose, on
             <button onClick={onClose} className="rounded-lg border border-[var(--border-app)] px-4 py-2 text-sm font-medium text-[var(--text-app)] transition hover:bg-[var(--bg-surface-hover)]">
               Fermer
             </button>
-            <button onClick={onAdd} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400">
+            <button onClick={onAdd} className="inline-flex items-center gap-1.5 rounded-lg bg-[#0F9691] px-4 py-2 text-sm font-bold text-[#0B1F33] transition hover:bg-[#0B7D79]">
               <Plus size={14} /> Ajouter
             </button>
           </div>
@@ -1805,9 +1301,6 @@ function AllPeopleModal({ title, subtitle, icon: Icon, people, type, onClose, on
   );
 }
 
-/* ============================================
-   MODAL : Formulaire entreprise
-============================================ */
 function CompanyFormModal({ company, onClose, onSuccess }) {
   const { showToast } = useToast();
   const isEditing = !!company;
@@ -1846,11 +1339,11 @@ function CompanyFormModal({ company, onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="ts-modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
       <div className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-3 border-b border-[var(--border-app)] px-6 py-5">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#0F9691]">
               {isEditing ? "Modifier" : "Nouvelle entreprise"}
             </p>
             <h2 className="mt-0.5 text-xl font-bold text-[var(--text-app)]">
@@ -1909,7 +1402,7 @@ function CompanyFormModal({ company, onClose, onSuccess }) {
             Annuler
           </button>
           <button type="button" onClick={submit} disabled={saving}
-            className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400 disabled:opacity-50">
+            className="inline-flex items-center gap-2 rounded-lg bg-[#0F9691] px-5 py-2 text-sm font-bold text-[#0B1F33] transition hover:bg-[#0B7D79] disabled:opacity-50">
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
             {saving ? "..." : isEditing ? "Enregistrer" : "Créer"}
           </button>
@@ -1919,9 +1412,6 @@ function CompanyFormModal({ company, onClose, onSuccess }) {
   );
 }
 
-/* ============================================
-   MODAL : Ajouter membre
-============================================ */
 function AddMemberModal({ companyId, onClose, onSuccess }) {
   const { showToast } = useToast();
   const [email, setEmail] = useState("");
@@ -1989,7 +1479,7 @@ function AddMemberModal({ companyId, onClose, onSuccess }) {
         }
       }
 
-      showToast("Membre ajouté ✅", "success");
+      showToast("Membre ajouté", "success");
       onSuccess();
     } catch (err) {
       showToast(err.response?.data?.message || "Utilisateur introuvable", "error");
@@ -2024,14 +1514,14 @@ function AddMemberModal({ companyId, onClose, onSuccess }) {
         <Field icon={Mail} label="Email *">
           <div className="relative">
             <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@exemple.com" className={inputCls} />
-            {searching && <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-emerald-400" />}
+            {searching && <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-[#0F9691]" />}
           </div>
 
           {suggestedUser && (
-            <div className="mt-2 flex items-center gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-2.5">
-              <CheckCircle size={16} className="shrink-0 text-emerald-400" />
+            <div className="mt-2 flex items-center gap-3 rounded-lg border border-teal-500/30 bg-[#0F9691]/10 p-2.5">
+              <CheckCircle size={16} className="shrink-0 text-[#0F9691]" />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[11px] font-semibold text-emerald-400">
+                <p className="truncate text-[11px] font-semibold text-[#0F9691]">
                   Compte trouvé : {suggestedUser.name}
                 </p>
               </div>
@@ -2051,7 +1541,7 @@ function AddMemberModal({ companyId, onClose, onSuccess }) {
           <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-[var(--text-muted)] hover:bg-[var(--bg-surface-hover)]">
             Annuler
           </button>
-          <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400 disabled:opacity-50">
+          <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-[#0F9691] px-5 py-2 text-sm font-bold text-[#0B1F33] transition hover:bg-[#0B7D79] disabled:opacity-50">
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} Ajouter
           </button>
         </div>
@@ -2060,9 +1550,6 @@ function AddMemberModal({ companyId, onClose, onSuccess }) {
   );
 }
 
-/* ============================================
-   MODAL : Ajouter salarié
-============================================ */
 function AddEmployeeModal({ companyId, onClose, onSuccess }) {
   const { showToast } = useToast();
   const [form, setForm] = useState({
@@ -2142,7 +1629,7 @@ function AddEmployeeModal({ companyId, onClose, onSuccess }) {
         }
       }
 
-      showToast("✅ Salarié ajouté", "success");
+      showToast("Salarié ajouté", "success");
       onSuccess();
     } catch (err) {
       showToast(err.response?.data?.message || "Erreur", "error");
@@ -2177,14 +1664,14 @@ function AddEmployeeModal({ companyId, onClose, onSuccess }) {
         <Field icon={Mail} label="Email *">
           <div className="relative">
             <input type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="email@exemple.com" className={inputCls} />
-            {searching && <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-emerald-400" />}
+            {searching && <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-[#0F9691]" />}
           </div>
 
           {suggestedUser && (
-            <div className="mt-2 flex items-center gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-2.5">
-              <CheckCircle size={16} className="shrink-0 text-emerald-400" />
+            <div className="mt-2 flex items-center gap-3 rounded-lg border border-teal-500/30 bg-[#0F9691]/10 p-2.5">
+              <CheckCircle size={16} className="shrink-0 text-[#0F9691]" />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[11px] font-semibold text-emerald-400">
+                <p className="truncate text-[11px] font-semibold text-[#0F9691]">
                   Compte trouvé : {suggestedUser.name}
                 </p>
               </div>
@@ -2213,7 +1700,7 @@ function AddEmployeeModal({ companyId, onClose, onSuccess }) {
           <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-[var(--text-muted)] hover:bg-[var(--bg-surface-hover)]">
             Annuler
           </button>
-          <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400 disabled:opacity-50">
+          <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-[#0F9691] px-5 py-2 text-sm font-bold text-[#0B1F33] transition hover:bg-[#0B7D79] disabled:opacity-50">
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} Ajouter
           </button>
         </div>
@@ -2222,9 +1709,6 @@ function AddEmployeeModal({ companyId, onClose, onSuccess }) {
   );
 }
 
-/* ============================================
-   MODAL : Créer une offre
-============================================ */
 function CreateOfferModal({ company, onClose, onSuccess }) {
   const [form, setForm] = useState({
     title: "",
@@ -2267,19 +1751,22 @@ function CreateOfferModal({ company, onClose, onSuccess }) {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
-      <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-start justify-between gap-3 border-b border-[var(--border-app)] px-6 py-5">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Nouvelle offre</p>
-            <h2 className="mt-0.5 text-lg font-bold text-[var(--text-app)]">Publier une offre</h2>
-            <p className="text-xs text-[var(--text-muted)]">pour {company.name}</p>
-          </div>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-[var(--text-faint)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-app)]">
-            <X size={18} />
-          </button>
+return (
+  <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-md" onClick={onClose}>
+    {/* 👇 FOND BLANC OPAQUE ICI */}
+    <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      
+      {/* HEADER VERT */}
+      <div className="flex items-start justify-between gap-3 bg-[#103b2c] px-6 py-5 text-white">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-[#16A99F]">Nouvelle offre</p>
+          <h2 className="mt-0.5 text-lg font-bold">Publier une offre</h2>
+          <p className="text-xs text-teal-100/70">pour {company.name}</p>
         </div>
+        <button onClick={onClose} className="rounded-full bg-white/10 p-2 transition hover:bg-white/20">
+          <X size={18} />
+        </button>
+      </div>
 
         <form onSubmit={submit} className="flex-1 space-y-4 overflow-y-auto p-6">
           {error && (
@@ -2323,7 +1810,7 @@ function CreateOfferModal({ company, onClose, onSuccess }) {
           </Field>
 
           <label className="flex items-center gap-2.5 rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-hover)] p-3 text-sm text-[var(--text-app)]">
-            <input type="checkbox" checked={form.remote} onChange={(e) => setForm({ ...form, remote: e.target.checked })} className="h-4 w-4 accent-emerald-500" />
+            <input type="checkbox" checked={form.remote} onChange={(e) => setForm({ ...form, remote: e.target.checked })} className="h-4 w-4 accent-teal-500" />
             <Home size={14} className="text-[var(--text-muted)]" />
             Poste en télétravail
           </label>
@@ -2332,7 +1819,7 @@ function CreateOfferModal({ company, onClose, onSuccess }) {
             <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-[var(--text-muted)] hover:bg-[var(--bg-surface-hover)]">
               Annuler
             </button>
-            <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400 disabled:opacity-50">
+            <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-[#0F9691] px-5 py-2 text-sm font-bold text-[#0B1F33] transition hover:bg-[#0B7D79] disabled:opacity-50">
               {saving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
               {saving ? "Publication..." : "Publier l'offre"}
             </button>
@@ -2343,9 +1830,6 @@ function CreateOfferModal({ company, onClose, onSuccess }) {
   );
 }
 
-/* ============================================
-   CARTE : Offre dans le feed
-============================================ */
 function OfferFeedCard({ offer, currentCompanyId, currentUser, onDeleted, onApply }) {
   const { showToast } = useToast();
   const navigate = useNavigate();
@@ -2416,7 +1900,7 @@ function OfferFeedCard({ offer, currentCompanyId, currentUser, onDeleted, onAppl
     const url = `${window.location.origin}/actualite#offer-${offer.id}`;
     try {
       await navigator.clipboard.writeText(url);
-      showToast("Lien copié ✅", "success");
+      showToast("Lien copié", "success");
       api.post(`/job-offers/${offer.id}/share`).catch(() => {});
     } catch {
       showToast("Impossible de copier", "error");
@@ -2449,7 +1933,7 @@ function OfferFeedCard({ offer, currentCompanyId, currentUser, onDeleted, onAppl
       setComments([res.data.comment, ...comments]);
       setCommentsCount((c) => c + 1);
       setCommentText("");
-      showToast("Commentaire ajouté ✅", "success");
+      showToast("Commentaire ajouté", "success");
     } catch (err) {
       console.error("Erreur comment:", err.response?.status, err.response?.data);
       showToast(err.response?.data?.message || `Erreur ${err.response?.status || ""}`, "error");
@@ -2470,7 +1954,7 @@ function OfferFeedCard({ offer, currentCompanyId, currentUser, onDeleted, onAppl
   };
 
   return (
-    <div id={`offer-${offer.id}`} className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-4 transition hover:border-emerald-500/30">
+    <div id={`offer-${offer.id}`} className="rounded-xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-4 transition hover:border-teal-500/30">
       <div className="flex items-start gap-3">
         <Avatar path={company?.logo_url || company?.logo_path} name={company?.name || "Entreprise"} size="md" rounded="lg" />
         <div className="min-w-0 flex-1">
@@ -2478,9 +1962,9 @@ function OfferFeedCard({ offer, currentCompanyId, currentUser, onDeleted, onAppl
             <p className="truncate text-sm font-bold text-[var(--text-app)]">
               {company?.name || "Entreprise"}
             </p>
-            {company?.is_verified && <BadgeCheck size={13} className="text-emerald-400" />}
+            {company?.is_verified && <BadgeCheck size={13} className="text-[#0F9691]" />}
             {isMyOffer && (
-              <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase text-emerald-400">
+              <span className="rounded-md border border-teal-500/30 bg-[#0F9691]/10 px-1.5 py-0.5 text-[9px] font-bold uppercase text-[#0F9691]">
                 Ma publication
               </span>
             )}
@@ -2494,7 +1978,7 @@ function OfferFeedCard({ offer, currentCompanyId, currentUser, onDeleted, onAppl
               </>
             )}
             {offer.remote && (
-              <span className="rounded border border-blue-500/30 bg-blue-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-blue-400">
+              <span className="rounded border border-teal-500/30 bg-[#0F9691]/10 px-1.5 py-0.5 text-[9px] font-semibold text-[#0F9691]">
                 Télétravail
               </span>
             )}
@@ -2513,7 +1997,7 @@ function OfferFeedCard({ offer, currentCompanyId, currentUser, onDeleted, onAppl
       </div>
 
       <div className="mt-3">
-        <span className="inline-block rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-400">
+        <span className="inline-block rounded-full border border-teal-500/30 bg-[#0F9691]/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#0F9691]">
           {OFFER_TYPES[offer.offer_type] || offer.offer_type}
         </span>
         <h3 className="mt-2 text-base font-bold text-[var(--text-app)]">{offer.title}</h3>
@@ -2566,7 +2050,7 @@ function OfferFeedCard({ offer, currentCompanyId, currentUser, onDeleted, onAppl
             {(currentUser?.role === "employee" || currentUser?.role === "student") && (
               <button
                 onClick={() => onApply?.(offer)}
-                className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-emerald-500/10 py-2 text-xs font-bold text-emerald-400 transition hover:bg-emerald-500/20"
+                className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-[#0F9691]/10 py-2 text-xs font-bold text-[#0F9691] transition hover:bg-[#0F9691]/20"
               >
                 <Briefcase size={14} />
                 Postuler
@@ -2579,7 +2063,7 @@ function OfferFeedCard({ offer, currentCompanyId, currentUser, onDeleted, onAppl
                   const ownerId = offer.company?.owner_user_id;
                   if (ownerId) navigate(`/messages?to=${ownerId}`);
                 }}
-                className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-blue-500/10 py-2 text-xs font-bold text-blue-400 transition hover:bg-blue-500/20"
+                className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-[#0F9691]/10 py-2 text-xs font-bold text-[#0F9691] transition hover:bg-[#0F9691]/20"
               >
                 <MessageCircle size={14} />
                 Contacter
@@ -2598,12 +2082,12 @@ function OfferFeedCard({ offer, currentCompanyId, currentUser, onDeleted, onAppl
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
               placeholder="Écrivez un commentaire..."
-              className="flex-1 rounded-full border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-3 py-1.5 text-xs text-[var(--text-app)] placeholder:text-[var(--text-faint)] focus:border-emerald-500/50 focus:outline-none"
+              className="flex-1 rounded-full border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-3 py-1.5 text-xs text-[var(--text-app)] placeholder:text-[var(--text-faint)] focus:border-teal-500/50 focus:outline-none"
             />
             <button
               type="submit"
               disabled={postingComment || !commentText.trim()}
-              className="rounded-full bg-emerald-500 p-1.5 text-[#0B1F33] transition hover:bg-emerald-400 disabled:opacity-40"
+              className="rounded-full bg-[#0F9691] p-1.5 text-[#0B1F33] transition hover:bg-[#0B7D79] disabled:opacity-40"
             >
               {postingComment ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
             </button>
@@ -2612,7 +2096,7 @@ function OfferFeedCard({ offer, currentCompanyId, currentUser, onDeleted, onAppl
           <div className="mt-3 space-y-2">
             {loadingComments ? (
               <div className="flex justify-center py-3">
-                <Loader2 size={16} className="animate-spin text-emerald-400" />
+                <Loader2 size={16} className="animate-spin text-[#0F9691]" />
               </div>
             ) : comments.length === 0 ? (
               <p className="py-2 text-center text-[11px] text-[var(--text-faint)]">Aucun commentaire pour le moment</p>
@@ -2635,9 +2119,6 @@ function OfferFeedCard({ offer, currentCompanyId, currentUser, onDeleted, onAppl
   );
 }
 
-/* ============================================
-   MODAL : Postuler
-============================================ */
 function ApplyOfferModal({ offer, onClose, onSuccess }) {
   const { showToast } = useToast();
   const [profile, setProfile] = useState(null);
@@ -2684,11 +2165,11 @@ function ApplyOfferModal({ offer, onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="ts-modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
       <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-3 border-b border-[var(--border-app)] px-6 py-5">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Postuler</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#0F9691]">Postuler</p>
             <h2 className="mt-0.5 text-base font-bold text-[var(--text-app)]">{offer.title}</h2>
             <p className="text-xs text-[var(--text-muted)]">chez {offer.company?.name || "l'entreprise"}</p>
           </div>
@@ -2700,7 +2181,7 @@ function ApplyOfferModal({ offer, onClose, onSuccess }) {
         <form onSubmit={submit} className="flex-1 space-y-4 overflow-y-auto p-6">
           {loading ? (
             <div className="flex justify-center py-6">
-              <Loader2 className="animate-spin text-emerald-400" size={24} />
+              <Loader2 className="animate-spin text-[#0F9691]" size={24} />
             </div>
           ) : (
             <>
@@ -2730,13 +2211,13 @@ function ApplyOfferModal({ offer, onClose, onSuccess }) {
                   value={coverLetter}
                   onChange={(e) => setCoverLetter(e.target.value)}
                   placeholder="Expliquez pourquoi cette offre vous intéresse..."
-                  className="w-full rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-3 py-2 text-sm text-[var(--text-app)] placeholder:text-[var(--text-faint)] focus:border-emerald-500/50 focus:outline-none"
+                  className="w-full rounded-lg border border-[var(--border-app)] bg-[var(--bg-surface-hover)] px-3 py-2 text-sm text-[var(--text-app)] placeholder:text-[var(--text-faint)] focus:border-teal-500/50 focus:outline-none"
                 />
               </div>
 
               {portfolio && (
-                <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">
-                  <p className="flex items-center gap-2 text-xs text-emerald-400">
+                <div className="rounded-lg border border-teal-500/30 bg-[#0F9691]/10 p-3">
+                  <p className="flex items-center gap-2 text-xs text-[#0F9691]">
                     <CheckCircle size={14} />
                     Votre portfolio sera joint automatiquement
                   </p>
@@ -2744,8 +2225,8 @@ function ApplyOfferModal({ offer, onClose, onSuccess }) {
               )}
 
               {profile?.cv_path && (
-                <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">
-                  <p className="flex items-center gap-2 text-xs text-emerald-400">
+                <div className="rounded-lg border border-teal-500/30 bg-[#0F9691]/10 p-3">
+                  <p className="flex items-center gap-2 text-xs text-[#0F9691]">
                     <CheckCircle size={14} />
                     Votre CV sera joint automatiquement
                   </p>
@@ -2756,7 +2237,7 @@ function ApplyOfferModal({ offer, onClose, onSuccess }) {
                 <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-[var(--text-muted)] hover:bg-[var(--bg-surface-hover)]">
                   Annuler
                 </button>
-                <button type="submit" disabled={saving || !profile} className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400 disabled:opacity-50">
+                <button type="submit" disabled={saving || !profile} className="inline-flex items-center gap-2 rounded-lg bg-[#0F9691] px-5 py-2 text-sm font-bold text-[#0B1F33] transition hover:bg-[#0B7D79] disabled:opacity-50">
                   {saving ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                   {saving ? "Envoi..." : "Envoyer ma candidature"}
                 </button>
@@ -2769,12 +2250,9 @@ function ApplyOfferModal({ offer, onClose, onSuccess }) {
   );
 }
 
-/* ============================================
-   ModalShell
-============================================ */
 function ModalShell({ title, onClose, children }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="ts-modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
       <div className="w-full max-w-md rounded-2xl border border-[var(--border-app)] bg-[var(--bg-surface)] p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-[var(--text-app)]">{title}</h2>

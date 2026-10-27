@@ -19,27 +19,33 @@ export const AuthProvider = ({ children }) => {
   const { syncFromUser } = useTheme();
 
   const saveLastUser = useCallback((currentUser, email) => {
-    if (!currentUser) return;
+  if (!currentUser) return;
 
-    try {
-      localStorage.setItem(
-        "last_user",
-        JSON.stringify({
-          id: currentUser.id,
-          email: email || currentUser.email,
-          name: currentUser.name,
-          avatar_path:
-            currentUser.avatar_path ||
-            currentUser.professional_profile?.avatar_path ||
-            null,
-          role: currentUser.role,
-          timestamp: Date.now(),
-        })
-      );
-    } catch (error) {
-      console.error("Erreur saveLastUser:", error);
-    }
-  }, []);
+  try {
+   const avatarOrLogo = 
+  currentUser.avatar_path ||
+  currentUser.professional_profile?.avatar_path ||
+  currentUser.company?.logo_url ||          // 1. On cherche dans 'company' (singulier)
+  currentUser.company?.logo_path ||
+  currentUser.companies?.[0]?.logo_url ||   // 2. Si pas trouvé, on cherche dans le tableau 'companies'
+  currentUser.companies?.[0]?.logo_path ||
+  null;
+
+    localStorage.setItem(
+      "last_user",
+      JSON.stringify({
+        id: currentUser.id,
+        email: email || currentUser.email,
+        name: currentUser.name,
+        avatar_path: avatarOrLogo, // 👈 On sauvegarde le bon chemin
+        role: currentUser.role,
+        timestamp: Date.now(),
+      })
+    );
+  } catch (error) {
+    console.error("Erreur saveLastUser:", error);
+  }
+}, []);
 
   const fetchUser = useCallback(async () => {
     const currentRequest = ++requestId.current;

@@ -11,14 +11,20 @@ class ResourceRequestRequest extends FormRequest
         return true;
     }
 
-    public function rules(): array
+      public function rules(): array
     {
         return [
-            'company_id'          => ['nullable', 'exists:companies,id'],  // ✅ nullable
+            'company_id'          => ['nullable', 'exists:companies,id'],
             'title'               => ['required', 'string', 'max:180'],
             'description'         => ['required', 'string'],
             'start_at'            => ['required', 'date'],
-            'end_at'              => ['required', 'date', 'after_or_equal:start_at'],
+            
+            // ✅ CORRECTION ICI : On rend end_at optionnel (nullable)
+            'end_at'              => ['nullable', 'date', 'after_or_equal:start_at'],
+            
+            // ✅ AJOUT ICI : On autorise le type de contrat
+            'contract_type'       => ['nullable', 'string', 'in:stage,alternance,emploi,mission'],
+            
             'workload_percent'    => ['required', 'integer', 'min:0', 'max:100'],
             'remote'              => ['boolean'],
             'country'             => ['nullable', 'string', 'max:100'],

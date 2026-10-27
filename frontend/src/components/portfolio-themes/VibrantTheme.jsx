@@ -1,4 +1,5 @@
 import React from "react";
+import { MapPin, Mail, Phone } from "lucide-react";
 import PortfolioContent from "./PortfolioContent";
 
 const STORAGE_URL = "/storage";
@@ -15,12 +16,14 @@ export default function VibrantTheme({ portfolio, profile, accent = "#23C7B7" })
     .toUpperCase();
 
   return (
-    <div className="min-h-screen bg-[#F4F7FC] font-sans text-[#102342]">
+    <div className="min-h-screen bg-[#F4F7FC] font-sans text-[#102342] dark:bg-[#0B1F33] dark:text-slate-200">
       <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
-        <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
+        <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg dark:border-white/10 dark:bg-[#112A3A] dark:shadow-none">
+          {/* ✅ LIGNE VERTE SUPPRIMÉE ICI */}
+          
           {/* EN-TÊTE AVEC DÉGRADÉ */}
           <header
-            className="relative overflow-hidden px-6 py-5 text-white"
+            className="relative overflow-hidden px-6 py-6 text-white"
             style={{
               background: `linear-gradient(130deg, #102342 0%, #173D61 55%, ${accent} 150%)`,
             }}
@@ -45,15 +48,30 @@ export default function VibrantTheme({ portfolio, profile, accent = "#23C7B7" })
                   {profile.name || "Mon portfolio"}
                 </h1>
                 {profile.headline && (
-                  <p className="mt-0.5 text-sm font-medium text-white/85">
+                  <p className="mt-0.5 text-sm font-medium text-white/90">
                     {profile.headline}
                   </p>
                 )}
-                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-white/70">
+
+                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-white/80">
                   {(profile.city || profile.country) && (
-                    <span>{[profile.city, profile.country].filter(Boolean).join(", ")}</span>
+                    <span className="flex items-center gap-1">
+                      <MapPin size={12} />
+                      {[profile.city, profile.country].filter(Boolean).join(", ")}
+                    </span>
                   )}
-                  {profile.user?.email && <span>{profile.user.email}</span>}
+                  {profile.user?.email && (
+                    <span className="flex items-center gap-1">
+                      <Mail size={12} />
+                      {profile.user.email}
+                    </span>
+                  )}
+                  {profile.user?.phone && (
+                    <span className="flex items-center gap-1">
+                      <Phone size={12} />
+                      {profile.user.phone}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -66,12 +84,12 @@ export default function VibrantTheme({ portfolio, profile, accent = "#23C7B7" })
           </header>
 
           {/* CONTENU */}
-          <div className="px-6 py-5">
+          <div className="px-6 py-5 dark:bg-[#112A3A]">
             <PortfolioContent profile={profile} accent={accent} variant="light" />
           </div>
         </article>
 
-        <footer className="py-4 text-center text-[10px] text-[#8A9BB0]">
+        <footer className="py-4 text-center text-[10px] text-[#8A9BB0] dark:text-slate-500">
           Créé avec TalentShare
         </footer>
       </main>

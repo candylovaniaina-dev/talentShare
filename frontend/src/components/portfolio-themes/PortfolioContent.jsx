@@ -1,4 +1,5 @@
 import React from "react";
+import { MapPin, Phone, Mail, Link2, Globe, ExternalLink } from "lucide-react";
 
 const STORAGE_URL = "/storage";
 
@@ -62,21 +63,18 @@ function groupSkillsByCategory(skills) {
   return Object.values(groups);
 }
 
-/* ============================================================
-   PORTFOLIO CONTENT — Layout 2 colonnes sans icônes
-   ============================================================ */
 export default function PortfolioContent({ profile, accent = "#16B8B1", variant = "light" }) {
   if (!profile) return null;
 
   const isDark = variant === "dark";
 
   /* Styles conditionnels selon le thème */
-  const textPrimary = isDark ? "text-white" : "text-[#0B1F33]";
-  const textSecondary = isDark ? "text-slate-300" : "text-[#64788C]";
-  const textMuted = isDark ? "text-slate-400" : "text-[#8A9BB0]";
-  const border = isDark ? "border-white/10" : "border-[#E4EBF1]";
-  const cardBg = isDark ? "bg-white/5" : "bg-white";
-  const chipBg = isDark ? "bg-white/10 text-white" : "bg-[#F1F6FA] text-[#334B63]";
+  const textPrimary = isDark ? "text-white" : "text-[#0B1F33] dark:text-white";
+  const textSecondary = isDark ? "text-slate-300" : "text-[#64788C] dark:text-slate-400";
+  const textMuted = isDark ? "text-slate-400" : "text-[#8A9BB0] dark:text-slate-500";
+  const border = isDark ? "border-white/10" : "border-[#E4EBF1] dark:border-white/10";
+  const cardBg = isDark ? "bg-white/5" : "bg-white dark:bg-[#0B1F33]";
+  const chipBg = isDark ? "bg-white/10 text-white" : "bg-[#F1F6FA] text-[#334B63] dark:bg-white/10 dark:text-slate-300";
 
   const skills = profile.skills || [];
   const experiences = profile.experiences || [];
@@ -87,7 +85,13 @@ export default function PortfolioContent({ profile, accent = "#16B8B1", variant 
   const projects = profile.projects || [];
   const groupedSkills = groupSkillsByCategory(skills);
 
-  /* ---------- Label de section (uppercase fin) ---------- */
+  const links = [
+    { key: "linkedin_url", label: "LinkedIn", icon: Link2, color: "#0A66C2" },
+    { key: "portfolio_url", label: "Portfolio", icon: Globe, color: "#10B981" },
+    { key: "github_url", label: "GitHub", icon: Link2, color: isDark ? "#fff" : "#1F2328" },
+    { key: "behance_url", label: "Behance", icon: Link2, color: "#1769FF" },
+  ].filter((l) => profile[l.key]);
+
   const SectionLabel = ({ children }) => (
     <h2
       className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em]"
@@ -99,11 +103,32 @@ export default function PortfolioContent({ profile, accent = "#16B8B1", variant 
 
   return (
     <div className={`grid gap-x-8 gap-y-6 lg:grid-cols-5 ${textPrimary}`}>
-      {/* ============================================================ */}
-      {/* COLONNE GAUCHE (2/5) — Profil, Compétences, Langues, Certifs */}
-      {/* ============================================================ */}
       <div className="space-y-6 lg:col-span-2">
-        {/* ---------- DISPONIBILITÉS ---------- */}
+        {links.length > 0 && (
+          <section>
+            <SectionLabel>Liens</SectionLabel>
+            <ul className="space-y-1.5">
+              {links.map(({ key, label, icon: Icon, color }) => (
+                <li key={key}>
+                  <a
+                    href={profile[key]}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={`group flex items-center gap-2 text-[12px] font-medium transition hover:underline ${textPrimary}`}
+                  >
+                    <Icon size={14} style={{ color }} />
+                    {label}
+                    <ExternalLink
+                      size={10}
+                      className={`opacity-0 transition group-hover:opacity-100 ${textMuted}`}
+                    />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         {availability.length > 0 && (
           <section>
             <SectionLabel>Disponibilités</SectionLabel>
@@ -119,7 +144,8 @@ export default function PortfolioContent({ profile, accent = "#16B8B1", variant 
                   </p>
                   <p className={`mt-0.5 text-[11px] ${textMuted}`}>
                     {fmtMonth(w.start_at)} → {fmtMonth(w.end_at)}
-                    {w.workload_value != null && ` · ${w.workload_value}${UNIT_LABEL[w.workload_unit] || ""}`}
+                    {w.workload_value != null &&
+                      ` · ${w.workload_value}${UNIT_LABEL[w.workload_unit] || ""}`}
                   </p>
                   {w.location_type && (
                     <p className={`mt-0.5 text-[11px] ${textSecondary}`}>
@@ -133,7 +159,6 @@ export default function PortfolioContent({ profile, accent = "#16B8B1", variant 
           </section>
         )}
 
-        {/* ---------- COMPÉTENCES ---------- */}
         {groupedSkills.length > 0 && (
           <section>
             <SectionLabel>Compétences</SectionLabel>
@@ -164,7 +189,6 @@ export default function PortfolioContent({ profile, accent = "#16B8B1", variant 
           </section>
         )}
 
-        {/* ---------- LANGUES ---------- */}
         {languages.length > 0 && (
           <section>
             <SectionLabel>Langues</SectionLabel>
@@ -184,7 +208,6 @@ export default function PortfolioContent({ profile, accent = "#16B8B1", variant 
           </section>
         )}
 
-        {/* ---------- CERTIFICATIONS ---------- */}
         {certifications.length > 0 && (
           <section>
             <SectionLabel>Certifications</SectionLabel>
@@ -203,17 +226,17 @@ export default function PortfolioContent({ profile, accent = "#16B8B1", variant 
         )}
       </div>
 
-      {/* ============================================================ */}
-      {/* COLONNE DROITE (3/5) — Expériences, Formations, Projets */}
-      {/* ============================================================ */}
       <div className="space-y-6 lg:col-span-3">
-        {/* ---------- EXPÉRIENCES ---------- */}
         {experiences.length > 0 && (
           <section>
             <SectionLabel>Expériences</SectionLabel>
             <ul className="space-y-3">
               {experiences.map((exp) => (
-                <li key={exp.id} className="border-l-2 pl-3" style={{ borderColor: `${accent}66` }}>
+                <li
+                  key={exp.id}
+                  className="border-l-2 pl-3"
+                  style={{ borderColor: `${accent}66` }}
+                >
                   <div className="flex flex-wrap items-baseline justify-between gap-x-2">
                     <p className={`text-[13px] font-semibold ${textPrimary}`}>{exp.title}</p>
                     <span className={`text-[10px] ${textMuted}`}>{fmtRange(exp)}</span>
@@ -232,13 +255,16 @@ export default function PortfolioContent({ profile, accent = "#16B8B1", variant 
           </section>
         )}
 
-        {/* ---------- FORMATIONS ---------- */}
         {educations.length > 0 && (
           <section>
             <SectionLabel>Formations</SectionLabel>
             <ul className="space-y-2.5">
               {educations.map((edu) => (
-                <li key={edu.id} className="border-l-2 pl-3" style={{ borderColor: `${accent}66` }}>
+                <li
+                  key={edu.id}
+                  className="border-l-2 pl-3"
+                  style={{ borderColor: `${accent}66` }}
+                >
                   <div className="flex flex-wrap items-baseline justify-between gap-x-2">
                     <p className={`text-[13px] font-semibold ${textPrimary}`}>
                       {edu.degree}
@@ -260,13 +286,15 @@ export default function PortfolioContent({ profile, accent = "#16B8B1", variant 
           </section>
         )}
 
-        {/* ---------- PROJETS ---------- */}
         {projects.length > 0 && (
           <section>
             <SectionLabel>Projets & réalisations</SectionLabel>
             <ul className="space-y-2.5">
               {projects.slice(0, 4).map((p) => (
-                <li key={p.id} className={`rounded-lg border ${border} ${cardBg} p-3`}>
+                <li
+                  key={p.id}
+                  className={`rounded-lg border ${border} ${cardBg} p-3`}
+                >
                   <div className="flex flex-wrap items-baseline justify-between gap-x-2">
                     <p className={`text-[13px] font-semibold ${textPrimary}`}>{p.title}</p>
                     {p.project_url && (

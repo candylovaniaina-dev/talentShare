@@ -1,9 +1,10 @@
 import React from "react";
+import { MapPin, Mail, Phone } from "lucide-react";
 import PortfolioContent from "./PortfolioContent";
 
 const STORAGE_URL = "/storage";
 
-export default function MinimalTheme({ portfolio, profile, accent = "#16B8B1" }) {
+export default function BoldTheme({ portfolio, profile, accent = "#27C7B7" }) {
   if (!profile) return null;
 
   const initials = (profile.name || "?")
@@ -15,23 +16,24 @@ export default function MinimalTheme({ portfolio, profile, accent = "#16B8B1" })
     .toUpperCase();
 
   return (
-    <div className="min-h-screen bg-[#F5F8FA] font-sans text-[#0B1F33]">
+    <div className="min-h-screen bg-[#08152E] font-sans text-white dark:bg-[#0B1F33]">
       <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
-        <article className="overflow-hidden rounded-2xl border border-[#E4EBF1] bg-white shadow-sm">
-          <div className="h-1.5 w-full" style={{ backgroundColor: accent }} />
+        <article className="overflow-hidden rounded-2xl border border-white/10 bg-[#0D1C36] shadow-2xl dark:bg-[#112A3A] dark:border-white/10 dark:shadow-none">
+          {/* ✅ LIGNE VERTE SUPPRIMÉE ICI */}
 
           {/* EN-TÊTE */}
-          <header className="border-b border-[#E4EBF1] px-6 py-5">
+          <header className="border-b border-white/10 px-6 py-5 dark:border-white/10">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
               {profile.avatar_path ? (
                 <img
                   src={`${STORAGE_URL}/${profile.avatar_path}`}
                   alt={profile.name}
-                  className="h-16 w-16 shrink-0 rounded-full object-cover shadow-sm ring-2 ring-white"
+                  className="h-16 w-16 shrink-0 rounded-full border-2 object-cover shadow-lg"
+                  style={{ borderColor: accent }}
                 />
               ) : (
                 <div
-                  className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-lg font-bold text-white shadow-sm"
+                  className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-lg font-bold text-[#08152E] shadow-lg"
                   style={{ backgroundColor: accent }}
                 >
                   {initials}
@@ -39,7 +41,7 @@ export default function MinimalTheme({ portfolio, profile, accent = "#16B8B1" })
               )}
 
               <div className="min-w-0 flex-1">
-                <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
+                <h1 className="text-xl font-extrabold tracking-tight sm:text-2xl">
                   {profile.name || "Mon portfolio"}
                 </h1>
                 {profile.headline && (
@@ -47,18 +49,32 @@ export default function MinimalTheme({ portfolio, profile, accent = "#16B8B1" })
                     {profile.headline}
                   </p>
                 )}
-                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-[#64788C]">
+
+                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-400">
                   {(profile.city || profile.country) && (
-                    <span>{[profile.city, profile.country].filter(Boolean).join(", ")}</span>
+                    <span className="flex items-center gap-1">
+                      <MapPin size={12} />
+                      {[profile.city, profile.country].filter(Boolean).join(", ")}
+                    </span>
                   )}
-                  {profile.user?.email && <span>{profile.user.email}</span>}
-                  {profile.user?.phone && <span>{profile.user.phone}</span>}
+                  {profile.user?.email && (
+                    <span className="flex items-center gap-1">
+                      <Mail size={12} />
+                      {profile.user.email}
+                    </span>
+                  )}
+                  {profile.user?.phone && (
+                    <span className="flex items-center gap-1">
+                      <Phone size={12} />
+                      {profile.user.phone}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
 
             {profile.bio && (
-              <p className="mt-3 whitespace-pre-line text-[13px] leading-6 text-[#334B63]">
+              <p className="mt-3 whitespace-pre-line text-[13px] leading-6 text-slate-300">
                 {profile.bio}
               </p>
             )}
@@ -66,11 +82,11 @@ export default function MinimalTheme({ portfolio, profile, accent = "#16B8B1" })
 
           {/* CONTENU */}
           <div className="px-6 py-5">
-            <PortfolioContent profile={profile} accent={accent} variant="light" />
+            <PortfolioContent profile={profile} accent={accent} variant="dark" />
           </div>
         </article>
 
-        <footer className="py-4 text-center text-[10px] text-[#8A9BB0]">
+        <footer className="py-4 text-center text-[10px] text-slate-500 dark:text-slate-500">
           Portfolio présenté sur TalentShare
         </footer>
       </main>

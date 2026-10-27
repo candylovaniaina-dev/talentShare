@@ -43,22 +43,171 @@ class MatchingService
         ];
     }
 
+       /**
+     * ✅ Score par compétences avec matching FUZZY (tolérant)
+     */
     private function skillScore(Collection $required, Collection $profileSkills): float
     {
         if ($required->isEmpty()) return 100;
 
         $matched = 0;
+        $matchDetails = [];
+
         foreach ($required as $skill) {
+            // 1. Match exact par ID
             $owned = $profileSkills->get($skill->id);
-            if (!$owned) continue;
+            if ($owned) {
+                $requiredLevel = self::LEVEL_ORDER[$skill->pivot->min_level] ?? 2;
+                $ownedLevel = self::LEVEL_ORDER[$owned->pivot->level] ?? 1;
+                $matched += $ownedLevel >= $requiredLevel ? 1 : 0.5;
+                $matchDetails[] = ['exact', $skill->name];
+                continue;
+            }
 
-            $requiredLevel = self::LEVEL_ORDER[$skill->pivot->min_level] ?? 2;
-            $ownedLevel = self::LEVEL_ORDER[$owned->pivot->level] ?? 1;
+            // 2. Match fuzzy par nom (si pas d'ID exact)
+            $bestMatch = $this->findFuzzySkillMatch($skill->name, $profileSkills);
 
-            $matched += $ownedLevel >= $requiredLevel ? 1 : 0.5;
+            if ($bestMatch) {
+                $similarity = $bestMatch['similarity'];
+
+                if ($similarity >= 0.85) {
+                    // Très similaire → score plein
+                    $matched += 1;
+                    $matchDetails[] = ['alias', $skill->name . ' → ' . $bestMatch['name'], $similarity];
+                } elseif ($similarity >= 0.6) {
+                    // Partiellement similaire → 70%
+                    $matched += 0.7;
+                    $matchDetails[] = ['partial', $skill->name . ' ≈ ' . $bestMatch['name'], $similarity];
+                }
+            }
         }
 
         return ($matched / $required->count()) * 100;
+    }
+
+    /**
+     * ✅ Cherche la meilleure correspondance fuzzy pour un nom de skill
+     */
+        private function findFuzzySkillMatch(string $requiredName, Collection $profileSkills): ?array
+    {
+        $requiredNorm = $this->normalizeSkillName($requiredName);
+        if (empty($requiredNorm)) return null;
+
+        // ✅ Étape 1 : Cherche dans les ALIAS en base
+        $aliasMatch = \DB::table('skill_aliases')
+            ->join('skills', 'skill_aliases.skill_id', '=', 'skills.id')
+            ->where('skill_aliases.alias_slug', \Str::slug($requiredName))
+            ->first();
+
+        if ($aliasMatch) {
+            // Le skill canonique existe peut-être dans le profil
+            $owned = $profileSkills->firstWhere('id', $aliasMatch->skill_id);
+            if ($owned) {
+                return [
+                    'name' => $owned->name,
+                    'similarity' => 0.95,
+                ];
+            }
+        }
+
+        // ✅ Étape 2 : Fallback sur le fuzzy matching
+        $best = null;
+        $bestScore = 0;
+
+        foreach ($profileSkills as $profileSkill) {
+            $profileNorm = $this->normalizeSkillName($profileSkill->name);
+            if (empty($profileNorm)) continue;
+
+            $similarity = $this->calculateSimilarity($requiredNorm, $profileNorm);
+            $wordScore = $this->wordOverlapScore($requiredNorm, $profileNorm);
+            $finalScore = max($similarity, $wordScore);
+
+            if ($finalScore > $bestScore) {
+                $bestScore = $finalScore;
+                $best = [
+                    'name' => $profileSkill->name,
+                    'similarity' => $finalScore,
+                ];
+            }
+        }
+
+        return $bestScore >= 0.5 ? $best : null;
+    }
+
+    /**
+     * ✅ Normalise un nom de skill (lowercase, sans accents, sans ponctuation)
+     */
+    private function normalizeSkillName(string $name): string
+    {
+        // Lowercase
+        $name = mb_strtolower($name);
+
+        // Enlève les accents
+        $name = iconv('UTF-8', 'ASCII//TRANSLIT', $name);
+
+        // Enlève la ponctuation et caractères spéciaux (sauf espaces et lettres/chiffres)
+        $name = preg_replace('/[^a-z0-9\s]/', ' ', $name);
+
+        // Enlève les suffixes techniques courants
+        $name = preg_replace('/\b(js|ts|framework|library|\.js|\.ts|api|sdk)\b/', '', $name);
+
+        // Enlève les B2B, B2C, etc.
+        $name = preg_replace('/\b(b2b|b2c|b2g|c2c)\b/', '', $name);
+
+        // Remplace les espaces multiples
+        $name = preg_replace('/\s+/', ' ', $name);
+
+        return trim($name);
+    }
+
+    /**
+     * ✅ Calcule la similarité entre 2 chaînes (0 à 1)
+     * Utilise similar_text avec % + longueurs
+     */
+    private function calculateSimilarity(string $a, string $b): float
+    {
+        if (empty($a) || empty($b)) return 0;
+
+        // similar_text retourne le % de similarité
+        similar_text($a, $b, $percent);
+
+        return $percent / 100;
+    }
+
+    /**
+     * ✅ Compte le % de mots en commun entre 2 chaînes
+     */
+    private function wordOverlapScore(string $a, string $b): float
+    {
+        $wordsA = array_filter(explode(' ', $a));
+        $wordsB = array_filter(explode(' ', $b));
+
+        if (empty($wordsA) || empty($wordsB)) return 0;
+
+        $common = 0;
+        foreach ($wordsA as $wa) {
+            // Ignore les mots trop courts
+            if (strlen($wa) < 3) continue;
+
+            foreach ($wordsB as $wb) {
+                if (strlen($wb) < 3) continue;
+
+                // Match exact de mot OU inclusion (>= 4 car. communs)
+                if ($wa === $wb) {
+                    $common += 1;
+                    break;
+                }
+                if (strlen($wa) >= 4 && strlen($wb) >= 4 && (
+                    str_contains($wa, $wb) || str_contains($wb, $wa)
+                )) {
+                    $common += 0.7;
+                    break;
+                }
+            }
+        }
+
+        $maxWords = max(count($wordsA), count($wordsB));
+        return $maxWords > 0 ? $common / $maxWords : 0;
     }
 
     private function availabilityScore(ResourceRequest $request, ProfessionalProfile $profile): float

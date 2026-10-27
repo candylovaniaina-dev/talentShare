@@ -28,6 +28,7 @@ class JobOfferController extends Controller
                 $q->with(['likes' => fn ($lq) => $lq->where('user_id', $user->id)]);
             })
             ->when($request->offer_type, fn ($q, $v) => $q->where('offer_type', $v))
+            ->when($request->company_id, fn ($q, $v) => $q->where('company_id', $v))
             ->when($request->skill_id, function ($q, $skillId) {
                 $q->whereHas('skills', fn ($sq) => $sq->where('skills.id', $skillId));
             })
@@ -61,13 +62,14 @@ class JobOfferController extends Controller
 
         $offers = $query->latest()->paginate($request->get('per_page', 15));
 
-        // ✅ Enrichir chaque offre avec is_liked
-               // ✅ Enrichir chaque offre avec is_liked
         $offers->getCollection()->transform(function ($offer) use ($user) {
             $offer->is_liked = $user
                 ? $offer->likes->where('user_id', $user->id)->isNotEmpty()
                 : false;
-            $offer->likes_count = $offer->likes_count ?? 0;
+            
+            // ✅ On force le compteur à être un entier
+            $offer->likes_count = (int) $offer->likes_count; 
+            
             $offer->comments_count = \App\Models\OfferComment::where('job_offer_id', $offer->id)->count();
             unset($offer->likes);
             return $offer;
@@ -206,9 +208,6 @@ class JobOfferController extends Controller
     /**
      * ✅ Toggle like + notif au propriétaire
      */
-      /**
-     * ✅ Toggle like + notif au propriétaire
-     */
     public function toggleLike(Request $request, JobOffer $jobOffer)
     {
         $user = $request->user();
@@ -233,6 +232,7 @@ class JobOfferController extends Controller
                 try {
                     Notification::create([
                         'user_id' => $ownerId,
+                        'actor_id' => $user->id, // ✅ On précise qui a fait l'action
                         'type' => 'offer_liked',
                         'title' => '❤️ Nouveau J\'aime',
                         'body' => "{$user->name} a aimé votre offre « {$jobOffer->title} »",
@@ -280,6 +280,7 @@ class JobOfferController extends Controller
             try {
                 Notification::create([
                     'user_id' => $ownerId,
+                    'actor_id' => $user->id, // ✅ AJOUTÉ ICI : On précise qui a commenté
                     'type' => 'offer_commented',
                     'title' => '💬 Nouveau commentaire',
                     'body' => "{$user->name} a commenté votre offre « {$jobOffer->title} » : " 
@@ -316,37 +317,38 @@ class JobOfferController extends Controller
 
         return response()->json(['data' => $comments]);
     }
+
     /**
- * ✅ Compte les nouvelles offres depuis la dernière connexion
- */
-public function countNew(Request $request)
-{
-    $user = $request->user();
+     * ✅ Compte les nouvelles offres depuis la dernière connexion
+     */
+    public function countNew(Request $request)
+    {
+        $user = $request->user();
 
-    // Si l'utilisateur a un last_login_at, on l'utilise
-    // Sinon, on prend 7 jours en arrière
-    $since = $user->last_login_at ?? now()->subDays(7);
+        // Si l'utilisateur a un last_login_at, on l'utilise
+        // Sinon, on prend 7 jours en arrière
+        $since = $user->last_login_at ?? now()->subDays(7);
 
-    $count = JobOffer::where('status', 'published')
-        ->where('created_at', '>', $since)
-        ->when($user->role === 'company', function ($q) use ($user) {
-            // Une entreprise ne compte pas ses propres offres
-            $myCompanyIds = $user->companies()->pluck('id')->toArray();
-            if (!empty($myCompanyIds)) {
-                $q->whereNotIn('company_id', $myCompanyIds);
-            }
-        })
-        ->count();
+        $count = JobOffer::where('status', 'published')
+            ->where('created_at', '>', $since)
+            ->when($user->role === 'company', function ($q) use ($user) {
+                // Une entreprise ne compte pas ses propres offres
+                $myCompanyIds = $user->companies()->pluck('id')->toArray();
+                if (!empty($myCompanyIds)) {
+                    $q->whereNotIn('company_id', $myCompanyIds);
+                }
+            })
+            ->count();
 
-    return response()->json(['count' => $count]);
-}
+        return response()->json(['count' => $count]);
+    }
 
-/**
- * ✅ Marque toutes les offres comme vues (met à jour last_login_at)
- */
-public function markSeen(Request $request)
-{
-    $request->user()->update(['last_login_at' => now()]);
-    return response()->json(['message' => 'OK']);
-}
+    /**
+     * ✅ Marque toutes les offres comme vues (met à jour last_login_at)
+     */
+    public function markSeen(Request $request)
+    {
+        $request->user()->update(['last_login_at' => now()]);
+        return response()->json(['message' => 'OK']);
+    }
 }

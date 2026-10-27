@@ -13,6 +13,7 @@ class Proposal extends Model
         'professional_profile_id',
         'proposed_by_company_id',
         'to_company_id',
+        'job_offer_id',
         'message',
         'description',
         'conditions',
@@ -27,6 +28,8 @@ class Proposal extends Model
         'viewed_at',
         'responded_at',
         'cancelled_at',
+        'contract_kind', 'interview_status', 'interview_at',
+'interview_location', 'interview_notes', 'interview_validated_at',
     ];
 
     protected $casts = [
@@ -38,6 +41,8 @@ class Proposal extends Model
         'viewed_at'        => 'datetime',
         'responded_at'     => 'datetime',
         'cancelled_at'     => 'datetime',
+        'interview_at' => 'datetime',
+'interview_validated_at' => 'datetime',
     ];
 
     // ============================================
@@ -127,4 +132,8 @@ class Proposal extends Model
     {
         return in_array($this->display_status, ['sent', 'viewed']);
     }
+    public function jobOffer()
+{
+    return $this->belongsTo(JobOffer::class);
+}
 }

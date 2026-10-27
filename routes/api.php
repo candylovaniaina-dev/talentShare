@@ -39,6 +39,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:6,1');
+Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+    ->middleware(['signed', 'throttle:6,1'])
+    ->name('verification.verify');
 
 Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])->middleware('throttle:3,1');
 Route::post('/reset-password', [PasswordResetController::class, 'reset']);
@@ -68,6 +71,7 @@ Route::get('/professional-profiles', [ProfessionalProfileController::class, 'ind
 Route::get('/professional-profiles/{professionalProfile}', [ProfessionalProfileController::class, 'show']);
 
 Route::get('/skill-categories', [SkillController::class, 'categories']);
+Route::post('/skill-categories', [SkillController::class, 'storeCategory']); // ✅ Ajout de la route POST
 Route::get('/skills/stats', [SkillController::class, 'stats']);
 Route::get('/skills', [SkillController::class, 'index']);
 
@@ -81,13 +85,23 @@ Route::get('/languages', function () {
 Route::get('/resource-offers', [ResourceOfferController::class, 'index']);
 
 // ✅ FIX : contrainte numérique pour ne pas capturer "new"
+Route::get('/resource-requests/count-new', [ResourceRequestController::class, 'countNew']);
+Route::get('/resource-requests/matching-for-me', [ResourceRequestController::class, 'matchingForMe'])->middleware('auth:sanctum');
+Route::post('/resource-requests/mark-seen', [ResourceRequestController::class, 'markSeen'])->middleware('auth:sanctum');
+
 Route::get('/resource-requests', [ResourceRequestController::class, 'index']);
 Route::get('/resource-requests/{resourceRequest}', [ResourceRequestController::class, 'show'])
     ->where('resourceRequest', '[0-9]+');
 
+// ✅ Routes SPÉCIFIQUES d'abord (avec le préfixe exact)
 Route::get('/job-offers/my', [JobOfferController::class, 'my'])->middleware('auth:sanctum');
+Route::get('/job-offers/count-new', [JobOfferController::class, 'countNew'])->middleware('auth:sanctum');
+Route::post('/job-offers/mark-seen', [JobOfferController::class, 'markSeen'])->middleware('auth:sanctum');
+
+// ✅ Route GÉNÉRIQUE en dernier (avec contrainte numérique)
 Route::get('/job-offers', [JobOfferController::class, 'index']);
-Route::get('/job-offers/{jobOffer}', [JobOfferController::class, 'show']);
+Route::get('/job-offers/{jobOffer}', [JobOfferController::class, 'show'])
+    ->where('jobOffer', '[0-9]+');   // ⚠️ CE "where" est LA solution
 
 Route::post('/match/explain', [MatchController::class, 'explain']);
 
@@ -111,7 +125,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch ('/companies/{company}',                             [CompanyController::class, 'update']);
     Route::post  ('/companies/{company}/logo',                        [CompanyController::class, 'uploadLogo']);
     Route::delete('/companies/{company}/logo',                        [CompanyController::class, 'deleteLogo']);
-
+Route::get('/profile/my-companies', [ProfessionalProfileController::class, 'myCompanies']);
     // Membres
     Route::get   ('/companies/{company}/members',                     [CompanyController::class, 'members']);
     Route::post  ('/companies/{company}/members',                     [CompanyController::class, 'addMember']);
@@ -186,6 +200,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // === Resource Requests ===
         Route::get   ('/resource-requests/count-new',  [ResourceRequestController::class, 'countNew']);
     Route::post  ('/resource-requests/mark-seen',  [ResourceRequestController::class, 'markSeen']);
+        Route::get('/resource-requests/matching-for-me', [ResourceRequestController::class, 'matchingForMe']);
     Route::get   ('/resource-requests/my', [ResourceRequestController::class, 'index']);
     Route::post  ('/resource-requests',    [ResourceRequestController::class, 'store']);
 
@@ -220,15 +235,21 @@ Route::middleware('auth:sanctum')->group(function () {
         ->where('resourceRequest', '[0-9]+');
 
     // === Propositions ===
+      Route::get   ('/proposals/count-new',           [ProposalController::class, 'countNew']);
+    Route::post  ('/proposals/mark-seen',           [ProposalController::class, 'markSeen']);
     Route::get   ('/proposals/received',              [ProposalController::class, 'received']);
     Route::get   ('/proposals/sent',                  [ProposalController::class, 'sent']);
     Route::post  ('/proposals',                       [ProposalController::class, 'store']);
+     Route::post  ('/proposals/recruiter-apply',     [ProposalController::class, 'recruiterApply']);
     Route::get   ('/proposals/{proposal}',            [ProposalController::class, 'show']);
     Route::patch ('/proposals/{proposal}',            [ProposalController::class, 'update']);
     Route::post  ('/proposals/{proposal}/submit',     [ProposalController::class, 'submit']);
     Route::post  ('/proposals/{proposal}/cancel',     [ProposalController::class, 'cancel']);
     Route::post  ('/proposals/{proposal}/accept',     [ProposalController::class, 'accept']);
     Route::post  ('/proposals/{proposal}/decline',    [ProposalController::class, 'decline']);
+        Route::post  ('/proposals/{proposal}/schedule-interview', [ProposalController::class, 'scheduleInterview']);
+    Route::post  ('/proposals/{proposal}/validate-interview', [ProposalController::class, 'validateInterview']);
+    Route::post  ('/proposals/{proposal}/reject-interview',   [ProposalController::class, 'rejectInterview']);
 
     // === Missions ===
     Route::get   ('/missions',                   [MissionController::class, 'index']);
@@ -237,6 +258,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post  ('/missions/{mission}/accept',  [MissionController::class, 'accept']);
     Route::post  ('/missions/{mission}/decline', [MissionController::class, 'decline']);
     Route::patch ('/missions/{mission}/status',  [MissionController::class, 'updateStatus']);
+     Route::post  ('/missions/{mission}/validate-trial', [MissionController::class, 'validateTrial']);
+         Route::post  ('/missions/{mission}/reject-trial',   [MissionController::class, 'rejectTrial']);
 
     // === JOB OFFERS ===
     Route::post  ('/job-offers',                        [JobOfferController::class, 'store']);

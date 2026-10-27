@@ -9,7 +9,10 @@ use Illuminate\Database\Eloquent\Model;
 class NotificationService
 {
     /**
-     * Envoyer une notification
+     * ✅ Envoyer une notification
+     *
+     * ⚠️ IMPORTANT : on NE fait PAS json_encode($data)
+     *    car le modèle Notification a déjà un cast 'array'
      */
     public function notify(
         User $user,
@@ -26,15 +29,20 @@ class NotificationService
             'body'         => $body,
             'subject_type' => $subject ? get_class($subject) : null,
             'subject_id'   => $subject?->id,
-            'data'         => $data ? json_encode($data) : null,
+            'data'         => $data,   // ✅ Laravel cast 'array' s'occupe de l'encodage
         ]);
     }
 
     /**
-     * Notifier tous les autres utilisateurs (broadcast) quand une offre est publiée
+     * Notifier tous les autres utilisateurs (broadcast)
      */
-    public function notifyAllExcept(User $except, string $type, string $title, ?string $body = null, ?Model $subject = null): void
-    {
+    public function notifyAllExcept(
+        User $except,
+        string $type,
+        string $title,
+        ?string $body = null,
+        ?Model $subject = null
+    ): void {
         $users = User::where('id', '!=', $except->id)
             ->whereIn('role', ['company', 'employee', 'student'])
             ->limit(100)

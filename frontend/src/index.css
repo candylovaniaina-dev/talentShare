@@ -120,74 +120,58 @@ img { max-width: 100%; }
    ANIMATIONS — Modale de succès
    ============================================================ */
 
-/* Confetti qui tombe */
 @keyframes confetti-fall {
-  0% {
-    transform: translateY(0) rotate(0deg);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(100vh) rotate(720deg);
-    opacity: 0;
-  }
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
 }
 
-.animate-confetti {
-  animation: confetti-fall linear forwards;
-}
+.animate-confetti { animation: confetti-fall linear forwards; }
 
-/* Pop du check */
 @keyframes pop {
-  0% {
-    transform: scale(0);
-    opacity: 0;
-  }
-  50% {
-    transform: scale(1.15);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
-.animate-pop {
-  animation: pop 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards;
-}
+.animate-pop { animation: pop 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards; }
 
-/* ✅ Dessin du check (stroke) */
 @keyframes draw-check {
-  0% {
-    stroke-dashoffset: 30;
-  }
-  100% {
-    stroke-dashoffset: 0;
-  }
+  0% { stroke-dashoffset: 30; }
+  100% { stroke-dashoffset: 0; }
 }
 
-.animate-check-draw {
-  stroke-dasharray: 30;
-  stroke-dashoffset: 30;
-  animation: draw-check 0.7s ease-out 0.4s forwards;
-}
+.animate-check-draw { stroke-dasharray: 30; stroke-dashoffset: 30; animation: draw-check 0.7s ease-out 0.4s forwards; }
 
-/* Anneaux pulsants */
 @keyframes ping-slow {
-  0% {
-    transform: scale(0.9);
-    opacity: 0.6;
-  }
-  100% {
-    transform: scale(2);
-    opacity: 0;
+  0% { transform: scale(0.9); opacity: 0.6; }
+  100% { transform: scale(2); opacity: 0; }
+}
+
+.animate-ping-slow { animation: ping-slow 1.8s cubic-bezier(0, 0, 0.2, 1) infinite; }
+.animate-ping-slower { animation: ping-slow 1.8s cubic-bezier(0, 0, 0.2, 1) 0.6s infinite; }
+
+/* ============================================================
+   ✅ MODE SOMBRE : CORRECTION ET NETTOYAGE
+   ============================================================ */
+
+html.dark {
+  /* On retire toutes les règles agressives sur les inputs qui cassaient le design */
+  
+  /* Le menu de gauche est déjà sombre, on laisse le dégradé du composant s'afficher */
+  .app-shell aside {
+    background-color: transparent !important;
   }
 }
 
-.animate-ping-slow {
-  animation: ping-slow 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+/* ✅ Assurer que la transition de thème est fluide */
+html, body, #root, .app-shell, header, aside, main, section, div, button, a, input, textarea, select {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
-.animate-ping-slower {
-  animation: ping-slow 1.8s cubic-bezier(0, 0, 0.2, 1) 0.6s infinite;
+/* ✅ LA RÈGLE ULTIME POUR LE MODE SOMBRE GLOBAL (sans casser les composants) */
+html.dark,
+html.dark body,
+html.dark #root,
+html.dark .app-shell {
+  background-color: #0B1F33 !important;
 }

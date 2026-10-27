@@ -17,6 +17,8 @@ class Mission extends Model
         'workload_percent',
         'remote',
         'status',
+        'is_trial',
+        'trial_ends_at',
     ];
 
     protected $casts = [
@@ -24,6 +26,8 @@ class Mission extends Model
         'end_at' => 'date',
         'remote' => 'boolean',
         'workload_percent' => 'integer',
+        'is_trial' => 'boolean',
+        'trial_ends_at' => 'date',
     ];
 
     // ✅ Statuts
@@ -70,4 +74,8 @@ class Mission extends Model
     {
         return $this->morphMany(Document::class, 'documentable');
     }
+    public function professionalProfile()
+{
+    return $this->belongsTo(ProfessionalProfile::class);
+}
 }

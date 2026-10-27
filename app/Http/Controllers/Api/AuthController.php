@@ -15,13 +15,14 @@ class AuthController extends Controller
     /**
      * ✅ Charge les relations importantes de l'utilisateur
      */
-    private function loadUserRelations(User $user): User
-    {
-        return $user->load([
-            'professionalProfile',
-            'companies',
-        ]);
-    }
+   private function loadUserRelations(User $user): User
+{
+    return $user->load([
+        'professionalProfile',
+        'companies',
+        'company', // 👈 AJOUTE CECI (au singulier)
+    ]);
+}
 
     public function register(RegisterRequest $request)
     {

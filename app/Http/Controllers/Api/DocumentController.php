@@ -28,14 +28,19 @@ class DocumentController extends Controller
                 // ✅ Sécurité : ne voir que les documents liés à des ressources accessibles
                 $q->where('uploaded_by', $request->user()->id);
 
-                // Ou ceux liés à une mission où je suis impliqué
+                // Ou ceux liés à une mission/proposition où je suis impliqué
                 $q->orWhereHasMorph('documentable', ['App\Models\Mission', 'App\Models\Proposal'], function ($qq) use ($request) {
                     // Le contrôleur appelant gère plus finement si besoin
                 });
             });
 
         if ($request->has('documentable_type') && $request->has('documentable_id')) {
-            $query->where('documentable_type', $request->documentable_type)
+            // ✅ On accepte les alias et les classes complètes
+            $type = $request->documentable_type;
+            if ($type === 'proposal') $type = \App\Models\Proposal::class;
+            if ($type === 'mission') $type = \App\Models\Mission::class;
+            
+            $query->where('documentable_type', $type)
                 ->where('documentable_id', $request->documentable_id);
         }
 
@@ -60,7 +65,8 @@ class DocumentController extends Controller
                 'required', 'file', 'max:10240', // 10 Mo
                 'mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,webp,txt',
             ],
-            'documentable_type' => ['required', 'string', 'in:App\Models\Mission,App\Models\Proposal,App\Models\Application'],
+            // ✅ On accepte n'importe quelle string pour ensuite la convertir
+            'documentable_type' => ['required', 'string'],
             'documentable_id' => ['required', 'integer'],
             'document_type' => ['required', 'string', 'in:' . implode(',', self::DOCUMENT_TYPES)],
             'status' => ['nullable', 'string', 'in:' . implode(',', self::DOCUMENT_STATUSES)],
@@ -73,6 +79,17 @@ class DocumentController extends Controller
         }
 
         $data = $validator->validated();
+
+        // ✅ Conversion automatique des alias si le front envoie le nom court
+        $typeMap = [
+            'proposal' => \App\Models\Proposal::class,
+            'mission' => \App\Models\Mission::class,
+            'application' => \App\Models\Application::class,
+        ];
+        
+        if (isset($typeMap[$data['documentable_type']])) {
+            $data['documentable_type'] = $typeMap[$data['documentable_type']];
+        }
 
         // ✅ Vérifier que l'utilisateur a accès au documentable
         $this->authorizeDocumentable($request, $data['documentable_type'], $data['documentable_id']);
@@ -283,22 +300,37 @@ class DocumentController extends Controller
         return response()->json(['message' => 'Document supprimé']);
     }
 
-    // ============ AUTORISATIONS ============
-    private function authorizeDocumentAccess(Request $request, Document $document): void
+       private function authorizeDocumentAccess(Request $request, Document $document): void
     {
         $user = $request->user();
 
-        // Propriétaire direct
+        // 1. Propriétaire direct du document
         if ($document->uploaded_by === $user->id) return;
 
-        // Lié à une mission où je suis impliqué
+        $companyIds = $user->companies()->pluck('id')->toArray();
+        $profileId = $user->professionalProfile?->id;
+
+        // 2. Si le document est lié à une MISSION
         if ($document->documentable_type === 'App\Models\Mission') {
             $mission = $document->documentable;
             if ($mission && (
-                $mission->employee_id === $user->id ||
-                $mission->supplying_company_id === optional($user->companies()->first())->id ||
-                $mission->requesting_company_id === optional($user->companies()->first())->id
+                $mission->professional_profile_id === $profileId ||
+                in_array($mission->supplying_company_id, $companyIds) ||
+                in_array($mission->requesting_company_id, $companyIds)
             )) return;
+        }
+
+        // ✅ 3. NOUVEAU : Si le document est lié à une PROPOSITION
+        if ($document->documentable_type === 'App\Models\Proposal') {
+            $proposal = $document->documentable;
+            if ($proposal) {
+                $isSender = in_array($proposal->proposed_by_company_id, $companyIds);
+                $isRecipient = in_array($proposal->to_company_id, $companyIds);
+                $isTalent = $proposal->professional_profile_id === $profileId;
+                
+                // Si l'utilisateur est l'un des participants de la proposition
+                if ($isSender || $isRecipient || $isTalent) return;
+            }
         }
 
         abort(403, 'Accès refusé à ce document.');
@@ -310,7 +342,6 @@ class DocumentController extends Controller
         abort_unless($model, 404, 'Ressource introuvable.');
 
         // Pour MVP : on accepte si l'utilisateur est lié à la ressource
-        // Tu peux renforcer avec une Policy plus tard
         $user = $request->user();
 
         if ($type === 'App\Models\Mission' && $model->employee_id !== $user->id) {
