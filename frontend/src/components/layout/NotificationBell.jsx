@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
+import { useAuth } from "../../context/AuthContext";
 
 const ICONS = {
   new_message: { icon: MessageSquare, color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-500" },
@@ -57,9 +58,7 @@ const ICONS = {
   default: { icon: Bell, color: "text-slate-600 dark:text-slate-400", bg: "bg-slate-500" },
 };
 
-// ⚠️ VÉRIFIE BIEN TON PORT ICI (8000 ou 8001 ?)
-const API_BASE = "http://localhost:8001"; 
-const STORAGE_URL = `${API_BASE}/storage`;
+const API_BASE = "http://localhost:8001";
 
 function formatRelativeTime(dateStr) {
   if (!dateStr) return "";
@@ -74,35 +73,59 @@ function formatRelativeTime(dateStr) {
   return new Date(dateStr).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 }
 
-function buildImageUrl(pathOrUrl) {
-  if (!pathOrUrl) return null;
-  if (pathOrUrl.startsWith("http://") || pathOrUrl.startsWith("https://")) {
-    return pathOrUrl;
-  }
-  return `${STORAGE_URL}/${pathOrUrl.replace(/^\/+/, "")}`;
-}
-
 function getNotificationData(payload) {
   const data = Array.isArray(payload) ? payload : Array.isArray(payload?.notifications) ? payload.notifications : [];
   const unread = !Array.isArray(payload) && payload?.unread_count != null ? payload.unread_count : data.filter((notification) => !notification.read_at).length;
   return { data, unread };
 }
 
+/* -------------------------------------------------------------------------- */
+/*   Quelle publication est visée par la notification ? (offre ou demande)    */
+/* -------------------------------------------------------------------------- */
+
+// Notifications qui concernent MA propre publication (like, commentaire, candidature...)
+const OWN_POST_TYPES = new Set([
+  "offer_liked", "offer_commented", "offer_viewed", "offer_contacted",
+  "new_application",
+  "request_liked", "request_commented",
+]);
+
+function getPostTarget(notification) {
+  const type = notification.type || "";
+  const d = notification.data || {};
+  const subjectId = notification.subject_id;
+  let kind = null;
+  let id = null;
+
+  if (type.startsWith("offer_")) {
+    kind = "offer";
+    id = d.job_offer_id ?? d.offer_id ?? subjectId;
+  } else if (type === "new_application" || type.startsWith("application_")) {
+    // Le subject est souvent la candidature : on ne prend que l'ID de l'offre
+    kind = "offer";
+    id = d.job_offer_id ?? d.offer_id ?? null;
+  } else if (type.startsWith("request_") || type.startsWith("resource_request_")) {
+    kind = "request";
+    id = d.resource_request_id ?? d.request_id ?? subjectId;
+  }
+
+  if (!kind || id == null || id === "") return null;
+  return { kind, id: String(id), own: OWN_POST_TYPES.has(type) };
+}
+
 function ActorAvatar({ actor, size = 48, typeConfig, isUnread }) {
   const [imageError, setImageError] = useState(false);
   const Icon = typeConfig.icon;
 
-  // 1. On cherche la photo
-  const imagePath = 
-    actor?.avatar_path || 
-    actor?.logo_path || 
-    actor?.professional_profile?.avatar_path || 
+  const imagePath =
+    actor?.avatar_path ||
+    actor?.logo_path ||
+    actor?.professional_profile?.avatar_path ||
     actor?.professionalProfile?.avatar_path;
 
-  // 2. On construit l'URL de manière robuste (gère les slashs en trop)
   const imageUrl = imagePath
-    ? (imagePath.startsWith("http") 
-        ? imagePath 
+    ? (imagePath.startsWith("http")
+        ? imagePath
         : `${API_BASE}${imagePath.startsWith("/") ? "" : "/"}${imagePath.startsWith("/storage") ? "" : "storage/"}${imagePath.replace(/^\/?(storage\/)?/, "")}`)
     : null;
 
@@ -135,6 +158,7 @@ function ActorAvatar({ actor, size = 48, typeConfig, isUnread }) {
 }
 
 export default function NotificationBell() {
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -145,6 +169,9 @@ export default function NotificationBell() {
 
   const ref = useRef(null);
   const navigate = useNavigate();
+
+  const role = user?.role?.toLowerCase();
+  const isCompany = role === "company" || role === "entreprise";
 
   const load = async (showLoader = false) => {
     if (showLoader) {
@@ -216,30 +243,66 @@ export default function NotificationBell() {
     }
   };
 
+  /* Retourne true si on a su rediriger */
+  const redirectToTarget = (notification) => {
+    const type = notification.type || "";
+    const target = getPostTarget(notification);
+
+    // 1) Publication précise (offre / demande)
+    if (target) {
+      if (isCompany) {
+        // La page entreprise retrouve la publication (Mon entreprise ou Actualité),
+        // bascule sur le bon onglet, scrolle dessus et la met en surbrillance.
+        navigate(`/company?highlight=${target.id}&kind=${target.kind}`);
+        return true;
+      }
+
+      // Talent / étudiant
+      if (target.kind === "request") {
+        if (target.own) {
+          // Ma propre demande → MyActivity (onglet "Mon espace") la retrouve via location.state
+          navigate("/my-activity?tab=profile", { state: { scrollToRequestId: target.id, nonce: Date.now() } });
+        } else {
+          navigate(`/resource-requests/${target.id}`);
+        }
+        return true;
+      }
+      if (target.kind === "offer") {
+        navigate(`/job-offers/${target.id}`);
+        return true;
+      }
+    }
+
+    // 2) Lien fourni par le backend (messages, missions, candidatures...)
+    if (notification.action_url) {
+      navigate(notification.action_url);
+      return true;
+    }
+
+    // 3) Repli selon le type
+    const subjectId = notification.subject_id || notification.data?.proposal_id || notification.data?.mission_id;
+    if (type.startsWith("proposal_") && subjectId) { navigate(`/proposals/${subjectId}`); return true; }
+    if (type.startsWith("mission_") && subjectId) { navigate(`/missions/${subjectId}`); return true; }
+    if (type === "new_message") { navigate("/messages"); return true; }
+
+    return false;
+  };
+
   const handleClick = async (notification) => {
     if (!notification.read_at) await markRead(notification.id);
     setOpen(false);
+    redirectToTarget(notification);
+  };
 
-    let url = notification.action_url;
-
-    if (!url) {
-      if (notification.type === "resource_request_published") {
-        navigate(`/my-activity?tab=home&apply=${notification.subject_id}`);
-        return;
-      }
-      if (notification.type?.includes("request") || notification.type?.includes("offer") || notification.type?.includes("proposal")) {
-        url = `/resource-requests/${notification.subject_id}`;
-      } else {
-        return;
-      }
-    }
-
-    if (url.startsWith("/resource-requests/")) {
-      const id = url.split("/").filter(Boolean).pop();
-      navigate("/my-activity?tab=profile", { state: { scrollToRequestId: id, nonce: Date.now() } });
-      return;
-    }
-    navigate(url);
+  const isClickable = (notification) => {
+    const type = notification.type || "";
+    return (
+      Boolean(notification.action_url) ||
+      Boolean(getPostTarget(notification)) ||
+      (type.startsWith("proposal_") && Boolean(notification.subject_id)) ||
+      (type.startsWith("mission_") && Boolean(notification.subject_id)) ||
+      type === "new_message"
+    );
   };
 
   return (
@@ -326,7 +389,7 @@ export default function NotificationBell() {
                   const config = ICONS[notification.type] || ICONS.default;
                   const isUnread = !notification.read_at;
                   const actor = notification.actor;
-                  const clickable = Boolean(notification.action_url) || notification.type?.includes("request") || notification.type?.includes("offer");
+                  const clickable = isClickable(notification);
 
                   return (
                     <button
@@ -360,7 +423,6 @@ export default function NotificationBell() {
                           )}
                         </p>
 
-                        {/* ✅ Affichage du body UNE SEULE FOIS */}
                         {notification.body && notification.type !== "resource_request_published" && (
                           <p className="mt-1 line-clamp-2 text-xs leading-[1.5] text-slate-500 dark:text-slate-400">
                             {notification.body}

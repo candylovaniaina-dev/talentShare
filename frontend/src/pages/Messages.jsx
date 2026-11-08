@@ -324,12 +324,19 @@ export default function Messages() {
     }
   };
 
+  // ✅ ON UTILISE UNE FONCTION POUR TRIER LES MESSAGES ET CHERCHER DANS LE BON
+  const getLastMessage = (conv) => {
+    if (!conv.messages || conv.messages.length === 0) return null;
+    return [...conv.messages].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+  };
+
   const filtered = conversations.filter((c) => {
     if (filter === "unread" && !c.unread_count) return false;
     if (filter === "groups" && c.participants?.length <= 2 && !c.title) return false;
     if (search.trim()) {
       const other = getOtherParticipant(c);
-      const haystack = `${other?.name || ""} ${c.title || ""} ${c.messages?.[0]?.body || ""}`.toLowerCase();
+      const lastMsg = getLastMessage(c);
+      const haystack = `${other?.name || ""} ${c.title || ""} ${lastMsg?.body || ""}`.toLowerCase();
       if (!haystack.includes(search.toLowerCase())) return false;
     }
     return true;
@@ -426,7 +433,8 @@ export default function Messages() {
             )}
             {filtered.map((conv) => {
               const other = getOtherParticipant(conv);
-              const lastMsg = conv.messages?.[0];
+              const lastMsg = getLastMessage(conv); // ✅ Utilisation de la fonction
+              
               const isActive = conv.id === activeId;
               const isUnread = conv.unread_count > 0;
               const isGroup = conv.participants?.length > 2 || !!conv.title;

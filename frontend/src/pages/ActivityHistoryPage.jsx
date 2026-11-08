@@ -9,6 +9,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import AppShell from "../components/layout/AppShell";
 import api from "../services/api";
+import { useAuth } from "../context/AuthContext"; // <-- Ajout de l'import
 
 /* ============================================================
    CONFIGURATION DES ÉVÉNEMENTS
@@ -129,6 +130,9 @@ function getTargetUrl(item) {
 
 export default function ActivityHistoryPage() {
   const navigate = useNavigate();
+  const { user } = useAuth(); // <-- Récupération de l'utilisateur
+  const isCompany = user?.role === "company"; // <-- Détection du rôle
+
   const [history, setHistory] = useState([]);
   const [sentProposals, setSentProposals] = useState([]);
   const [sentApplications, setSentApplications] = useState([]);
@@ -180,25 +184,75 @@ export default function ActivityHistoryPage() {
   const mergedItems = useMemo(() => {
     const items = [];
     
-    sentApplications.forEach((app) => items.push({ 
-      id: `app-${app.id}`, type: "new_application", title: "Candidature envoyée", 
-      body: `Vous avez postulé pour « ${app.job_offer?.title || app.offer?.title || "une offre"} »`, 
-      created_at: app.created_at, url: `/applications/${app.id}`,
-      actor: { name: app.job_offer?.company?.name || app.company?.name || "Entreprise", avatar_path: null } 
-    }));
+    // Gestion des candidatures (selon le rôle)
+    sentApplications.forEach((app) => {
+      const talentName = app.user?.name || app.professional_profile?.user?.name || "le talent";
+      const offerTitle = app.job_offer?.title || app.offer?.title || "une offre";
+      
+      items.push({ 
+        id: `app-${app.id}`, 
+        type: "new_application", 
+        title: isCompany ? "Candidature reçue" : "Candidature envoyée", 
+        body: isCompany 
+          ? `${talentName} a postulé à votre offre « ${offerTitle} »`
+          : `Vous avez postulé pour « ${offerTitle} »`, 
+        created_at: app.created_at, 
+        url: `/applications/${app.id}`,
+        actor: { 
+          name: isCompany ? talentName : (app.job_offer?.company?.name || app.company?.name || "Entreprise"), 
+          avatar_path: isCompany ? (app.user?.avatar_path || app.professional_profile?.avatar_path) : null 
+        } 
+      });
+    });
 
-    sentProposals.forEach((p) => items.push({ 
-      id: `proposal-${p.id}`, type: "proposal_sent", title: "Candidature (Demande)", 
-      body: `Vous avez postulé à « ${p.resource_request?.title || "une demande"} »`, 
-      created_at: p.created_at, url: `/proposals/${p.id}`, actor: { name: "Vous", avatar_path: null } 
-    }));
+    // Gestion des propositions (selon le rôle)
+    sentProposals.forEach((p) => {
+      const talentName = p.profile?.user?.name || "le talent";
+      const reqTitle = p.resource_request?.title || "une demande";
+      
+      items.push({ 
+        id: `proposal-${p.id}`, 
+        type: "proposal_sent", 
+        title: isCompany ? "Proposition envoyée" : "Candidature (Demande)", 
+        body: isCompany 
+          ? `Vous avez proposé une offre à ${talentName} pour « ${reqTitle} »`
+          : `Vous avez postulé à « ${reqTitle} »`, 
+        created_at: p.created_at, 
+        url: `/proposals/${p.id}`, 
+        actor: { 
+          name: isCompany ? talentName : "Vous", 
+          avatar_path: isCompany ? p.profile?.avatar_path : null 
+        } 
+      });
+    });
 
-    missions.forEach((m) => items.push({ 
-      id: `mission-${m.id}`, type: "mission_accepted", title: "Mission acceptée", 
-      body: `Mission « ${m.title || "sans titre"} » chez ${m.requesting_company?.name || "l'entreprise"}.`, 
-      created_at: m.created_at, url: `/missions/${m.id}`, 
-      actor: { name: m.requesting_company?.name || "Entreprise", avatar_path: null } 
-    }));
+    // Gestion des missions (selon le rôle)
+    missions.forEach((m) => {
+      const talentName = m.profile?.user?.name || "le talent";
+      
+      // ✅ CORRECTION ICI : On cherche le titre partout où c'est possible
+      const missionTitle = 
+        m.title || 
+        m.proposal?.resource_request?.title || 
+        m.resource_offer?.title || 
+        m.job_offer?.title || 
+        `Mission de ${talentName}`; // Si vraiment pas de titre, on met le nom du talent
+      
+      items.push({ 
+        id: `mission-${m.id}`, 
+        type: "mission_accepted", 
+        title: isCompany ? "Mission démarrée" : "Mission acceptée", 
+        body: isCompany 
+          ? `La mission « ${missionTitle} » a démarré avec ${talentName}.` 
+          : `Mission « ${missionTitle} » chez ${m.requesting_company?.name || "l'entreprise"}.`, 
+        created_at: m.created_at, 
+        url: `/missions/${m.id}`, 
+        actor: { 
+          name: isCompany ? talentName : (m.requesting_company?.name || "Entreprise"), 
+          avatar_path: isCompany ? m.profile?.avatar_path : null 
+        } 
+      });
+    });
 
     history.forEach((group) => {
       if (Array.isArray(group.items)) {
@@ -209,7 +263,7 @@ export default function ActivityHistoryPage() {
     });
 
     return items.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-  }, [history, sentProposals, sentApplications, missions]);
+  }, [history, sentProposals, sentApplications, missions, isCompany]); // Ajout de isCompany dans les dépendances
 
   const filteredHistory = useMemo(() => {
     const filterConfig = FILTERS.find((filter) => filter.key === activeFilter);
@@ -283,7 +337,7 @@ export default function ActivityHistoryPage() {
           </div>
 
           <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <StatCard label="Candidatures" value={activityTypes.applications} icon={FileText} accent="blue" note="Offres & demandes" />
+            <StatCard label={isCompany ? "Candidatures reçues" : "Candidatures"} value={activityTypes.applications} icon={FileText} accent="blue" note="Offres & demandes" />
             <StatCard label="Missions" value={activityTypes.missions} icon={BriefcaseBusiness} accent="teal" note="Suivi des missions" />
             <StatCard label="Messages" value={activityTypes.messages} icon={MessageSquare} accent="violet" note="Nouveaux messages" />
             <StatCard label="Interactions" value={activityTypes.social} icon={Heart} accent="amber" note="J'aime et commentaires" />
@@ -336,7 +390,6 @@ export default function ActivityHistoryPage() {
                 <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-white/10">
                   <div><h2 className="text-sm font-bold text-[#102A43] dark:text-white">Activité récente</h2></div>
                   
-                  {/* ✅ LE BOUTON "VOIR TOUT" EST ICI */}
                   {activeFilter === "missions" && (
                     <Link 
                       to="/missions" 
@@ -446,7 +499,7 @@ export default function ActivityHistoryPage() {
                 </div>
                 <div className="mt-3 space-y-2.5">
                   {[
-                    { label: "Candidatures", value: activityTypes.applications, color: "bg-blue-500" },
+                    { label: isCompany ? "Candidatures reçues" : "Candidatures", value: activityTypes.applications, color: "bg-blue-500" },
                     { label: "Missions", value: activityTypes.missions, color: "bg-teal-500" },
                     { label: "Messages", value: activityTypes.messages, color: "bg-violet-500" },
                     { label: "Interactions", value: activityTypes.social, color: "bg-amber-500" },

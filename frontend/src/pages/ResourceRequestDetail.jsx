@@ -8,19 +8,12 @@ export default function ResourceRequestDetail() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const autoOpenCandidates = searchParams.get("candidates") === "1";
-
   return (
     <AppShell>
       <div className="min-h-screen bg-white">
-        {/* 
-          On place le modal ici, il va s'ouvrir automatiquement. 
-          On n'a pas besoin du texte "Ouverture de la demande..." 
-          car le modal va charger ses propres données.
-        */}
         <RequestDetailModal
           requestId={id}
-          autoOpenCandidates={autoOpenCandidates}
+          autoOpenCandidates={searchParams.get("candidates") === "1"}
           onClose={() => navigate(-1)}
         />
       </div>

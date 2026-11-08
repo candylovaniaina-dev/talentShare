@@ -10,38 +10,25 @@ class Employee extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'company_id',
-        'user_id',
-        'position',
-        'status',
-        'email',
-        'first_name',
-        'last_name',
-        'phone',
-        'has_account',
-        'photo_path',        // ✅ AJOUTER
+        'company_id', 'user_id', 'position', 'status',
+        'email', 'first_name', 'last_name', 'phone',
+        'has_account', 'photo_path',
+        'contract_type',   // internship | apprenticeship | fixed_term | permanent
+        'start_date',
+        'end_date',
     ];
 
     protected $casts = [
         'has_account' => 'boolean',
+        'start_date'  => 'date',
+        'end_date'    => 'date',
     ];
 
-    // ✅ Exposer photo_url dans le JSON
     protected $appends = ['photo_url'];
 
-    public function company()
-    {
-        return $this->belongsTo(Company::class);
-    }
+    public function company() { return $this->belongsTo(Company::class); }
+    public function user()    { return $this->belongsTo(User::class); }
 
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
-
-    /**
-     * ✅ URL complète de la photo (fallback sur l'avatar du compte user)
-     */
     public function getPhotoUrlAttribute(): ?string
     {
         if ($this->photo_path) {

@@ -29,9 +29,10 @@ use App\Http\Controllers\Api\SavedSearchController;
 use App\Http\Controllers\Api\MatchInteractionController;
 use App\Http\Controllers\Api\MatchController;
 use App\Http\Controllers\Api\EducationController;
-use App\Http\Controllers\Api\SocialAuthController;   // ✅ AJOUT
+use App\Http\Controllers\Api\SocialAuthController;
+use App\Http\Controllers\Api\ResourceSharingController;
+use App\Http\Controllers\Api\CompanyProposalController;
 use Illuminate\Support\Facades\Route;
-
 
 // =============================================
 // ROUTES PUBLIQUES
@@ -46,9 +47,7 @@ Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 've
 Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])->middleware('throttle:3,1');
 Route::post('/reset-password', [PasswordResetController::class, 'reset']);
 
-// =============================================
-// ✅ OAUTH SOCIAL LOGIN (Google, LinkedIn, Facebook)
-// =============================================
+// ✅ OAUTH SOCIAL LOGIN
 Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirect'])
     ->where('provider', 'google|linkedin-openid|facebook');
 
@@ -71,7 +70,7 @@ Route::get('/professional-profiles', [ProfessionalProfileController::class, 'ind
 Route::get('/professional-profiles/{professionalProfile}', [ProfessionalProfileController::class, 'show']);
 
 Route::get('/skill-categories', [SkillController::class, 'categories']);
-Route::post('/skill-categories', [SkillController::class, 'storeCategory']); // ✅ Ajout de la route POST
+Route::post('/skill-categories', [SkillController::class, 'storeCategory']);
 Route::get('/skills/stats', [SkillController::class, 'stats']);
 Route::get('/skills', [SkillController::class, 'index']);
 
@@ -84,7 +83,10 @@ Route::get('/languages', function () {
 
 Route::get('/resource-offers', [ResourceOfferController::class, 'index']);
 
-// ✅ FIX : contrainte numérique pour ne pas capturer "new"
+// ✅ P0-7 : Resource Sharing (Routes publiques)
+Route::get('/resource-sharing/browse', [ResourceSharingController::class, 'browse']);
+Route::get('/resource-sharing/{offer}', [ResourceSharingController::class, 'show'])->whereNumber('offer');
+
 Route::get('/resource-requests/count-new', [ResourceRequestController::class, 'countNew']);
 Route::get('/resource-requests/matching-for-me', [ResourceRequestController::class, 'matchingForMe'])->middleware('auth:sanctum');
 Route::post('/resource-requests/mark-seen', [ResourceRequestController::class, 'markSeen'])->middleware('auth:sanctum');
@@ -93,18 +95,15 @@ Route::get('/resource-requests', [ResourceRequestController::class, 'index']);
 Route::get('/resource-requests/{resourceRequest}', [ResourceRequestController::class, 'show'])
     ->where('resourceRequest', '[0-9]+');
 
-// ✅ Routes SPÉCIFIQUES d'abord (avec le préfixe exact)
 Route::get('/job-offers/my', [JobOfferController::class, 'my'])->middleware('auth:sanctum');
 Route::get('/job-offers/count-new', [JobOfferController::class, 'countNew'])->middleware('auth:sanctum');
 Route::post('/job-offers/mark-seen', [JobOfferController::class, 'markSeen'])->middleware('auth:sanctum');
 
-// ✅ Route GÉNÉRIQUE en dernier (avec contrainte numérique)
 Route::get('/job-offers', [JobOfferController::class, 'index']);
 Route::get('/job-offers/{jobOffer}', [JobOfferController::class, 'show'])
-    ->where('jobOffer', '[0-9]+');   // ⚠️ CE "where" est LA solution
+    ->where('jobOffer', '[0-9]+');
 
 Route::post('/match/explain', [MatchController::class, 'explain']);
-
 
 // =============================================
 // ROUTES PROTÉGÉES
@@ -125,8 +124,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch ('/companies/{company}',                             [CompanyController::class, 'update']);
     Route::post  ('/companies/{company}/logo',                        [CompanyController::class, 'uploadLogo']);
     Route::delete('/companies/{company}/logo',                        [CompanyController::class, 'deleteLogo']);
-Route::get('/profile/my-companies', [ProfessionalProfileController::class, 'myCompanies']);
-    // Membres
+    Route::get('/profile/my-companies', [ProfessionalProfileController::class, 'myCompanies']);
+    
     Route::get   ('/companies/{company}/members',                     [CompanyController::class, 'members']);
     Route::post  ('/companies/{company}/members',                     [CompanyController::class, 'addMember']);
     Route::post  ('/companies/{company}/members/{member}/photo',      [CompanyController::class, 'uploadMemberPhoto']);
@@ -134,7 +133,6 @@ Route::get('/profile/my-companies', [ProfessionalProfileController::class, 'myCo
 
     Route::post  ('/companies/{company}/verify',                      [CompanyController::class, 'requestVerification']);
 
-    // Salariés
     Route::get   ('/companies/{company}/employees',                   [CompanyController::class, 'employees']);
     Route::post  ('/companies/{company}/employees',                   [CompanyController::class, 'addEmployee']);
     Route::post  ('/companies/{company}/employees/{employee}/photo',  [CompanyController::class, 'uploadEmployeePhoto']);
@@ -197,10 +195,19 @@ Route::get('/profile/my-companies', [ProfessionalProfileController::class, 'myCo
     Route::delete('/resource-offers/{resourceOffer}', [ResourceOfferController::class, 'destroy'])
         ->where('resourceOffer', '[0-9]+');
 
+    // ✅ P0-7 : Resource Sharing (Routes protégées)
+    Route::get('/resource-sharing/mine', [ResourceSharingController::class, 'mine']);
+    Route::get('/resource-sharing/employees', [ResourceSharingController::class, 'employees']);
+    Route::post('/resource-sharing', [ResourceSharingController::class, 'store']);
+    Route::patch('/resource-sharing/{offer}', [ResourceSharingController::class, 'update'])->whereNumber('offer');
+    Route::patch('/resource-sharing/{offer}/status', [ResourceSharingController::class, 'setStatus'])->whereNumber('offer');
+    Route::delete('/resource-sharing/{offer}', [ResourceSharingController::class, 'destroy'])->whereNumber('offer');
+    Route::get('/resource-sharing/{offer}/proposals', [ResourceSharingController::class, 'proposals'])->whereNumber('offer');
+
     // === Resource Requests ===
-        Route::get   ('/resource-requests/count-new',  [ResourceRequestController::class, 'countNew']);
+    Route::get   ('/resource-requests/count-new',  [ResourceRequestController::class, 'countNew']);
     Route::post  ('/resource-requests/mark-seen',  [ResourceRequestController::class, 'markSeen']);
-        Route::get('/resource-requests/matching-for-me', [ResourceRequestController::class, 'matchingForMe']);
+    Route::get('/resource-requests/matching-for-me', [ResourceRequestController::class, 'matchingForMe']);
     Route::get   ('/resource-requests/my', [ResourceRequestController::class, 'index']);
     Route::post  ('/resource-requests',    [ResourceRequestController::class, 'store']);
 
@@ -224,7 +231,6 @@ Route::get('/profile/my-companies', [ProfessionalProfileController::class, 'myCo
     Route::post  ('/resource-requests/{resourceRequest}/duplicate',    [ResourceRequestController::class, 'duplicate'])
         ->where('resourceRequest', '[0-9]+');
 
-    // Interactions sociales
     Route::post('/resource-requests/{resourceRequest}/like',     [ResourceRequestController::class, 'toggleLike'])
         ->where('resourceRequest', '[0-9]+');
     Route::post('/resource-requests/{resourceRequest}/comment',  [ResourceRequestController::class, 'comment'])
@@ -235,31 +241,43 @@ Route::get('/profile/my-companies', [ProfessionalProfileController::class, 'myCo
         ->where('resourceRequest', '[0-9]+');
 
     // === Propositions ===
-      Route::get   ('/proposals/count-new',           [ProposalController::class, 'countNew']);
+    Route::get   ('/proposals/count-new',           [ProposalController::class, 'countNew']);
     Route::post  ('/proposals/mark-seen',           [ProposalController::class, 'markSeen']);
     Route::get   ('/proposals/received',              [ProposalController::class, 'received']);
     Route::get   ('/proposals/sent',                  [ProposalController::class, 'sent']);
     Route::post  ('/proposals',                       [ProposalController::class, 'store']);
-     Route::post  ('/proposals/recruiter-apply',     [ProposalController::class, 'recruiterApply']);
+    Route::post  ('/proposals/recruiter-apply',     [ProposalController::class, 'recruiterApply']);
+    
+    Route::post  ('/proposals/to-company',            [CompanyProposalController::class, 'store']);
+    
     Route::get   ('/proposals/{proposal}',            [ProposalController::class, 'show']);
     Route::patch ('/proposals/{proposal}',            [ProposalController::class, 'update']);
     Route::post  ('/proposals/{proposal}/submit',     [ProposalController::class, 'submit']);
     Route::post  ('/proposals/{proposal}/cancel',     [ProposalController::class, 'cancel']);
     Route::post  ('/proposals/{proposal}/accept',     [ProposalController::class, 'accept']);
     Route::post  ('/proposals/{proposal}/decline',    [ProposalController::class, 'decline']);
-        Route::post  ('/proposals/{proposal}/schedule-interview', [ProposalController::class, 'scheduleInterview']);
+    Route::post  ('/proposals/{proposal}/schedule-interview', [ProposalController::class, 'scheduleInterview']);
     Route::post  ('/proposals/{proposal}/validate-interview', [ProposalController::class, 'validateInterview']);
     Route::post  ('/proposals/{proposal}/reject-interview',   [ProposalController::class, 'rejectInterview']);
+    
+    Route::post  ('/proposals/{proposal}/documents',          [CompanyProposalController::class, 'uploadDocument']);
+    Route::delete('/proposals/{proposal}/documents/{document}', [CompanyProposalController::class, 'deleteDocument']);
 
-    // === Missions ===
+    Route::post('/proposals/apply-to-resource-offer', [ProposalController::class, 'applyToResourceOffer']);
+    
+    // === MISSIONS ===
     Route::get   ('/missions',                   [MissionController::class, 'index']);
     Route::post  ('/missions',                   [MissionController::class, 'store']);
     Route::get   ('/missions/{mission}',         [MissionController::class, 'show']);
     Route::post  ('/missions/{mission}/accept',  [MissionController::class, 'accept']);
     Route::post  ('/missions/{mission}/decline', [MissionController::class, 'decline']);
     Route::patch ('/missions/{mission}/status',  [MissionController::class, 'updateStatus']);
-     Route::post  ('/missions/{mission}/validate-trial', [MissionController::class, 'validateTrial']);
-         Route::post  ('/missions/{mission}/reject-trial',   [MissionController::class, 'rejectTrial']);
+    Route::post  ('/missions/{mission}/validate-trial', [MissionController::class, 'validateTrial']);
+    Route::post  ('/missions/{mission}/reject-trial',   [MissionController::class, 'rejectTrial']);
+
+    // ✅ ÉVALUATIONS (NOUVEAU)
+    Route::post('/missions/{mission}/ratings', [RatingController::class, 'store']);
+    Route::get('/missions/{mission}/ratings', [RatingController::class, 'index']);
 
     // === JOB OFFERS ===
     Route::post  ('/job-offers',                        [JobOfferController::class, 'store']);
@@ -267,7 +285,6 @@ Route::get('/profile/my-companies', [ProfessionalProfileController::class, 'myCo
     Route::delete('/job-offers/{jobOffer}',             [JobOfferController::class, 'destroy']);
     Route::get   ('/job-offers/{jobOffer}/applications',[JobOfferController::class, 'applications']);
 
-    // Interactions sociales
     Route::post  ('/job-offers/{jobOffer}/like',        [JobOfferController::class, 'toggleLike']);
     Route::post  ('/job-offers/{jobOffer}/comment',     [JobOfferController::class, 'comment']);
     Route::get   ('/job-offers/{jobOffer}/comments',    [JobOfferController::class, 'comments']);
@@ -308,10 +325,6 @@ Route::get('/profile/my-companies', [ProfessionalProfileController::class, 'myCo
     Route::get('/notifications/history', [NotificationController::class, 'history']);
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead']);
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead']);
-
-    // === Évaluations ===
-    Route::post('/missions/{mission}/ratings', [RatingController::class, 'store']);
-    Route::get('/missions/{mission}/ratings', [RatingController::class, 'index']);
 
     // === Vérifications ===
     Route::post('/verification-requests', [VerificationRequestController::class, 'store']);
@@ -355,7 +368,6 @@ Route::get('/profile/my-companies', [ProfessionalProfileController::class, 'myCo
     Route::apiResource('educations', EducationController::class);
 });
 
-
 // =============================================
 // ROUTES ADMIN
 // =============================================
@@ -364,7 +376,6 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::get('/verification-requests', [AdminVerificationController::class, 'index']);
     Route::patch('/verification-requests/{verificationRequest}/review', [AdminVerificationController::class, 'review']);
 });
-
 
 // =============================================
 // ROUTES PUBLIQUES DYNAMIQUES

@@ -29,7 +29,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 
 /* ============================================================
-   HELPERS
+   HELPERS & PALETTE
 ============================================================ */
 
 const number = (value) => {
@@ -86,25 +86,27 @@ const bucketOf = (status) => {
   return "pending";
 };
 
-const STATUS_META = {
-  accepted: { label: "Acceptée", cls: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100", hex: "#10B981" },
-  pending: { label: "En cours", cls: "bg-sky-50 text-sky-700 ring-1 ring-sky-100", hex: "#38BDF8" },
-  rejected: { label: "Refusée", cls: "bg-slate-100 text-slate-600 ring-1 ring-slate-200", hex: "#94A3B8" },
-};
-
+// ✅ PALETTE CLAIRE ET SOMBRE
 const COLORS = {
-  emerald: { icon: "bg-emerald-50 text-emerald-600", hex: "#10B981" },
-  blue: { icon: "bg-sky-50 text-sky-600", hex: "#38BDF8" },
-  violet: { icon: "bg-indigo-50 text-indigo-600", hex: "#6366F1" },
-  amber: { icon: "bg-amber-50 text-amber-600", hex: "#F59E0B" },
+  teal: { icon: "bg-[#16B8B1]/15 text-[#0F9691] dark:text-[#16B8B1]", hex: "#16B8B1" },
+  navy: { icon: "bg-[#0B1F33]/10 text-[#0B1F33] dark:bg-white/10 dark:text-white", hex: "#0B1F33" },
+  blue: { icon: "bg-[#0B1F33]/5 text-[#0B1F33] dark:bg-white/5 dark:text-white", hex: "#0B1F33" }, 
+  amber: { icon: "bg-[#F59E0B]/10 text-[#D97706] dark:bg-[#F59E0B]/20 dark:text-[#FBBF24]", hex: "#F59E0B" },
+  slate: { icon: "bg-slate-100 text-slate-500 dark:bg-white/5 dark:text-slate-400", hex: "#94A3B8" },
 };
 
 const TONES = {
-  blue: "bg-sky-50 text-sky-600",
-  emerald: "bg-emerald-50 text-emerald-600",
-  violet: "bg-indigo-50 text-indigo-600",
-  amber: "bg-amber-50 text-amber-600",
-  slate: "bg-slate-100 text-slate-500",
+  teal: "bg-[#16B8B1]/15 text-[#0F9691] dark:bg-[#16B8B1]/20 dark:text-[#16B8B1]",
+  navy: "bg-[#0B1F33]/10 text-[#0B1F33] dark:bg-white/10 dark:text-white",
+  blue: "bg-[#0B1F33]/5 text-[#0B1F33] dark:bg-white/5 dark:text-white",
+  amber: "bg-[#F59E0B]/10 text-[#D97706] dark:bg-[#F59E0B]/20 dark:text-[#FBBF24]",
+  slate: "bg-slate-100 text-slate-500 dark:bg-white/5 dark:text-slate-400",
+};
+
+const STATUS_META = {
+  accepted: { label: "Acceptée", cls: "bg-[#16B8B1]/15 text-[#0F9691] ring-1 ring-[#16B8B1]/20 dark:text-[#16B8B1]", hex: "#16B8B1" },
+  pending: { label: "En cours", cls: "bg-[#0B1F33]/5 text-[#0B1F33] ring-1 ring-[#0B1F33]/10 dark:bg-white/5 dark:text-white", hex: "#0B1F33" },
+  rejected: { label: "Refusée", cls: "bg-slate-100 text-slate-600 ring-1 ring-slate-200 dark:bg-white/5 dark:text-slate-400 dark:ring-white/10", hex: "#94A3B8" },
 };
 
 const STATS_COLS = {
@@ -181,32 +183,30 @@ function buildStats(role, s, x) {
 
   if (role === "company") {
     list = [
-      { key: "jobs", title: "Offres actives", value: s.job_offers_open, icon: FileText, to: "/my-publications", accent: "blue" },
-      { key: "recv", title: "Candidatures reçues", value: x.applicationsReceived, icon: Inbox, to: "/my-publications", accent: "emerald" },
+      { key: "jobs", title: "Offres actives", value: s.job_offers_open, icon: FileText, to: "/my-publications", accent: "navy" },
+      { key: "recv", title: "Candidatures reçues", value: x.applicationsReceived, icon: Inbox, to: "/my-publications", accent: "teal" },
       { key: "req", title: "Demandes ouvertes", value: s.resource_requests_open, icon: BriefcaseBusiness, to: "/my-publications", accent: "amber" },
-      { key: "prop", title: "Propositions reçues", value: s.proposals_received, icon: Handshake, to: "/my-activity", accent: "violet" },
-     
+      { key: "prop", title: "Propositions reçues", value: s.proposals_received, icon: Handshake, to: "/my-activity", accent: "navy" },
       { key: "mis", title: "Missions actives", value: s.active_missions, icon: Target, to: "/my-activity", accent: "amber" },
-     
     ];
   } else if (role === "university") {
     list = [
-      { key: "uni", title: "Universités", value: s.universities_count, icon: Building2, accent: "blue" },
-      { key: "unread", title: "Messages non lus", value: x.unread, icon: MessageCircle, to: "/messages", accent: "violet" },
+      { key: "uni", title: "Universités", value: s.universities_count, icon: Building2, accent: "navy" },
+      { key: "unread", title: "Messages non lus", value: x.unread, icon: MessageCircle, to: "/messages", accent: "teal" },
     ];
   } else if (role === "admin") {
     list = [
-      { key: "usr", title: "Utilisateurs", value: s.users_count, icon: Users, accent: "blue" },
-      { key: "cmp", title: "Entreprises", value: s.companies_count, icon: Building2, accent: "emerald" },
-      { key: "uni", title: "Universités", value: s.universities_count, icon: Building2, accent: "violet" },
+      { key: "usr", title: "Utilisateurs", value: s.users_count, icon: Users, accent: "navy" },
+      { key: "cmp", title: "Entreprises", value: s.companies_count, icon: Building2, accent: "teal" },
+      { key: "uni", title: "Universités", value: s.universities_count, icon: Building2, accent: "navy" },
       { key: "mis", title: "Missions", value: s.missions_count, icon: Target, accent: "amber" },
     ];
   } else {
     list = [
-      { key: "app", title: "Candidatures envoyées", value: x.applicationsTotal ?? s.applications_count, icon: Send, to: "/my-activity", accent: "blue" },
-      { key: "accp", title: "Candidatures acceptées", value: x.applicationsAccepted, icon: CheckCircle2, to: "/my-activity", accent: "emerald" },
-      { key: "rate", title: "Taux d'acceptation", value: x.acceptanceRate, suffix: " %", icon: Percent, accent: "violet" },
-      { key: "mis", title: "Missions actives", value: s.active_missions, icon: Target, to: "/my-activity", accent: "emerald" },
+      { key: "app", title: "Candidatures envoyées", value: x.applicationsTotal ?? s.applications_count, icon: Send, to: "/my-activity", accent: "navy" },
+      { key: "accp", title: "Candidatures acceptées", value: x.applicationsAccepted, icon: CheckCircle2, to: "/my-activity", accent: "teal" },
+      { key: "rate", title: "Taux d'acceptation", value: x.acceptanceRate, suffix: " %", icon: Percent, accent: "navy" },
+      { key: "mis", title: "Missions actives", value: s.active_missions, icon: Target, to: "/my-activity", accent: "teal" },
       { key: "opp", title: "Opportunités disponibles", value: x.opportunities, icon: BriefcaseBusiness, to: "/job-offers", accent: "amber" },
     ];
   }
@@ -251,29 +251,70 @@ function buildQuickLinks(role) {
   ];
 }
 
-function buildFeed({ appList, proposalList, myJobList, myRequestList, notifList }) {
+function buildFeed({ appList, proposalList, myJobList, myRequestList, notifList, role }) {
   const events = [];
+  const isCompany = role === "company";
 
   appList.forEach((a, i) => {
     const bucket = bucketOf(a.status);
+    const title = applicationTitle(a);
+    let text = "";
+    let detail = title;
+
+    if (isCompany) {
+      const talentName = a.user?.name || a.professional_profile?.user?.name || "Un talent";
+      if (bucket === "accepted") {
+        text = "Candidature acceptée";
+        detail = `Vous avez accepté la candidature de ${talentName} pour "${title}"`;
+      } else if (bucket === "rejected") {
+        text = "Candidature refusée";
+        detail = `Vous avez refusé la candidature de ${talentName} pour "${title}"`;
+      } else {
+        text = "Candidature reçue";
+        detail = `${talentName} a postulé à votre offre "${title}"`;
+      }
+    } else {
+      if (bucket === "accepted") text = "Candidature acceptée";
+      else if (bucket === "rejected") text = "Candidature refusée";
+      else text = "Candidature envoyée";
+    }
+
     events.push({
       key: `app-${a.id ?? i}`,
       icon: Send,
-      tone: bucket === "accepted" ? "emerald" : bucket === "rejected" ? "slate" : "blue",
-      text: bucket === "accepted" ? "Candidature acceptée" : bucket === "rejected" ? "Candidature refusée" : "Candidature envoyée",
-      detail: applicationTitle(a),
+      tone: bucket === "accepted" ? "teal" : bucket === "rejected" ? "slate" : "navy",
+      text,
+      detail,
       date: dateOf(a),
       to: "/my-activity",
     });
   });
 
   proposalList.forEach((p, i) => {
+    const title = proposalTitle(p);
+    let text = "";
+    let detail = title;
+
+    if (isCompany) {
+      const talentName = p.profile?.user?.name || p.talent?.name || "Un talent";
+      if (bucketOf(p.status) === "accepted") {
+        text = "Proposition acceptée";
+        detail = `${talentName} a accepté votre proposition pour "${title}"`;
+      } else {
+        text = "Proposition envoyée";
+        detail = `Vous avez proposé une offre à ${talentName}`;
+      }
+    } else {
+      if (bucketOf(p.status) === "accepted") text = "Proposition acceptée";
+      else text = "Proposition reçue";
+    }
+
     events.push({
       key: `prop-${p.id ?? i}`,
       icon: Handshake,
-      tone: "violet",
-      text: bucketOf(p.status) === "accepted" ? "Proposition acceptée" : "Proposition reçue",
-      detail: proposalTitle(p),
+      tone: "navy",
+      text,
+      detail,
       date: dateOf(p),
       to: "/my-activity",
     });
@@ -283,7 +324,7 @@ function buildFeed({ appList, proposalList, myJobList, myRequestList, notifList 
     events.push({
       key: `job-${o.id ?? i}`,
       icon: FileText,
-      tone: "blue",
+      tone: "navy",
       text: "Offre publiée",
       detail: o.title || "",
       date: dateOf(o),
@@ -388,7 +429,7 @@ function Dashboard() {
   const isCompany = role === "company";
   const hasMessages = isTalent || isCompany || role === "university";
 
-  const apps = useEndpoint("/applications", isTalent, reloadKey);
+  const apps = useEndpoint("/applications", isTalent || isCompany, reloadKey);
   const jobs = useEndpoint("/job-offers", isTalent, reloadKey);
   const myJobs = useEndpoint("/job-offers/my", isCompany, reloadKey);
   const myRequests = useEndpoint("/resource-requests/my", isCompany, reloadKey);
@@ -431,8 +472,8 @@ function Dashboard() {
   const alerts = useMemo(() => buildAlerts(role, stats), [role, stats]);
   const quickLinks = useMemo(() => buildQuickLinks(role), [role]);
   const feed = useMemo(
-    () => buildFeed({ appList, proposalList, myJobList, myRequestList, notifList }),
-    [appList, proposalList, myJobList, myRequestList, notifList]
+    () => buildFeed({ appList, proposalList, myJobList, myRequestList, notifList, role }),
+    [appList, proposalList, myJobList, myRequestList, notifList, role]
   );
 
   const completion = Math.min(100, Math.max(0, number(stats.completion)));
@@ -440,15 +481,15 @@ function Dashboard() {
   const series = useMemo(() => {
     if (isTalent) {
       return [
-        apps.data && { key: "apps", label: "Candidatures", hex: "#10B981", dates: appList.map(dateOf) },
-        proposals.data && { key: "prop", label: "Propositions reçues", hex: "#6366F1", dates: proposalList.map(dateOf) },
+        apps.data && { key: "apps", label: "Candidatures", hex: "#16B8B1", dates: appList.map(dateOf) },
+        proposals.data && { key: "prop", label: "Propositions reçues", hex: "#0B1F33", dates: proposalList.map(dateOf) }, 
       ].filter(Boolean);
     }
     if (isCompany) {
       return [
-        myJobs.data && { key: "jobs", label: "Offres publiées", hex: "#10B981", dates: myJobList.map(dateOf) },
+        myJobs.data && { key: "jobs", label: "Offres publiées", hex: "#16B8B1", dates: myJobList.map(dateOf) },
         myRequests.data && { key: "req", label: "Demandes publiées", hex: "#F59E0B", dates: myRequestList.map(dateOf) },
-        proposals.data && { key: "prop", label: "Propositions reçues", hex: "#6366F1", dates: proposalList.map(dateOf) },
+        proposals.data && { key: "prop", label: "Propositions reçues", hex: "#0B1F33", dates: proposalList.map(dateOf) },
       ].filter(Boolean);
     }
     return [];
@@ -472,7 +513,7 @@ function Dashboard() {
     return {
       title: "Part de chaque indicateur",
       description: "Poids dans l'activité totale.",
-      items: statCards.map((c) => ({ key: c.key, title: c.title, value: number(c.value), hex: (COLORS[c.accent] || COLORS.emerald).hex })),
+      items: statCards.map((c) => ({ key: c.key, title: c.title, value: number(c.value), hex: (COLORS[c.accent] || COLORS.teal).hex })),
     };
   }, [isTalent, isCompany, appList, proposalList, statCards]);
 
@@ -493,7 +534,7 @@ function Dashboard() {
         title: conversationName(c, authUser?.id),
         subtitle: conversationPreview(c),
         meta: timeAgo(dateOf(c.last_message ?? c) || dateOf(c)),
-        badge: count > 0 ? { label: String(count), cls: "bg-emerald-100 text-emerald-700" } : null,
+        badge: count > 0 ? { label: String(count), cls: "bg-[#16B8B1] text-[#04201C]" } : null,
         to: "/messages",
       };
     },
@@ -588,8 +629,8 @@ function Dashboard() {
 
   return (
     <AppShell>
-      <div className="text-[#17213A] dark:text-slate-200">
-        <div className="mx-auto max-w-[1500px] space-y-5">
+      <div className="font-['Plus_Jakarta_Sans',sans-serif] text-[#0B1437] dark:text-white min-h-screen dark:bg-[#0A1230]">
+        <div className="mx-auto max-w-[1500px] space-y-5 p-4 sm:p-6 lg:p-8">
           {error && (
             <div
               role="alert"
@@ -615,17 +656,17 @@ function Dashboard() {
             <DashboardSkeleton />
           ) : (
             <>
-              {/* Titre de section + actualiser */}
               <div className="flex items-end justify-between gap-3">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400">Vue d'ensemble</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#0B1F33] dark:text-[#16B8B1]">Vue d'ensemble</p>
                   <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-[#0B1F33] dark:text-white">Tableau de bord</h2>
                 </div>
+                {/* ✅ Bouton "Actualiser" : Bleu Marine en mode clair (et non noir) */}
                 <button
                   type="button"
                   onClick={() => loadDashboard(true)}
                   disabled={refreshing}
-                  className="inline-flex items-center gap-2 rounded-full bg-[#0B2A35] px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-[#0E3B3A] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 disabled:opacity-60 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                  className="inline-flex items-center gap-2 rounded-full bg-[#0B1F33] px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-[#102A45] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16B8B1] disabled:opacity-60 dark:bg-[#16B8B1] dark:text-[#0B1F33] dark:hover:bg-[#0F9691]"
                 >
                   <RefreshCw size={13} className={refreshing ? "animate-spin motion-reduce:animate-none" : ""} />
                   Actualiser
@@ -638,7 +679,6 @@ function Dashboard() {
                 <AlertBanner key={alert.key} {...alert} />
               ))}
 
-              {/* Graphiques */}
               <section className="grid gap-5 lg:grid-cols-3">
                 {series.length > 0 ? (
                   <>
@@ -653,7 +693,6 @@ function Dashboard() {
                 )}
               </section>
 
-              {/* Activité récente + profil / raccourcis */}
               <section className="grid gap-5 lg:grid-cols-3">
                 <RecentActivity
                   events={feed}
@@ -670,7 +709,6 @@ function Dashboard() {
                 {isCompany && <QuickLinksPanel links={quickLinks} />}
               </section>
 
-              {/* Listes détaillées */}
               {panels.length > 0 && (
                 <section className={`grid gap-5 ${PANEL_GRID[panels.length] || "lg:grid-cols-3"}`}>
                   {panels.map(({ key, ...panel }) => (
@@ -693,7 +731,7 @@ function Dashboard() {
 ============================================================ */
 
 function DashboardSkeleton() {
-  const pulse = "animate-pulse motion-reduce:animate-none rounded-3xl bg-white/80 dark:bg-white/5";
+  const pulse = "animate-pulse motion-reduce:animate-none rounded-3xl bg-white/80 dark:bg-[#131E47]";
   return (
     <div className="space-y-5" role="status" aria-label="Chargement du tableau de bord">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -716,7 +754,7 @@ function DashboardSkeleton() {
 function Panel({ title, description, action, children, className = "" }) {
   return (
     <div
-      className={`rounded-3xl border border-white bg-white/85 p-5 shadow-[0_10px_40px_rgba(15,60,60,0.06)] ring-1 ring-slate-900/[0.04] backdrop-blur sm:p-6 dark:border-white/10 dark:bg-[#112A3A] dark:ring-white/5 ${className}`}
+      className={`rounded-3xl border border-white bg-white/85 p-5 shadow-[0_10px_40px_rgba(15,60,60,0.06)] ring-1 ring-slate-900/[0.04] backdrop-blur sm:p-6 dark:border-white/10 dark:bg-[#131E47] dark:ring-white/5 ${className}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
@@ -734,7 +772,7 @@ function AlertBanner({ label, count, to }) {
   return (
     <Link
       to={to}
-      className="flex items-center justify-between gap-3 rounded-3xl border border-amber-200 bg-gradient-to-r from-amber-50 to-white p-4 transition hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 dark:border-amber-500/20 dark:from-amber-500/10 dark:to-transparent"
+      className="flex items-center justify-between gap-3 rounded-3xl border border-amber-200 bg-gradient-to-r from-amber-50 to-white p-4 transition hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 dark:border-amber-500/20 dark:from-amber-500/10 dark:to-[#131E47]"
     >
       <div className="flex items-center gap-3">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400">
@@ -753,11 +791,11 @@ function AlertBanner({ label, count, to }) {
 function EmptyState({ icon: Icon, title, text, compact = false }) {
   return (
     <div
-      className={`flex flex-col items-center rounded-2xl border border-dashed border-[#D5DFE8] bg-[#F7FAFB] px-4 text-center dark:border-white/10 dark:bg-[#0B1F33] ${
+      className={`flex flex-col items-center rounded-2xl border border-dashed border-[#D5DFE8] bg-[#F7FAFB] px-4 text-center dark:border-white/10 dark:bg-[#0A1230] ${
         compact ? "py-6" : "py-10"
       }`}
     >
-      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-emerald-600 shadow-sm dark:bg-white/10 dark:text-emerald-400">
+      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[#0B1F33] shadow-sm dark:bg-white/5 dark:text-white">
         <Icon size={20} />
       </div>
       {title && <p className="mt-3 text-sm font-semibold text-[#0B1F33] dark:text-white">{title}</p>}
@@ -782,19 +820,20 @@ function StatsGrid({ cards }) {
 }
 
 function StatTile({ card, featured }) {
-  const { title, value, suffix = "", icon: Icon, accent = "emerald", to } = card;
-  const palette = COLORS[accent] || COLORS.emerald;
+  const { title, value, suffix = "", icon: Icon, accent = "navy", to } = card;
+  const palette = COLORS[accent] || COLORS.navy;
   const num = number(value);
 
   const body = (
     <>
       {featured && (
-        <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-emerald-400/25 blur-2xl" />
+        <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-[#16B8B1]/10 blur-2xl" />
       )}
       <div className="relative flex items-start justify-between">
         <span
           className={`flex h-11 w-11 items-center justify-center rounded-2xl ${
-            featured ? "bg-emerald-400 text-[#04201C] shadow-[0_0_22px_rgba(52,211,153,0.5)]" : palette.icon
+            /* ✅ Carte Featured : Icône sur fond Bleu Marine transparent */
+            featured ? "bg-white/10 text-white" : palette.icon
           }`}
         >
           <Icon size={20} strokeWidth={1.9} />
@@ -802,7 +841,7 @@ function StatTile({ card, featured }) {
         {to && (
           <span
             className={`flex h-8 w-8 items-center justify-center rounded-full transition group-hover:rotate-12 ${
-              featured ? "bg-white/10 text-white" : "bg-slate-100 text-slate-500 group-hover:bg-emerald-50 group-hover:text-emerald-600 dark:bg-white/5 dark:text-slate-400 dark:group-hover:bg-emerald-500/20 dark:group-hover:text-emerald-400"
+              featured ? "bg-white/10 text-white" : "bg-slate-100 text-slate-500 group-hover:bg-[#0B1F33]/10 group-hover:text-[#0B1F33] dark:bg-white/5 dark:text-slate-400 dark:group-hover:bg-white/10 dark:group-hover:text-white"
             }`}
           >
             <ArrowUpRight size={15} />
@@ -813,21 +852,22 @@ function StatTile({ card, featured }) {
       <div className="relative mt-6">
         <p className={`text-[34px] font-extrabold leading-none tracking-tight ${featured ? "text-white" : "text-[#0B1F33] dark:text-white"}`}>
           {num.toLocaleString("fr-FR")}
-          {suffix && <span className={`ml-0.5 text-lg font-bold ${featured ? "text-emerald-300" : "text-[#8A9BB0] dark:text-slate-400"}`}>{suffix}</span>}
+          {suffix && <span className={`ml-0.5 text-lg font-bold ${featured ? "text-[#16B8B1]" : "text-[#8A9BB0] dark:text-slate-400"}`}>{suffix}</span>}
         </p>
         <p className={`mt-2 truncate text-[13px] font-semibold ${featured ? "text-white/70" : "text-[#52677C] dark:text-slate-400"}`}>{title}</p>
       </div>
     </>
   );
 
+  /* ✅ Carte Featured : Bleu Marine pur (#0B1F33) au lieu d'un dégradé trop sombre/noir */
   const cls = `group relative block overflow-hidden rounded-3xl p-5 transition duration-200 hover:-translate-y-0.5 ${
     featured
-      ? "bg-gradient-to-br from-[#0B2A35] via-[#0B3A36] to-[#0E4B42] shadow-[0_16px_40px_rgba(8,60,55,0.35)]"
-      : "border border-white bg-white/85 shadow-[0_10px_40px_rgba(15,60,60,0.06)] ring-1 ring-slate-900/[0.04] hover:shadow-[0_16px_44px_rgba(15,60,60,0.12)] dark:bg-[#112A3A] dark:border-white/10 dark:ring-white/5"
+      ? "bg-[#0B1F33] shadow-[0_16px_40px_rgba(11,31,51,0.25)] border border-[#0B1F33]"
+      : "border border-white bg-white/85 shadow-[0_10px_40px_rgba(15,60,60,0.06)] ring-1 ring-slate-900/[0.04] hover:shadow-[0_16px_44px_rgba(15,60,60,0.12)] dark:bg-[#131E47] dark:border-white/10 dark:ring-white/5"
   }`;
 
   return to ? (
-    <Link to={to} className={`${cls} focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400`}>
+    <Link to={to} className={`${cls} focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16B8B1]`}>
       {body}
     </Link>
   ) : (
@@ -906,8 +946,9 @@ function EvolutionChart({ series, className = "", isDark }) {
               type="button"
               aria-pressed={weeks === w}
               onClick={() => setWeeks(w)}
-              className={`rounded-full px-3 py-1 text-xs font-bold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 ${
-                weeks === w ? "bg-[#0B2A35] text-white shadow-sm dark:bg-emerald-500 dark:text-white" : "text-[#64788C] hover:text-[#0B1F33] dark:text-slate-400 dark:hover:text-white"
+              className={`rounded-full px-3 py-1 text-xs font-bold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16B8B1] ${
+                /* ✅ Bouton Actif : Bleu Marine en clair, Teal en sombre */
+                weeks === w ? "bg-[#0B1F33] text-white shadow-sm dark:bg-[#16B8B1] dark:text-[#04201C]" : "text-[#64788C] hover:text-[#0B1F33] dark:text-slate-400 dark:hover:text-white"
               }`}
             >
               {w} sem.
@@ -973,7 +1014,7 @@ function EvolutionChart({ series, className = "", isDark }) {
                 <path d={area} fill={`url(#evo-${l.key})`} />
                 <path d={line} fill="none" stroke={l.hex} strokeWidth="2.75" strokeLinecap="round" />
                 {l.values.map((v, i) => (
-                  <circle key={i} cx={x(i)} cy={y(v)} r="3.5" fill={isDark ? "#112A3A" : "#fff"} stroke={l.hex} strokeWidth="2">
+                  <circle key={i} cx={x(i)} cy={y(v)} r="3.5" fill={isDark ? "#131E47" : "#fff"} stroke={l.hex} strokeWidth="2">
                     <title>{`${l.label} — semaine du ${buckets[i].toLocaleDateString("fr-FR")} : ${v}`}</title>
                   </circle>
                 ))}
@@ -1040,7 +1081,7 @@ function StatusDonut({ title, description, items, isDark }) {
 
           <ul className="mt-5 w-full space-y-2">
             {visible.map((item) => (
-              <li key={item.key} className={`flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-sm ${isDark ? "bg-[#112A3A]" : "bg-[#F6F9FB]"}`}>
+              <li key={item.key} className={`flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-sm ${isDark ? "bg-[#0A1230]" : "bg-[#F6F9FB]"}`}>
                 <span className={`flex items-center gap-2 font-medium ${isDark ? "text-slate-300" : "text-[#334B63]"}`}>
                   <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.hex }} />
                   {item.title}
@@ -1074,7 +1115,7 @@ function SkeletonRows() {
 function Row({ icon: Icon, tone = "slate", title, subtitle, meta, badge, to }) {
   const body = (
     <div className="group flex items-center gap-3 rounded-2xl px-2.5 py-2.5 transition hover:bg-[#F2F8F7] dark:hover:bg-white/5">
-      <span className={`relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-4 ring-white dark:ring-[#112A3A] ${TONES[tone]}`}>
+      <span className={`relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-4 ring-white dark:ring-[#131E47] ${TONES[tone]}`}>
         <Icon size={17} strokeWidth={1.9} />
       </span>
       <div className="min-w-0 flex-1">
@@ -1089,7 +1130,7 @@ function Row({ icon: Icon, tone = "slate", title, subtitle, meta, badge, to }) {
   );
 
   return to ? (
-    <Link to={to} className="block rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400">
+    <Link to={to} className="block rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16B8B1]">
       {body}
     </Link>
   ) : (
@@ -1106,8 +1147,7 @@ function RecentActivity({ events, loading, className = "" }) {
         <EmptyState icon={Activity} title="Aucune activité récente" text="Tes candidatures, publications et notifications apparaîtront ici." />
       ) : (
         <ul className="relative">
-          {/* ligne de timeline */}
-          <span className="absolute bottom-6 left-[30px] top-6 w-px bg-gradient-to-b from-emerald-200 via-slate-200 to-transparent dark:from-emerald-500/20 dark:via-white/5" aria-hidden="true" />
+          <span className="absolute bottom-6 left-[30px] top-6 w-px bg-gradient-to-b from-[#0B1F33]/20 via-slate-200 to-transparent dark:from-white/10 dark:via-white/5" aria-hidden="true" />
           {events.map((e) => (
             <li key={e.key}>
               <Row icon={e.icon} tone={e.tone} title={e.text} subtitle={e.detail} meta={timeAgo(e.date)} to={e.to} />
@@ -1127,7 +1167,7 @@ function ListPanel({ title, description, to, linkLabel, state, items, emptyIcon,
       action={
         <Link
           to={to}
-          className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-emerald-500/20"
+          className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#0B1F33]/5 px-3 py-1.5 text-xs font-bold text-[#0B1F33] transition hover:bg-[#0B1F33]/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16B8B1] dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
         >
           {linkLabel} <ChevronRight size={13} />
         </Link>
@@ -1163,8 +1203,8 @@ function ProfilePanel({ completion, nextStep, breakdown }) {
   const missing = Array.isArray(breakdown) ? breakdown.filter((item) => !item.done).slice(0, 4) : [];
 
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0B2A35] via-[#0B3A36] to-[#0E4B42] p-5 text-white shadow-[0_16px_40px_rgba(8,60,55,0.35)] sm:p-6">
-      <div className="pointer-events-none absolute -right-10 -top-10 h-44 w-44 rounded-full bg-emerald-400/25 blur-3xl" />
+    <div className="relative overflow-hidden rounded-3xl bg-[#0B1F33] p-5 text-white shadow-[0_16px_40px_rgba(11,31,51,0.25)] sm:p-6">
+      <div className="pointer-events-none absolute -right-10 -top-10 h-44 w-44 rounded-full bg-[#16B8B1]/20 blur-3xl" />
 
       <div className="relative">
         <h2 className="text-[15px] font-extrabold tracking-tight">Complétion du profil</h2>
@@ -1187,7 +1227,7 @@ function ProfilePanel({ completion, nextStep, breakdown }) {
               cy="50"
               r={radius}
               fill="none"
-              stroke="#34D399"
+              stroke="#16B8B1"
               strokeWidth="10"
               strokeLinecap="round"
               strokeDasharray={circumference}
@@ -1207,7 +1247,7 @@ function ProfilePanel({ completion, nextStep, breakdown }) {
         <ul className="relative mt-5 space-y-2">
           {missing.map((item) => (
             <li key={item.key} className="flex items-center gap-2.5 rounded-xl bg-white/[0.07] px-3 py-2 text-sm text-white/85">
-              <span className="h-4 w-4 shrink-0 rounded-full border-2 border-emerald-300/60" />
+              <span className="h-4 w-4 shrink-0 rounded-full border-2 border-[#16B8B1]/60" />
               {item.label}
             </li>
           ))}
@@ -1216,7 +1256,7 @@ function ProfilePanel({ completion, nextStep, breakdown }) {
 
       <Link
         to="/profile"
-        className="relative mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-emerald-400 px-4 py-3 text-sm font-extrabold text-[#04201C] transition hover:bg-emerald-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+        className="relative mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#16B8B1] px-4 py-3 text-sm font-extrabold text-[#0B1F33] transition hover:bg-[#16B8B1]/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
       >
         Compléter mon profil
         <ChevronRight size={16} />
@@ -1233,14 +1273,14 @@ function QuickLinksPanel({ links, wide = false, className = "" }) {
           <li key={to}>
             <Link
               to={to}
-              className="group flex h-full flex-col items-start gap-3 rounded-2xl bg-[#F4F8FA] p-4 transition hover:-translate-y-0.5 hover:bg-emerald-50 hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 dark:bg-[#0B1F33] dark:hover:bg-white/5"
+              className="group flex h-full flex-col items-start gap-3 rounded-2xl bg-[#F4F8FA] p-4 transition hover:-translate-y-0.5 hover:bg-[#0B1F33]/5 hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16B8B1] dark:bg-[#0A1230] dark:hover:bg-white/5"
             >
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#334B63] shadow-sm transition group-hover:bg-emerald-500 group-hover:text-white dark:bg-white/10 dark:text-white">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#334B63] shadow-sm transition group-hover:bg-[#0B1F33] group-hover:text-white dark:bg-white/10 dark:text-white">
                 <Icon size={18} strokeWidth={1.9} />
               </span>
               <span className="flex w-full items-center justify-between gap-2 text-[13px] font-bold leading-tight text-[#0B1F33] dark:text-slate-200">
                 {title}
-                <ArrowUpRight size={14} className="shrink-0 text-slate-300 transition group-hover:text-emerald-600 dark:text-slate-500 dark:group-hover:text-emerald-400" />
+                <ArrowUpRight size={14} className="shrink-0 text-slate-300 transition group-hover:text-[#0B1F33] dark:text-slate-500 dark:group-hover:text-white" />
               </span>
             </Link>
           </li>

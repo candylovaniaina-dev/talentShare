@@ -23,10 +23,10 @@ const LANG_LEVEL = {
 };
 
 const STATUS_CFG = {
-  available: { emoji: "🟢", label: "Disponible", badge: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" },
-  partially_available: { emoji: "🟡", label: "Partiel", badge: "border-amber-500/30 bg-amber-500/10 text-amber-300" },
-  on_mission: { emoji: "🔵", label: "En mission", badge: "border-blue-500/30 bg-blue-500/10 text-blue-300" },
-  unavailable: { emoji: "🔴", label: "Non disponible", badge: "border-rose-500/30 bg-rose-500/10 text-rose-300" },
+  available: { emoji: "🟢", label: "Disponible", badge: "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300" },
+  partially_available: { emoji: "🟡", label: "Partiel", badge: "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-300" },
+  on_mission: { emoji: "🔵", label: "En mission", badge: "border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-300" },
+  unavailable: { emoji: "🔴", label: "Non disponible", badge: "border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-300" },
 };
 const TYPE_LABEL = {
   full_time: "Temps plein", part_time: "Temps partiel", freelance: "Freelance",
@@ -45,12 +45,12 @@ const TABS = [
 ];
 
 const Card = ({ icon: Icon, title, children }) => (
-  <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl">
+  <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-[#131E47] dark:shadow-none">
     <div className="mb-4 flex items-center gap-3">
-      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">
+      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-[#0B1437] dark:bg-white/10 dark:text-[#7BE9D3]">
         <Icon size={18} />
       </span>
-      <h2 className="text-lg font-bold text-white">{title}</h2>
+      <h2 className="text-lg font-bold text-[#0B1437] dark:text-white">{title}</h2>
     </div>
     {children}
   </section>
@@ -60,8 +60,8 @@ const Chip = ({ children, tone = "default" }) => (
   <span
     className={`rounded-full border px-3 py-1 text-xs font-medium ${
       tone === "violet"
-        ? "border-violet-400/30 bg-violet-500/10 text-violet-300"
-        : "border-white/10 bg-white/5 text-slate-300"
+        ? "border-violet-400/30 bg-violet-500/10 text-violet-600 dark:text-violet-300"
+        : "border-slate-200 bg-slate-50 text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300"
     }`}
   >
     {children}
@@ -70,13 +70,13 @@ const Chip = ({ children, tone = "default" }) => (
 
 const IntroRow = ({ icon: Icon, children, green }) => (
   <li className="flex items-start gap-3 text-sm">
-    <Icon size={17} className={`mt-0.5 shrink-0 ${green ? "text-emerald-400" : "text-slate-500"}`} />
-    <span className={`min-w-0 break-words ${green ? "text-emerald-300" : "text-slate-300"}`}>{children}</span>
+    <Icon size={17} className={`mt-0.5 shrink-0 ${green ? "text-emerald-500 dark:text-emerald-400" : "text-slate-400 dark:text-slate-500"}`} />
+    <span className={`min-w-0 break-words ${green ? "text-emerald-600 dark:text-emerald-300" : "text-slate-600 dark:text-slate-300"}`}>{children}</span>
   </li>
 );
 
 const SideTitle = ({ icon: Icon, children }) => (
-  <p className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
+  <p className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
     <Icon size={14} /> {children}
   </p>
 );
@@ -88,8 +88,8 @@ function Glow({ fixed }) {
         fixed ? "" : "rounded-3xl"
       }`}
     >
-      <div className="absolute -left-32 top-10 h-[420px] w-[420px] rounded-full bg-emerald-500/10 blur-[120px]" />
-      <div className="absolute -right-32 top-1/2 h-[420px] w-[420px] rounded-full bg-blue-500/10 blur-[120px]" />
+      <div className="absolute -left-32 top-10 h-[420px] w-[420px] rounded-full bg-emerald-500/5 blur-[120px] dark:bg-emerald-500/10" />
+      <div className="absolute -right-32 top-1/2 h-[420px] w-[420px] rounded-full bg-blue-500/5 blur-[120px] dark:bg-blue-500/10" />
     </div>
   );
 }
@@ -98,7 +98,7 @@ function ProfileFrame({ user, children }) {
   if (user) {
     return (
       <AppShell>
-        <div className="relative mx-auto max-w-5xl rounded-3xl bg-[#0B1F33] font-sans text-white">
+        <div className="relative mx-auto max-w-5xl rounded-3xl bg-[#F3F6FC] font-sans text-[#0B1437] dark:bg-[#0A1230] dark:text-white">
           <Glow />
           <div className="relative z-10">{children}</div>
         </div>
@@ -106,9 +106,9 @@ function ProfileFrame({ user, children }) {
     );
   }
   return (
-    <div className="relative min-h-screen bg-[#0B1F33] font-sans text-white">
+    <div className="relative min-h-screen bg-[#F3F6FC] font-sans text-[#0B1437] dark:bg-[#0A1230] dark:text-white">
       <Glow fixed />
-      <PublicNavbar variant="dark" />
+      <PublicNavbar variant="light" />
       <div className="relative z-10 mx-auto max-w-5xl px-4 pt-[88px] pb-10">
         {children}
       </div>
@@ -174,7 +174,7 @@ export default function TalentProfile() {
     return (
       <ProfileFrame user={user}>
         <div className="flex h-[60vh] items-center justify-center">
-          <Loader2 className="animate-spin text-emerald-400" size={40} />
+          <Loader2 className="animate-spin text-[#0B1437] dark:text-[#7BE9D3]" size={40} />
         </div>
       </ProfileFrame>
     );
@@ -184,20 +184,20 @@ export default function TalentProfile() {
     return (
       <ProfileFrame user={user}>
         <div className="mx-auto max-w-2xl py-20 text-center">
-          <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full border border-white/10 bg-white/5">
-            <Lock size={28} className="text-slate-400" />
+          <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full border border-slate-200 bg-white dark:border-white/10 dark:bg-white/5">
+            <Lock size={28} className="text-slate-400 dark:text-slate-500" />
           </div>
-          <h1 className="text-2xl font-bold">
+          <h1 className="text-2xl font-bold text-[#0B1437] dark:text-white">
             {error === "private" ? "Profil privé" : "Profil introuvable"}
           </h1>
-          <p className="mt-2 text-slate-400">
+          <p className="mt-2 text-slate-500 dark:text-slate-400">
             {error === "private"
               ? "Cet utilisateur a choisi de garder son profil privé. Vous pourrez le voir une fois une relation établie (mission, conversation)."
               : "Ce profil n'existe pas ou a été supprimé."}
           </p>
           <button
             onClick={() => navigate(-1)}
-            className="mt-6 inline-flex items-center gap-1.5 rounded-full bg-emerald-500 px-6 py-2.5 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400"
+            className="mt-6 inline-flex items-center gap-1.5 rounded-full bg-[#0B1437] px-6 py-2.5 text-sm font-bold text-white transition hover:bg-[#143B55] dark:bg-[#7BE9D3] dark:text-[#0A1230] dark:hover:bg-[#5EDCC4]"
           >
             <ArrowLeft size={15} /> Retour
           </button>
@@ -209,7 +209,7 @@ export default function TalentProfile() {
   if (error || !profile) {
     return (
       <ProfileFrame user={user}>
-        <p className="py-20 text-center text-slate-400">Erreur de chargement</p>
+        <p className="py-20 text-center text-slate-500 dark:text-slate-400">Erreur de chargement</p>
       </ProfileFrame>
     );
   }
@@ -248,7 +248,7 @@ export default function TalentProfile() {
   const sections = {
     about: profile.bio ? (
       <Card key="about" icon={Sparkles} title="À propos">
-        <p className="whitespace-pre-line text-sm leading-relaxed text-slate-300">{profile.bio}</p>
+        <p className="whitespace-pre-line text-sm leading-relaxed text-slate-600 dark:text-slate-300">{profile.bio}</p>
       </Card>
     ) : null,
 
@@ -257,25 +257,25 @@ export default function TalentProfile() {
         <div className="space-y-5">
           {groupedSkills.map((group) => (
             <div key={group.name}>
-              <p className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">
+              <p className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                 {group.icon} {group.name}
               </p>
               <div className="grid gap-3 sm:grid-cols-2">
                 {group.items.map((s) => (
-                  <div key={s.id} className="rounded-xl border border-white/5 bg-white/5 p-3.5">
+                  <div key={s.id} className="rounded-xl border border-slate-100 bg-slate-50 p-3.5 dark:border-white/5 dark:bg-white/5">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-semibold text-white">{s.name}</p>
+                      <p className="text-sm font-semibold text-[#0B1437] dark:text-white">{s.name}</p>
                       {s.pivot?.is_featured && <Star size={14} className="fill-amber-400 text-amber-400" />}
                     </div>
-                    <p className="mt-0.5 text-xs text-slate-400">
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                       {LEVEL_LABEL[s.pivot?.level] || "Intermédiaire"}
                       {s.pivot?.years_experience
                         ? ` · ${s.pivot.years_experience} an${s.pivot.years_experience > 1 ? "s" : ""}`
                         : ""}
                     </p>
-                    <div className="mt-2.5 h-1.5 rounded-full bg-white/10">
+                    <div className="mt-2.5 h-1.5 rounded-full bg-slate-200 dark:bg-white/10">
                       <div
-                        className="h-1.5 rounded-full bg-emerald-400"
+                        className="h-1.5 rounded-full bg-[#0B1437] dark:bg-[#7BE9D3]"
                         style={{ width: `${LEVEL_PCT[s.pivot?.level] || 50}%` }}
                       />
                     </div>
@@ -293,7 +293,7 @@ export default function TalentProfile() {
         <div className="space-y-3">
           {profile.availability_windows.map((a) => {
             const st = STATUS_CFG[a.status] || {
-              emoji: "⚪", label: a.status, badge: "border-white/10 bg-white/5 text-slate-300",
+              emoji: "⚪", label: a.status, badge: "border-slate-200 bg-slate-50 text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300",
             };
             const typeLabel = TYPE_LABEL[a.type] || a.type;
             const locLabel = LOC_LABEL[a.location_type] || "";
@@ -305,17 +305,17 @@ export default function TalentProfile() {
             const isExpiringSoon = daysLeft > 0 && daysLeft <= 15;
 
             return (
-              <div key={a.id} className="rounded-xl border border-white/5 bg-white/5 p-4">
+              <div key={a.id} className="rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-white/5 dark:bg-white/5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                    <Calendar size={14} className="text-slate-500" />
+                  <div className="flex items-center gap-2 text-sm font-semibold text-[#0B1437] dark:text-white">
+                    <Calendar size={14} className="text-slate-400 dark:text-slate-500" />
                     {new Date(a.start_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}
-                    <span className="text-slate-500">→</span>
+                    <span className="text-slate-400 dark:text-slate-500">→</span>
                     {new Date(a.end_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}
                   </div>
                   <div className="flex items-center gap-2">
                     {isExpiringSoon && (
-                      <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-bold text-amber-300">
+                      <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-bold text-amber-600 dark:text-amber-300">
                         ⚠️ Expire dans {daysLeft}j
                       </span>
                     )}
@@ -337,11 +337,11 @@ export default function TalentProfile() {
                   {a.is_recurring && <Chip tone="violet">🔁 Récurrent ({a.recurrence_pattern})</Chip>}
                 </div>
 
-                {a.notes && <p className="mt-3 text-xs italic text-slate-400">"{a.notes}"</p>}
+                {a.notes && <p className="mt-3 text-xs italic text-slate-500 dark:text-slate-400">"{a.notes}"</p>}
 
                 {isActive && (
-                  <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
-                    <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+                  <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                    <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500 dark:bg-emerald-400" />
                     Période en cours
                   </div>
                 )}
@@ -356,13 +356,13 @@ export default function TalentProfile() {
       <Card key="experiences" icon={Briefcase} title="Expériences">
         <div className="space-y-5">
           {profile.experiences.map((exp) => (
-            <div key={exp.id} className="border-l-2 border-emerald-400/50 pl-4">
-              <p className="font-semibold text-white">{exp.title}</p>
-              <p className="text-sm text-slate-300">{exp.company}</p>
-              <p className="mt-1 text-xs text-slate-500">
+            <div key={exp.id} className="border-l-2 border-emerald-500/50 pl-4 dark:border-[#7BE9D3]/50">
+              <p className="font-semibold text-[#0B1437] dark:text-white">{exp.title}</p>
+              <p className="text-sm text-slate-600 dark:text-slate-300">{exp.company}</p>
+              <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
                 {exp.start_date?.slice(0, 7)} → {exp.is_current ? "Aujourd'hui" : exp.end_date?.slice(0, 7)}
               </p>
-              {exp.description && <p className="mt-2 text-sm text-slate-400">{exp.description}</p>}
+              {exp.description && <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{exp.description}</p>}
             </div>
           ))}
         </div>
@@ -373,11 +373,11 @@ export default function TalentProfile() {
       <Card key="educations" icon={GraduationCap} title="Formations">
         <div className="space-y-5">
           {profile.educations.map((edu) => (
-            <div key={edu.id} className="border-l-2 border-blue-400/50 pl-4">
-              <p className="font-semibold text-white">{edu.degree}</p>
-              <p className="text-sm text-slate-300">{edu.institution}</p>
-              {edu.field_of_study && <p className="text-xs text-slate-400">{edu.field_of_study}</p>}
-              <p className="mt-1 text-xs text-slate-500">
+            <div key={edu.id} className="border-l-2 border-blue-500/50 pl-4">
+              <p className="font-semibold text-[#0B1437] dark:text-white">{edu.degree}</p>
+              <p className="text-sm text-slate-600 dark:text-slate-300">{edu.institution}</p>
+              {edu.field_of_study && <p className="text-xs text-slate-500 dark:text-slate-400">{edu.field_of_study}</p>}
+              <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
                 {edu.start_date?.slice(0, 7)} → {edu.is_current ? "Aujourd'hui" : edu.end_date?.slice(0, 7)}
               </p>
             </div>
@@ -390,15 +390,15 @@ export default function TalentProfile() {
       <Card key="certifications" icon={Award} title="Certifications">
         <div className="grid gap-3 sm:grid-cols-2">
           {profile.certifications.map((c) => (
-            <div key={c.id} className="rounded-xl border border-white/5 bg-white/5 p-3.5">
-              <p className="font-semibold text-white">{c.name}</p>
-              <p className="text-sm text-slate-400">{c.issuing_organization}</p>
+            <div key={c.id} className="rounded-xl border border-slate-100 bg-slate-50 p-3.5 dark:border-white/5 dark:bg-white/5">
+              <p className="font-semibold text-[#0B1437] dark:text-white">{c.name}</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{c.issuing_organization}</p>
               {c.credential_url && (
                 <a
                   href={c.credential_url}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-emerald-400 hover:text-emerald-300"
+                  className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[#0B1437] hover:text-[#143B55] dark:text-[#7BE9D3] dark:hover:text-[#5EDCC4]"
                 >
                   Vérifier <ExternalLink size={11} />
                 </a>
@@ -413,9 +413,9 @@ export default function TalentProfile() {
       <Card key="projects" icon={FolderOpen} title="Projets & réalisations">
         <div className="grid gap-3 sm:grid-cols-2">
           {projects.map((p) => (
-            <div key={p.id} className="rounded-xl border border-white/5 bg-white/5 p-4">
-              <p className="font-semibold text-white">{p.title}</p>
-              {p.description && <p className="mt-1 line-clamp-2 text-sm text-slate-400">{p.description}</p>}
+            <div key={p.id} className="rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-white/5 dark:bg-white/5">
+              <p className="font-semibold text-[#0B1437] dark:text-white">{p.title}</p>
+              {p.description && <p className="mt-1 line-clamp-2 text-sm text-slate-500 dark:text-slate-400">{p.description}</p>}
               {p.technologies?.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   {p.technologies.map((t, i) => (
@@ -428,7 +428,7 @@ export default function TalentProfile() {
                   href={p.project_url}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-emerald-400 hover:text-emerald-300"
+                  className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[#0B1437] hover:text-[#143B55] dark:text-[#7BE9D3] dark:hover:text-[#5EDCC4]"
                 >
                   Voir <ExternalLink size={11} />
                 </a>
@@ -445,26 +445,21 @@ export default function TalentProfile() {
 
   return (
     <ProfileFrame user={user}>
-      {/* ===== CARTE PROFIL SANS BANNIÈRE (style Facebook) ===== */}
-      <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] backdrop-blur-xl">
-
-        {/* BOUTON RETOUR en haut */}
+      <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#131E47] dark:shadow-none">
         <div className="px-5 pt-5 sm:px-8 sm:pt-6">
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
+            className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm font-semibold text-[#0B1437] transition hover:bg-slate-100 dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
           >
             <ArrowLeft size={15} /> Retour
           </button>
         </div>
 
-        {/* Zone infos : avatar + infos côte à côte (PAS de bannière) */}
         <div className="px-5 py-6 sm:px-8 sm:py-8">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
-            {/* Avatar circulaire GRAND */}
             <div className="shrink-0">
               {profile.avatar_path ? (
-                <div className="h-32 w-32 overflow-hidden rounded-full border-4 border-white/10 ring-2 ring-emerald-400/40 sm:h-40 sm:w-40">
+                <div className="h-32 w-32 overflow-hidden rounded-full border-4 border-white ring-2 ring-[#0B1437]/20 dark:border-[#0A1230] dark:ring-[#7BE9D3]/40 sm:h-40 sm:w-40">
                   <img
                     src={`/storage/${profile.avatar_path}`}
                     alt={profile.user.name}
@@ -472,41 +467,39 @@ export default function TalentProfile() {
                   />
                 </div>
               ) : (
-                <div className="flex h-32 w-32 items-center justify-center rounded-full border-4 border-white/10 bg-gradient-to-br from-emerald-400 to-emerald-600 text-5xl font-bold text-white ring-2 ring-emerald-400/40 sm:h-40 sm:w-40 sm:text-6xl">
+                <div className="flex h-32 w-32 items-center justify-center rounded-full border-4 border-white bg-gradient-to-br from-[#8DF0DC] to-[#5EDCC4] text-5xl font-bold text-[#0A1230] ring-2 ring-[#0B1437]/20 dark:border-[#0A1230] dark:ring-[#7BE9D3]/40 sm:h-40 sm:w-40 sm:text-6xl">
                   {initials}
                 </div>
               )}
             </div>
 
-            {/* Infos à droite de l'avatar */}
             <div className="min-w-0 flex-1 sm:pt-2">
               <div className="flex flex-wrap items-center gap-2.5">
-                <h1 className="break-words text-2xl font-bold leading-tight text-white sm:text-4xl">
+                <h1 className="break-words text-2xl font-bold leading-tight text-[#0B1437] dark:text-white sm:text-4xl">
                   {profile.user.name}
                 </h1>
                 {profile.is_verified && (
-                  <span className="flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-300">
-                    <ShieldCheck size={12} /> Vérifié
+                  <span className="flex items-center gap-1 rounded-full border border-[#0B1437]/10 bg-[#0B1437]/5 px-2.5 py-0.5 text-[11px] font-semibold text-[#0B1437] dark:border-[#7BE9D3]/20 dark:bg-[#7BE9D3]/10 dark:text-[#7BE9D3]">
+                    Vérifié
                   </span>
                 )}
-                <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[11px] font-semibold text-slate-200">
-                  {isStudent ? <GraduationCap size={12} /> : <Briefcase size={12} />}
+                <span className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
                   {isStudent ? "Jeune talent" : "Talent"}
                 </span>
               </div>
 
               {profile.headline && (
-                <p className="mt-2 text-base font-semibold text-emerald-400">{profile.headline}</p>
+                <p className="mt-2 text-base font-semibold text-emerald-600 dark:text-[#7BE9D3]">{profile.headline}</p>
               )}
 
-              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-400">
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500 dark:text-slate-400">
                 {location && (
                   <span className="flex items-center gap-1.5">
                     <MapPin size={14} /> {location}
                   </span>
                 )}
                 {nextAvailLabel && (
-                  <span className="flex items-center gap-1.5 text-emerald-400">
+                  <span className="flex items-center gap-1.5 text-emerald-600 dark:text-[#7BE9D3]">
                     <Calendar size={14} /> Disponible dès {nextAvailLabel}
                   </span>
                 )}
@@ -520,21 +513,21 @@ export default function TalentProfile() {
                 {isOwner ? (
                   <Link
                     to="/profile"
-                    className="flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400"
+                    className="flex items-center gap-2 rounded-xl bg-[#0B1437] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#143B55] dark:bg-[#7BE9D3] dark:text-[#0A1230] dark:hover:bg-[#5EDCC4]"
                   >
                     <Pencil size={15} /> Modifier mon profil
                   </Link>
                 ) : (
                   <button
                     onClick={startConversation}
-                    className="flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-bold text-[#0B1F33] transition hover:bg-emerald-400"
+                    className="flex items-center gap-2 rounded-xl bg-[#0B1437] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#143B55] dark:bg-[#7BE9D3] dark:text-[#0A1230] dark:hover:bg-[#5EDCC4]"
                   >
                     <MessageSquare size={16} /> Proposer une connexion
                   </button>
                 )}
                 <button
                   onClick={share}
-                  className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-white/10"
+                  className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-[#0B1437] transition hover:bg-slate-100 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
                 >
                   {copied ? <Check size={15} /> : <Share2 size={15} />}
                   {copied ? "Lien copié !" : "Partager"}
@@ -542,8 +535,8 @@ export default function TalentProfile() {
               </div>
 
               {!user && (
-                <p className="mt-3 text-xs text-slate-500">
-                  <Link to="/login" className="text-slate-400 hover:text-emerald-300">
+                <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                  <Link to="/login" className="text-[#0B1437] hover:text-[#143B55] dark:text-[#7BE9D3]">
                     Connectez-vous
                   </Link>{" "}
                   pour contacter ce profil.
@@ -553,19 +546,18 @@ export default function TalentProfile() {
           </div>
         </div>
 
-        {/* Onglets */}
-        <nav className="flex gap-1 overflow-x-auto border-t border-white/10 px-5 sm:px-8">
+        <nav className="flex gap-1 overflow-x-auto border-t border-slate-200 px-5 dark:border-white/10 sm:px-8">
           {TABS.map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
               className={`relative whitespace-nowrap px-3.5 py-3.5 text-sm font-semibold transition ${
-                tab === t.id ? "text-emerald-400" : "text-slate-400 hover:text-white"
+                tab === t.id ? "text-[#0B1437] dark:text-[#7BE9D3]" : "text-slate-500 hover:text-[#0B1437] dark:text-slate-400 dark:hover:text-white"
               }`}
             >
               {t.label}
               {tab === t.id && (
-                <span className="absolute inset-x-3 bottom-0 h-[3px] rounded-full bg-emerald-400" />
+                <span className="absolute inset-x-3 bottom-0 h-[3px] rounded-full bg-[#0B1437] dark:bg-[#7BE9D3]" />
               )}
             </button>
           ))}
@@ -573,11 +565,11 @@ export default function TalentProfile() {
       </div>
 
       {!canSeeFull && (
-        <div className="mt-4 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200">
+        <div className="mt-4 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-700 dark:text-amber-200">
           <Lock size={18} className="mt-0.5 shrink-0" />
           <div>
             <p className="font-semibold">Profil en accès réseau limité</p>
-            <p className="mt-0.5 text-xs text-amber-200/80">
+            <p className="mt-0.5 text-xs text-amber-600/80 dark:text-amber-200/80">
               Connectez-vous ou établissez une relation (mission, conversation) pour voir toutes les informations.
             </p>
           </div>
@@ -586,10 +578,10 @@ export default function TalentProfile() {
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[300px_1fr]">
         <aside className="space-y-4 self-start lg:sticky lg:top-24">
-          <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl">
-            <h2 className="text-lg font-bold text-white">Intro</h2>
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-[#131E47] dark:shadow-none">
+            <h2 className="text-lg font-bold text-[#0B1437] dark:text-white">Intro</h2>
             <ul className="mt-4 space-y-3">
-              {profile.headline && <IntroRow icon={Briefcase}>{profile.headline}</IntroRow>}
+   
               {location && <IntroRow icon={MapPin}>{location}</IntroRow>}
               {nextAvailLabel && (
                 <IntroRow icon={Calendar} green>
@@ -601,12 +593,12 @@ export default function TalentProfile() {
             </ul>
 
             {canSeeFull && profile.languages?.length > 0 && (
-              <div className="mt-5 border-t border-white/10 pt-4">
+              <div className="mt-5 border-t border-slate-100 pt-4 dark:border-white/10">
                 <SideTitle icon={Languages}>Langues</SideTitle>
                 <div className="flex flex-wrap gap-2">
                   {profile.languages.map((l) => (
                     <Chip key={l.id}>
-                      {l.name} <span className="text-slate-500">· {LANG_LEVEL[l.level] || l.level}</span>
+                      {l.name} <span className="text-slate-400 dark:text-slate-500">· {LANG_LEVEL[l.level] || l.level}</span>
                     </Chip>
                   ))}
                 </div>
@@ -614,7 +606,7 @@ export default function TalentProfile() {
             )}
 
             {canSeeFull && hasLinks && (
-              <div className="mt-5 border-t border-white/10 pt-4">
+              <div className="mt-5 border-t border-slate-100 pt-4 dark:border-white/10">
                 <SideTitle icon={Globe}>Liens externes</SideTitle>
                 <div className="flex flex-wrap gap-2">
                   {[
@@ -630,7 +622,7 @@ export default function TalentProfile() {
                         href={url}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-200 transition hover:border-emerald-500/40 hover:text-emerald-300"
+                        className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-[#0B1437]/30 hover:text-[#0B1437] dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:border-[#7BE9D3]/40 dark:hover:text-[#7BE9D3]"
                       >
                         {name} <ExternalLink size={11} />
                       </a>
@@ -645,7 +637,7 @@ export default function TalentProfile() {
           {feed.length > 0 ? (
             feed
           ) : (
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-10 text-center text-sm text-slate-400">
+            <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500 dark:border-white/10 dark:bg-[#131E47] dark:text-slate-400">
               Rien à afficher pour le moment.
             </div>
           )}

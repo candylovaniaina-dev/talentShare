@@ -1,14 +1,10 @@
-
 import React, { useEffect, useMemo, useState } from "react";
-import { X, Search, Check, Users, UserRound, Mail, BriefcaseBusiness } from "lucide-react";
+import { X, Search, Check, Users, Mail, BriefcaseBusiness } from "lucide-react";
 
-function Avatar({ path, name, size = "md" }) {
-  const sizes = {
-    sm: "h-10 w-10 text-xs",
-    md: "h-12 w-12 text-sm",
-    lg: "h-14 w-14 text-base",
-  };
+const normalize = (s = "") =>
+  s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
+function Avatar({ path, name, selected }) {
   const initials = (name || "?")
     .trim()
     .split(/\s+/)
@@ -17,18 +13,22 @@ function Avatar({ path, name, size = "md" }) {
     .slice(0, 2)
     .toUpperCase();
 
+  const ring = selected ? "ring-teal-400" : "ring-slate-100";
+
   if (path) {
     return (
       <img
         src={`/storage/${path}`}
         alt={`Photo de ${name || "salarié"}`}
-        className={`${sizes[size]} shrink-0 rounded-2xl border border-slate-200 object-cover`}
+        className={`h-12 w-12 shrink-0 rounded-full object-cover ring-4 ${ring}`}
       />
     );
   }
 
   return (
-    <div className={`${sizes[size]} flex shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-800 to-teal-700 font-bold text-white`}>
+    <div
+      className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#0b3b44] to-teal-600 text-sm font-semibold text-white ring-4 ${ring}`}
+    >
       {initials}
     </div>
   );
@@ -46,7 +46,6 @@ export default function EmployeePickerModal({
     const onKey = (event) => {
       if (event.key === "Escape") onClose();
     };
-
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
@@ -75,20 +74,22 @@ export default function EmployeePickerModal({
   };
 
   const filtered = useMemo(() => {
-    const query = search.trim().toLowerCase();
-
+    const query = normalize(search.trim());
     return employees.filter((employee) => {
       if (!query) return true;
-
       const info = getInfo(employee);
-
       return (
-        info.name.toLowerCase().includes(query) ||
-        info.email.toLowerCase().includes(query) ||
-        info.position.toLowerCase().includes(query)
+        normalize(info.name).includes(query) ||
+        normalize(info.email).includes(query) ||
+        normalize(info.position).includes(query)
       );
     });
   }, [employees, search]);
+
+  const choose = (employee) => {
+    onSelect(employee);
+    onClose();
+  };
 
   return (
     <div
@@ -100,21 +101,27 @@ export default function EmployeePickerModal({
         aria-modal="true"
         aria-labelledby="employee-picker-title"
         onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-white/70 bg-slate-50 shadow-2xl shadow-slate-950/25"
+        className="flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl shadow-slate-950/30"
       >
-        <header className="border-b border-slate-200 bg-white px-5 py-5 sm:px-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-teal-50 text-teal-700 ring-1 ring-teal-100">
+        {/* ===== En-tête dégradé avec recherche ===== */}
+        <header className="relative overflow-hidden bg-gradient-to-br from-[#052e2b] via-[#0a4a43] to-teal-700 px-5 pb-5 pt-5 text-white sm:px-6">
+          <div className="pointer-events-none absolute -right-14 -top-16 h-48 w-48 rounded-full bg-emerald-400/20 blur-3xl" />
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.07]"
+            style={{ backgroundImage: "radial-gradient(#fff 1px, transparent 1px)", backgroundSize: "22px 22px" }}
+          />
+
+          <div className="relative flex items-start justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15">
                 <Users size={21} />
               </div>
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-teal-700">Équipe entreprise</p>
-                <h2 id="employee-picker-title" className="mt-1 text-lg font-bold tracking-tight text-slate-900">
+                <h2 id="employee-picker-title" className="text-lg font-semibold tracking-tight">
                   Choisir un collaborateur
                 </h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  {employees.length} collaborateur{employees.length > 1 ? "s" : ""} disponible{employees.length > 1 ? "s" : ""}
+                <p className="mt-0.5 text-sm text-teal-50/70">
+                  {employees.length} collaborateur{employees.length > 1 ? "s" : ""} disponible{employees.length > 1 ? "s" : ""} dans votre équipe
                 </p>
               </div>
             </div>
@@ -123,97 +130,103 @@ export default function EmployeePickerModal({
               type="button"
               aria-label="Fermer"
               onClick={onClose}
-              className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+              className="rounded-xl bg-white/10 p-2 text-white/80 transition hover:bg-white/20 hover:text-white"
             >
-              <X size={19} />
+              <X size={18} />
             </button>
           </div>
 
-          <div className="mt-5 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 transition focus-within:border-teal-400 focus-within:ring-4 focus-within:ring-teal-500/10">
+          <div className="relative mt-5 flex items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-lg shadow-black/10 transition focus-within:ring-4 focus-within:ring-emerald-300/40">
             <Search size={18} className="shrink-0 text-slate-400" />
             <input
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && filtered.length === 1) choose(filtered[0]);
+              }}
               placeholder="Nom, adresse e-mail ou poste…"
               aria-label="Rechercher un collaborateur"
               className="w-full bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
               autoFocus
             />
             {search && (
-              <button type="button" aria-label="Effacer la recherche" onClick={() => setSearch("")} className="rounded-lg p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700">
+              <button type="button" aria-label="Effacer la recherche" onClick={() => setSearch("")} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
                 <X size={14} />
               </button>
             )}
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-3 sm:p-4">
+        {/* ===== Liste ===== */}
+        <main className="flex-1 overflow-y-auto bg-slate-50/70 p-3 sm:p-4">
           {filtered.length === 0 ? (
             <div className="flex min-h-56 flex-col items-center justify-center px-6 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-50 to-emerald-100 text-teal-700 ring-1 ring-teal-100">
                 <Search size={24} />
               </div>
-              <h3 className="mt-4 text-sm font-bold text-slate-800">Aucun résultat</h3>
+              <h3 className="mt-4 text-sm font-semibold text-slate-800">Aucun résultat</h3>
               <p className="mt-1 max-w-xs text-sm leading-relaxed text-slate-500">
                 {employees.length === 0
                   ? "Aucun collaborateur n’est disponible pour le moment."
                   : "Essayez avec un autre nom, une adresse e-mail ou un intitulé de poste."}
               </p>
               {search && (
-                <button type="button" onClick={() => setSearch("")} className="mt-4 rounded-xl px-4 py-2 text-sm font-semibold text-teal-700 transition hover:bg-teal-50">
+                <button type="button" onClick={() => setSearch("")} className="mt-4 rounded-xl px-4 py-2 text-sm font-medium text-teal-700 transition hover:bg-teal-50">
                   Effacer la recherche
                 </button>
               )}
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="grid gap-2.5 sm:grid-cols-2">
               {filtered.map((employee) => {
                 const info = getInfo(employee);
-                const isSelected =
-                  String(info.profileId) === String(selectedId);
+                const isSelected = String(info.profileId) === String(selectedId);
 
                 return (
                   <button
                     key={employee.id}
                     type="button"
                     aria-pressed={isSelected}
-                    onClick={() => {
-                      onSelect(employee);
-                      onClose();
-                    }}
-                    className={`group flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition sm:gap-4 sm:p-4 ${
+                    onClick={() => choose(employee)}
+                    className={`group relative flex items-center gap-3.5 overflow-hidden rounded-2xl border p-3.5 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 ${
                       isSelected
-                        ? "border-teal-400 bg-teal-50/80 ring-2 ring-teal-500/10"
-                        : "border-slate-200 bg-white hover:border-teal-200 hover:bg-teal-50/30"
+                        ? "border-teal-400 bg-white shadow-md shadow-teal-900/5 ring-4 ring-teal-500/10"
+                        : "border-slate-200 bg-white hover:border-teal-200 hover:shadow-md hover:shadow-teal-900/5"
                     }`}
                   >
-                    <Avatar path={info.avatar} name={info.name} />
+                    <span
+                      className={`absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-teal-500 to-emerald-400 transition ${
+                        isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-60"
+                      }`}
+                    />
+
+                    <Avatar path={info.avatar} name={info.name} selected={isSelected} />
 
                     <div className="min-w-0 flex-1">
-                      <p className={`truncate text-sm font-bold ${isSelected ? "text-teal-900" : "text-slate-900"}`}>
-                        {info.name}
-                      </p>
+                      <p className="truncate text-sm font-semibold text-slate-900">{info.name}</p>
 
-                      <p className="mt-1 flex items-center gap-1.5 truncate text-xs text-slate-500">
+                      <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-teal-700">
                         <BriefcaseBusiness size={13} className="shrink-0" />
                         <span className="truncate">{info.position}</span>
                       </p>
 
                       {info.email && (
-                        <p className="mt-1 flex items-center gap-1.5 truncate text-xs text-slate-400">
+                        <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-400">
                           <Mail size={12} className="shrink-0" />
                           <span className="truncate">{info.email}</span>
                         </p>
                       )}
                     </div>
 
-                    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition ${
-                      isSelected
-                        ? "bg-teal-600 text-white"
-                        : "border border-slate-200 bg-white text-slate-300 group-hover:border-teal-200 group-hover:text-teal-600"
-                    }`}>
-                      <Check size={16} strokeWidth={2.5} />
+                    <span
+                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition ${
+                        isSelected
+                          ? "bg-teal-600 text-white"
+                          : "border border-slate-200 text-transparent group-hover:border-teal-300 group-hover:text-teal-500"
+                      }`}
+                    >
+                      <Check size={14} strokeWidth={2.5} />
                     </span>
                   </button>
                 );
@@ -222,11 +235,12 @@ export default function EmployeePickerModal({
           )}
         </main>
 
+        {/* ===== Pied ===== */}
         <footer className="flex items-center justify-between gap-3 border-t border-slate-200 bg-white px-5 py-4 sm:px-6">
           <p className="text-xs text-slate-500">
-            <span className="font-semibold text-slate-800">{filtered.length}</span> sur {employees.length} collaborateurs
+            <span className="font-semibold text-slate-800">{filtered.length}</span> sur {employees.length} collaborateur{employees.length > 1 ? "s" : ""}
           </p>
-          <button type="button" onClick={onClose} className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
+          <button type="button" onClick={onClose} className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
             Annuler
           </button>
         </footer>

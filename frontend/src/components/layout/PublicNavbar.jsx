@@ -13,12 +13,6 @@ const NAV_ITEMS = [
 
 const LANGUAGES = ["FR", "EN", "MG"];
 
-/**
- * Le thème (clair / sombre) est lu depuis ThemeContext : la barre s'adapte
- * automatiquement. La prop `variant` est conservée pour la compatibilité
- * avec les pages existantes, mais n'est plus nécessaire.
- */
-// eslint-disable-next-line no-unused-vars
 export default function PublicNavbar({ variant } = {}) {
   const { theme, toggleTheme } = useTheme();
   const { lang, setLang } = useLanguage();
@@ -79,29 +73,32 @@ export default function PublicNavbar({ variant } = {}) {
     }
   };
 
-  /* ---------- Styles (clair + sombre) ---------- */
+  /* ---------- Styles forcés ---------- */
+  
+  // Fond de la navbar : Blanc en clair, Bleu marine en sombre
   const shell =
-    "border-slate-200/80 bg-white/80 text-[#0B2229] shadow-[0_10px_40px_-12px_rgba(11,34,41,0.18)] " +
-    "dark:border-white/10 dark:bg-[#07272B]/75 dark:text-white dark:shadow-[0_10px_40px_-12px_rgba(0,0,0,0.6)]";
+    "border-slate-200/80 bg-white/90 text-[#102A43] shadow-[0_10px_40px_-12px_rgba(11,34,41,0.18)] backdrop-blur-xl " +
+    "dark:border-white/10 dark:bg-[#0A1230]/80 dark:text-white dark:shadow-[0_10px_40px_-12px_rgba(0,0,0,0.6)]";
 
   const linkClass = (active) =>
     `relative inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-[13px] font-semibold transition-colors ${
       active
-        ? "bg-emerald-500/10 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300"
-        : "text-slate-600 hover:bg-slate-900/5 hover:text-[#0B2229] dark:text-slate-300 dark:hover:bg-white/5 dark:hover:text-white"
+        ? "bg-emerald-500/10 text-emerald-700 dark:bg-[#7BE9D3]/15 dark:text-[#7BE9D3]"
+        : "text-slate-600 hover:bg-slate-900/5 hover:text-[#102A43] dark:text-slate-300 dark:hover:bg-white/5 dark:hover:text-white"
     }`;
 
   const iconButton =
-    "flex h-9 w-9 items-center justify-center rounded-full text-slate-600 transition-colors hover:bg-slate-900/5 hover:text-[#0B2229] " +
+    "flex h-9 w-9 items-center justify-center rounded-full text-slate-600 transition-colors hover:bg-slate-900/5 hover:text-[#102A43] " +
     "dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60";
 
   const ghostLink =
-    "rounded-full px-3.5 py-2 text-[13px] font-semibold text-slate-600 transition-colors hover:bg-slate-900/5 " +
-    "dark:text-slate-200 dark:hover:bg-white/5";
+    "rounded-full px-3.5 py-2 text-[13px] font-semibold text-slate-600 transition-colors hover:bg-slate-900/5 hover:text-[#102A43] " +
+    "dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white";
 
+  // ✅ LE BOUTON REJOINDRE EST BLEU MARINE (pas noir)
   const primaryLink =
-    "rounded-full bg-gradient-to-br from-emerald-300 to-emerald-500 px-4 py-2 text-[13px] font-bold text-[#04231D] " +
-    "shadow-[0_8px_22px_-8px_rgba(16,185,129,0.7)] transition hover:brightness-105";
+    "rounded-full bg-[#102A43] px-4 py-2 text-[13px] font-bold text-white shadow-[0_8px_22px_-8px_rgba(16,42,67,0.7)] transition hover:bg-[#1B3A59] " +
+    "dark:bg-[#7BE9D3] dark:text-[#0A1230] dark:hover:bg-[#5EDCC4]";
 
   const themeLabel =
     theme === "dark" ? "Activer le thème clair" : "Activer le thème sombre";
@@ -138,8 +135,8 @@ export default function PublicNavbar({ variant } = {}) {
             large ? "px-3 py-1.5 text-xs" : "px-2.5 py-1 text-[10px]"
           } ${
             lang === language
-              ? "bg-emerald-400 text-[#04231D]"
-              : "text-slate-500 hover:text-[#0B2229] dark:text-slate-400 dark:hover:text-white"
+              ? "bg-[#102A43] text-white dark:bg-[#5EDCC4] dark:text-[#0A1230]"
+              : "text-slate-500 hover:text-[#102A43] dark:text-slate-400 dark:hover:text-white"
           }`}
         >
           {language}
@@ -204,14 +201,14 @@ export default function PublicNavbar({ variant } = {}) {
             aria-label="TalentShare, accueil"
             className="group flex shrink-0 items-center gap-3"
           >
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-300 to-emerald-500 text-[#04231D] shadow-[0_8px_22px_-8px_rgba(16,185,129,0.8)] transition-transform group-hover:scale-105">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#102A43] text-white transition-transform group-hover:scale-105 dark:bg-[#7BE9D3] dark:text-[#0A1230]">
               <Layers size={20} strokeWidth={2.2} />
             </span>
             <span className="block leading-none">
               <span className="block text-[17px] font-extrabold tracking-[-0.03em]">
                 TalentShare
               </span>
-              <span className="mt-1 block text-[10px] font-medium text-slate-500 dark:text-emerald-200/60">
+              <span className="mt-1 block text-[10px] font-medium text-slate-500 dark:text-[#7BE9D3]">
                 Connecter les talents
               </span>
             </span>
@@ -232,7 +229,7 @@ export default function PublicNavbar({ variant } = {}) {
             <span className="mx-1 h-6 w-px bg-slate-200 dark:bg-white/10" />
 
             {loading ? (
-              <span className="h-9 w-28 animate-pulse rounded-full bg-slate-500/15" />
+              <span className="h-9 w-28 animate-pulse rounded-full bg-slate-500/15 dark:bg-white/10" />
             ) : user ? (
               <div className="flex items-center gap-2">
                 <Link to="/dashboard" className={ghostLink}>
@@ -240,7 +237,7 @@ export default function PublicNavbar({ variant } = {}) {
                 </Link>
                 <span
                   title={user.name || "Utilisateur"}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-emerald-300 to-emerald-500 text-sm font-bold text-[#04231D]"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-[#102A43] text-sm font-bold text-white dark:bg-[#7BE9D3] dark:text-[#0A1230]"
                 >
                   {user.name?.charAt(0)?.toUpperCase() || "U"}
                 </span>
@@ -265,7 +262,7 @@ export default function PublicNavbar({ variant } = {}) {
               onClick={() => setMobileOpen((current) => !current)}
               aria-label={mobileOpen ? "Fermer le menu" : "Ouvrir le menu"}
               aria-expanded={mobileOpen}
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-[#0B2229] transition-colors hover:bg-slate-900/5 dark:border-white/10 dark:text-white dark:hover:bg-white/5"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-[#102A43] transition-colors hover:bg-slate-900/5 dark:border-white/10 dark:text-white dark:hover:bg-white/5"
             >
               {mobileOpen ? <X size={18} /> : <Menu size={18} />}
             </button>
@@ -289,12 +286,12 @@ export default function PublicNavbar({ variant } = {}) {
             </div>
 
             {loading ? (
-              <div className="mt-3 h-11 animate-pulse rounded-full bg-slate-500/15" />
+              <div className="mt-3 h-11 animate-pulse rounded-full bg-slate-500/15 dark:bg-white/10" />
             ) : user ? (
               <Link
                 to="/dashboard"
                 onClick={() => setMobileOpen(false)}
-                className="mt-3 flex justify-center rounded-full bg-gradient-to-br from-emerald-300 to-emerald-500 px-4 py-3 text-sm font-bold text-[#04231D]"
+                className="mt-3 flex justify-center rounded-full bg-[#102A43] px-4 py-3 text-sm font-bold text-white dark:bg-[#7BE9D3] dark:text-[#0A1230]"
               >
                 Accéder à mon espace
               </Link>
@@ -303,14 +300,14 @@ export default function PublicNavbar({ variant } = {}) {
                 <Link
                   to="/login"
                   onClick={() => setMobileOpen(false)}
-                  className="flex justify-center rounded-full border border-slate-200 px-3 py-3 text-sm font-semibold text-[#0B2229] dark:border-white/15 dark:text-white"
+                  className="flex justify-center rounded-full border border-slate-200 px-3 py-3 text-sm font-semibold text-[#102A43] dark:border-white/15 dark:text-white"
                 >
                   Se connecter
                 </Link>
                 <Link
                   to="/register"
                   onClick={() => setMobileOpen(false)}
-                  className="flex justify-center rounded-full bg-gradient-to-br from-emerald-300 to-emerald-500 px-3 py-3 text-sm font-bold text-[#04231D]"
+                  className="flex justify-center rounded-full bg-[#102A43] px-3 py-3 text-sm font-bold text-white dark:bg-[#7BE9D3] dark:text-[#0A1230]"
                 >
                   Rejoindre
                 </Link>

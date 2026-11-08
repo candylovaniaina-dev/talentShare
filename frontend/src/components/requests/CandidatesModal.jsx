@@ -21,6 +21,7 @@ import MatchScoreBadge from "../MatchScoreBadge";
 import MatchExplanationModal from "../MatchExplanationModal";
 import { useToast } from "../../hooks/useToast";
 import Toast from "../ui/Toast";
+import useRequestProposals from "../../hooks/useRequestProposals";
 
 const asArray = (data) => {
   if (Array.isArray(data)) return data;
@@ -56,7 +57,14 @@ export default function CandidatesModal({
   requestTitle,
   onClose,
   embedded = false,
+  relations: externalRelations,
+  onChanged,
 }) {
+  // Si le parent ne fournit pas les relations, on les charge nous-mêmes
+  const own = useRequestProposals(requestId, !externalRelations);
+  const relations = externalRelations ?? own.byProfile;
+  const refreshRelations = onChanged ?? own.reload;
+
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -149,6 +157,7 @@ export default function CandidatesModal({
       setShowProposeModal(false);
       showToast("Proposition envoyée avec succès.", "success");
       loadCandidates();
+      await refreshRelations();
     } catch (err) {
       const status = err.response?.status;
       const msg = err.response?.data?.message;
@@ -159,6 +168,8 @@ export default function CandidatesModal({
           "Ce talent a déjà été proposé pour cette demande.",
           "warning"
         );
+        setShowProposeModal(false);
+        refreshRelations();
       } else if (code === "mission_overlap") {
         showToast(
           "Ce talent a déjà une mission sur cette période.",
@@ -384,6 +395,7 @@ export default function CandidatesModal({
               <CandidateCard
                 key={candidate.profile_id}
                 candidate={candidate}
+                relation={relations?.[String(candidate.profile_id)]}
                 onPropose={() => openPropose(candidate)}
                 onExplain={() => openExplain(candidate)}
               />
@@ -587,7 +599,7 @@ function Avatar({ candidate, size = "normal" }) {
   );
 }
 
-function CandidateCard({ candidate, onPropose, onExplain }) {
+function CandidateCard({ candidate, relation, onPropose, onExplain }) {
   const score = candidate.match?.total || 0;
   const breakdown = candidate.match?.breakdown || {};
 
@@ -607,6 +619,18 @@ function CandidateCard({ candidate, onPropose, onExplain }) {
               className="shrink-0 text-teal-600"
               aria-label="Profil professionnel"
             />
+
+            {relation && (
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                  relation.direction === "applied"
+                    ? "bg-emerald-50 text-emerald-700"
+                    : "bg-slate-100 text-slate-600"
+                }`}
+              >
+                {relation.direction === "applied" ? "A postulé" : "Déjà proposé"}
+              </span>
+            )}
           </div>
 
           {candidate.headline && (
@@ -665,14 +689,33 @@ function CandidateCard({ candidate, onPropose, onExplain }) {
           </button>
         </div>
 
-        <button
-          type="button"
-          onClick={onPropose}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-teal-800 focus:outline-none focus:ring-4 focus:ring-teal-600/15"
-        >
-          <Send size={14} />
-          Proposer ce talent
-        </button>
+        {relation?.direction === "applied" ? (
+          <Link
+            to={`/proposals/${relation.proposal.id}`}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100"
+          >
+            <CheckCircle2 size={14} />
+            A déjà postulé · Voir sa candidature
+          </Link>
+        ) : relation?.direction === "proposed" ? (
+          <button
+            type="button"
+            disabled
+            className="inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-4 py-2.5 text-xs font-semibold text-slate-500"
+          >
+            <CheckCircle2 size={14} />
+            Déjà proposé
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onPropose}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-teal-800 focus:outline-none focus:ring-4 focus:ring-teal-600/15"
+          >
+            <Send size={14} />
+            Proposer ce talent
+          </button>
+        )}
       </div>
     </article>
   );

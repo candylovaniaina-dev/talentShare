@@ -24,7 +24,7 @@ class AuthController extends Controller
     ]);
 }
 
-    public function register(RegisterRequest $request)
+         public function register(RegisterRequest $request)
     {
         $user = User::create([
             'name'     => $request->name,
@@ -33,6 +33,9 @@ class AuthController extends Controller
             'role'     => $request->role,
             'status'   => 'active',
         ]);
+
+        // ✅ Le profil pro est maintenant créé AUTOMATIQUEMENT par l'Observer
+        // (UserObserver::created)
 
         event(new \Illuminate\Auth\Events\Registered($user));
 

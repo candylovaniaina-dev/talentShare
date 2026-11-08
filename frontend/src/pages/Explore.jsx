@@ -19,19 +19,26 @@ const LEVEL_LABELS = {
   expert: "Expert",
 };
 
-/* ---------- Jetons de style (clair + sombre) ---------- */
-const PAGE = "bg-[#F2F7F5] text-[#0B2229] dark:bg-[#06191D] dark:text-white";
+/* ---------- Jetons de style ---------- */
+const PAGE = "bg-[#F3F6FC] text-[#0B1437] dark:bg-[#0A1230] dark:text-white transition-colors duration-300 font-sans";
+
 const CARD =
   "rounded-2xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(11,34,41,0.04),0_10px_30px_-12px_rgba(11,34,41,0.12)] " +
-  "dark:border-white/10 dark:bg-[#0B2A2F]/80 dark:shadow-none";
-const INK = "text-[#0B2229] dark:text-white";
-const MUTED = "text-slate-500 dark:text-slate-400";
+  "dark:border-white/10 dark:bg-[#131E47] dark:shadow-none transition-colors duration-300";
+
+const INK = "text-[#0B1437] dark:text-white";
+const MUTED = "text-[#5B6785] dark:text-[#A6B2D1]";
+
+// ✅ BOUTON PRINCIPAL : Vert menthe
 const BTN_PRIMARY =
-  "inline-flex items-center justify-center gap-1.5 rounded-full bg-gradient-to-br from-emerald-300 to-emerald-500 px-4 py-2.5 text-sm font-bold text-[#04231D] " +
-  "shadow-[0_8px_22px_-8px_rgba(16,185,129,0.7)] transition hover:brightness-105 focus:outline-none focus-visible:ring-4 focus-visible:ring-emerald-400/40";
+  "inline-flex items-center justify-center gap-1.5 rounded-full bg-gradient-to-br from-[#8DF0DC] to-[#5EDCC4] px-4 py-2.5 text-sm font-bold text-[#0A1230] " +
+  "shadow-[0_8px_22px_-8px_rgba(94,220,196,0.55)] transition hover:brightness-105 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#7BE9D3]/40";
+
+// ✅ BOUTON SECONDAIRE : Bordure fine
 const BTN_SECONDARY =
-  "inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition " +
-  "hover:border-emerald-500/50 hover:text-emerald-800 dark:border-white/15 dark:bg-white/5 dark:text-slate-200 dark:hover:border-emerald-300/40 dark:hover:text-emerald-300";
+  "inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-[#0B1437] transition " +
+  "hover:border-[#0B1437]/30 hover:text-[#0B1437] " +
+  "dark:border-white/15 dark:bg-white/5 dark:text-slate-200 dark:hover:border-[#7BE9D3]/40 dark:hover:text-[#7BE9D3]";
 
 const scoreColor = (score) => {
   if (score == null) return "border-slate-200 bg-slate-50 text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300";
@@ -43,13 +50,6 @@ const scoreColor = (score) => {
 
 const EMPTY_FILTERS = { available: false, remote: false, verified: false, advanced: false };
 
-/* ============================================================
-   ENTREPRISES : détection et enrichissement
-   La recherche /talents/search renvoie des profils. Pour savoir
-   lesquels sont des entreprises (et récupérer leur logo), on croise
-   avec la liste publique /companies : par propriétaire (owner_user_id),
-   puis, en dernier recours, par nom.
-============================================================ */
 const asArray = (data) => {
   if (Array.isArray(data)) return data;
   if (data && Array.isArray(data.data)) return data.data;
@@ -70,24 +70,28 @@ function buildCompanyIndex(list) {
   return { byOwner, byName };
 }
 
+// ✅ FONCTION CORRIGÉE : Détection infaillible
 function resolveCompany(item, index) {
   if (item.result_type !== "profile") return null;
 
   const userId = item.user_id ?? item.user?.id;
-  const roleSaysCompany =
-    item.user?.role === "company" || item.role === "company" || item.type === "company";
+  const userName = item.user?.name;
+  
+  // 1. On cherche l'entreprise par l'ID du propriétaire (le plus fiable)
+  let matched = userId != null ? index.byOwner.get(String(userId)) : null;
 
-  const matched =
-    (userId != null && index.byOwner.get(String(userId))) ||
-    index.byName.get(norm(item.user?.name)) ||
-    null;
+  // 2. Si on ne trouve pas, on cherche par nom
+  if (!matched && userName) {
+    matched = index.byName.get(norm(userName));
+  }
 
+  // 3. Si on a trouvé l'entreprise, c'est définitivement une entreprise
   if (matched) return matched;
 
-  // Le rôle indique une entreprise mais elle n'est pas dans /companies :
-  // on garde le badge « Entreprise », sans page publique.
-  if (roleSaysCompany) {
-    return { id: null, name: item.company_name || item.user?.name || "Entreprise" };
+  // 4. Si le rôle dit explicitement "company", on le croit
+  const role = item.user?.role || item.role || item.type;
+  if (role === "company") {
+    return { id: null, name: item.company_name || userName || "Entreprise", isFallback: true };
   }
 
   return null;
@@ -113,22 +117,12 @@ export default function Explore() {
   const [error, setError] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
-  /* Liste publique des entreprises (une seule fois) */
   useEffect(() => {
     let cancelled = false;
-
-    api
-      .get("/companies", { params: { per_page: 200 } })
-      .then((res) => {
-        if (!cancelled) setCompanies(asArray(res.data));
-      })
-      .catch(() => {
-        /* silencieux : sans cette liste, on retombe sur les infos du profil */
-      });
-
-    return () => {
-      cancelled = true;
-    };
+    api.get("/companies", { params: { per_page: 200 } })
+      .then((res) => { if (!cancelled) setCompanies(asArray(res.data)); })
+      .catch(() => {});
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
@@ -156,7 +150,6 @@ export default function Explore() {
 
   const companyIndex = useMemo(() => buildCompanyIndex(companies), [companies]);
 
-  /* Chaque profil reçoit `_company` s'il s'agit d'une entreprise */
   const enriched = useMemo(
     () => results.map((item) => ({ ...item, _company: resolveCompany(item, companyIndex) })),
     [results, companyIndex]
@@ -183,7 +176,6 @@ export default function Explore() {
   const countCompanies = enriched.filter(isCompanyItem).length;
   const countOffers = enriched.filter((item) => item.result_type === "offer").length;
 
-  /* La carte reçoit la ville du profil, ou celle de l'entreprise */
   const profilesForMap = filteredResults
     .filter((item) => item.result_type === "profile")
     .map((item) => ({
@@ -212,15 +204,15 @@ export default function Explore() {
         {!user && <PublicNavbar />}
 
         {/* Intro */}
-        <section className="relative isolate overflow-hidden border-b border-slate-200/70 bg-gradient-to-b from-[#EAF6F1] to-[#F2F7F5] dark:border-white/5 dark:from-[#072126] dark:to-[#06191D]">
-          <div className="pointer-events-none absolute -right-24 -top-40 -z-10 h-96 w-96 rounded-full bg-emerald-400/25 blur-3xl dark:bg-emerald-400/10" />
-          <div className="pointer-events-none absolute left-1/4 top-24 -z-10 h-56 w-56 rounded-full bg-teal-300/20 blur-3xl dark:bg-teal-400/10" />
+        <section className="relative isolate overflow-hidden border-b border-slate-200/70 bg-white dark:border-white/5 dark:bg-[#0A1230]">
+          <div className="pointer-events-none absolute -right-24 -top-40 -z-10 h-96 w-96 rounded-full bg-emerald-400/10 blur-3xl dark:bg-emerald-400/5" />
+          <div className="pointer-events-none absolute left-1/4 top-24 -z-10 h-56 w-56 rounded-full bg-teal-300/10 blur-3xl dark:bg-teal-400/5" />
           <div className={`mx-auto max-w-7xl px-5 pb-9 sm:px-8 sm:pb-11 ${user ? "pt-10 sm:pt-12" : "pt-28 sm:pt-32"}`}>
             <div className="max-w-3xl">
-              <p className="inline-flex items-center gap-2 rounded-full border border-emerald-600/20 bg-white/70 px-3 py-1.5 text-xs font-semibold text-emerald-800 backdrop-blur dark:border-emerald-300/20 dark:bg-white/5 dark:text-emerald-200">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Explorer le réseau
+              <p className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-[#0B1437] dark:border-white/10 dark:bg-white/5 dark:text-white">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#5EDCC4]" /> Explorer le réseau
               </p>
-              <h1 className="mt-5 max-w-2xl text-3xl font-extrabold tracking-[-0.04em] sm:text-4xl lg:text-[2.75rem] lg:leading-[1.1]">
+              <h1 className={`mt-5 max-w-2xl text-3xl font-extrabold tracking-[-0.04em] sm:text-4xl lg:text-[2.75rem] lg:leading-[1.1] ${INK}`}>
                 Les bonnes compétences sont déjà là.
               </h1>
               <p className={`mt-4 max-w-2xl text-base leading-7 sm:text-lg ${MUTED}`}>
@@ -242,7 +234,7 @@ export default function Explore() {
               <div className={`${CARD} p-3 sm:p-4`}>
                 <div className="flex flex-col gap-2.5 sm:flex-row">
                   <label className="flex min-h-12 flex-1 items-center gap-3 rounded-full border border-slate-200 bg-slate-50 px-5 transition focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-500/10 dark:border-white/10 dark:bg-white/5 dark:focus-within:border-emerald-400 dark:focus-within:bg-white/[0.07]">
-                    <Search size={18} className="shrink-0 text-emerald-600 dark:text-emerald-300" />
+                    <Search size={18} className="shrink-0 text-[#0B1437] dark:text-[#7BE9D3]" />
                     <input
                       value={search}
                       onChange={(event) => setSearch(event.target.value)}
@@ -262,13 +254,13 @@ export default function Explore() {
                     aria-expanded={showFilters}
                     className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-full border px-5 text-sm font-semibold transition ${
                       showFilters
-                        ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-800 dark:border-emerald-300/30 dark:bg-emerald-400/10 dark:text-emerald-300"
-                        : "border-slate-200 bg-white text-slate-700 hover:border-emerald-500/40 dark:border-white/15 dark:bg-white/5 dark:text-slate-200 dark:hover:border-emerald-300/40"
+                        ? "border-[#0B1437]/30 bg-[#0B1437]/10 text-[#0B1437] dark:border-[#7BE9D3]/30 dark:bg-[#7BE9D3]/10 dark:text-[#7BE9D3]"
+                        : "border-slate-200 bg-white text-[#0B1437] hover:border-[#0B1437]/30 dark:border-white/15 dark:bg-white/5 dark:text-slate-200 dark:hover:border-[#7BE9D3]/40"
                     }`}
                   >
                     <SlidersHorizontal size={16} /> Filtres
                     {activeFiltersCount > 0 && (
-                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-emerald-500 px-1 text-[11px] font-bold text-[#04231D]">
+                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#0B1437] px-1 text-[11px] font-bold text-white dark:bg-[#7BE9D3] dark:text-[#0A1230]">
                         {activeFiltersCount}
                       </span>
                     )}
@@ -296,8 +288,8 @@ export default function Explore() {
                             aria-pressed={active}
                             className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-semibold transition ${
                               active
-                                ? "border-emerald-500 bg-emerald-500 text-[#04231D] shadow-sm"
-                                : "border-slate-200 bg-white text-slate-600 hover:border-emerald-500/50 hover:text-emerald-800 dark:border-white/15 dark:bg-white/5 dark:text-slate-300 dark:hover:border-emerald-300/40 dark:hover:text-emerald-300"
+                                ? "border-[#0B1437] bg-[#0B1437] text-white shadow-sm dark:border-[#7BE9D3] dark:bg-[#7BE9D3] dark:text-[#0A1230]"
+                                : "border-slate-200 bg-white text-[#0B1437] hover:border-[#0B1437]/40 dark:border-white/15 dark:bg-white/5 dark:text-slate-300 dark:hover:border-[#7BE9D3]/40 dark:hover:text-white"
                             }`}
                           >
                             {active && <Check size={13} />}{chip.label}
@@ -311,7 +303,7 @@ export default function Explore() {
 
               {/* Onglets + compteur */}
               <div className="mt-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div role="tablist" aria-label="Type de résultat" className="flex w-fit flex-wrap items-center gap-1 rounded-full border border-slate-200 bg-white p-1 dark:border-white/10 dark:bg-[#0B2A2F]/80">
+                <div role="tablist" aria-label="Type de résultat" className="flex w-fit flex-wrap items-center gap-1 rounded-full border border-slate-200 bg-white p-1 dark:border-white/10 dark:bg-[#131E47]">
                   {tabs.map((tab) => (
                     <button
                       key={tab.id}
@@ -321,19 +313,19 @@ export default function Explore() {
                       onClick={() => setResultFilter(tab.id)}
                       className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
                         resultFilter === tab.id
-                          ? "bg-gradient-to-br from-emerald-300 to-emerald-500 text-[#04231D] shadow-sm"
+                          ? "bg-[#0B1437] text-white shadow-sm dark:bg-[#7BE9D3] dark:text-[#0A1230]"
                           : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-white/5"
                       }`}
                     >
                       {tab.label}
-                      <span className={`ml-1.5 ${resultFilter === tab.id ? "text-[#04231D]/60" : "text-slate-400"}`}>{tab.count}</span>
+                      <span className={`ml-1.5 ${resultFilter === tab.id ? "text-white/60 dark:text-[#0A1230]/60" : "text-slate-400"}`}>{tab.count}</span>
                     </button>
                   ))}
                 </div>
                 <p className={`min-h-5 text-sm ${MUTED}`} aria-live="polite">
                   {loading ? (
                     <span className="inline-flex items-center gap-2">
-                      <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+                      <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#0B1437] border-t-transparent dark:border-[#7BE9D3]" />
                       Recherche en cours…
                     </span>
                   ) : (
@@ -374,7 +366,7 @@ export default function Explore() {
                     <p className={`text-sm font-bold ${INK}`}>Le réseau près de vous</p>
                     <p className={`mt-1 text-xs ${MUTED}`}>Répartition géographique</p>
                   </div>
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0B1437]/5 text-[#0B1437] dark:bg-[#7BE9D3]/10 dark:text-[#7BE9D3]">
                     <Compass size={18} />
                   </span>
                 </div>
@@ -382,24 +374,24 @@ export default function Explore() {
                   <ExploreMap profiles={profilesForMap} />
                 </div>
                 <div className={`flex items-start gap-2 border-t border-slate-100 px-5 py-3.5 text-xs leading-5 dark:border-white/10 ${MUTED}`}>
-                  <LockKeyhole size={14} className="mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-300" />
+                  <LockKeyhole size={14} className="mt-0.5 shrink-0 text-[#0B1437] dark:text-[#7BE9D3]" />
                   Les zones sont approximatives : aucune adresse personnelle n’est affichée.
                 </div>
               </div>
 
-              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0B2A30] via-[#0A3B38] to-[#0B4A3F] p-5 text-white shadow-[0_16px_40px_-16px_rgba(6,60,50,0.7)]">
-                <div className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-emerald-400/25 blur-2xl" />
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0A1230] via-[#0D1740] to-[#111A4E] p-5 text-white shadow-[0_16px_40px_-16px_rgba(10,18,48,0.7)]">
+                <div className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-[#7BE9D3]/20 blur-2xl" />
                 <div className="relative">
                   <h2 className="text-base font-bold">Vous cherchez une compétence ?</h2>
                   <p className="mt-1.5 text-sm leading-6 text-slate-300">Décrivez votre besoin et trouvez le bon profil dans le réseau.</p>
-                  <Link to="/resource-requests/new" className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-emerald-300 to-emerald-500 px-4 py-3 text-sm font-bold text-[#04231D] transition hover:brightness-105 focus:outline-none focus:ring-4 focus:ring-emerald-300/30">
+                  <Link to="/resource-requests/new" className={`mt-4 inline-flex w-full items-center justify-center gap-2 ${BTN_PRIMARY}`}>
                     Créer une demande <ArrowRight size={15} />
                   </Link>
                 </div>
               </div>
 
               <div className={`${CARD} flex items-center gap-3 px-4 py-3.5 text-xs`}>
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-300">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-[#0B1437] dark:bg-white/10 dark:text-[#7BE9D3]">
                   <Users size={17} />
                 </span>
                 <span>
@@ -417,8 +409,8 @@ export default function Explore() {
 
 function TrustPill({ icon: Icon, children }) {
   return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:shadow-none">
-      <Icon size={14} className="text-emerald-600 dark:text-emerald-300" />{children}
+    <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-2 text-xs font-semibold text-[#0B1437] shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:shadow-none">
+      <Icon size={14} className="text-[#0B1437] dark:text-[#7BE9D3]" />{children}
     </span>
   );
 }
@@ -449,7 +441,6 @@ function TalentCard({ profile: p, viewer }) {
   const [imageFailed, setImageFailed] = useState(false);
   const showImage = Boolean(imageSrc) && !imageFailed;
 
-  // Pour une entreprise : secteur d'activité ; l'intitulé du profil n'est affiché que s'il apporte une info
   const headline = isCompany
     ? company.industry || (p.headline && norm(p.headline) !== norm(displayName) ? p.headline : "")
     : p.headline;
@@ -458,14 +449,14 @@ function TalentCard({ profile: p, viewer }) {
   const country = p.country || company?.country;
   const verified = isCompany ? Boolean(company.is_verified ?? p.is_verified) : Boolean(p.is_verified);
 
-  const companyPage = isCompany && company.id ? `/companies/${company.id}` : null;
+  const companyPage = isCompany && company.id ? `/entreprises/${company.id}` : null;
   const profilePage = isCompany ? companyPage : `/talents/${p.id}`;
 
   const ownerId = company?.owner_user_id;
   const canContact = Boolean(isCompany && viewer?.id && ownerId && String(ownerId) !== String(viewer.id));
 
   return (
-    <article className={`${CARD} group p-5 transition duration-200 hover:-translate-y-0.5 hover:border-emerald-400/50 dark:hover:border-emerald-300/30 sm:p-6`}>
+    <article className={`${CARD} group p-5 transition duration-200 hover:-translate-y-0.5 hover:border-[#0B1437]/20 dark:hover:border-[#7BE9D3]/30 sm:p-6`}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 items-start gap-4">
           <div className="relative shrink-0">
@@ -475,20 +466,22 @@ function TalentCard({ profile: p, viewer }) {
                 alt={displayName}
                 onError={() => setImageFailed(true)}
                 className={`h-14 w-14 rounded-2xl ring-1 ring-slate-200 dark:ring-white/10 ${isPrivate ? "opacity-70" : ""} ${
-                  isCompany ? "bg-white object-contain p-1.5" : "object-cover"
+                  isCompany ? "bg-white object-contain p-1.5 dark:bg-[#0A1230]" : "object-cover"
                 }`}
               />
             ) : (
               <div
-                className={`flex h-14 w-14 items-center justify-center rounded-2xl text-base font-bold text-white ${
-                  isCompany ? "bg-gradient-to-br from-indigo-500 to-indigo-800" : "bg-gradient-to-br from-emerald-400 to-teal-800"
+                className={`flex h-14 w-14 items-center justify-center rounded-2xl text-base font-bold ${
+                  isCompany
+                    ? "bg-gradient-to-br from-indigo-500 to-indigo-800 text-white"
+                    : "bg-gradient-to-br from-[#8DF0DC] to-[#5EDCC4] text-[#0A1230]"
                 } ${isPrivate ? "opacity-70" : ""}`}
               >
                 {initials}
               </div>
             )}
             {verified && (
-              <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-emerald-500 text-white dark:border-[#0B2A2F]">
+              <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-[#0B1437] text-white dark:border-[#0A1230] dark:bg-[#7BE9D3] dark:text-[#0A1230]">
                 <ShieldCheck size={11} />
               </span>
             )}
@@ -497,30 +490,30 @@ function TalentCard({ profile: p, viewer }) {
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               {isCompany ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 px-2.5 py-1 text-[11px] font-bold text-indigo-800 dark:bg-indigo-400/10 dark:text-indigo-300">
-                  <Briefcase size={11} /> Entreprise
+                <span className="inline-flex items-center rounded-full bg-[#0B1437]/5 px-2.5 py-1 text-[11px] font-bold text-[#0B1437] dark:bg-indigo-400/10 dark:text-indigo-300">
+                  Entreprise
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-800 dark:bg-emerald-400/10 dark:text-emerald-300">
-                  <User size={11} /> Talent
+                <span className="inline-flex items-center rounded-full bg-[#0B1437]/5 px-2.5 py-1 text-[11px] font-bold text-[#0B1437] dark:bg-[#7BE9D3]/10 dark:text-[#7BE9D3]">
+                  Talent
                 </span>
               )}
 
               {isPrivate && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:bg-white/10 dark:text-slate-300">
-                  <LockKeyhole size={10} /> Privé
+                <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:bg-white/10 dark:text-slate-300">
+                  Privé
                 </span>
               )}
               <h3 className={`w-full truncate text-base font-bold sm:w-auto sm:text-lg ${INK}`}>{displayName}</h3>
               {verified && (
-                <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                  <ShieldCheck size={13} /> Vérifié
+                <span className="inline-flex items-center text-xs font-medium text-[#0B1437] dark:text-[#7BE9D3]">
+                  Vérifié
                 </span>
               )}
             </div>
 
             {headline && (
-              <p className={`mt-1.5 text-sm font-medium ${isCompany ? "text-indigo-800 dark:text-indigo-300" : "text-emerald-800 dark:text-emerald-300"}`}>
+              <p className={`mt-1.5 text-sm font-medium ${isCompany ? "text-indigo-800 dark:text-indigo-300" : "text-[#0B1437] dark:text-[#7BE9D3]"}`}>
                 {headline}
               </p>
             )}
@@ -533,15 +526,11 @@ function TalentCard({ profile: p, viewer }) {
                 </span>
               )}
               {nextAvail && !isPrivate && !isCompany && (
-                <span className="inline-flex items-center gap-1.5 font-medium text-emerald-700 dark:text-emerald-300">
+                <span className="inline-flex items-center gap-1.5 font-medium text-[#0B1437] dark:text-[#7BE9D3]">
                   <CalendarCheck size={13} />Disponible dès {new Date(nextAvail.start_at).toLocaleDateString("fr-FR", { month: "short", day: "numeric" })}
                 </span>
               )}
             </div>
-
-            {isCompany && company.description && (
-              <p className={`mt-3 line-clamp-2 text-sm leading-6 ${MUTED}`}>{company.description}</p>
-            )}
 
             {!isPrivate && !isCompany && p.skills?.length > 0 && (
               <div className="mt-4 flex flex-wrap gap-1.5">
@@ -566,14 +555,14 @@ function TalentCard({ profile: p, viewer }) {
         {p.match_score != null && (
           <div className="flex shrink-0 items-center gap-2 sm:flex-col sm:items-end sm:gap-1">
             <span className={`rounded-full border px-3 py-1.5 text-sm font-bold ${scoreColor(p.match_score)}`}>{p.match_score}% match</span>
-            <span className="text-[11px] text-slate-400">score de correspondance</span>
+            <span className="text-[11px] text-slate-400 dark:text-slate-500">score de correspondance</span>
           </div>
         )}
       </div>
 
       <div className="mt-5 flex flex-col gap-3 border-t border-slate-100 pt-4 dark:border-white/10 sm:flex-row sm:items-center sm:justify-between">
         <span className={`inline-flex items-center gap-1.5 text-xs ${MUTED}`}>
-          <ShieldCheck size={14} className="text-emerald-600 dark:text-emerald-300" />
+          <ShieldCheck size={14} className="text-[#0B1437] dark:text-[#7BE9D3]" />
           {isCompany ? "Organisation du réseau" : isPrivate ? "Informations protégées" : "Coordonnées après accord"}
         </span>
 
@@ -613,13 +602,13 @@ function OfferCard({ offer: o }) {
   const initials = o.profile?.user?.name?.split(" ").map((part) => part[0]).join("").slice(0, 2) || "TS";
 
   return (
-    <article className={`${CARD} group p-5 transition duration-200 hover:-translate-y-0.5 hover:border-emerald-400/50 dark:hover:border-emerald-300/30 sm:p-6`}>
+    <article className={`${CARD} group p-5 transition duration-200 hover:-translate-y-0.5 hover:border-[#0B1437]/20 dark:hover:border-[#7BE9D3]/30 sm:p-6`}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 items-start gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0B2A30] to-emerald-600 text-base font-bold text-white">{initials}</div>
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0A1230] to-[#0D1740] text-base font-bold text-white dark:from-[#7BE9D3] dark:to-[#5EDCC4] dark:text-[#0A1230]">{initials}</div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 px-2.5 py-1 text-[11px] font-bold text-indigo-700 dark:bg-indigo-400/10 dark:text-indigo-300"><Briefcase size={11} /> Offre</span>
+              <span className="inline-flex items-center rounded-full bg-indigo-500/10 px-2.5 py-1 text-[11px] font-bold text-indigo-700 dark:bg-indigo-400/10 dark:text-indigo-300">Offre</span>
               <h3 className={`w-full text-base font-bold sm:w-auto sm:text-lg ${INK}`}>{o.title}</h3>
             </div>
             {o.profile?.user && (
@@ -633,7 +622,7 @@ function OfferCard({ offer: o }) {
               <span className="inline-flex items-center gap-1.5">
                 <Clock size={13} />{o.workload_value}{o.workload_unit === "percentage" ? "%" : o.workload_unit === "hours_per_week" ? " h/sem" : " j/sem"}
               </span>
-              {o.daily_rate && <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-700 dark:text-emerald-300"><Euro size={13} />{o.daily_rate}/jour</span>}
+              {o.daily_rate && <span className="inline-flex items-center gap-1.5 font-semibold text-[#0B1437] dark:text-[#7BE9D3]"><Euro size={13} />{o.daily_rate}/jour</span>}
             </div>
           </div>
         </div>
@@ -641,7 +630,7 @@ function OfferCard({ offer: o }) {
       </div>
 
       <div className="mt-5 flex flex-col gap-3 border-t border-slate-100 pt-4 dark:border-white/10 sm:flex-row sm:items-center sm:justify-between">
-        <span className={`inline-flex items-center gap-1.5 text-xs ${MUTED}`}><Layers3 size={14} className="text-emerald-600 dark:text-emerald-300" />Mise à disposition</span>
+        <span className={`inline-flex items-center gap-1.5 text-xs ${MUTED}`}><Layers3 size={14} className="text-[#0B1437] dark:text-[#7BE9D3]" />Mise à disposition</span>
         <Link to={`/resource-offers/${o.id}`} className={BTN_PRIMARY}>Voir le détail <ChevronRight size={15} /></Link>
       </div>
     </article>
@@ -650,7 +639,7 @@ function OfferCard({ offer: o }) {
 
 function EmptyState({ hasSearch, onReset }) {
   return (
-    <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center dark:border-white/15 dark:bg-[#0B2A2F]/50">
+    <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center dark:border-white/15 dark:bg-[#131E47]">
       <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-slate-300"><Search size={21} /></span>
       <h3 className={`mt-4 text-base font-bold ${INK}`}>Aucun résultat pour le moment</h3>
       <p className={`mx-auto mt-1.5 max-w-sm text-sm leading-6 ${MUTED}`}>Essayez d’élargir vos critères ou de modifier votre recherche pour découvrir d’autres profils.</p>

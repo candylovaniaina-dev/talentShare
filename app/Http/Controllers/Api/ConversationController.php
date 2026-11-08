@@ -10,36 +10,47 @@ use Illuminate\Http\Request;
 
 class ConversationController extends Controller
 {
-    public function index(Request $request)
-    {
-        $userId = $request->user()->id;
+public function index(Request $request)
+{
+    $userId = $request->user()->id;
 
-        $conversations = $request->user()->conversations()
-            ->wherePivot('is_archived', false)
+    // ✅ 1. On récupère les conversations
+    $conversations = $request->user()->conversations()
+        ->wherePivot('is_archived', false)
+        ->with([
+            'participants:id,name,email,avatar_path,role',
+            'participants.professionalProfile:id,user_id,avatar_path,headline',
+        ])
+        ->latest('conversations.updated_at')
+        ->get();
+
+    // ✅ 2. Pour chaque conversation, on va chercher LE VRAI dernier message manuellement
+    $conversations->each(function ($conv) use ($userId) {
+        // On prend le tout dernier message envoyé
+        $lastMessage = \App\Models\Message::where('conversation_id', $conv->id)
             ->with([
-                'participants:id,name,email,avatar_path,role',
-                'participants.professionalProfile:id,user_id,avatar_path,headline',
-                'messages' => fn ($q) => $q->latest()->limit(1),
-                'messages.sender:id,name,email,avatar_path,role',
-                'messages.sender.professionalProfile:id,user_id,avatar_path',
+                'sender:id,name,email,avatar_path,role',
+                'sender.professionalProfile:id,user_id,avatar_path',
             ])
-            ->latest('conversations.updated_at')
-            ->get();
+            ->orderBy('id', 'desc')
+            ->first();
 
-        $conversations->each(function ($conv) use ($userId) {
-            $lastReadAt = $conv->pivot->last_read_at ?? null;
+        // On l'attache à la conversation pour que React le lise dans conv.messages[0]
+        $conv->setRelation('messages', $lastMessage ? collect([$lastMessage]) : collect([]));
 
-            $conv->unread_count = \App\Models\Message::where('conversation_id', $conv->id)
-                ->where('sender_id', '!=', $userId)
-                ->when($lastReadAt, fn ($q) => $q->where('created_at', '>', $lastReadAt))
-                ->count();
+        // Calcul des non-lus
+        $lastReadAt = $conv->pivot->last_read_at ?? null;
+        $conv->unread_count = \App\Models\Message::where('conversation_id', $conv->id)
+            ->where('sender_id', '!=', $userId)
+            ->when($lastReadAt, fn ($q) => $q->where('created_at', '>', $lastReadAt))
+            ->count();
 
-            $conv->is_group = $conv->participants->count() > 2 || !empty($conv->title);
-            $conv->group_title = $conv->title;
-        });
+        $conv->is_group = $conv->participants->count() > 2 || !empty($conv->title);
+        $conv->group_title = $conv->title;
+    });
 
-        return $conversations;
-    }
+    return $conversations;
+}
 
     public function show(Request $request, Conversation $conversation)
     {

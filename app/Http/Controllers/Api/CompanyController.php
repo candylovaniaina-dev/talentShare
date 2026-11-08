@@ -257,17 +257,40 @@ class CompanyController extends Controller
         ]);
     }
 
-    public function employees(Company $company)
+      public function employees(Company $company)
     {
-        return response()->json([
-            'data' => $company->employees()
-                ->with(['user.professionalProfile'])
-                ->orderBy('created_at', 'desc')
-                ->get(),
-        ]);
-    }
+        $employees = $company->employees()
+            ->with(['user.professionalProfile'])
+            ->orderBy('created_at', 'desc')
+            ->get();
 
-    public function addEmployee(Request $request, Company $company)
+        // ✅ On s'assure que chaque salarié a un profil pro et est marqué comme "shareable"
+        $employees->transform(function ($emp) {
+            $profile = $emp->user?->professionalProfile;
+            
+            // Si le salarié a un compte utilisateur mais pas de profil pro, on le crée
+            if ($emp->user_id && !$profile) {
+                $profile = \App\Models\ProfessionalProfile::create([
+                    'user_id'      => $emp->user_id,
+                    'profile_type' => 'employee',
+                    'headline'     => $emp->position ?? 'Professionnel',
+                    'visibility'   => 'network',
+                ]);
+            }
+
+            // On injecte les données attendues par ta modale React
+            $emp->setAttribute('shareable', true); // 👈 On force à true pour qu'il s'affiche
+            $emp->setAttribute('professional_profile_id', $profile?->id ?? $emp->professional_profile_id);
+            $emp->setAttribute('name', $emp->user?->name ?? trim(($emp->first_name ?? '') . ' ' . ($emp->last_name ?? '')) ?: 'Salarié');
+            $emp->setAttribute('avatar_path', $emp->photo_path ?? $profile?->avatar_path);
+            $emp->setAttribute('headline', $profile?->headline ?? $emp->position);
+
+            return $emp;
+        });
+
+        return response()->json(['data' => $employees]);
+    }
+       public function addEmployee(Request $request, Company $company)
     {
         $this->authorize('update', $company);
 
@@ -281,6 +304,21 @@ class CompanyController extends Controller
 
         $user = User::where('email', $request->email)->first();
         $hasAccount = (bool) $user;
+        $profileId = null;
+
+        // ✅ Si l'utilisateur existe, on récupère ou crée son profil pro
+        if ($user) {
+            $profile = \App\Models\ProfessionalProfile::where('user_id', $user->id)->first();
+            if (!$profile) {
+                $profile = \App\Models\ProfessionalProfile::create([
+                    'user_id'      => $user->id,
+                    'profile_type' => 'employee',
+                    'headline'     => $request->position ?? 'Professionnel',
+                    'visibility'   => 'network',
+                ]);
+            }
+            $profileId = $profile->id;
+        }
 
         $existingEmployee = $company->employees()
             ->where(function ($query) use ($request, $user) {
@@ -297,15 +335,16 @@ class CompanyController extends Controller
         }
 
         $employee = $company->employees()->create([
-            'company_id' => $company->id,
-            'position'   => $request->position,
-            'status'     => 'active',
-            'email'      => $request->email,
-            'first_name' => $request->first_name,
-            'last_name'  => $request->last_name,
-            'phone'      => $request->phone,
-            'has_account'=> $hasAccount,
-            'user_id'    => $user?->id,
+            'company_id'              => $company->id,
+            'position'                => $request->position,
+            'status'                  => 'active',
+            'email'                   => $request->email,
+            'first_name'              => $request->first_name,
+            'last_name'               => $request->last_name,
+            'phone'                   => $request->phone,
+            'has_account'             => $hasAccount,
+            'user_id'                 => $user?->id,
+            'professional_profile_id' => $profileId, // ✅ On lie l'ID du profil ici
         ]);
 
         if ($user) {
@@ -315,17 +354,6 @@ class CompanyController extends Controller
                     'user_id' => $user->id,
                     'role'    => 'member',
                     'status'  => 'active',
-                ]);
-            }
-
-            // ✅ Créer le profil pro s'il n'existe pas
-            $profile = \App\Models\ProfessionalProfile::where('user_id', $user->id)->first();
-            if (!$profile) {
-                \App\Models\ProfessionalProfile::create([
-                    'user_id'      => $user->id,
-                    'profile_type' => 'employee',
-                    'headline'     => $request->position ?? 'Professionnel',
-                    'visibility'   => 'network',
                 ]);
             }
         }

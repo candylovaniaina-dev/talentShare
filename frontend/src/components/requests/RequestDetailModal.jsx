@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import {
   X, CheckCircle, MapPin, Building2, UserRound, CalendarDays,
   Banknote, FileText, Target, Send, Clock3, BriefcaseBusiness,
-  Monitor, Users, MessageCircle, AlertCircle, LoaderCircle,
+  Monitor, Users, MessageCircle, AlertCircle, LoaderCircle
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
@@ -10,6 +10,9 @@ import { useAuth } from "../../context/AuthContext";
 import CandidatesModal from "./CandidatesModal";
 import ApplyToRequestModal from "./ApplyToRequestModal";
 import SuccessOverlay from "./SuccessOverlay";
+import ProposalsList from "./ProposalsList";
+import useRequestProposals from "../../hooks/useRequestProposals";
+import ProposeTalentModal from "../resource-sharing/ProposeTalentModal";
 
 /* ============================================================
    HELPERS & CONSTANTES
@@ -35,7 +38,6 @@ const STATUS_STYLES = {
   expired: "bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-slate-400",
 };
 
-// ✅ Traduction des types de contrat
 const CONTRACT_LABELS = {
   stage: "Stage",
   alternance: "Alternance",
@@ -195,16 +197,33 @@ export default function RequestDetailModal({ requestId, onClose, autoOpenCandida
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [showCandidates, setShowCandidates] = useState(false);
-  const [showApply, setShowApply] = useState(false);
+  const [showRightPanel, setShowRightPanel] = useState(false);
+  const [rightPanelTab, setRightPanelTab] = useState("proposals"); // "proposals" ou "matching"
 
+  // Source unique des propositions (partagée entre les deux onglets)
+  const {
+    received: receivedProposals,
+    sent: sentProposals,
+    byProfile: proposalsByProfile,
+    loading: proposalsLoading,
+    reload: reloadProposals,
+  } = useRequestProposals(requestId);
+
+  const [showApply, setShowApply] = useState(false);
   const [alreadyApplied, setAlreadyApplied] = useState(false);
   const [checkingApplied, setCheckingApplied] = useState(true);
 
   const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
   const [successTitle, setSuccessTitle] = useState("Candidature envoyée");
+    const [showProposeEmployee, setShowProposeEmployee] = useState(false);
+  const [myCompanies, setMyCompanies] = useState([]);
+  useEffect(() => {
+    if (!user || !(user.role === "company" || user.role === "entreprise")) return;
+    api.get("/companies/my/all")
+      .then((r) => setMyCompanies(Array.isArray(r.data) ? r.data : r.data?.data || []))
+      .catch(() => setMyCompanies([]));
+  }, [user]);
 
-  /* Chargement de la demande */
   useEffect(() => {
     let active = true;
     setLoading(true);
@@ -226,7 +245,6 @@ export default function RequestDetailModal({ requestId, onClose, autoOpenCandida
     return () => { active = false; };
   }, [requestId]);
 
-  /* Vérification de la candidature existante */
   useEffect(() => {
     if (!request || !user) {
       setCheckingApplied(false);
@@ -253,21 +271,22 @@ export default function RequestDetailModal({ requestId, onClose, autoOpenCandida
     return () => { active = false; };
   }, [request, user]);
 
-  /* Ouverture automatique des candidats pour le propriétaire */
   useEffect(() => {
     if (!request || !user) return;
     const isOwner =
       user.id === request.created_by ||
       (user.role === "company" && user.companies?.some((company) => company.id === request.company_id));
-    if (autoOpenCandidates && isOwner) setShowCandidates(true);
+    if (autoOpenCandidates && isOwner) {
+      setShowRightPanel(true);
+      setRightPanelTab("proposals");
+    }
   }, [request, user, autoOpenCandidates]);
 
-  /* Fermeture avec Échap */
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     const onKeyDown = (event) => {
       if (event.key !== "Escape" || showSuccessOverlay) return;
-      if (showCandidates) setShowCandidates(false);
+      if (showRightPanel) setShowRightPanel(false);
       else if (showApply) setShowApply(false);
       else onClose();
     };
@@ -277,7 +296,7 @@ export default function RequestDetailModal({ requestId, onClose, autoOpenCandida
       window.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = previousOverflow;
     };
-  }, [onClose, showCandidates, showApply, showSuccessOverlay]);
+  }, [onClose, showRightPanel, showApply, showSuccessOverlay]);
 
   const handleDiscuss = () => {
     const ownerId = request?.author?.id || request?.created_by;
@@ -293,7 +312,6 @@ export default function RequestDetailModal({ requestId, onClose, autoOpenCandida
     setShowSuccessOverlay(true);
   };
 
-  /* État de chargement */
   if (loading) {
     return (
       <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
@@ -306,7 +324,6 @@ export default function RequestDetailModal({ requestId, onClose, autoOpenCandida
     );
   }
 
-  /* Gestion des erreurs */
   if (error || !request) {
     const forbidden = error === "forbidden";
     const notFound = error === "not_found";
@@ -328,7 +345,6 @@ export default function RequestDetailModal({ requestId, onClose, autoOpenCandida
     );
   }
 
-  /* Permissions et données */
   const isOwner =
     user?.id === request.created_by ||
     (user?.role === "company" && user?.companies?.some((company) => company.id === request.company_id));
@@ -336,18 +352,18 @@ export default function RequestDetailModal({ requestId, onClose, autoOpenCandida
   const isCompanyRole = user?.role === "company" || user?.role === "entreprise";
   const isTalentRole = user?.role === "employee" || user?.role === "student";
   const isTalentRequest = request.author_type === "talent";
-  
-  // ✅ EST-CE UN CDI ? (vérifie aussi si la fin est nulle, pour forcer l'affichage)
-  const isCDI = 
-    request.contract_type === "emploi" || 
-    request.contract_type === "cdi" || 
+
+  const isCDI =
+    request.contract_type === "emploi" ||
+    request.contract_type === "cdi" ||
     request.contract_type === "CDI" ||
     (request.contract_type && String(request.contract_type).toLowerCase().includes("emploi")) ||
     (!request.end_at && request.start_at);
 
-  const canSeeTalents = isOwner && !isTalentRequest && isCompanyRole;
+  const canSeeRightPanel = isOwner && !isTalentRequest && isCompanyRole;
   const canApply = !isOwner && isTalentRole && !isTalentRequest;
   const canProposeTalent = !isOwner && isCompanyRole && isTalentRequest;
+   const canProposeEmployee = !isOwner && isCompanyRole && !isTalentRequest && myCompanies.length > 0;
 
   const isExpiringSoon = request.days_until_expiry != null && request.days_until_expiry <= 7 && request.days_until_expiry >= 0 && request.display_status === "published";
 
@@ -363,7 +379,14 @@ export default function RequestDetailModal({ requestId, onClose, autoOpenCandida
   const matchedSkills = request.matched_skills ?? null;
   const skillsText = matchedSkills !== null && skillsList.length > 0 ? `${matchedSkills} compétence${Number(matchedSkills) > 1 ? "s" : ""} sur ${skillsList.length} correspondent` : null;
 
-  const maxWidth = showCandidates ? "max-w-[1100px]" : "max-w-3xl";
+  const maxWidth = showRightPanel ? "max-w-[1100px]" : "max-w-3xl";
+
+  const tabClass = (active) =>
+    `flex-1 border-b-2 px-4 py-3 text-sm font-bold transition ${
+      active
+        ? "border-emerald-600 text-emerald-700 dark:text-emerald-400"
+        : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-white"
+    }`;
 
   return (
     <>
@@ -371,15 +394,12 @@ export default function RequestDetailModal({ requestId, onClose, autoOpenCandida
         <button type="button" aria-label="Fermer la fenêtre" onClick={onClose} className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" />
 
         <div className={`relative z-10 flex w-full items-stretch justify-center gap-4 ${maxWidth}`}>
-          
+
           {/* Panneau principal */}
-          <div className={`flex max-h-[94vh] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-white/10 dark:bg-[#112A3A] ${showCandidates ? "hidden w-full lg:flex lg:w-1/2" : "w-full"}`}>
-            
-            {/* Header */}
+          <div className={`flex max-h-[94vh] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-white/10 dark:bg-[#112A3A] ${showRightPanel ? "hidden w-full lg:flex lg:w-1/2" : "w-full"}`}>
+
             <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-5 py-3.5 dark:border-white/10 sm:px-6">
               <div className="flex min-w-0 items-center gap-3">
-                
-                {/* AVATAR DYNAMIQUE DANS LE HEADER */}
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
                   {isTalentRequest ? (
                     request.author?.professional_profile?.avatar_path || request.author?.avatar_path ? (
@@ -411,8 +431,7 @@ export default function RequestDetailModal({ requestId, onClose, autoOpenCandida
 
             <div className="min-h-0 flex-1 overflow-y-auto">
               <div className="space-y-4 bg-slate-50/70 p-4 dark:bg-[#0B1F33]/40 sm:p-6">
-                
-                {/* Présentation */}
+
                 <Card className="overflow-hidden">
                   <div className="p-5 sm:p-6">
                     <div className="flex flex-wrap items-center gap-2">
@@ -500,7 +519,6 @@ export default function RequestDetailModal({ requestId, onClose, autoOpenCandida
                   </div>
                 </Card>
 
-                {/* Compatibilité */}
                 {showMatch && (
                   <Card className="p-5 sm:p-6">
                     <SectionHeading title="Compatibilité de votre profil" subtitle="Estimation de la correspondance avec les besoins de cette demande." icon={Target} />
@@ -526,7 +544,6 @@ export default function RequestDetailModal({ requestId, onClose, autoOpenCandida
                   </Card>
                 )}
 
-                {/* Description et domaines */}
                 {(request.description || tagsList.length > 0) && (
                   <Card className="p-5 sm:p-6">
                     {request.description && (
@@ -556,7 +573,6 @@ export default function RequestDetailModal({ requestId, onClose, autoOpenCandida
                   </Card>
                 )}
 
-                {/* Compétences */}
                 {skillsList.length > 0 && (
                   <Card className="p-5 sm:p-6">
                     <SectionHeading title="Compétences requises" subtitle="Les compétences associées à cette demande." icon={Target} />
@@ -576,25 +592,16 @@ export default function RequestDetailModal({ requestId, onClose, autoOpenCandida
                   </Card>
                 )}
 
-                {/* ✅ INFORMATIONS PRATIQUES (Corrigé pour le CDI) */}
                 <Card className="p-5 sm:p-6">
                   <SectionHeading title="Informations pratiques" subtitle="Période, charge de travail et modalités." icon={BriefcaseBusiness} />
                   <dl className="overflow-hidden rounded-xl border border-slate-200 dark:border-white/10">
-                    {/* Ajout du type de contrat avec fallback */}
-                    <DetailRow 
-                      label="Type de contrat" 
-                      value={CONTRACT_LABELS[request.contract_type] || request.contract_type || "Non précisé"} 
-                    />
-                    
+                    <DetailRow label="Type de contrat" value={CONTRACT_LABELS[request.contract_type] || request.contract_type || "Non précisé"} />
                     <DetailRow label="Début" value={formatDate(request.start_at)} />
-                    
-                    {/* ✅ Si c'est un CDI, on n'affiche pas la date de fin */}
                     {isCDI ? (
                       <DetailRow label="Fin" value="Indéterminée (CDI)" />
                     ) : (
                       <DetailRow label="Fin" value={formatDate(request.end_at)} />
                     )}
-                    
                     <DetailRow label="Charge de travail" value={request.workload_percent != null ? `${request.workload_percent}%${request.remote ? " · Télétravail" : ""}` : request.remote ? "Non précisée · Télétravail" : "Non précisée"} />
                     <DetailRow label="Localisation" value={[request.city, request.country].filter(Boolean).join(", ") || "Non précisée"} />
                     <DetailRow label="Nombre de postes" value={request.positions_count || 1} />
@@ -603,26 +610,30 @@ export default function RequestDetailModal({ requestId, onClose, autoOpenCandida
                 </Card>
               </div>
 
-              {/* Pied de page et actions */}
               <div className="border-t border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#112A3A] sm:px-6 sm:py-5">
                 <div className="mb-4">
                   <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                     {isOwner ? "Gestion de la demande" : "Vous êtes intéressé ?"}
                   </h3>
                   <p className="mt-1 text-sm leading-5 text-slate-500 dark:text-slate-400">
-                    {canSeeTalents && "Consultez les profils des talents correspondant à cette demande."}
+                    {canSeeRightPanel && "Consultez les propositions reçues ou proposez de nouveaux talents."}
                     {canApply && !alreadyApplied && "Envoyez votre candidature pour manifester votre intérêt."}
                     {canApply && alreadyApplied && "Votre candidature a déjà été envoyée. Vous pouvez consulter son suivi."}
                     {!isOwner && !isTalentRequest && !canApply && "Contactez l'auteur de la demande pour échanger à propos de cette opportunité."}
-                    {canProposeTalent && "Proposez une offre adaptée à ce profil."}
-                    {isOwner && !canSeeTalents && "Consultez les informations de votre demande."}
+                  {canProposeTalent && "Proposez une offre adaptée à ce profil."}
+{canProposeEmployee && "Proposez l'un de vos salariés pour cette demande."}
                   </p>
                 </div>
 
                 <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                  {canSeeTalents && !showCandidates && (
-                    <ActionButton onClick={() => setShowCandidates(true)} icon={Users} className="w-full sm:w-auto">
-                      Voir les talents
+
+                  {canSeeRightPanel && !showRightPanel && (
+                    <ActionButton
+                      onClick={() => { setRightPanelTab("proposals"); setShowRightPanel(true); }}
+                      icon={Users}
+                      className="w-full sm:w-auto"
+                    >
+                      Voir les propositions{receivedProposals.length > 0 ? ` (${receivedProposals.length})` : ""}
                     </ActionButton>
                   )}
 
@@ -643,6 +654,14 @@ export default function RequestDetailModal({ requestId, onClose, autoOpenCandida
                       Proposer une offre
                     </ActionButton>
                   )}
+                  
+  {/* ✅ AJOUT d) */}
+  {canProposeEmployee && (
+    <ActionButton onClick={() => setShowProposeEmployee(true)} icon={Users} className="w-full sm:w-auto">
+      Proposer un salarié
+    </ActionButton>
+  )}
+
 
                   {!isOwner && !isTalentRequest && (
                     <ActionButton onClick={handleDiscuss} icon={MessageCircle} className="w-full sm:w-auto">
@@ -658,28 +677,103 @@ export default function RequestDetailModal({ requestId, onClose, autoOpenCandida
             </div>
           </div>
 
-          {/* Panneau des candidats */}
-          {showCandidates && canSeeTalents && (
+          {/* PANNEAU DE DROITE (desktop) : Propositions ou Matching */}
+          {showRightPanel && canSeeRightPanel && (
             <div className="hidden max-h-[94vh] w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-white/10 dark:bg-[#112A3A] lg:flex lg:w-1/2">
-              <CandidatesModal requestId={request.id} requestTitle={request.title} onClose={() => setShowCandidates(false)} embedded />
+              <div className="flex items-center border-b border-slate-100 px-4 pt-2 dark:border-white/10">
+                <button type="button" onClick={() => setRightPanelTab("proposals")} className={tabClass(rightPanelTab === "proposals")}>
+                  Propositions reçues ({receivedProposals.length})
+                </button>
+                <button type="button" onClick={() => setRightPanelTab("matching")} className={tabClass(rightPanelTab === "matching")}>
+                  Matching Talents
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowRightPanel(false)}
+                  aria-label="Fermer le panneau"
+                  className="ml-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/10"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="min-h-0 flex-1 overflow-y-auto">
+                {rightPanelTab === "proposals" ? (
+                  <div className="p-5">
+                    <ProposalsList received={receivedProposals} sent={sentProposals} loading={proposalsLoading} />
+                  </div>
+                ) : (
+                  <CandidatesModal
+                    requestId={request.id}
+                    requestTitle={request.title}
+                    onClose={() => setShowRightPanel(false)}
+                    relations={proposalsByProfile}
+                    onChanged={reloadProposals}
+                    embedded
+                  />
+                )}
+              </div>
             </div>
           )}
         </div>
 
-        {/* Version mobile du panneau des candidats */}
-        {showCandidates && canSeeTalents && (
+        {/* PANNEAU MOBILE (plein écran) */}
+        {showRightPanel && canSeeRightPanel && (
           <div className="fixed inset-0 z-[55] overflow-y-auto bg-white dark:bg-[#112A3A] lg:hidden">
-            <CandidatesModal requestId={request.id} requestTitle={request.title} onClose={() => setShowCandidates(false)} />
+            <div className="flex items-center border-b border-slate-100 px-4 pt-2 dark:border-white/10">
+              <button type="button" onClick={() => setRightPanelTab("proposals")} className={tabClass(rightPanelTab === "proposals")}>
+                Propositions ({receivedProposals.length})
+              </button>
+              <button type="button" onClick={() => setRightPanelTab("matching")} className={tabClass(rightPanelTab === "matching")}>
+                Matching
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowRightPanel(false)}
+                aria-label="Fermer le panneau"
+                className="ml-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/10"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {rightPanelTab === "proposals" ? (
+              <div className="p-5">
+                <ProposalsList received={receivedProposals} sent={sentProposals} loading={proposalsLoading} />
+              </div>
+            ) : (
+              <CandidatesModal
+                requestId={request.id}
+                requestTitle={request.title}
+                onClose={() => setShowRightPanel(false)}
+                relations={proposalsByProfile}
+                onChanged={reloadProposals}
+              />
+            )}
           </div>
         )}
 
-        {/* Formulaire de candidature */}
         {showApply && (
           <ApplyToRequestModal request={request} onClose={() => setShowApply(false)} onSuccess={handleApplySuccess} />
         )}
+         {showProposeEmployee && (
+    <div className="relative z-[70]">
+      <ProposeTalentModal
+        myCompanies={myCompanies}
+        targetCompany={request.company}
+        resourceRequest={request}
+        onClose={() => setShowProposeEmployee(false)}
+        onSaved={() => {
+          setShowProposeEmployee(false);
+          setAlreadyApplied(true);
+          setSuccessTitle("Proposition envoyée");
+          setShowSuccessOverlay(true);
+        }}
+      />
+    </div>
+  )}
       </div>
 
-      {/* Confirmation de succès */}
       {showSuccessOverlay && (
         <SuccessOverlay
           title={successTitle}

@@ -29,7 +29,7 @@ class Proposal extends Model
         'responded_at',
         'cancelled_at',
         'contract_kind', 'interview_status', 'interview_at',
-'interview_location', 'interview_notes', 'interview_validated_at',
+        'interview_location', 'interview_notes', 'interview_validated_at',
     ];
 
     protected $casts = [
@@ -42,7 +42,7 @@ class Proposal extends Model
         'responded_at'     => 'datetime',
         'cancelled_at'     => 'datetime',
         'interview_at' => 'datetime',
-'interview_validated_at' => 'datetime',
+        'interview_validated_at' => 'datetime',
     ];
 
     // ============================================
@@ -83,6 +83,17 @@ class Proposal extends Model
         return $this->morphMany(Document::class, 'documentable');
     }
 
+    public function jobOffer()
+    {
+        return $this->belongsTo(JobOffer::class);
+    }
+
+    // ✅ AJOUT : Relation manquante qui causait l'erreur "Call to undefined relationship [requestingCompany]"
+    public function requestingCompany()
+    {
+        return $this->belongsTo(Company::class, 'to_company_id');
+    }
+
     // ============================================
     // SCOPES
     // ============================================
@@ -102,7 +113,8 @@ class Proposal extends Model
     // ============================================
     public function getDisplayStatusAttribute(): string
     {
-        if ($this->status === 'sent' && $this->expires_at && $this->expires_at < now()->startOfDay()) {
+        // ✅ MODIFICATION P0-11 : On vérifie si le statut est 'sent' OU 'viewed'
+        if (in_array($this->status, ['sent', 'viewed']) && $this->expires_at && $this->expires_at < now()->startOfDay()) {
             return 'expired';
         }
         return $this->status;
@@ -132,8 +144,4 @@ class Proposal extends Model
     {
         return in_array($this->display_status, ['sent', 'viewed']);
     }
-    public function jobOffer()
-{
-    return $this->belongsTo(JobOffer::class);
-}
 }

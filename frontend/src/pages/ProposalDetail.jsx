@@ -84,6 +84,42 @@ function Section({ title, subtitle, children, right }) {
   );
 }
 
+// ✅ NOUVEAU COMPOSANT : Modale de confirmation personnalisée
+function ConfirmModal({ config, onClose }) {
+  if (!config) return null;
+  const Icon = config.icon || AlertCircle;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-900" onClick={(e) => e.stopPropagation()}>
+        <div className="p-6">
+          <div className="flex items-center gap-3">
+            <span className={`flex h-12 w-12 items-center justify-center rounded-full ${config.iconBg || "bg-slate-100"}`}>
+              <Icon size={24} className={config.iconColor || "text-slate-600"} />
+            </span>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">{config.title}</h3>
+          </div>
+          <p className="mt-4 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{config.message}</p>
+        </div>
+        <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4 dark:border-slate-800 dark:bg-slate-950/50">
+          <button
+            onClick={onClose}
+            className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-transparent dark:text-slate-300 dark:hover:bg-slate-800"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={config.onConfirm}
+            className={`rounded-xl px-5 py-2.5 text-xs font-bold text-white shadow-sm transition ${config.confirmColor || "bg-emerald-600 hover:bg-emerald-700"}`}
+          >
+            {config.confirmText || "Confirmer"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ProposalDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -96,6 +132,10 @@ export default function ProposalDetail() {
   const [actionLoading, setActionLoading] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
   const [interviewForm, setInterviewForm] = useState({ interview_at: "", interview_location: "", interview_notes: "" });
+  
+  // ✅ État pour la modale de confirmation
+  const [confirmModal, setConfirmModal] = useState(null);
+
   const { toast, show: showToast, close: closeToast } = useToast();
 
   const load = async (silent = false) => {
@@ -121,7 +161,6 @@ export default function ProposalDetail() {
     return errors ? Object.values(errors).flat().join(" · ") : err.response?.data?.message || fallback;
   };
 
-  /** Exécute une action API, affiche un toast et recharge sans spinner plein écran */
   const run = async (fn, okMsg) => {
     setActionLoading(true);
     try {
@@ -160,31 +199,73 @@ export default function ProposalDetail() {
   };
 
   const deleteDocument = async (docId) => {
-    if (!confirm("Supprimer ce document ?")) return;
-    try {
-      await api.delete(`/documents/${docId}`);
-      showToast("Document supprimé", "info");
-      await load(true);
-    } catch (err) {
-      showToast(errMsg(err), "error");
-    }
+    setConfirmModal({
+      title: "Supprimer ce document ?",
+      message: "Cette action est irréversible.",
+      confirmText: "Supprimer",
+      confirmColor: "bg-rose-600 hover:bg-rose-700",
+      icon: Trash2,
+      iconBg: "bg-rose-100",
+      iconColor: "text-rose-600",
+      onConfirm: async () => {
+        setConfirmModal(null);
+        try {
+          await api.delete(`/documents/${docId}`);
+          showToast("Document supprimé", "info");
+          await load(true);
+        } catch (err) {
+          showToast(errMsg(err), "error");
+        }
+      }
+    });
   };
 
   const doAction = async (action) => {
-    if (action === "cancel" && !confirm("Annuler cette proposition ?")) return;
-    if (action === "decline" && !confirm("Refuser cette proposition ?")) return;
+    if (action === "cancel") {
+      setConfirmModal({
+        title: "Annuler cette proposition ?",
+        message: "La proposition sera retirée définitivement.",
+        confirmText: "Annuler la proposition",
+        confirmColor: "bg-rose-600 hover:bg-rose-700",
+        icon: Ban,
+        iconBg: "bg-rose-100",
+        iconColor: "text-rose-600",
+        onConfirm: async () => {
+          setConfirmModal(null);
+          await executeAction(action);
+        }
+      });
+      return;
+    }
+    if (action === "decline") {
+      setConfirmModal({
+        title: "Refuser cette proposition ?",
+        message: "Le processus s'arrêtera ici pour cette proposition.",
+        confirmText: "Refuser",
+        confirmColor: "bg-rose-600 hover:bg-rose-700",
+        icon: X,
+        iconBg: "bg-rose-100",
+        iconColor: "text-rose-600",
+        onConfirm: async () => {
+          setConfirmModal(null);
+          await executeAction(action);
+        }
+      });
+      return;
+    }
+    // Pour 'accept', on exécute directement
+    await executeAction(action);
+  };
 
+  const executeAction = async (action) => {
     setActionLoading(true);
     try {
       const res = await api.post(`/proposals/${id}/${action}`);
-
-      // Flux classique : l'acceptation crée directement la mission
       if (action === "accept" && res.data?.mission?.id) {
         showToast("🎉 Mission créée avec succès !", "success");
         setTimeout(() => navigate(`/missions/${res.data.mission.id}`), 1000);
         return;
       }
-
       showToast(
         action === "accept"
           ? "✅ Proposition acceptée — l'entreprise va planifier l'entretien"
@@ -199,7 +280,6 @@ export default function ProposalDetail() {
     }
   };
 
-  // ---------- Entretien / période d'essai (recruteur) ----------
   const submitInterview = async (e) => {
     e.preventDefault();
     const ok = await run(() => api.post(`/proposals/${id}/schedule-interview`, interviewForm), "📅 Entretien planifié");
@@ -207,27 +287,71 @@ export default function ProposalDetail() {
   };
 
   const validateInterview = () => {
-    if (!confirm("Valider l'entretien et créer la mission ?")) return;
-    run(() => api.post(`/proposals/${id}/validate-interview`), "🎉 Entretien validé — mission créée");
+    setConfirmModal({
+      title: "Valider l'entretien ?",
+      message: "Cette action va créer la mission pour ce talent. Voulez-vous continuer ?",
+      confirmText: "Valider et créer",
+      confirmColor: "bg-emerald-600 hover:bg-emerald-700",
+      icon: CheckCircle2,
+      iconBg: "bg-emerald-100",
+      iconColor: "text-emerald-600",
+      onConfirm: async () => {
+        setConfirmModal(null);
+        await run(() => api.post(`/proposals/${id}/validate-interview`), "🎉 Entretien validé — mission créée");
+      }
+    });
   };
 
   const rejectInterview = () => {
-    if (!confirm("Marquer l'entretien comme non concluant ?")) return;
-    run(() => api.post(`/proposals/${id}/reject-interview`), "Entretien marqué comme non concluant");
+    setConfirmModal({
+      title: "Entretien non concluant ?",
+      message: "Le processus de recrutement sera terminé pour ce talent. Cette action est irréversible.",
+      confirmText: "Marquer comme non concluant",
+      confirmColor: "bg-rose-600 hover:bg-rose-700",
+      icon: X,
+      iconBg: "bg-rose-100",
+      iconColor: "text-rose-600",
+      onConfirm: async () => {
+        setConfirmModal(null);
+        await run(() => api.post(`/proposals/${id}/reject-interview`), "Entretien marqué comme non concluant");
+      }
+    });
   };
 
   const validateTrial = () => {
     if (!proposal?.mission?.id) return;
-    if (!confirm("Valider la période d'essai ? Le contrat passera en CDI (sans date de fin).")) return;
-    run(() => api.post(`/missions/${proposal.mission.id}/validate-trial`), "🎉 Période d'essai validée — CDI en cours");
-  };
-    const rejectTrial = () => {
-    if (!proposal?.mission?.id) return;
-    if (!confirm("Ne pas confirmer le talent ? La collaboration prendra fin.")) return;
-    run(() => api.post(`/missions/${proposal.mission.id}/reject-trial`), "Période d'essai non confirmée");
+    setConfirmModal({
+      title: "Valider la période d'essai ?",
+      message: "Le contrat passera en CDI (sans date de fin) et le talent sera ajouté à vos salariés.",
+      confirmText: "Confirmer en CDI",
+      confirmColor: "bg-emerald-600 hover:bg-emerald-700",
+      icon: ShieldCheck,
+      iconBg: "bg-emerald-100",
+      iconColor: "text-emerald-600",
+      onConfirm: async () => {
+        setConfirmModal(null);
+        await run(() => api.post(`/missions/${proposal.mission.id}/validate-trial`), "🎉 Période d'essai validée — CDI en cours");
+      }
+    });
   };
 
-  // ---------- États de chargement / erreur ----------
+  const rejectTrial = () => {
+    if (!proposal?.mission?.id) return;
+    setConfirmModal({
+      title: "Ne pas confirmer le talent ?",
+      message: "La collaboration prendra fin immédiatement.",
+      confirmText: "Ne pas confirmer",
+      confirmColor: "bg-rose-600 hover:bg-rose-700",
+      icon: X,
+      iconBg: "bg-rose-100",
+      iconColor: "text-rose-600",
+      onConfirm: async () => {
+        setConfirmModal(null);
+        await run(() => api.post(`/missions/${proposal.mission.id}/reject-trial`), "Période d'essai non confirmée");
+      }
+    });
+  };
+
   if (loading) {
     return (
       <AppShell>
@@ -255,9 +379,6 @@ export default function ProposalDetail() {
     );
   }
 
-  // =====================================================
-  // ✅ RÔLES — qui regarde cette proposition ?
-  // =====================================================
   const cfg = STATUS_CFG[proposal.status] || STATUS_CFG.sent;
   const isPending = ["sent", "viewed"].includes(proposal.status);
 
@@ -269,23 +390,18 @@ export default function ProposalDetail() {
     proposal.profile?.user?.id === user?.id ||
     proposal.profile?.user_id === user?.id;
 
-  // Proposition faite PAR une entreprise (flux inversé) ou candidature d'un talent (flux classique)
   const proposedByCompany = proposal.proposed_by_company_id != null;
 
-  const isCompanySender    = proposedByCompany && myCompanyIds.includes(proposal.proposed_by_company_id);   // recruteur (inversé)
-  const isTalentRecipient  = proposedByCompany && !isCompanySender && isMyProfile;                          // étudiant (inversé)
-  const isTalentAuthor     = !proposedByCompany && isMyProfile;                                             // étudiant (classique)
+  const isCompanySender    = proposedByCompany && myCompanyIds.includes(proposal.proposed_by_company_id);
+  const isTalentRecipient  = proposedByCompany && !isCompanySender && isMyProfile;
+  const isTalentAuthor     = !proposedByCompany && isMyProfile;
   const isCompanyRecipient = !proposedByCompany && !isMyProfile &&
-    (myCompanyIds.includes(proposal.to_company_id) || myCompanyIds.includes(proposal.resource_request?.company_id)); // entreprise (classique)
+    (myCompanyIds.includes(proposal.to_company_id) || myCompanyIds.includes(proposal.resource_request?.company_id));
 
   const isCompanySide = isCompanySender || isCompanyRecipient;
-  const canAnswer = isPending && (isTalentRecipient || isCompanyRecipient);  // Accepter / Refuser
-  const canCancel = isPending && (isCompanySender || isTalentAuthor);        // Annuler
+  const canAnswer = isPending && (isTalentRecipient || isCompanyRecipient);
+  const canCancel = isPending && (isCompanySender || isTalentAuthor);
 
-  // =====================================================
-  // DONNÉES D'AFFICHAGE
-  // =====================================================
-  // Laravel sérialise les relations en snake_case (proposing_company, to_company…)
   const company = proposedByCompany
     ? (proposal.proposing_company || proposal.proposingCompany)
     : (proposal.to_company || proposal.toCompany || proposal.resource_request?.company);
@@ -308,7 +424,6 @@ export default function ProposalDetail() {
 
   const requestLabel = isTalentRecipient ? "Pour votre besoin :" : isCompanySender ? "Pour son besoin :" : "Pour la demande :";
 
-  // Carte latérale : le talent voit l'entreprise, l'entreprise voit le talent
   const showCompanyCard = isTalentRecipient || isTalentAuthor;
   const sideCard = showCompanyCard
     ? {
@@ -328,9 +443,6 @@ export default function ProposalDetail() {
         desc: null,
       };
 
-  // =====================================================
-  // SUIVI RECRUTEMENT (flux inversé, après acceptation)
-  // =====================================================
   const mission = proposal.mission;
   const showTracker = proposedByCompany && proposal.status === "accepted";
   const interviewStatus = proposal.interview_status || "pending";
@@ -340,7 +452,7 @@ export default function ProposalDetail() {
   const trialActive = mission?.status === "trial";
   const intCfg = INTERVIEW_CFG[interviewStatus] || INTERVIEW_CFG.pending;
 
-   const missionCancelled = mission?.status === "cancelled";
+  const missionCancelled = mission?.status === "cancelled";
 
   const steps = [
     { label: "Proposition acceptée", state: "done" },
@@ -368,7 +480,6 @@ export default function ProposalDetail() {
       <main className="min-h-screen bg-[#F5F8FA] px-4 py-6 transition-colors duration-300 sm:px-6 sm:py-8 lg:px-8 dark:bg-[#071521]">
         <div className="mx-auto max-w-6xl space-y-5">
 
-          {/* HEADER */}
           <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-colors dark:border-slate-700 dark:bg-slate-900">
             <div className="border-b border-slate-100 px-5 py-6 dark:border-slate-800 sm:px-7">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -396,10 +507,8 @@ export default function ProposalDetail() {
           </section>
 
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-            {/* ================= COLONNE GAUCHE ================= */}
             <div className="space-y-5">
 
-              {/* INFOS GÉNÉRALES */}
               <Section title="Informations générales">
                 <div className="grid gap-5 p-5 sm:grid-cols-2">
                   <div>
@@ -433,7 +542,6 @@ export default function ProposalDetail() {
                 </div>
               </Section>
 
-              {/* SUIVI DU RECRUTEMENT : ENTRETIEN → (ESSAI) → MISSION */}
               {showTracker && (
                 <Section
                   title="Suivi du recrutement"
@@ -441,7 +549,6 @@ export default function ProposalDetail() {
                   right={<span className={`rounded-full px-3 py-1 text-[11px] font-bold ${intCfg.tone}`}>{intCfg.label}</span>}
                 >
                   <div className="space-y-6 p-5">
-                    {/* Stepper */}
                     <ol className="flex items-start">
                       {steps.map((s, i) => (
                         <li key={s.label} className="relative flex flex-1 flex-col items-center text-center">
@@ -456,7 +563,6 @@ export default function ProposalDetail() {
                       ))}
                     </ol>
 
-                    {/* Détails de l'entretien */}
                     {proposal.interview_at && interviewStatus !== "pending" && (
                       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-[#0B1F33]">
                         <div className="grid gap-4 sm:grid-cols-2">
@@ -482,10 +588,8 @@ export default function ProposalDetail() {
                       </div>
                     )}
 
-                    {/* ---------- VUE RECRUTEUR ---------- */}
                     {isCompanySender && (
                       <>
-                        {/* Planifier / replanifier */}
                         {(interviewStatus === "pending" || showSchedule) && (
                           <form onSubmit={submitInterview} className="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 dark:border-emerald-900 dark:bg-emerald-950/20">
                             <p className="text-sm font-bold text-slate-900 dark:text-slate-100">
@@ -541,7 +645,6 @@ export default function ProposalDetail() {
                           </form>
                         )}
 
-                        {/* Entretien planifié : valider / refuser / replanifier */}
                         {interviewStatus === "scheduled" && !showSchedule && (
                           <div className="flex flex-col gap-3 sm:flex-row">
                             <button onClick={validateInterview} disabled={actionLoading} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-60 dark:bg-emerald-500 dark:hover:bg-emerald-400">
@@ -556,7 +659,6 @@ export default function ProposalDetail() {
                           </div>
                         )}
 
-                                              {/* Période d'essai (emploi) */}
                         {interviewStatus === "validated" && isJob && trialActive && (
                           <div className="space-y-3 rounded-xl border border-blue-200 bg-blue-50/60 p-4 dark:border-blue-900 dark:bg-blue-950/20">
                             <p className="flex items-center gap-2 text-sm font-bold text-blue-900 dark:text-blue-200">
@@ -592,12 +694,11 @@ export default function ProposalDetail() {
                       </>
                     )}
 
-                    {/* ---------- VUE ÉTUDIANT ---------- */}
                     {isTalentRecipient && (
                       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 dark:border-slate-700 dark:bg-[#0B1F33] dark:text-slate-300">
                         {interviewStatus === "pending" && "Vous avez accepté la proposition. L'entreprise va vous communiquer la date et le lieu de l'entretien."}
                         {interviewStatus === "scheduled" && "Votre entretien est planifié. Présentez-vous à l'adresse indiquée ci-dessus."}
-                                               {interviewStatus === "validated" && isJob && trialActive && "Entretien validé : votre période d'essai est en cours. À son terme, l'entreprise pourra vous confirmer en CDI."}
+                        {interviewStatus === "validated" && isJob && trialActive && "Entretien validé : votre période d'essai est en cours. À son terme, l'entreprise pourra vous confirmer en CDI."}
                         {interviewStatus === "validated" && isJob && mission?.status === "active" && "Période d'essai validée : vous êtes désormais salarié en CDI."}
                         {interviewStatus === "validated" && isJob && missionCancelled && "L'entreprise n'a pas confirmé votre embauche à l'issue de la période d'essai."}
                         {interviewStatus === "failed" && "L'entreprise n'a pas donné suite après l'entretien."}
@@ -613,7 +714,6 @@ export default function ProposalDetail() {
                 </Section>
               )}
 
-              {/* LETTRE D'ACCOMPAGNEMENT */}
               {proposal.message && (
                 <Section title="Lettre d'accompagnement" subtitle="Le message transmis avec la proposition">
                   <div className="p-5">
@@ -624,7 +724,6 @@ export default function ProposalDetail() {
                 </Section>
               )}
 
-              {/* CONDITIONS */}
               {(proposal.conditions || proposal.description) && (
                 <Section title="Détails de l'offre">
                   <div className="space-y-4 p-5">
@@ -645,10 +744,7 @@ export default function ProposalDetail() {
               )}
             </div>
 
-            {/* ================= COLONNE DROITE ================= */}
             <div className="space-y-5">
-
-              {/* CARTE CONTREPARTIE */}
               <Section title={sideCard.title} subtitle={sideCard.subtitle}>
                 <div className="p-5">
                   <div className="flex items-center gap-4">
@@ -670,7 +766,6 @@ export default function ProposalDetail() {
                 </div>
               </Section>
 
-              {/* DOCUMENTS */}
               {(isCompanySide || documents.length > 0) && (
                 <Section
                   title="Documents joints"
@@ -733,9 +828,7 @@ export default function ProposalDetail() {
                 </Section>
               )}
 
-              {/* ACTIONS */}
               <div className="flex flex-col gap-3">
-                {/* Le DESTINATAIRE répond : étudiant (flux inversé) ou entreprise (candidature reçue) */}
                 {canAnswer && (
                   <>
                     <button
@@ -755,7 +848,6 @@ export default function ProposalDetail() {
                   </>
                 )}
 
-                {/* L'EXPÉDITEUR (entreprise en flux inversé, talent en flux classique) ne peut qu'annuler */}
                 {canCancel && (
                   <button
                     onClick={() => doAction("cancel")}
@@ -776,7 +868,6 @@ export default function ProposalDetail() {
                 )}
               </div>
 
-              {/* BLOC FÉLICITATIONS — étudiant */}
               {proposal.status === "accepted" && (isTalentRecipient || isTalentAuthor) && (
                 <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 dark:border-emerald-900 dark:bg-emerald-950/30">
                   <div className="flex items-center gap-3">
@@ -796,6 +887,14 @@ export default function ProposalDetail() {
           </div>
         </div>
       </main>
+
+      {/* ✅ Affichage de la modale de confirmation */}
+      {confirmModal && (
+        <ConfirmModal
+          config={confirmModal}
+          onClose={() => setConfirmModal(null)}
+        />
+      )}
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={closeToast} />}
     </AppShell>

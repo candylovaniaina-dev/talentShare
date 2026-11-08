@@ -22,30 +22,31 @@ import trust1 from "../assets/images/trust1.jpg";
 import trust2 from "../assets/images/trust2.avif";
 
 /* ------------------------------------------------------------------ */
-/*  Jetons de style                                                    */
+/*  Jetons de style                                                   */
 /* ------------------------------------------------------------------ */
 const CONTAINER = "mx-auto w-full max-w-[1200px] px-5 sm:px-8";
 
-const SECTION_LIGHT = "bg-white dark:bg-[#07191D]";
-const SECTION_TINT = "bg-[#F2F7F5] dark:bg-[#051518]";
+const SECTION_LIGHT = "bg-[color:var(--ts-bg)]";
+const SECTION_TINT = "bg-[color:var(--ts-tint)]";
 
-const SURFACE =
-  "border border-slate-200 bg-white dark:border-white/10 dark:bg-[#0B2A2F]/70";
+const SURFACE = "border border-[color:var(--ts-border)] bg-[color:var(--ts-surface)]";
 
-const INK = "text-[#0B2229] dark:text-white";
-const MUTED = "text-[#587078] dark:text-slate-400";
+const INK = "text-[color:var(--ts-ink)]";
+const MUTED = "text-[color:var(--ts-muted)]";
+const ACCENT = "text-[color:var(--ts-accent)]";
+
+const MINT_GRADIENT = "bg-gradient-to-br from-[#8DF0DC] to-[#5EDCC4]";
 
 const BTN_PRIMARY =
-  "inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-gradient-to-br from-emerald-300 to-emerald-500 px-6 text-sm font-bold text-[#04231D] " +
-  "shadow-[0_12px_32px_-10px_rgba(16,185,129,0.7)] transition hover:brightness-105 focus:outline-none focus-visible:ring-4 focus-visible:ring-emerald-400/40";
+  `inline-flex min-h-12 items-center justify-center gap-2 rounded-full ${MINT_GRADIENT} px-6 text-sm font-bold text-[#0A1230] ` +
+  "shadow-[0_12px_32px_-10px_rgba(94,220,196,0.65)] transition hover:brightness-105 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#7BE9D3]/40";
 
 const BTN_GHOST =
-  "group inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-slate-300 bg-white/60 px-6 text-sm font-semibold text-[#0B2229] backdrop-blur transition " +
-  "hover:border-emerald-500/60 hover:bg-white focus:outline-none focus-visible:ring-4 focus-visible:ring-emerald-400/30 " +
-  "dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:border-emerald-300/40 dark:hover:bg-white/10";
+  "group inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-[color:var(--ts-border-strong)] bg-[color:var(--ts-glass)] px-6 text-sm font-semibold text-[color:var(--ts-ink)] backdrop-blur transition " +
+  "hover:border-[color:var(--ts-accent)] hover:bg-[color:var(--ts-glass-hover)] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#7BE9D3]/30";
 
 /* ------------------------------------------------------------------ */
-/*  Contenu                                                            */
+/*  Contenu                                                           */
 /* ------------------------------------------------------------------ */
 const forWho = [
   {
@@ -137,18 +138,16 @@ const features = [
 ];
 
 /* ------------------------------------------------------------------ */
-/*  Petits composants                                                  */
+/*  Petits composants                                                 */
 /* ------------------------------------------------------------------ */
 function SectionTitle({ eyebrow, title, description }) {
   return (
     <div className="max-w-2xl">
-      <p className="inline-flex items-center gap-2 rounded-full border border-emerald-600/20 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-700 dark:border-emerald-300/20 dark:text-emerald-300">
-        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 dark:bg-emerald-300" />
+      <p className="inline-flex items-center gap-2 rounded-full border border-[color:var(--ts-accent-border)] bg-[color:var(--ts-accent-soft)] px-3 py-1 text-xs font-semibold text-[color:var(--ts-accent)]">
+        <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--ts-accent)]" />
         {eyebrow}
       </p>
-      <h2
-        className={`mt-5 text-3xl font-extrabold leading-[1.12] tracking-[-0.035em] sm:text-4xl lg:text-[42px] ${INK}`}
-      >
+      <h2 className={`mt-5 text-3xl font-extrabold leading-[1.12] tracking-[-0.035em] sm:text-4xl lg:text-[42px] ${INK}`}>
         {title}
       </h2>
       {description && (
@@ -160,38 +159,41 @@ function SectionTitle({ eyebrow, title, description }) {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  LE NOUVEAU VISUEL ANIMÉ                                            */
-/* ------------------------------------------------------------------ */
 function NetworkPreview() {
+  // ✅ CARTES STYLE "GLASSMORPHISM" (Fond transparent + bordure)
+  const badge =
+    "absolute z-20 flex items-center gap-3 rounded-2xl border border-white/10 bg-[#1A2B4C]/80 p-3.5 shadow-2xl backdrop-blur-md";
+  const badgeIcon =
+    "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#7BE9D3]/10 text-[#7BE9D3]";
+
   return (
     <div className="relative mx-auto flex h-[420px] w-full max-w-[550px] items-center justify-center sm:h-[500px]">
-      
       {/* Halo lumineux central avec pulsation */}
-      <div className="absolute left-1/2 top-1/2 h-[250px] w-[250px] -translate-x-1/2 -translate-y-1/2 animate-pulse-glow rounded-full bg-emerald-400/20 blur-[80px]" />
+      <div className="absolute left-1/2 top-1/2 h-[250px] w-[250px] -translate-x-1/2 -translate-y-1/2 animate-pulse-glow rounded-full bg-[#5EDCC4]/25 blur-[80px]" />
 
-      {/* Cercles concentriques animés */}
-      <div className="absolute left-1/2 top-1/2 h-[320px] w-[320px] -translate-x-1/2 -translate-y-1/2 animate-spin-slow rounded-full border border-emerald-500/20 sm:h-[400px] sm:w-[400px]" />
-      <div className="absolute left-1/2 top-1/2 h-[220px] w-[220px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed border-emerald-500/30 sm:h-[280px] sm:w-[280px]" />
+      {/* Cercles concentriques */}
+      <div className="absolute left-1/2 top-1/2 h-[320px] w-[320px] -translate-x-1/2 -translate-y-1/2 animate-spin-slow rounded-full border border-[#7BE9D3]/30 sm:h-[400px] sm:w-[400px]" />
+      <div className="absolute left-1/2 top-1/2 h-[220px] w-[220px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed border-[#7BE9D3]/30 sm:h-[280px] sm:w-[280px]" />
 
       {/* Lignes reliant le centre aux badges */}
-      <svg className="absolute inset-0 h-full w-full" viewBox="0 0 550 500">
+      <svg className="absolute inset-0 h-full w-full" viewBox="0 0 550 500" aria-hidden="true">
         <path
           d="M275 250 L120 130 M275 250 L430 180 M275 250 L400 380"
           stroke="currentColor"
-          className="text-emerald-500/30 dark:text-emerald-400/20"
+          className="text-[#5EDCC4]/40"
           strokeWidth="1.5"
           strokeDasharray="4 6"
         />
-        {/* Petits points lumineux aux extrémités */}
-        <circle cx="120" cy="130" r="5" className="fill-emerald-400" />
-        <circle cx="430" cy="180" r="5" className="fill-orange-400" />
-        <circle cx="400" cy="380" r="5" className="fill-emerald-400" />
+        <circle cx="120" cy="130" r="5" className="fill-[#7BE9D3]" />
+        <circle cx="430" cy="180" r="5" className="fill-[#F5A25D]" />
+        <circle cx="400" cy="380" r="5" className="fill-[#7BE9D3]" />
       </svg>
 
-      {/* Carte Centrale */}
-      <div className="relative z-10 flex h-[130px] w-[130px] flex-col items-center justify-center rounded-[36px] border border-emerald-300/30 bg-gradient-to-br from-emerald-300 to-emerald-500 text-[#04231D] shadow-[0_20px_50px_-10px_rgba(16,185,129,0.5)] sm:h-[150px] sm:w-[150px]">
-        
+      {/* Carte centrale */}
+      <div
+        className={`relative z-10 flex h-[130px] w-[130px] flex-col items-center justify-center gap-2 rounded-[36px] border border-white/30 ${MINT_GRADIENT} text-[#0A1230] shadow-[0_20px_50px_-10px_rgba(94,220,196,0.55)] sm:h-[150px] sm:w-[150px]`}
+      >
+        <Sparkles size={26} strokeWidth={1.8} />
         <span className="text-center text-[11px] font-extrabold uppercase leading-[1.3] tracking-[0.15em]">
           Share
           <br />
@@ -201,36 +203,36 @@ function NetworkPreview() {
         </span>
       </div>
 
-      {/* Badge 1 : Talents actifs (Flottant) */}
-      <div className="absolute left-0 top-12 z-20 flex animate-float items-center gap-3 rounded-2xl border border-slate-200 bg-white/90 p-3.5 shadow-2xl backdrop-blur-md dark:border-white/10 dark:bg-[#0B2A2F]/90 sm:left-4 sm:top-16">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300">
+      {/* Badge 1 */}
+      <div className={`${badge} left-0 top-12 animate-float sm:left-4 sm:top-16`}>
+        <span className={badgeIcon}>
           <Users size={18} />
         </span>
         <div>
-          <p className={`text-sm font-bold ${INK}`}>Talents actifs</p>
-          <p className={`text-[11px] ${MUTED}`}>Disponibles maintenant</p>
+          <p className="text-sm font-bold text-white">Talents actifs</p>
+          <p className="text-[11px] text-slate-300">Disponibles maintenant</p>
         </div>
       </div>
 
-      {/* Badge 2 : Match explicable (Flottant avec délai) */}
-      <div className="absolute right-0 top-[35%] z-20 flex animate-float-slow items-center gap-3 rounded-2xl border border-slate-200 bg-white/90 p-3.5 shadow-2xl backdrop-blur-md dark:border-white/10 dark:bg-[#0B2A2F]/90 sm:right-4">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300">
+      {/* Badge 2 */}
+      <div className={`${badge} right-0 top-[35%] animate-float-slow sm:right-4`}>
+        <span className={badgeIcon}>
           <Target size={18} />
         </span>
         <div>
-          <p className={`text-sm font-bold ${INK}`}>Match explicable</p>
-          <p className={`text-[11px] ${MUTED}`}>Compétences + disponibilité</p>
+          <p className="text-sm font-bold text-white">Match explicable</p>
+          <p className="text-[11px] text-slate-300">Compétences + disponibilité</p>
         </div>
       </div>
 
-      {/* Badge 3 : Confiance intégrée (Flottant) */}
-      <div className="absolute bottom-8 left-8 z-20 flex animate-float-delayed items-center gap-3 rounded-2xl border border-slate-200 bg-white/90 p-3.5 shadow-2xl backdrop-blur-md dark:border-white/10 dark:bg-[#0B2A2F]/90 sm:bottom-12 sm:left-16">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300">
+      {/* Badge 3 */}
+      <div className={`${badge} bottom-8 left-8 animate-float-delayed sm:bottom-12 sm:left-16`}>
+        <span className={badgeIcon}>
           <ShieldCheck size={18} />
         </span>
         <div>
-          <p className={`text-sm font-bold ${INK}`}>Confiance intégrée</p>
-          <p className={`text-[11px] ${MUTED}`}>Profils vérifiés</p>
+          <p className="text-sm font-bold text-white">Confiance intégrée</p>
+          <p className="text-[11px] text-slate-300">Profils vérifiés</p>
         </div>
       </div>
     </div>
@@ -242,14 +244,54 @@ function NetworkPreview() {
 /* ------------------------------------------------------------------ */
 export default function Landing() {
   return (
-    <div className={`ts-landing relative min-h-screen overflow-x-clip font-sans ${SECTION_LIGHT} ${INK}`}>
+    <div
+      className={`ts-landing relative min-h-screen overflow-x-clip ${SECTION_LIGHT} ${INK}`}
+      style={{ fontFamily: "'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" }}
+    >
       <style>{`
-        .ts-landing ::selection { background: #6ee7b7; color: #04231D; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+        /* ---------- Palette claire ---------- */
+        .ts-landing {
+          --ts-bg: #FFFFFF;
+          --ts-tint: #F3F6FC;
+          --ts-surface: #FFFFFF;
+          --ts-surface-alt: #F8FAFE;
+          --ts-border: #DDE3F1;
+          --ts-border-strong: #C9D2E6;
+          --ts-ink: #0B1437;
+          --ts-muted: #5B6785;
+          --ts-accent: #0E9F8E;
+          --ts-accent-soft: rgba(20,184,166,.12);
+          --ts-accent-border: rgba(14,159,142,.28);
+          --ts-badge: rgba(255,255,255,.92);
+          --ts-glass: rgba(255,255,255,.65);
+          --ts-glass-hover: #FFFFFF;
+        }
+        /* ---------- Palette sombre ---------- */
+        .dark .ts-landing {
+          --ts-bg: #0A1230;
+          --ts-tint: #0C1538;
+          --ts-surface: #131E47;
+          --ts-surface-alt: #101A40;
+          --ts-border: rgba(255,255,255,.10);
+          --ts-border-strong: rgba(255,255,255,.16);
+          --ts-ink: #FFFFFF;
+          --ts-muted: #A6B2D1;
+          --ts-accent: #7BE9D3;
+          --ts-accent-soft: rgba(123,233,211,.12);
+          --ts-accent-border: rgba(123,233,211,.28);
+          --ts-badge: rgba(19,30,71,.92);
+          --ts-glass: rgba(255,255,255,.05);
+          --ts-glass-hover: rgba(255,255,255,.10);
+        }
+
+        .ts-landing ::selection { background: #7BE9D3; color: #0A1230; }
 
         .ts-landing .ts-grid {
           background-image:
-            linear-gradient(rgba(11,34,41,.05) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(11,34,41,.05) 1px, transparent 1px);
+            linear-gradient(rgba(11,20,55,.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(11,20,55,.05) 1px, transparent 1px);
           background-size: 44px 44px;
           -webkit-mask-image: linear-gradient(to bottom, #000, transparent 85%);
           mask-image: linear-gradient(to bottom, #000, transparent 85%);
@@ -263,7 +305,6 @@ export default function Landing() {
         .ts-landing .ts-reveal { animation: ts-reveal .75s cubic-bezier(.2,.7,.2,1) both; }
         .ts-landing .ts-delay { animation-delay: 150ms; }
 
-        /* Animations pour le visuel */
         .ts-landing .animate-float { animation: ts-float 4s ease-in-out infinite; }
         .ts-landing .animate-float-slow { animation: ts-float 5s ease-in-out infinite 1s; }
         .ts-landing .animate-float-delayed { animation: ts-float 4.5s ease-in-out infinite 0.5s; }
@@ -293,31 +334,31 @@ export default function Landing() {
 
       <PublicNavbar />
 
-      {/* ============================ HERO ============================ */}
-      <section className="relative isolate overflow-hidden bg-gradient-to-b from-[#EAF6F1] via-[#F2F7F5] to-white dark:from-[#051518] dark:via-[#072126] dark:to-[#07191D]">
-        <div className="ts-grid pointer-events-none absolute inset-0 -z-10" />
-        <div className="pointer-events-none absolute -right-32 -top-40 -z-10 h-[520px] w-[520px] rounded-full bg-emerald-400/25 blur-[110px] dark:bg-emerald-400/15" />
-        <div className="pointer-events-none absolute -left-40 bottom-0 -z-10 h-[420px] w-[420px] rounded-full bg-teal-500/15 blur-[110px] dark:bg-teal-500/10" />
+      {/* ============================ HERO (FIXÉ EN BLEU MARINE) ============================ */}
+      <section className="relative isolate overflow-hidden bg-gradient-to-b from-[#0A1230] via-[#0C1538] to-[#0E1740]">
+        <div className="ts-grid pointer-events-none absolute inset-0 -z-10 opacity-30" />
+        <div className="pointer-events-none absolute -right-32 -top-40 -z-10 h-[520px] w-[520px] rounded-full bg-indigo-500/25 blur-[120px]" />
+        <div className="pointer-events-none absolute -left-40 bottom-0 -z-10 h-[420px] w-[420px] rounded-full bg-[#5EDCC4]/10 blur-[110px]" />
 
         <div className={`${CONTAINER} grid items-center gap-14 pb-20 pt-32 sm:pt-36 lg:min-h-[720px] lg:grid-cols-[1.05fr_.95fr] lg:gap-10 lg:pb-24`}>
           <div className="ts-reveal max-w-[640px]">
-            <p className="inline-flex items-center gap-2.5 rounded-full border border-emerald-600/20 bg-white/70 px-3.5 py-1.5 text-xs font-semibold text-emerald-800 backdrop-blur dark:border-emerald-300/20 dark:bg-white/5 dark:text-emerald-200">
+            <p className="inline-flex items-center gap-2.5 rounded-full border border-[#7BE9D3]/30 bg-[#7BE9D3]/10 px-3.5 py-1.5 text-xs font-semibold text-[#7BE9D3] backdrop-blur">
               <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-50" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#5EDCC4] opacity-50" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-[#5EDCC4]" />
               </span>
               Le réseau professionnel nouvelle génération
             </p>
 
-            <h1 className="mt-7 text-[40px] font-extrabold leading-[1.06] tracking-[-0.045em] sm:text-5xl lg:text-[60px]">
+            <h1 className="mt-7 text-[40px] font-extrabold leading-[1.06] tracking-[-0.045em] text-white sm:text-5xl lg:text-[60px]">
               Le talent existe.
               <br />
-              <span className="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent dark:from-emerald-300 dark:to-teal-200">
+              <span className="bg-gradient-to-r from-[#7BE9D3] to-[#5EDCC4] bg-clip-text text-transparent">
                 Connectons-le aux bonnes opportunités.
               </span>
             </h1>
 
-            <p className={`mt-6 max-w-[540px] text-base leading-8 sm:text-[17px] ${MUTED}`}>
+            <p className="mt-6 max-w-[540px] text-base leading-8 text-[#A6B2D1] sm:text-[17px]">
               La plateforme qui rapproche entreprises, professionnels, étudiants
               et universités pour transformer les compétences en collaborations
               concrètes.
@@ -327,23 +368,22 @@ export default function Landing() {
               <Link to="/register" className={BTN_PRIMARY}>
                 Rejoindre TalentShare
               </Link>
-              <Link to="/explore" className={BTN_GHOST}>
+              <Link to="/explore" className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-6 text-sm font-semibold text-white backdrop-blur transition hover:border-[#7BE9D3]/50 hover:bg-white/10">
                 Explorer le réseau
                 <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
               </Link>
             </div>
 
-            <ul className={`mt-9 flex flex-wrap gap-x-6 gap-y-3 text-xs font-medium ${MUTED}`}>
+            <ul className="mt-9 flex flex-wrap gap-x-6 gap-y-3 text-xs font-medium text-[#A6B2D1]">
               {["Entreprises", "Talents", "Jeunes diplômés", "Universités"].map((item) => (
                 <li key={item} className="inline-flex items-center gap-2">
-                  <Check size={14} className="text-emerald-600 dark:text-emerald-300" />
+                  <Check size={14} className="text-[#7BE9D3]" />
                   {item}
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Nouveau visuel animé ici */}
           <div className="ts-reveal ts-delay min-w-0 relative flex items-center justify-center">
             <NetworkPreview />
           </div>
@@ -365,13 +405,13 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="mt-12 grid overflow-hidden rounded-3xl border border-slate-200 bg-slate-200 dark:border-white/10 dark:bg-white/10 sm:grid-cols-3 sm:gap-px">
+          <div className="mt-12 grid overflow-hidden rounded-3xl border border-[color:var(--ts-border)] bg-[color:var(--ts-border)] sm:grid-cols-3 sm:gap-px">
             {features.map(({ icon: Icon, title, body }) => (
               <article
                 key={title}
-                className="bg-[#FAFCFB] p-7 transition-colors hover:bg-white dark:bg-[#0A2428] dark:hover:bg-[#0C2A2F] sm:p-8"
+                className="bg-[color:var(--ts-surface-alt)] p-7 transition-colors hover:bg-[color:var(--ts-surface)] sm:p-8"
               >
-                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300">
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[color:var(--ts-accent-soft)] text-[color:var(--ts-accent)]">
                   <Icon size={20} strokeWidth={1.8} />
                 </span>
                 <h3 className={`mt-5 text-base font-bold tracking-tight ${INK}`}>{title}</h3>
@@ -383,7 +423,7 @@ export default function Landing() {
       </section>
 
       {/* ============================ PUBLICS ============================ */}
-      <section id="pour-qui" className={`${SECTION_TINT} border-y border-slate-200/70 py-20 dark:border-white/5 sm:py-24`}>
+      <section id="pour-qui" className={`${SECTION_TINT} border-y border-[color:var(--ts-border)] py-20 sm:py-24`}>
         <div className={CONTAINER}>
           <SectionTitle
             eyebrow="Un écosystème ouvert"
@@ -400,32 +440,32 @@ export default function Landing() {
                   key={tag}
                   className={`relative flex min-h-[340px] flex-col overflow-hidden rounded-[26px] border p-7 transition-transform duration-300 hover:-translate-y-1 ${
                     deep
-                      ? "border-emerald-900/40 bg-gradient-to-br from-[#0B2A30] via-[#0A3B38] to-[#0B4A3F] text-white shadow-[0_24px_60px_-24px_rgba(6,60,50,0.7)]"
+                      ? "border-white/10 bg-gradient-to-br from-[#0B1437] via-[#101B4B] to-[#16256A] text-white shadow-[0_24px_60px_-24px_rgba(10,18,48,0.8)]"
                       : mint
-                        ? "border-emerald-200 bg-emerald-50 text-[#0B2229] dark:border-emerald-300/20 dark:bg-emerald-400/[0.07] dark:text-white"
+                        ? "border-[#5EDCC4]/40 bg-[#5EDCC4]/10 text-[color:var(--ts-ink)] dark:border-[#7BE9D3]/20 dark:bg-[#7BE9D3]/[0.07]"
                         : `${SURFACE} ${INK}`
                   }`}
                 >
                   {deep && (
-                    <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-emerald-400/25 blur-3xl" />
+                    <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-[#5EDCC4]/25 blur-3xl" />
                   )}
                   <span
                     className={`relative flex h-12 w-12 items-center justify-center rounded-2xl ${
                       deep
-                        ? "bg-gradient-to-br from-emerald-300 to-emerald-500 text-[#04231D]"
-                        : "bg-white text-emerald-700 shadow-sm dark:bg-white/10 dark:text-emerald-300"
+                        ? `${MINT_GRADIENT} text-[#0A1230]`
+                        : "bg-[color:var(--ts-surface)] text-[color:var(--ts-accent)] shadow-sm dark:bg-white/10"
                     }`}
                   >
                     <Icon size={21} strokeWidth={1.9} />
                   </span>
 
-                  <p className={`relative mt-7 text-sm font-semibold ${deep ? "text-emerald-300" : "text-emerald-700 dark:text-emerald-300"}`}>
+                  <p className={`relative mt-7 text-sm font-semibold ${deep ? "text-[#7BE9D3]" : ACCENT}`}>
                     {tag}
                   </p>
                   <h3 className="relative mt-2 text-[22px] font-extrabold leading-[1.2] tracking-[-0.03em]">
                     {title}
                   </h3>
-                  <p className={`relative mt-3 flex-1 text-sm leading-6 ${deep ? "text-slate-300" : MUTED}`}>
+                  <p className={`relative mt-3 flex-1 text-sm leading-6 ${deep ? "text-[#B7C2E0]" : MUTED}`}>
                     {body}
                   </p>
 
@@ -433,8 +473,8 @@ export default function Landing() {
                     to={href}
                     className={`relative mt-7 inline-flex w-fit items-center gap-2 rounded-full px-4 py-2.5 text-sm font-bold transition-colors ${
                       deep
-                        ? "bg-white/10 text-emerald-200 hover:bg-white/15"
-                        : "bg-emerald-600/10 text-emerald-800 hover:bg-emerald-600/15 dark:bg-emerald-400/10 dark:text-emerald-300 dark:hover:bg-emerald-400/20"
+                        ? "bg-white/10 text-[#7BE9D3] hover:bg-white/15"
+                        : "bg-[color:var(--ts-accent-soft)] text-[color:var(--ts-accent)] hover:brightness-110"
                     }`}
                   >
                     {cta}
@@ -462,15 +502,15 @@ export default function Landing() {
               <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
             </Link>
 
-            <div className="relative mt-10 overflow-hidden rounded-2xl bg-gradient-to-br from-[#0B2A30] to-[#0A3B38] p-5 text-white sm:p-6">
-              <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-emerald-400/25 blur-2xl" />
+            <div className="relative mt-10 overflow-hidden rounded-2xl bg-gradient-to-br from-[#0B1437] to-[#16256A] p-5 text-white sm:p-6">
+              <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[#5EDCC4]/25 blur-2xl" />
               <div className="relative flex items-start gap-4">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-300 to-emerald-500 text-[#04231D]">
+                <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${MINT_GRADIENT} text-[#0A1230]`}>
                   <BriefcaseBusiness size={20} />
                 </div>
                 <div>
                   <p className="text-sm font-bold">Une approche centrée sur l'humain</p>
-                  <p className="mt-2 text-xs leading-5 text-slate-300">
+                  <p className="mt-2 text-xs leading-5 text-[#B7C2E0]">
                     Les outils facilitent la mise en relation. Les personnes
                     restent au cœur des décisions et des collaborations.
                   </p>
@@ -480,13 +520,13 @@ export default function Landing() {
           </div>
 
           <ol className="relative space-y-3">
-            <span className="pointer-events-none absolute bottom-6 left-[2.15rem] top-6 hidden w-px bg-gradient-to-b from-emerald-400/60 via-emerald-400/20 to-transparent sm:block" />
+            <span className="pointer-events-none absolute bottom-6 left-[2.15rem] top-6 hidden w-px bg-gradient-to-b from-[#5EDCC4]/60 via-[#5EDCC4]/20 to-transparent sm:block" />
             {howItWorks.map((step, index) => (
               <li
                 key={step.title}
                 className={`relative flex gap-4 rounded-2xl p-5 sm:gap-5 sm:p-6 ${SURFACE}`}
               >
-                <span className="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-300 to-emerald-500 text-sm font-extrabold text-[#04231D]">
+                <span className={`relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${MINT_GRADIENT} text-sm font-extrabold text-[#0A1230]`}>
                   {index + 1}
                 </span>
                 <div className="pt-0.5">
@@ -512,8 +552,8 @@ export default function Landing() {
             <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {trustPoints.map((point) => (
                 <li key={point} className={`flex items-start gap-2.5 rounded-xl p-3.5 ${SURFACE}`}>
-                  <Check size={16} className="mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-300" />
-                  <span className="text-xs font-semibold leading-5 text-[#3F565E] dark:text-slate-300">
+                  <Check size={16} className={`mt-0.5 shrink-0 ${ACCENT}`} />
+                  <span className={`text-xs font-semibold leading-5 ${MUTED}`}>
                     {point}
                   </span>
                 </li>
@@ -536,14 +576,14 @@ export default function Landing() {
             ].map(({ img, tag, title }) => (
               <div
                 key={tag}
-                className="group relative flex min-h-[290px] flex-col justify-end overflow-hidden rounded-[26px] bg-[#0B2A30] bg-cover bg-center p-6 sm:p-8"
+                className="group relative flex min-h-[290px] flex-col justify-end overflow-hidden rounded-[26px] bg-[#0B1437] bg-cover bg-center p-6 sm:p-8"
                 style={{
-                  backgroundImage: `linear-gradient(0deg, rgba(5,30,32,.95) 0%, rgba(5,30,32,.25) 100%), url(${img})`,
+                  backgroundImage: `linear-gradient(0deg, rgba(8,14,40,.95) 0%, rgba(8,14,40,.25) 100%), url(${img})`,
                 }}
               >
-                <div className="absolute inset-0 bg-emerald-900/10 transition duration-500 group-hover:bg-transparent" />
+                <div className="absolute inset-0 bg-indigo-900/10 transition duration-500 group-hover:bg-transparent" />
                 <div className="relative">
-                  <p className="text-xs font-semibold text-emerald-300">{tag}</p>
+                  <p className="text-xs font-semibold text-[#7BE9D3]">{tag}</p>
                   <h3 className="mt-3 max-w-md text-2xl font-extrabold leading-tight tracking-[-0.03em] text-white sm:text-3xl">
                     {title}
                   </h3>
@@ -552,13 +592,13 @@ export default function Landing() {
             ))}
           </div>
 
-          <div className={`mt-5 grid overflow-hidden rounded-2xl md:grid-cols-3 md:divide-x md:divide-slate-200 dark:md:divide-white/10 ${SURFACE}`}>
+          <div className={`mt-5 grid overflow-hidden rounded-2xl md:grid-cols-3 md:divide-x md:divide-[color:var(--ts-border)] ${SURFACE}`}>
             {relations.map((relation) => (
               <div
                 key={relation.title}
-                className="border-b border-slate-200 p-5 last:border-b-0 dark:border-white/10 sm:p-6 md:border-b-0"
+                className="border-b border-[color:var(--ts-border)] p-5 last:border-b-0 sm:p-6 md:border-b-0"
               >
-                <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
+                <div className={`flex items-center gap-2 ${ACCENT}`}>
                   <Handshake size={17} />
                   <span className="text-xs font-semibold">Connexion</span>
                 </div>
@@ -572,19 +612,19 @@ export default function Landing() {
 
       {/* ============================== CTA ============================== */}
       <section className={`${SECTION_LIGHT} px-5 pb-20 pt-4 sm:px-8 sm:pb-24`}>
-        <div className="relative mx-auto max-w-[1200px] overflow-hidden rounded-[32px] bg-gradient-to-br from-[#0B2A30] via-[#0A3B38] to-[#0B4A3F] px-6 py-14 text-white shadow-[0_30px_80px_-30px_rgba(6,60,50,0.8)] sm:px-12 sm:py-16">
-          <div className="pointer-events-none absolute -right-24 -top-32 h-[380px] w-[380px] rounded-full bg-emerald-400/25 blur-[90px]" />
-          <div className="pointer-events-none absolute -left-20 bottom-[-160px] h-[300px] w-[300px] rounded-full bg-teal-400/15 blur-[80px]" />
+        <div className="relative mx-auto max-w-[1200px] overflow-hidden rounded-[32px] bg-gradient-to-br from-[#0B1437] via-[#101B4B] to-[#16256A] px-6 py-14 text-white shadow-[0_30px_80px_-30px_rgba(10,18,48,0.85)] sm:px-12 sm:py-16">
+          <div className="pointer-events-none absolute -right-24 -top-32 h-[380px] w-[380px] rounded-full bg-[#5EDCC4]/20 blur-[90px]" />
+          <div className="pointer-events-none absolute -left-20 bottom-[-160px] h-[300px] w-[300px] rounded-full bg-indigo-400/20 blur-[80px]" />
 
           <div className="relative flex flex-col items-start justify-between gap-8 lg:flex-row lg:items-center">
             <div className="max-w-2xl">
-              <p className="text-sm font-semibold text-emerald-300">
+              <p className="text-sm font-semibold text-[#7BE9D3]">
                 Votre prochaine étape commence ici
               </p>
               <h2 className="mt-3 text-3xl font-extrabold leading-tight tracking-[-0.04em] sm:text-4xl lg:text-[44px]">
                 Les bonnes connexions changent les perspectives.
               </h2>
-              <p className="mt-4 max-w-xl text-sm leading-7 text-slate-300 sm:text-base">
+              <p className="mt-4 max-w-xl text-sm leading-7 text-[#B7C2E0] sm:text-base">
                 Rejoignez un réseau où les compétences, les besoins et les
                 opportunités peuvent enfin se rencontrer.
               </p>
@@ -596,7 +636,7 @@ export default function Landing() {
               </Link>
               <Link
                 to="/explore"
-                className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-white/20 px-6 text-sm font-semibold text-white transition hover:border-emerald-300/50 hover:bg-white/10"
+                className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-white/20 px-6 text-sm font-semibold text-white transition hover:border-[#7BE9D3]/50 hover:bg-white/10"
               >
                 Explorer TalentShare
                 <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
@@ -607,26 +647,24 @@ export default function Landing() {
       </section>
 
       {/* ============================= FOOTER ============================= */}
-      <footer className={`border-t border-slate-200 px-5 py-8 dark:border-white/10 sm:px-8 ${SECTION_LIGHT}`}>
+      <footer className={`border-t border-[color:var(--ts-border)] px-5 py-8 sm:px-8 ${SECTION_LIGHT}`}>
         <div className="mx-auto flex max-w-[1200px] flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-300 to-emerald-500 text-[#04231D]">
+            <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${MINT_GRADIENT} text-[#0A1230]`}>
               <Layers size={20} strokeWidth={2.2} />
             </span>
             <div>
               <p className={`text-sm font-extrabold tracking-tight ${INK}`}>TalentShare</p>
-              <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-                Share. Connect. Grow.
-              </p>
+              <p className={`mt-0.5 text-[11px] ${MUTED}`}>Share. Connect. Grow.</p>
             </div>
           </div>
 
-          <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">
+          <p className={`text-xs leading-5 ${MUTED}`}>
             © {new Date().getFullYear()} TalentShare · Madagascar
           </p>
 
           <p className={`inline-flex items-center gap-2 text-xs font-medium ${MUTED}`}>
-            <Globe2 size={15} className="text-emerald-600 dark:text-emerald-300" />
+            <Globe2 size={15} className={ACCENT} />
             Les compétences rapprochent les opportunités.
           </p>
         </div>

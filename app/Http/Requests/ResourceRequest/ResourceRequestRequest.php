@@ -24,6 +24,7 @@ class ResourceRequestRequest extends FormRequest
             
             // ✅ AJOUT ICI : On autorise le type de contrat
             'contract_type'       => ['nullable', 'string', 'in:stage,alternance,emploi,mission'],
+            'mission_type'        => ['nullable', 'string', 'in:mission,staffing,freelance'],
             
             'workload_percent'    => ['required', 'integer', 'min:0', 'max:100'],
             'remote'              => ['boolean'],

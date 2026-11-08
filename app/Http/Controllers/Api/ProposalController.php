@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Mission;
 use App\Models\Proposal;
 use App\Models\ResourceRequest;
+use App\Models\ResourceOffer;
 use App\Services\MatchingService;
 use App\Services\NotificationService;
 use Carbon\Carbon;
@@ -29,7 +30,8 @@ class ProposalController extends Controller
             $companyIds = $user->companies()->pluck('id')->toArray();
             $profile = $user->professionalProfile;
 
-            $query = Proposal::query();
+            // ✅ P0-11 (a) : Un destinataire ne doit JAMAIS voir un brouillon
+            $query = Proposal::query()->where('status', '!=', 'draft');
 
             // CAS 1 : Utilisateur est une ENTREPRISE
             if (!empty($companyIds)) {
@@ -119,148 +121,287 @@ class ProposalController extends Controller
     // ============================================
     // STORE (flux classique : le TALENT postule / une entreprise propose un talent)
     // ============================================
-    public function store(Request $request, MatchingService $matching, NotificationService $notifications)
-    {
-        $data = $request->validate([
-            'resource_request_id'     => ['nullable', 'exists:resource_requests,id'],
-            'resource_offer_id'       => ['nullable', 'exists:resource_offers,id'],
-            'job_offer_id'            => ['nullable', 'exists:job_offers,id'],
-            'professional_profile_id' => ['required', 'exists:professional_profiles,id'],
-            'proposed_by_company_id'  => ['nullable', 'exists:companies,id'],
-            'to_company_id'           => ['nullable', 'exists:companies,id'],
-            'message'                 => ['nullable', 'string'],
-            'description'             => ['nullable', 'string'],
-            'conditions'              => ['nullable', 'string'],
-            'start_at'                => ['nullable', 'date'],
-            'end_at'                  => ['nullable', 'date', 'after_or_equal:start_at'],
-            'workload_percent'        => ['nullable', 'integer', 'min:0', 'max:100'],
-            'remote'                  => ['boolean'],
-            'expires_at'              => ['nullable', 'date', 'after_or_equal:today'],
-            'status'                  => ['required', 'in:draft,sent'],
-        ]);
+ 
+public function store(
+    Request $request,
+    MatchingService $matching,
+    NotificationService $notifications
+) {
+    $data = $request->validate([
+        'resource_request_id'     => ['nullable', 'exists:resource_requests,id'],
+        'resource_offer_id'       => ['nullable', 'exists:resource_offers,id'],
+        'job_offer_id'            => ['nullable', 'exists:job_offers,id'],
+        'professional_profile_id' => ['required', 'exists:professional_profiles,id'],
+        'proposed_by_company_id'  => ['nullable', 'exists:companies,id'],
+        'to_company_id'           => ['nullable', 'exists:companies,id'],
+        'message'                 => ['nullable', 'string'],
+        'description'             => ['nullable', 'string'],
+        'conditions'              => ['nullable', 'string'],
+        'start_at'                => ['nullable', 'date'],
+        'end_at'                  => ['nullable', 'date', 'after_or_equal:start_at'],
+        'workload_percent'        => ['nullable', 'integer', 'min:0', 'max:100'],
+        'remote'                  => ['boolean'],
+        'expires_at'              => ['nullable', 'date', 'after_or_equal:today'],
+        'status'                  => ['required', 'in:draft,sent'],
+    ]);
 
-        if (!empty($data['proposed_by_company_id'])) {
-            if ($request->user()->companies()->where('id', $data['proposed_by_company_id'])->doesntExist()) {
-                return response()->json(['message' => 'Cette entreprise ne vous appartient pas.'], 403);
-            }
-        } else {
-            $userProfile = $request->user()->professionalProfile;
-            if (!$userProfile || $userProfile->id !== (int) $data['professional_profile_id']) {
-                return response()->json(['message' => 'Vous ne pouvez proposer que votre propre profil.'], 403);
-            }
+    /*
+    |--------------------------------------------------------------------------
+    | Vérification de l'expéditeur
+    |--------------------------------------------------------------------------
+    */
+
+    if (!empty($data['proposed_by_company_id'])) {
+
+        // L'entreprise doit appartenir à l'utilisateur connecté.
+        $company = $request->user()
+            ->companies()
+            ->where('companies.id', $data['proposed_by_company_id'])
+            ->first();
+
+        if (!$company) {
+            return response()->json([
+                'message' => 'Cette entreprise ne vous appartient pas.',
+            ], 403);
         }
 
-        $profile = \App\Models\ProfessionalProfile::findOrFail($data['professional_profile_id']);
-
-        // GESTION DES DEMANDES DE RESSOURCES
-        if (!empty($data['resource_request_id'])) {
-            $resourceRequest = ResourceRequest::findOrFail($data['resource_request_id']);
-
-            $existing = Proposal::where('resource_request_id', $resourceRequest->id)
-                ->where('professional_profile_id', $profile->id)
-                ->first();
-
-            if ($existing && $data['status'] === 'sent') {
-                return response()->json(['message' => "Ce talent a déjà été proposé pour cette demande.", 'code' => 'duplicate_proposal'], 409);
-            }
-
-            if ($resourceRequest->display_status !== 'published') {
-                return response()->json(['message' => "Cette demande n'accepte plus de propositions.", 'code' => 'request_closed'], 409);
-            }
-
-            if (empty($data['to_company_id']) && $resourceRequest->company_id) {
-                $data['to_company_id'] = $resourceRequest->company_id;
-            }
-        }
-
-        // GESTION DES OFFRES D'EMPLOI (JobOffer)
-        if (!empty($data['job_offer_id'])) {
-            $jobOffer = JobOffer::findOrFail($data['job_offer_id']);
-
-            $existing = Proposal::where('job_offer_id', $jobOffer->id)
-                ->where('professional_profile_id', $profile->id)
-                ->first();
-
-            if ($existing && $data['status'] === 'sent') {
-                return response()->json(['message' => "Vous avez déjà postulé à cette offre.", 'code' => 'duplicate_proposal'], 409);
-            }
-
-            if (empty($data['to_company_id']) && $jobOffer->company_id) {
-                $data['to_company_id'] = $jobOffer->company_id;
-            }
-        }
-
-        // Score matching (seulement pour resource_request)
-        $score = null;
-        if (!empty($data['resource_request_id'])) {
-            $resourceRequest = ResourceRequest::findOrFail($data['resource_request_id']);
-            $scoreResult = $matching->score($resourceRequest, $profile);
-            $score = $scoreResult['total'];
-
-            $overlap = Mission::where('professional_profile_id', $profile->id)
-                ->whereIn('status', ['planned', 'active'])
-                ->where('start_at', '<=', $resourceRequest->end_at)
-                ->where('end_at', '>=', $resourceRequest->start_at)
-                ->exists();
-
-            if ($overlap && $data['status'] === 'sent') {
-                return response()->json(['message' => "Ce talent a déjà une mission sur cette période.", 'code' => 'mission_overlap'], 409);
-            }
-        }
-
-        $expiresAt = $data['expires_at'] ?? now()->addDays(30)->toDateString();
-
-        $proposal = Proposal::create([
-            ...$data,
-            'match_score' => $score,
-            'expires_at' => $expiresAt,
-            'sent_at' => $data['status'] === 'sent' ? now() : null,
-            'proposed_by_company_id' => $data['proposed_by_company_id'] ?? null,
-        ]);
-
-        if ($proposal->status === 'sent') {
-            $this->notifyRecipient($proposal);
-
-            if (empty($data['proposed_by_company_id'])) {
-                try {
-                    $title = !empty($data['job_offer_id'])
-                        ? "Candidature envoyée à l'offre"
-                        : "Candidature envoyée à la demande";
-
-                    $subjectTitle = $jobOffer->title ?? $resourceRequest?->title ?? "une publication";
-
-                    Notification::create([
-                        'user_id' => $request->user()->id,
-                        'type' => 'new_application',
-                        'title' => $title,
-                        'body' => "Vous avez postulé à « {$subjectTitle} »",
-                        'subject_type' => !empty($data['job_offer_id']) ? JobOffer::class : ResourceRequest::class,
-                        'subject_id' => $data['job_offer_id'] ?? $data['resource_request_id'],
-                        'data' => [
-                            'url' => "/proposals/{$proposal->id}",
-                            'proposal_id' => $proposal->id,
-                            'actor_id' => $request->user()->id,
-                        ],
-                    ]);
-                } catch (\Exception $e) {
-                    \Log::warning('Erreur notif candidature: ' . $e->getMessage());
-                }
-            }
-        }
-
-        $relations = ['profile.user', 'proposingCompany', 'toCompany'];
-        if (!empty($data['job_offer_id'])) {
-            $relations[] = 'jobOffer';
-        }
-        if (!empty($data['resource_request_id'])) {
-            $relations[] = 'resourceRequest';
-        }
-
-        return response()->json(
-            $this->appendDisplay($proposal->load($relations)),
-            201
+        // Le profil ciblé doit exister.
+        $target = \App\Models\ProfessionalProfile::findOrFail(
+            $data['professional_profile_id']
         );
+
+        // L'entreprise ne peut proposer que ses propres salariés.
+        if (!$company->employees()
+            ->where('user_id', $target->user_id)
+            ->exists()) {
+
+            return response()->json([
+                'message' => "Ce talent n'est pas un salarié de cette entreprise.",
+            ], 422);
+        }
+
+        // Une entreprise ne peut pas se proposer à elle-même.
+        if (
+            !empty($data['to_company_id']) &&
+            (int) $data['to_company_id'] === (int) $company->id
+        ) {
+            return response()->json([
+                'message' => 'Vous ne pouvez pas vous proposer à vous-même.',
+            ], 403);
+        }
+
+    } else {
+
+        // Une proposition envoyée par un talent ne peut concerner
+        // que son propre profil.
+        $userProfile = $request->user()->professionalProfile;
+
+        if (
+            !$userProfile ||
+            (int) $userProfile->id !== (int) $data['professional_profile_id']
+        ) {
+            return response()->json([
+                'message' => 'Vous ne pouvez proposer que votre propre profil.',
+            ], 403);
+        }
     }
+
+    $profile = \App\Models\ProfessionalProfile::findOrFail(
+        $data['professional_profile_id']
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Gestion des demandes de ressources
+    |--------------------------------------------------------------------------
+    */
+
+    $resourceRequest = null;
+    $jobOffer = null;
+
+    if (!empty($data['resource_request_id'])) {
+
+        $resourceRequest = ResourceRequest::findOrFail(
+            $data['resource_request_id']
+        );
+
+        $existing = Proposal::where(
+            'resource_request_id',
+            $resourceRequest->id
+        )
+            ->where('professional_profile_id', $profile->id)
+            ->first();
+
+        if ($existing && $data['status'] === 'sent') {
+            return response()->json([
+                'message' => 'Ce talent a déjà été proposé pour cette demande.',
+                'code' => 'duplicate_proposal',
+            ], 409);
+        }
+
+        if ($resourceRequest->display_status !== 'published') {
+            return response()->json([
+                'message' => "Cette demande n'accepte plus de propositions.",
+                'code' => 'request_closed',
+            ], 409);
+        }
+
+        if (
+            empty($data['to_company_id']) &&
+            $resourceRequest->company_id
+        ) {
+            $data['to_company_id'] = $resourceRequest->company_id;
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Gestion des offres d'emploi
+    |--------------------------------------------------------------------------
+    */
+
+    if (!empty($data['job_offer_id'])) {
+
+        $jobOffer = JobOffer::findOrFail($data['job_offer_id']);
+
+        $existing = Proposal::where('job_offer_id', $jobOffer->id)
+            ->where('professional_profile_id', $profile->id)
+            ->first();
+
+        if ($existing && $data['status'] === 'sent') {
+            return response()->json([
+                'message' => 'Vous avez déjà postulé à cette offre.',
+                'code' => 'duplicate_proposal',
+            ], 409);
+        }
+
+        if (
+            empty($data['to_company_id']) &&
+            $jobOffer->company_id
+        ) {
+            $data['to_company_id'] = $jobOffer->company_id;
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Score de matching : uniquement pour les demandes de ressources
+    |--------------------------------------------------------------------------
+    */
+
+    $score = null;
+
+    if (!empty($data['resource_request_id'])) {
+
+        $scoreResult = $matching->score($resourceRequest, $profile);
+        $score = $scoreResult['total'];
+
+        $overlap = Mission::where(
+            'professional_profile_id',
+            $profile->id
+        )
+            ->whereIn('status', ['planned', 'active'])
+            ->where('start_at', '<=', $resourceRequest->end_at)
+            ->where('end_at', '>=', $resourceRequest->start_at)
+            ->exists();
+
+        if ($overlap && $data['status'] === 'sent') {
+            return response()->json([
+                'message' => 'Ce talent a déjà une mission sur cette période.',
+                'code' => 'mission_overlap',
+            ], 409);
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Création de la proposition
+    |--------------------------------------------------------------------------
+    */
+
+    $expiresAt = $data['expires_at'] ?? now()->addDays(30)->toDateString();
+
+    $proposal = Proposal::create([
+        ...$data,
+        'match_score' => $score,
+        'expires_at' => $expiresAt,
+        'sent_at' => $data['status'] === 'sent' ? now() : null,
+        'proposed_by_company_id' => $data['proposed_by_company_id'] ?? null,
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Notifications
+    |--------------------------------------------------------------------------
+    */
+
+    if ($proposal->status === 'sent') {
+
+        $this->notifyRecipient($proposal);
+
+        if (empty($data['proposed_by_company_id'])) {
+
+            try {
+
+                $title = !empty($data['job_offer_id'])
+                    ? 'Candidature envoyée à l’offre'
+                    : 'Candidature envoyée à la demande';
+
+                $subjectTitle = $jobOffer->title
+                    ?? $resourceRequest?->title
+                    ?? 'une publication';
+
+                Notification::create([
+                    'user_id' => $request->user()->id,
+                    'type' => 'new_application',
+                    'title' => $title,
+                    'body' => "Vous avez postulé à « {$subjectTitle} »",
+                    'subject_type' => !empty($data['job_offer_id'])
+                        ? JobOffer::class
+                        : ResourceRequest::class,
+                    'subject_id' => $data['job_offer_id']
+                        ?? $data['resource_request_id'],
+                    'data' => [
+                        'url' => "/proposals/{$proposal->id}",
+                        'proposal_id' => $proposal->id,
+                        'actor_id' => $request->user()->id,
+                    ],
+                ]);
+
+            } catch (\Exception $e) {
+                \Log::warning(
+                    'Erreur notif candidature: ' . $e->getMessage()
+                );
+            }
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Relations à charger pour la réponse
+    |--------------------------------------------------------------------------
+    */
+
+    $relations = [
+        'profile.user',
+        'proposingCompany',
+        'toCompany',
+    ];
+
+    if (!empty($data['job_offer_id'])) {
+        $relations[] = 'jobOffer';
+    }
+
+    if (!empty($data['resource_request_id'])) {
+        $relations[] = 'resourceRequest';
+    }
+
+    return response()->json(
+        $this->appendDisplay($proposal->load($relations)),
+        201
+    );
+}
+
 
     // ============================================
     // SUBMIT
@@ -268,6 +409,11 @@ class ProposalController extends Controller
     public function submit(Request $request, Proposal $proposal)
     {
         $this->authorizeSender($request, $proposal);
+
+        // ✅ P0-11 (b) : Redirection vers CompanyProposalController si c'est une offre de ressource
+        if ($proposal->resource_offer_id) {
+            return app(CompanyProposalController::class)->submitOffer($request, $proposal);
+        }
 
         if ($proposal->status !== 'draft') {
             return response()->json(['message' => 'Seules les propositions en brouillon peuvent être envoyées.'], 409);
@@ -351,9 +497,12 @@ class ProposalController extends Controller
             $proposal->update(['status' => 'viewed', 'viewed_at' => now()]);
         }
 
+        // ✅ P0-11 (d) : Chargement des relations pour les offres de ressource
         $proposal->load([
             'resourceRequest.company',
-            'resourceOffer',
+            'resourceOffer.company',        // ✅ AJOUT
+            'resourceOffer.profile.user',   // ✅ AJOUT
+            'resourceOffer.skills',         // ✅ AJOUT
             'profile.user',
             'proposingCompany',
             'toCompany',
@@ -367,101 +516,185 @@ class ProposalController extends Controller
     // ============================================
     // ACCEPT
     // ============================================
-    public function accept(Request $request, Proposal $proposal, NotificationService $notifications)
-    {
-        $this->authorizeRecipient($request, $proposal);
+   
+public function accept(
+    Request $request,
+    Proposal $proposal,
+    NotificationService $notifications
+) {
+    $this->authorizeRecipient($request, $proposal);
 
-        if (!in_array($proposal->status, ['sent', 'viewed'])) {
-            return response()->json(['message' => 'Cette proposition ne peut plus être acceptée.'], 409);
-        }
+    if (!in_array($proposal->status, ['sent', 'viewed'])) {
+        return response()->json([
+            'message' => 'Cette proposition ne peut plus être acceptée.',
+        ], 409);
+    }
 
-        $resourceRequest = $proposal->resourceRequest;
+    /*
+    |--------------------------------------------------------------------------
+    | FLUX ENTREPRISE → ENTREPRISE
+    |--------------------------------------------------------------------------
+    |
+    | Une entreprise propose un de ses salariés à une autre entreprise.
+    | On délègue la création de la mission au CompanyProposalController.
+    |
+    */
 
-        // =====================================================
-        // ✅ FLUX INVERSÉ : le talent accepte → ENTRETIEN (pas de mission tout de suite)
-        // =====================================================
-        if ($this->isReverseFlow($proposal)) {
-            $proposal->update([
-                'status'           => 'accepted',
-                'responded_at'     => now(),
-                'interview_status' => 'pending',
-                'contract_kind'    => $proposal->contract_kind ?? $this->resolveContractKind($resourceRequest),
-            ]);
+    if (
+        $proposal->proposed_by_company_id &&
+        $proposal->to_company_id
+    ) {
+        return app(CompanyProposalController::class)
+            ->acceptCompanyProposal(
+                $request,
+                $proposal,
+                $notifications
+            );
+    }
 
-            try {
-                $owner = $proposal->proposingCompany?->owner;
-                if ($owner) {
-                    $talentName = $proposal->profile?->user?->name ?? 'Le talent';
-                    $notifications->notify(
-                        $owner,
-                        'proposal_accepted',
-                        '✅ Proposition acceptée !',
-                        "{$talentName} a accepté votre proposition. Planifiez maintenant l'entretien.",
-                        $proposal,
-                        ['url' => "/proposals/{$proposal->id}", 'proposal_id' => $proposal->id]
-                    );
-                }
-            } catch (\Exception $e) {
-                \Log::warning('Notification failed: ' . $e->getMessage());
-            }
+    $resourceRequest = $proposal->resourceRequest;
 
-            return response()->json([
-                'proposal' => $this->appendDisplay($proposal),
-                'mission'  => null,
-            ]);
-        }
+    /*
+    |--------------------------------------------------------------------------
+    | FLUX INVERSÉ : l'entreprise propose un emploi à un talent
+    |--------------------------------------------------------------------------
+    |
+    | Le talent accepte la proposition.
+    | On attend ensuite la planification et la validation de l'entretien.
+    |
+    */
 
-        // =====================================================
-        // FLUX CLASSIQUE (inchangé)
-        // =====================================================
-        $proposal->update(['status' => 'accepted', 'responded_at' => now()]);
+    if ($this->isReverseFlow($proposal)) {
 
-        $jobType = $resourceRequest?->type ?? 'job';
-
-        $startAt = $proposal->start_at ?? $resourceRequest?->start_at ?? now();
-        $endAt = $proposal->end_at ?? $resourceRequest?->end_at ?? now()->addMonth();
-
-        $isInternship = in_array($jobType, ['internship', 'stage']);
-        $initialStatus = $isInternship ? 'planned' : 'pending_employee';
-
-        $mission = Mission::create([
-            'proposal_id'             => $proposal->id,
-            // ✅ FIX : "proposing_company_id" n'existe pas → on utilise l'entreprise destinataire
-            'requesting_company_id'   => $proposal->to_company_id ?? $resourceRequest?->company_id,
-            'supplying_company_id'    => null,
-            'professional_profile_id' => $proposal->professional_profile_id,
-            'start_at'                => $startAt,
-            'end_at'                  => $isInternship ? $endAt : now()->addMonth(),
-            'workload_percent'        => 100,
-            'remote'                  => false,
-            'status'                  => $initialStatus,
+        $proposal->update([
+            'status' => 'accepted',
+            'responded_at' => now(),
+            'interview_status' => 'pending',
+            'contract_kind' => $proposal->contract_kind
+                ?? $this->resolveContractKind($resourceRequest),
         ]);
 
-        if ($resourceRequest) {
-            $resourceRequest->update(['status' => 'closed']);
-        }
-
         try {
-            $talent = $proposal->profile->user;
-            $notifications->notify(
-                $talent,
-                'proposal_accepted',
-                '✅ Proposition acceptée !',
-                $isInternship
-                    ? "Votre entretien pour le stage est validé. Consultez votre mission."
-                    : "Votre période d'essai d'1 mois commence. Bon courage !",
-                $mission,
-                ['url' => "/missions/{$mission->id}", 'mission_id' => $mission->id]
-            );
+
+            $owner = $proposal->proposingCompany?->owner;
+
+            if ($owner) {
+
+                $talentName = $proposal->profile?->user?->name
+                    ?? 'Le talent';
+
+                $notifications->notify(
+                    $owner,
+                    'proposal_accepted',
+                    '✅ Proposition acceptée !',
+                    "{$talentName} a accepté votre proposition. Planifiez maintenant l'entretien.",
+                    $proposal,
+                    [
+                        'url' => "/proposals/{$proposal->id}",
+                        'proposal_id' => $proposal->id,
+                    ]
+                );
+            }
+
         } catch (\Exception $e) {
-            \Log::warning('Notification failed: ' . $e->getMessage());
+            \Log::warning(
+                'Notification failed: ' . $e->getMessage()
+            );
         }
 
         return response()->json([
             'proposal' => $this->appendDisplay($proposal),
-            'mission' => $mission,
-        ], 201);
+            'mission' => null,
+        ]);
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | FLUX CLASSIQUE : talent → entreprise
+    |--------------------------------------------------------------------------
+    |
+    | Ce fonctionnement reste inchangé.
+    |
+    */
+
+    $proposal->update([
+        'status' => 'accepted',
+        'responded_at' => now(),
+    ]);
+
+    $jobType = $resourceRequest?->type ?? 'job';
+
+    $startAt = $proposal->start_at
+        ?? $resourceRequest?->start_at
+        ?? now();
+
+    $endAt = $proposal->end_at
+        ?? $resourceRequest?->end_at
+        ?? now()->addMonth();
+
+    $isInternship = in_array($jobType, ['internship', 'stage']);
+
+    $initialStatus = $isInternship
+        ? 'planned'
+        : 'pending_employee';
+
+    $mission = Mission::create([
+        'proposal_id' => $proposal->id,
+
+        'requesting_company_id' => $proposal->to_company_id
+            ?? $resourceRequest?->company_id,
+
+        'supplying_company_id' => null,
+
+        'professional_profile_id' => $proposal->professional_profile_id,
+
+        'start_at' => $startAt,
+
+        'end_at' => $isInternship
+            ? $endAt
+            : now()->addMonth(),
+
+        'workload_percent' => 100,
+        'remote' => false,
+        'status' => $initialStatus,
+    ]);
+
+    if ($resourceRequest) {
+        $resourceRequest->update([
+            'status' => 'closed',
+        ]);
+    }
+
+    try {
+
+        $talent = $proposal->profile->user;
+
+        $notifications->notify(
+            $talent,
+            'proposal_accepted',
+            '✅ Proposition acceptée !',
+            $isInternship
+                ? 'Votre entretien pour le stage est validé. Consultez votre mission.'
+                : "Votre période d'essai d'1 mois commence. Bon courage !",
+            $mission,
+            [
+                'url' => "/missions/{$mission->id}",
+                'mission_id' => $mission->id,
+            ]
+        );
+
+    } catch (\Exception $e) {
+        \Log::warning(
+            'Notification failed: ' . $e->getMessage()
+        );
+    }
+
+    return response()->json([
+        'proposal' => $this->appendDisplay($proposal),
+        'mission' => $mission,
+    ], 201);
+}
+
 
     // ============================================
     // DECLINE
@@ -833,12 +1066,13 @@ class ProposalController extends Controller
     // ============================================
     // ✅ FLUX INVERSÉ : le RECRUTEUR propose une offre à un TALENT
     // ============================================
-    public function recruiterApply(Request $request, NotificationService $notifications)
+      public function recruiterApply(Request $request, NotificationService $notifications)
     {
-        // Le profil du talent est déduit de l'AUTEUR de la demande (on ignore tout professional_profile_id envoyé)
-        $data = $request->validate([
+      $data = $request->validate([
             'resource_request_id'    => ['required', 'exists:resource_requests,id'],
             'proposed_by_company_id' => ['required', 'exists:companies,id'],
+            // ✅ On force la conversion en entier si c'est un string qui contient un chiffre
+            'employee_id'            => ['required', 'integer', 'exists:professional_profiles,id'],
             'message'                => ['required', 'string', 'min:20'],
             'conditions'             => ['nullable', 'string'],
             'start_at'               => ['nullable', 'date'],
@@ -851,12 +1085,8 @@ class ProposalController extends Controller
             return response()->json(['message' => 'Cette entreprise ne vous appartient pas.'], 403);
         }
 
-        // 2. La demande doit avoir été publiée par un talent
-        $resourceRequest = ResourceRequest::with('author.professionalProfile')->findOrFail($data['resource_request_id']);
-
-        if ($resourceRequest->author_type !== 'talent') {
-            return response()->json(['message' => 'Cette demande a été publiée par une entreprise. Utilisez le flux classique.'], 409);
-        }
+        // 2. La demande existe
+        $resourceRequest = ResourceRequest::findOrFail($data['resource_request_id']);
 
         if ($resourceRequest->display_status !== 'published') {
             return response()->json(['message' => "Cette demande n'accepte plus de propositions.", 'code' => 'request_closed'], 409);
@@ -866,13 +1096,13 @@ class ProposalController extends Controller
             return response()->json(['message' => 'Vous ne pouvez pas répondre à votre propre demande.'], 403);
         }
 
-        // 3. Le vrai profil du talent
-        $talentProfile = $resourceRequest->author?->professionalProfile;
-        if (!$talentProfile) {
-            return response()->json(['message' => "L'auteur de cette demande n'a pas de profil professionnel."], 422);
+        // 3. Vérifier le salarié
+        $employeeProfile = \App\Models\ProfessionalProfile::find($data['employee_id']);
+        if (!$employeeProfile) {
+            return response()->json(['message' => 'Ce salarié n\'existe pas.'], 404);
         }
 
-        // 4. Pas de doublon actif pour la même entreprise
+        // 4. Pas de doublon
         $duplicate = Proposal::where('resource_request_id', $resourceRequest->id)
             ->where('proposed_by_company_id', $data['proposed_by_company_id'])
             ->whereNotIn('status', ['cancelled', 'declined', 'expired'])
@@ -885,9 +1115,9 @@ class ProposalController extends Controller
         // 5. Création
         $proposal = Proposal::create([
             'resource_request_id'     => $resourceRequest->id,
-            'professional_profile_id' => $talentProfile->id,
+            'professional_profile_id' => $data['employee_id'], // ✅ On assigne le bon ID
             'proposed_by_company_id'  => $data['proposed_by_company_id'],
-            'to_company_id'           => null,
+            'to_company_id'           => $resourceRequest->company_id ?? null,
             'message'                 => $data['message'],
             'conditions'              => $data['conditions'] ?? null,
             'start_at'                => $data['start_at'] ?? null,
@@ -898,15 +1128,16 @@ class ProposalController extends Controller
             'contract_kind'           => $this->resolveContractKind($resourceRequest),
         ]);
 
-        // 6. Notifier le talent
+        // 6. Notification
         try {
-            if ($resourceRequest->author) {
+            $recipient = $resourceRequest->company?->owner ?? $resourceRequest->author;
+            if ($recipient) {
                 $companyName = $proposal->proposingCompany?->name ?? 'Une entreprise';
                 $notifications->notify(
-                    $resourceRequest->author,
+                    $recipient,
                     'proposal_received',
-                    '📩 Nouvelle proposition de recruteur',
-                    "{$companyName} vous fait une proposition pour votre demande : {$resourceRequest->title}.",
+                    '📩 Nouvelle proposition de collaboration',
+                    "{$companyName} vous propose un talent pour votre demande : {$resourceRequest->title}.",
                     $proposal,
                     ['url' => "/proposals/{$proposal->id}", 'proposal_id' => $proposal->id]
                 );
@@ -920,4 +1151,83 @@ class ProposalController extends Controller
             201
         );
     }
+    public function applyToResourceOffer(Request $request, NotificationService $notifications)
+    {
+        $data = $request->validate([
+            'resource_offer_id'      => ['required', 'exists:resource_offers,id'],
+            'proposed_by_company_id' => ['required', 'exists:companies,id'],
+            'message'                => ['required', 'string', 'min:20'],
+            'conditions'             => ['nullable', 'string'],
+            'start_at'               => ['nullable', 'date'],
+            'end_at'                 => ['nullable', 'date', 'after_or_equal:start_at'],
+        ]);
+
+        // 1. L'entreprise qui propose doit appartenir à l'utilisateur
+        if ($request->user()->companies()->where('id', $data['proposed_by_company_id'])->doesntExist()) {
+            return response()->json(['message' => 'Cette entreprise ne vous appartient pas.'], 403);
+        }
+
+        // 2. L'offre de ressource doit exister et être publiée
+        $offer = ResourceOffer::with(['company', 'profile.user'])->findOrFail($data['resource_offer_id']);
+        
+        if ($offer->status !== 'published') {
+            return response()->json(['message' => "Cette offre n'est plus disponible.", 'code' => 'offer_closed'], 409);
+        }
+
+        // 3. L'entreprise ne peut pas postuler à sa propre offre
+        if ($offer->company_id === $data['proposed_by_company_id']) {
+            return response()->json(['message' => 'Vous ne pouvez pas postuler à votre propre offre.'], 403);
+        }
+
+        // 4. Vérifier qu'il n'y a pas déjà une proposition active pour cette offre de la part de cette entreprise
+        $duplicate = Proposal::where('resource_offer_id', $offer->id)
+            ->where('proposed_by_company_id', $data['proposed_by_company_id'])
+            ->whereNotIn('status', ['cancelled', 'declined', 'expired'])
+            ->exists();
+
+        if ($duplicate) {
+            return response()->json(['message' => 'Votre entreprise a déjà fait une proposition pour cette offre.', 'code' => 'duplicate_proposal'], 409);
+        }
+
+        // 5. Création de la proposition
+        $proposal = Proposal::create([
+            'resource_offer_id'       => $offer->id,
+            'professional_profile_id' => $offer->professional_profile_id,
+            'proposed_by_company_id'  => $data['proposed_by_company_id'], // L'entreprise qui veut le talent
+            'to_company_id'           => $offer->company_id,              // L'entreprise prêteuse
+            'message'                 => $data['message'],
+            'conditions'              => $data['conditions'] ?? null,
+            'start_at'                => $data['start_at'] ?? $offer->start_at,
+            'end_at'                  => $data['end_at'] ?? $offer->end_at,
+            'status'                  => 'sent',
+            'sent_at'                 => now(),
+            'expires_at'              => now()->addDays(30),
+        ]);
+
+        // 6. Notifier l'entreprise prêteuse
+        try {
+            $companyOwner = $offer->company->owner;
+            if ($companyOwner) {
+                $proposingCompany = \App\Models\Company::find($data['proposed_by_company_id']);
+                $proposingCompanyName = $proposingCompany ? $proposingCompany->name : 'Une entreprise';
+                
+                $notifications->notify(
+                    $companyOwner,
+                    'proposal_received',
+                    '📩 Nouvelle proposition de collaboration',
+                    "{$proposingCompanyName} souhaite collaborer avec vous pour le profil de {$offer->profile?->user?->name}.",
+                    $proposal,
+                    ['url' => "/proposals/{$proposal->id}", 'proposal_id' => $proposal->id]
+                );
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Erreur notif offre ressource: ' . $e->getMessage());
+        }
+
+        return response()->json(
+            $this->appendDisplay($proposal->load(['profile.user', 'proposingCompany', 'toCompany'])),
+            201
+        );
+    }
+
 }

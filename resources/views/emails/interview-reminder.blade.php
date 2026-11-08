@@ -1,25 +1,28 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-    <meta charset="utf-8">
-    <style>
-        body { font-family: -apple-system, Arial, sans-serif; background: #0A1229; padding: 24px; color: #fff; margin: 0; }
-        .card { max-width: 480px; margin: 0 auto; background: #0F1E45; border-radius: 16px; padding: 32px; text-align: center; }
-        .badge { display: inline-block; background: rgba(245,158,11,0.15); color: #fbbf24; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 4px 10px; border-radius: 999px; }
-        h1 { font-size: 22px; margin: 16px 0 4px; }
-        p { color: #cbd5e1; font-size: 14px; line-height: 1.6; }
-        .btn { display: inline-block; background: #34d399; color: #0A1229 !important; text-decoration: none; font-weight: 700; padding: 14px 28px; border-radius: 999px; margin-top: 20px; font-size: 15px; }
-    </style>
+<meta charset="utf-8">
+<title>Rappel d'entretien</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
-<body>
-    <div class="card">
-        <span class="badge">Dans 30 minutes</span>
-        <h1>Bonjour {{ $recipientName }},</h1>
-        <p>
+<body style="margin:0; padding:24px; background-color:#F3F6FC; font-family:'Plus Jakarta Sans', Arial, sans-serif; color: #0B1F33;">
+    <div style="max-width: 480px; margin: 0 auto; background-color: #FFFFFF; border-radius: 16px; padding: 32px; text-align: center; border: 1px solid #E2E8F0; box-shadow:0 4px 24px rgba(11,31,51,0.06);">
+        
+        <span style="display: inline-block; background: #FEF3C7; color: #D97706; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 6px 12px; border-radius: 999px;">
+            Dans 30 minutes
+        </span>
+        
+        <h1 style="font-size: 22px; font-weight: 800; margin: 16px 0 8px; color: #0B1F33;">Bonjour {{ $recipientName }},</h1>
+        
+        <p style="color: #475569; font-size: 15px; line-height: 1.6; margin-bottom: 24px;">
             {{ $isRecruiter ? "Votre entretien avec le candidat" : "Votre entretien" }}
-            pour « {{ $offer->title }} » commence bientôt.
+            pour « <strong style="color:#0B1F33;">{{ $offer->title }}</strong> » commence bientôt.
         </p>
-        <a href="{{ $application->interview_link }}" class="btn">Rejoindre maintenant</a>
+        
+        <a href="{{ $application->interview_link }}" 
+           style="display: inline-block; background: #0B1F33; color: #FFFFFF !important; text-decoration: none; font-weight: 700; padding: 14px 28px; border-radius: 999px; font-size: 15px;">
+            Rejoindre maintenant
+        </a>
     </div>
 </body>
 </html>

@@ -1,18 +1,29 @@
 import React, { useEffect, useState } from "react";
 import {
-  X, Loader2, Clock, Eye, Check, UserCheck, Video,
-  FileText, ExternalLink, Calendar, AlertCircle, Download,
-  MapPin, Briefcase, Building2,
+  X, Loader2, Clock, Eye, Check, UserCheck, Video, FileText, ExternalLink,
+  Calendar, AlertCircle, Download, MapPin, Briefcase, Building2,
 } from "lucide-react";
 import api from "../services/api";
 
+// ✅ Dictionnaire pour traduire les types d'offres
+const OFFER_TYPES = {
+  internship: "Stage",
+  apprenticeship: "Alternance",
+  fixed_term: "CDD",
+  permanent: "Recrutement permanent",
+  first_job: "Recrutement permanent",
+  junior_mission: "Mission junior",
+  freelance: "Freelance",
+  student_project: "Projet étudiant",
+};
+
 const STATUS_META = {
-  sent:        { label: "Envoyée",         icon: Clock,     cls: "border-slate-300 bg-slate-50 text-slate-700 dark:border-white/20 dark:bg-white/10 dark:text-slate-300",    step: 1 },
-  viewed:      { label: "Consultée",       icon: Eye,       cls: "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-400",       step: 2 },
-  shortlisted: { label: "Présélectionnée", icon: UserCheck, cls: "border-violet-300 bg-violet-50 text-violet-700 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-400", step: 3 },
-  interview:   { label: "Entretien",       icon: Video,     cls: "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400",    step: 4 },
-  accepted:    { label: "Acceptée",        icon: Check,     cls: "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400", step: 5 },
-  rejected:    { label: "Refusée",         icon: X,         cls: "border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400",       step: 0 },
+  sent:        { label: "Envoyée",         style: "bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-300",  dot: "bg-slate-400",  step: 1 },
+  viewed:      { label: "Consultée",       style: "bg-blue-50 text-blue-800 dark:bg-blue-500/10 dark:text-blue-400",     dot: "bg-blue-500",   step: 2 },
+  shortlisted: { label: "Présélectionnée", style: "bg-violet-50 text-violet-800 dark:bg-violet-500/10 dark:text-violet-400", dot: "bg-violet-500", step: 3 },
+  interview:   { label: "Entretien",       style: "bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-400",   dot: "bg-amber-500",  step: 4 },
+  accepted:    { label: "Acceptée",        style: "bg-[#16B8B1]/10 text-[#0F9691] dark:bg-[#16B8B1]/20 dark:text-[#16B8B1]", dot: "bg-[#16B8B1]", step: 5 },
+  rejected:    { label: "Refusée",         style: "bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400",   dot: "bg-rose-500",   step: 0 },
 };
 
 const TIMELINE_STEPS = [
@@ -51,316 +62,306 @@ export default function ApplicationDetailModal({ applicationId, onClose, embedde
 
     api
       .get(`/applications/${applicationId}`)
-      .then((res) => {
-        if (active) setApplication(res.data?.data || res.data);
-      })
-      .catch(() => {
-        if (active) setError("Candidature introuvable.");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+      .then((res) => active && setApplication(res.data?.data || res.data))
+      .catch(() => active && setError("Candidature introuvable."))
+      .finally(() => active && setLoading(false));
 
     return () => { active = false; };
   }, [applicationId]);
 
   const statusMeta = application?.status ? STATUS_META[application.status] : null;
-  const currentStep = statusMeta?.step || 1;
+  const rejected = application?.status === "rejected";
+  const currentStep = rejected ? 1 : statusMeta?.step || 1;
   const jobOffer = application?.job_offer || {};
   const company = jobOffer.company || {};
+  const place = [jobOffer.city, jobOffer.country].filter(Boolean).join(", ");
+  const offerTypeLabel = OFFER_TYPES[jobOffer.offer_type] || jobOffer.offer_type;
 
-  /* ============ CONTENU PARTAGÉ (embarqué OU overlay) ============ */
+  /* ---------- Blocs ---------- */
+
+  // ✅ Résumé : Icône supprimée
+  const Summary = application && (
+    <Card>
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="truncate text-sm text-slate-500 dark:text-slate-400">{company.name || "Entreprise"}</p>
+          <h1 className="mt-0.5 text-lg font-bold tracking-tight text-[#0B1F33] dark:text-white">
+            {jobOffer.title || "Candidature"}
+          </h1>
+          {place && (
+            <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+              <MapPin size={12} className="text-slate-400" /> {place}
+            </p>
+          )}
+        </div>
+
+        {statusMeta && (
+          <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${statusMeta.style}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${statusMeta.dot}`} />
+            {statusMeta.label}
+          </span>
+        )}
+      </div>
+    </Card>
+  );
+
+  const Timeline = application && (
+    <Card title="Progression">
+      {rejected && (
+        <div className="mb-4 flex items-center gap-2.5 rounded-xl bg-rose-50 px-3.5 py-2.5 text-xs font-medium text-rose-700 ring-1 ring-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:ring-rose-500/20">
+          <AlertCircle size={15} /> Cette candidature n'a pas été retenue.
+        </div>
+      )}
+
+      <div className="flex items-start">
+        {TIMELINE_STEPS.map((s, i) => {
+          const stepNum = i + 1;
+          const done = stepNum <= currentStep;
+          const isCurrent = stepNum === currentStep;
+          const isLast = i === TIMELINE_STEPS.length - 1;
+          const Icon = s.icon;
+
+          return (
+            <React.Fragment key={s.key}>
+              <div className="flex min-w-0 flex-1 flex-col items-center">
+                <div
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition ${
+                    done
+                      ? rejected
+                        ? "bg-rose-500 text-white"
+                        : "bg-[#16B8B1] text-[#0B1F33] shadow-md shadow-[#16B8B1]/20"
+                      : "bg-slate-100 text-slate-400 dark:bg-white/5 dark:text-slate-500"
+                  } ${isCurrent ? (rejected ? "ring-4 ring-rose-500/15" : "ring-4 ring-[#16B8B1]/20") : ""}`}
+                >
+                  <Icon size={16} />
+                </div>
+                <span
+                  className={`mt-2 max-w-[78px] text-center text-[10px] font-bold leading-tight ${
+                    done ? (rejected ? "text-rose-600 dark:text-rose-400" : "text-[#0F9691] dark:text-[#16B8B1]") : "text-slate-400"
+                  }`}
+                >
+                  {s.label}
+                </span>
+              </div>
+
+              {!isLast && (
+                <div className="flex h-10 shrink-0 items-center px-0.5">
+                  <div
+                    className={`h-0.5 w-5 rounded-full sm:w-9 ${
+                      stepNum < currentStep ? "bg-[#16B8B1]" : "bg-slate-200 dark:bg-white/10"
+                    }`}
+                  />
+                </div>
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+    </Card>
+  );
+
+  const Interview =
+    application?.status === "interview" && application.interview_at ? (
+      <div className="overflow-hidden rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-5 dark:border-amber-500/20 dark:from-amber-500/10 dark:to-[#131E47]">
+        <div className="flex items-start gap-3.5">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-amber-600 shadow-sm ring-1 ring-amber-100 dark:bg-white/10 dark:ring-amber-500/20">
+            <Calendar size={19} />
+          </span>
+          <div>
+            <p className="text-xs font-bold text-amber-800 dark:text-amber-400">Entretien programmé</p>
+            <p className="mt-1 text-sm font-bold capitalize text-[#0B1F33] dark:text-white">
+              {formatDate(application.interview_at, {
+                weekday: "long", day: "numeric", month: "long", year: "numeric",
+              })}
+              <span className="font-normal normal-case text-slate-500 dark:text-slate-400"> à </span>
+              <span className="normal-case">
+             {new Date(application.interview_at).toLocaleTimeString("fr-FR", { 
+  hour: "2-digit", 
+  minute: "2-digit", 
+  timeZone: "Indian/Antananarivo" 
+})}
+              </span>
+            </p>
+            {application.interview_link && (
+              <a
+                href={application.interview_link}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-amber-700"
+              >
+                <Video size={13} /> Rejoindre l'entretien <ExternalLink size={11} />
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+    ) : null;
+
+  // ✅ Infos : Icônes supprimées
+  const Infos = application && (
+    <Card title="Informations">
+      <div className="space-y-4">
+        <div>
+          <p className="text-[11px] font-medium text-slate-400">Date de candidature</p>
+          <p className="mt-0.5 text-sm font-bold text-[#0B1F33] dark:text-white">{formatDate(application.created_at)}</p>
+        </div>
+        {place && (
+          <div>
+            <p className="text-[11px] font-medium text-slate-400">Localisation</p>
+            <p className="mt-0.5 text-sm font-bold text-[#0B1F33] dark:text-white">{place}</p>
+          </div>
+        )}
+        {jobOffer.offer_type && (
+          <div>
+            <p className="text-[11px] font-medium text-slate-400">Type de contrat</p>
+            <p className="mt-0.5 text-sm font-bold text-[#0B1F33] dark:text-white">{offerTypeLabel}</p>
+          </div>
+        )}
+        {company.name && (
+          <div>
+            <p className="text-[11px] font-medium text-slate-400">Entreprise</p>
+            <p className="mt-0.5 text-sm font-bold text-[#0B1F33] dark:text-white">{company.name}</p>
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+
+  const Documents =
+    application ? (
+      <Card title="Documents joints">
+        <div className="space-y-2">
+          {/* Portfolio */}
+          {application.portfolio && (
+            <DocLink
+              href={`/portfolio/${application.portfolio.public_slug}`}
+              icon={Briefcase}
+              title={application.portfolio.title || "Mon portfolio"}
+              subtitle="Portfolio"
+              action={<ExternalLink size={14} />}
+            />
+          )}
+
+          {/* ✅ CV : On prend celui de la candidature, sinon celui du profil */}
+          {(application.cv_path || application.profile?.cv_path) ? (
+            <DocLink
+              href={`/storage/${application.cv_path || application.profile?.cv_path}`}
+              icon={FileText}
+              title="Mon CV.pdf"
+              subtitle="Curriculum vitæ"
+              action={<Download size={14} />}
+              download
+            />
+          ) : (
+             <p className="text-xs text-slate-400 italic">Aucun document joint.</p>
+          )}
+        </div>
+      </Card>
+    ) : null;
+
+  const Letter = application?.cover_letter ? (
+    <Card title="Lettre de motivation">
+      <p className="whitespace-pre-line text-sm leading-6 text-slate-600 dark:text-slate-300">{application.cover_letter}</p>
+    </Card>
+  ) : null;
+
+  const Notes = application?.recruiter_notes ? (
+    <div className="rounded-2xl border border-sky-200 bg-sky-50/70 p-5 dark:border-sky-500/20 dark:bg-sky-500/10">
+      <h2 className="mb-2 text-xs font-bold text-sky-800 dark:text-sky-300">Notes du recruteur</h2>
+      <p className="whitespace-pre-line text-sm leading-6 text-slate-600 dark:text-slate-300">{application.recruiter_notes}</p>
+    </div>
+  ) : null;
+
+  /* ---------- Corps ---------- */
   const Body = (
-    <div className="min-h-0 flex-1 overflow-y-auto bg-[#F9FBFC] p-5 dark:bg-[#0B1F33] sm:p-6">
+    <div className="min-h-0 flex-1 overflow-y-auto bg-[#F3F6FC] p-5 sm:p-6 dark:bg-[#0A1230]">
       {loading ? (
         <div className="flex min-h-[300px] items-center justify-center">
-          <Loader2 size={28} className="animate-spin text-[#0F9691] dark:text-emerald-400" />
+          <Loader2 size={28} className="animate-spin text-[#16B8B1]" />
         </div>
       ) : error || !application ? (
         <div className="py-16 text-center">
-          <AlertCircle size={40} className="mx-auto text-rose-500 dark:text-rose-400" />
-          <h2 className="mt-3 text-lg font-bold text-[#102A43] dark:text-white">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-500 dark:bg-rose-500/10 dark:text-rose-400">
+            <AlertCircle size={26} />
+          </div>
+          <h2 className="mt-3 text-base font-semibold text-[#0B1F33] dark:text-white">
             {error || "Candidature introuvable"}
           </h2>
         </div>
+      ) : embedded ? (
+        <div className="space-y-4 font-['Plus_Jakarta_Sans',sans-serif]">
+          {Summary}{Timeline}{Interview}{Infos}{Documents}{Letter}{Notes}
+        </div>
       ) : (
-        <div className="space-y-4">
-
-          {/* En-tête candidature */}
-          <section className="rounded-2xl border border-[#E5EDF3] bg-white p-5 dark:border-white/10 dark:bg-[#112A3A]">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#079C94] dark:text-emerald-400">
-                  {company.name || "Entreprise"}
-                </p>
-                <h1 className="mt-1 text-lg font-extrabold text-[#102A43] dark:text-white">
-                  {jobOffer.title || "Candidature"}
-                </h1>
-                {jobOffer.city && (
-                  <p className="mt-1 flex items-center gap-1.5 text-xs text-[#71849A] dark:text-slate-400">
-                    <MapPin size={12} />
-                    {[jobOffer.city, jobOffer.country].filter(Boolean).join(", ")}
-                  </p>
-                )}
-              </div>
-
-              {statusMeta && (
-                <span className={`shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-bold ${statusMeta.cls}`}>
-                  {statusMeta.label}
-                </span>
-              )}
-            </div>
-          </section>
-
-          {/* Timeline */}
-          <section className="rounded-2xl border border-[#E5EDF3] bg-white p-5 dark:border-white/10 dark:bg-[#112A3A]">
-            <h2 className="mb-4 text-[10px] font-extrabold uppercase tracking-wider text-[#8A9BB0] dark:text-slate-500">
-              Progression
-            </h2>
-
-            <div className="flex items-start justify-between gap-0">
-              {TIMELINE_STEPS.map((s, i) => {
-                const stepNum = i + 1;
-                const done = stepNum <= currentStep;
-                const isCurrent = stepNum === currentStep;
-                const isLast = i === TIMELINE_STEPS.length - 1;
-                const Icon = s.icon;
-
-                return (
-                  <React.Fragment key={s.key}>
-                    <div className="flex min-w-0 flex-1 flex-col items-center">
-                      <div
-                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 transition ${
-                          done
-                            ? "border-[#0F9691] bg-[#0F9691] text-white dark:border-emerald-500 dark:bg-emerald-500"
-                            : "border-[#E8EEF3] bg-white text-[#B0BDCB] dark:border-white/10 dark:bg-white/5 dark:text-slate-500"
-                        } ${isCurrent ? "ring-4 ring-[#0F9691]/15 dark:ring-emerald-500/20" : ""}`}
-                      >
-                        <Icon size={15} />
-                      </div>
-                      <span
-                        className={`mt-2 max-w-[78px] text-center text-[9px] font-bold leading-tight ${
-                          done ? "text-[#0F9691] dark:text-emerald-400" : "text-[#B0BDCB] dark:text-slate-500"
-                        }`}
-                      >
-                        {s.label}
-                      </span>
-                    </div>
-
-                    {!isLast && (
-                      <div className="flex h-9 shrink-0 items-center px-0.5">
-                        <div
-                          className={`h-0.5 w-6 sm:w-10 lg:w-14 ${
-                            done && stepNum < currentStep ? "bg-[#0F9691] dark:bg-emerald-500" : "bg-[#E8EEF3] dark:bg-white/10"
-                          }`}
-                        />
-                      </div>
-                    )}
-                  </React.Fragment>
-                );
-              })}
-            </div>
-          </section>
-
-          {/* Infos générales */}
-          <section className="rounded-2xl border border-[#E5EDF3] bg-white p-5 dark:border-white/10 dark:bg-[#112A3A]">
-            <h2 className="mb-3 text-[10px] font-extrabold uppercase tracking-wider text-[#8A9BB0] dark:text-slate-500">
-              Informations
-            </h2>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <InfoItem icon={Calendar} label="Date de candidature">
-                {formatDate(application.created_at)}
-              </InfoItem>
-              {jobOffer.city && (
-                <InfoItem icon={MapPin} label="Localisation">
-                  {[jobOffer.city, jobOffer.country].filter(Boolean).join(", ")}
-                </InfoItem>
-              )}
-              {jobOffer.offer_type && (
-                <InfoItem icon={Briefcase} label="Type">
-                  {jobOffer.offer_type}
-                </InfoItem>
-              )}
-              {company.name && (
-                <InfoItem icon={Building2} label="Entreprise">
-                  {company.name}
-                </InfoItem>
-              )}
-            </div>
-          </section>
-
-          {/* Entretien */}
-          {application.status === "interview" && application.interview_at && (
-            <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-500/30 dark:bg-amber-500/10">
-              <h2 className="mb-2 text-[10px] font-extrabold uppercase tracking-wider text-amber-800 dark:text-amber-400">
-                Entretien programmé
-              </h2>
-              <p className="text-sm font-bold text-[#102A43] dark:text-white">
-                {formatDate(application.interview_at, {
-                  weekday: "long", day: "numeric", month: "long", year: "numeric",
-                })}{" "}
-                à{" "}
-                {new Date(application.interview_at).toLocaleTimeString("fr-FR", {
-                  hour: "2-digit", minute: "2-digit",
-                })}
-              </p>
-              {application.interview_link && (
-                <a
-                  href={application.interview_link}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-2 text-[11px] font-bold text-white hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-400"
-                >
-                  <Video size={12} /> Rejoindre l'entretien
-                  <ExternalLink size={10} />
-                </a>
-              )}
-            </section>
-          )}
-
-          {/* Documents */}
-          {(application.portfolio || application.cv_path) && (
-            <section className="rounded-2xl border border-[#E5EDF3] bg-white p-5 dark:border-white/10 dark:bg-[#112A3A]">
-              <h2 className="mb-3 text-[10px] font-extrabold uppercase tracking-wider text-[#8A9BB0] dark:text-slate-500">
-                Documents joints
-              </h2>
-              <div className="space-y-2">
-                {application.portfolio && (
-                  <a
-                    href={`/portfolio/${application.portfolio.public_slug}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="group flex items-center justify-between rounded-xl border border-[#E5EDF3] p-3 transition hover:border-[#0F9691] hover:bg-[#F0FDFA] dark:border-white/10 dark:hover:border-emerald-500/50 dark:hover:bg-white/5"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#E8F8F5] text-[#0F9691] dark:bg-emerald-500/10 dark:text-emerald-400">
-                        <Briefcase size={15} />
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-[#24435D] dark:text-white">
-                          {application.portfolio.title || "Mon portfolio"}
-                        </p>
-                        <p className="text-[10px] text-[#71849A] dark:text-slate-400">Portfolio</p>
-                      </div>
-                    </div>
-                    <ExternalLink size={13} className="text-[#8A9BB0] group-hover:text-[#0F9691] dark:text-slate-500 dark:group-hover:text-emerald-400" />
-                  </a>
-                )}
-
-                {application.cv_path && (
-                  <a
-                    href={`/storage/${application.cv_path}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    download
-                    className="group flex items-center justify-between rounded-xl border border-[#E5EDF3] p-3 transition hover:border-[#0F9691] hover:bg-[#F0FDFA] dark:border-white/10 dark:hover:border-emerald-500/50 dark:hover:bg-white/5"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#E8F8F5] text-[#0F9691] dark:bg-emerald-500/10 dark:text-emerald-400">
-                        <FileText size={15} />
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-[#24435D] dark:text-white">Mon CV.pdf</p>
-                        <p className="text-[10px] text-[#71849A] dark:text-slate-400">Curriculum vitæ</p>
-                      </div>
-                    </div>
-                    <Download size={13} className="text-[#8A9BB0] group-hover:text-[#0F9691] dark:text-slate-500 dark:group-hover:text-emerald-400" />
-                  </a>
-                )}
-              </div>
-            </section>
-          )}
-
-          {/* Lettre de motivation */}
-          {application.cover_letter && (
-            <section className="rounded-2xl border border-[#E5EDF3] bg-white p-5 dark:border-white/10 dark:bg-[#112A3A]">
-              <h2 className="mb-3 text-[10px] font-extrabold uppercase tracking-wider text-[#8A9BB0] dark:text-slate-500">
-                Lettre de motivation
-              </h2>
-              <p className="whitespace-pre-line text-xs leading-6 text-[#4B647D] dark:text-slate-300">
-                {application.cover_letter}
-              </p>
-            </section>
-          )}
-
-          {/* Notes recruteur */}
-          {application.recruiter_notes && (
-            <section className="rounded-2xl border border-sky-200 bg-sky-50 p-5 dark:border-sky-500/30 dark:bg-sky-500/10">
-              <h2 className="mb-3 text-[10px] font-extrabold uppercase tracking-wider text-sky-800 dark:text-sky-400">
-                Notes du recruteur
-              </h2>
-              <p className="whitespace-pre-line text-xs leading-6 text-[#334B63] dark:text-slate-300">
-                {application.recruiter_notes}
-              </p>
-            </section>
-          )}
+        <div className="grid gap-4 lg:grid-cols-[1fr_300px] font-['Plus_Jakarta_Sans',sans-serif]">
+          <div className="min-w-0 space-y-4">
+            {Summary}{Timeline}{Letter}{Notes}
+          </div>
+          <div className="min-w-0 space-y-4">
+            {Interview}{Infos}{Documents}
+          </div>
         </div>
       )}
     </div>
   );
 
-  /* ============================================================
-     MODE EMBARQUÉ (affiché à côté du modal 1)
-     ============================================================ */
+  /* ---------- Mode embarqué ---------- */
   if (embedded) {
     return (
       <>
-        {/* Header sans fond noir */}
-        <div className="flex items-center justify-between gap-3 border-b border-[#E8EEF3] bg-[#F9FBFC] px-5 py-3 dark:border-white/10 dark:bg-[#112A3A]">
+        <div className="flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-5 py-3 dark:border-white/10 dark:bg-[#131E47]">
           <div className="flex items-center gap-2">
-            <FileText size={15} className="text-[#0F9691] dark:text-emerald-400" />
-            <p className="text-xs font-bold uppercase tracking-wider text-[#079C94] dark:text-emerald-400">
-              Détail de la candidature
-            </p>
+            <FileText size={15} className="text-[#16B8B1]" />
+            <p className="text-sm font-bold text-[#0B1F33] dark:text-white">Détail de la candidature</p>
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Fermer"
-            className="rounded-lg p-1.5 text-[#526B83] transition hover:bg-[#F1F6FA] hover:text-[#0B1F33] dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white"
+            className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-white"
           >
             <X size={18} />
           </button>
         </div>
-
         {Body}
       </>
     );
   }
 
-  /* ============================================================
-     MODE OVERLAY (par défaut, pour mobile ou usage seul)
-     ============================================================ */
+  /* ---------- Mode overlay ---------- */
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6"
-      role="dialog"
-      aria-modal="true"
-    >
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 font-['Plus_Jakarta_Sans',sans-serif]" role="dialog" aria-modal="true">
       <button
         type="button"
         aria-label="Fermer"
         onClick={onClose}
-        className="absolute inset-0 bg-[#0B1F33]/70 backdrop-blur-sm dark:bg-black/80"
+        className="absolute inset-0 bg-[#0B1F33]/70 backdrop-blur-sm"
       />
 
-   <div className="relative z-10 flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-[#112A3A] dark:shadow-[0_30px_100px_rgba(0,0,0,0.6)]">
-        <div className="flex items-center justify-between gap-3 border-b border-[#E8EEF3] bg-[#F9FBFC] px-5 py-3 dark:border-white/10 dark:bg-[#112A3A]">
-          <div className="flex items-center gap-2">
-            <FileText size={15} className="text-[#0F9691] dark:text-emerald-400" />
-            <p className="text-xs font-bold uppercase tracking-wider text-[#079C94] dark:text-emerald-400">
-              Détail de la candidature
-            </p>
+      <div className="relative z-10 flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl shadow-[#0B1F33]/30 dark:bg-[#131E47]">
+        {/* ✅ Header Bleu Marine */}
+        <header className="relative overflow-hidden bg-[#0B1F33] px-5 py-4 text-white sm:px-6">
+          <div className="pointer-events-none absolute -right-12 -top-16 h-40 w-40 rounded-full bg-[#16B8B1]/20 blur-3xl" />
+          <div className="relative flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/15 text-[#16B8B1]">
+                <FileText size={18} />
+              </span>
+              <div>
+                <h2 className="text-base font-bold tracking-tight">Détail de la candidature</h2>
+                <p className="text-xs text-white/70">Suivi et documents de votre candidature</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Fermer"
+              className="rounded-xl bg-white/10 p-2 text-white/80 transition hover:bg-white/20 hover:text-white"
+            >
+              <X size={18} />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Fermer"
-            className="rounded-lg p-1.5 text-[#526B83] transition hover:bg-[#F1F6FA] hover:text-[#0B1F33] dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white"
-          >
-            <X size={18} />
-          </button>
-        </div>
+        </header>
 
         {Body}
       </div>
@@ -368,18 +369,37 @@ export default function ApplicationDetailModal({ applicationId, onClose, embedde
   );
 }
 
-function InfoItem({ icon: Icon, label, children }) {
+/* ============================================
+   Briques
+============================================ */
+function Card({ title, children }) {
   return (
-    <div className="flex items-start gap-2.5">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F0FDFA] text-[#0F9691] dark:bg-emerald-500/10 dark:text-emerald-400">
-        <Icon size={14} />
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-[#131E47]">
+      {title && <h2 className="mb-4 text-xs font-bold text-slate-500 dark:text-slate-400">{title}</h2>}
+      {children}
+    </section>
+  );
+}
+
+function DocLink({ href, icon: Icon, title, subtitle, action, download }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      download={download}
+      className="group flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-3 transition hover:border-[#16B8B1]/30 hover:bg-[#16B8B1]/5 dark:border-white/10 dark:hover:bg-white/5"
+    >
+      <div className="flex min-w-0 items-center gap-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#16B8B1]/10 text-[#0F9691] dark:bg-[#16B8B1]/20 dark:text-[#16B8B1]">
+          <Icon size={15} />
+        </span>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-bold text-[#0B1F33] dark:text-white">{title}</p>
+          <p className="text-xs text-slate-400">{subtitle}</p>
+        </div>
       </div>
-      <div className="min-w-0">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-[#8A9BB0] dark:text-slate-500">
-          {label}
-        </p>
-        <p className="mt-0.5 text-xs font-bold text-[#24435D] dark:text-white">{children}</p>
-      </div>
-    </div>
+      <span className="shrink-0 text-slate-300 transition group-hover:text-[#16B8B1]">{action}</span>
+    </a>
   );
 }

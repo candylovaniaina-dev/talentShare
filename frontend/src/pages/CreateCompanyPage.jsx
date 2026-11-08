@@ -1,4 +1,3 @@
-
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Building2,
@@ -13,7 +12,7 @@ import {
   CheckCircle2,
   AlertCircle,
   ArrowRight,
- CircleDashed,
+  CircleDashed,
   FileText,
   Check,
   ShieldCheck,
@@ -545,7 +544,6 @@ export default function CompanyOnboarding({ onCreated }) {
         <header className="mb-6 flex flex-col justify-between gap-5 sm:mb-7 sm:flex-row sm:items-end">
           <div className="min-w-0">
            
-
             <h1 className="max-w-3xl text-[27px] font-extrabold leading-tight tracking-[-0.04em] text-[#17382D] dark:text-white sm:text-3xl lg:text-[38px]">
               Donnez vie à votre
               <span className="text-emerald-700 dark:text-emerald-400">
@@ -1032,7 +1030,7 @@ export default function CompanyOnboarding({ onCreated }) {
                   </div>
                 </div>
 
-     <div className="px-4 pb-5">
+                <div className="px-4 pb-5">
                   {/* ✅ LOGO CORRIGÉ : z-10 pour passer au-dessus de la bannière */}
                   <div className="relative z-10 -mt-9 flex items-end justify-between">
                     {logoPreview ? (

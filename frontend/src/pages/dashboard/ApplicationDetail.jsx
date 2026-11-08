@@ -4,7 +4,7 @@ import {
   ArrowLeft, Loader2, Clock, Check, Calendar, Building2, FileText,
   Briefcase, Video, MapPin, ExternalLink, AlertCircle, Trash2,
   Download, ShieldCheck, ChevronRight, Circle, X,
-  CheckCircle2, MessageCircle, // ✅ Ajouté ici
+  CheckCircle2, MessageCircle, ArrowRight // ✅ Icône ajoutée
 } from "lucide-react";
 import AppShell from "../../components/layout/AppShell";
 import api from "../../services/api";
@@ -114,6 +114,9 @@ export default function ApplicationDetail() {
   const [error, setError] = useState(null);
   const [withdrawing, setWithdrawing] = useState(false);
   
+  // ✅ Nouveau state pour stocker l'ID de la mission
+  const [missionId, setMissionId] = useState(null);
+
   const [portfolioData, setPortfolioData] = useState(null);
   const [showPortfolioModal, setShowPortfolioModal] = useState(false);
 
@@ -127,6 +130,21 @@ export default function ApplicationDetail() {
         if (!active) return;
         const appData = res?.data?.data ?? res?.data;
         setApplication(appData);
+
+        // ✅ Si la candidature est acceptée, on cherche la mission associée
+        if (appData.status === "accepted" && appData.job_offer_id) {
+          try {
+            // On récupère les missions de l'utilisateur pour trouver celle liée à cette offre
+            const missionsRes = await api.get("/missions");
+            const missions = Array.isArray(missionsRes.data) ? missionsRes.data : missionsRes.data?.data || [];
+            const linkedMission = missions.find(m => m.job_offer_id === appData.job_offer_id);
+            if (linkedMission) {
+              setMissionId(linkedMission.id);
+            }
+          } catch (err) {
+            console.error("Impossible de trouver la mission liée", err);
+          }
+        }
 
         const portfolio = appData.portfolio || appData.portfolio_data;
         const slug = getPortfolioSlug(portfolio);
@@ -142,15 +160,12 @@ export default function ApplicationDetail() {
           }
         }
       })
-         .catch((err) => {
+      .catch((err) => {
         if (!active) return;
-        
-        // ✅ Si l'application n'est pas trouvée (404), on tente la proposition
         if (err.response?.status === 404) {
            navigate(`/proposals/${id}`, { replace: true });
            return;
         }
-
         setError(err.response?.status === 403 ? "forbidden" : "not_found");
       })
       .finally(() => {
@@ -158,7 +173,7 @@ export default function ApplicationDetail() {
       });
 
     return () => { active = false; };
-  }, [id]);
+  }, [id, navigate]);
 
   const documents = useMemo(() => {
     if (!application) return {};
@@ -389,9 +404,9 @@ export default function ApplicationDetail() {
                 </Card>
               )}
 
-              {/* ✅ BLOC FÉLICITATIONS ACCEPTÉ */}
+              {/* ✅ BLOC FÉLICITATIONS ACCEPTÉ + BOUTON VERS LA MISSION */}
               {application.status === "accepted" && (
-                <Card className="border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/30">
+                <Card className="border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/30 overflow-hidden">
                   <div className="p-5">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-400">
@@ -405,8 +420,20 @@ export default function ApplicationDetail() {
                       L'entreprise <strong>{company.name}</strong> a accepté votre candidature pour le poste de <strong>{offer.title}</strong>.
                       Un message de bienvenue vous a été envoyé dans la messagerie.
                     </p>
-                    
-                  
+
+                    {/* ✅ NOUVEAU BOUTON VERS LA MISSION */}
+                    {missionId && (
+                      <div className="mt-5">
+                        <Link
+                          to={`/missions/${missionId}`}
+                          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-500 dark:bg-emerald-500 dark:text-[#06251F] dark:hover:bg-emerald-400"
+                        >
+                       
+                          Accéder à ma mission
+                          <ArrowRight size={16} />
+                        </Link>
+                      </div>
+                    )}
                   </div>
                 </Card>
               )}

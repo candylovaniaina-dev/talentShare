@@ -1,10 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { CheckCircle2, Sparkles, X, ArrowRight } from "lucide-react";
+import { X, ArrowRight } from "lucide-react";
 
-/**
- * Modale plein écran de succès avec check animé + confettis 🎉
- */
 export default function SuccessModal({
   open,
   onClose,
@@ -15,10 +12,10 @@ export default function SuccessModal({
 }) {
   const [confetti, setConfetti] = useState([]);
 
-  // ✅ Génère des confettis aléatoires
   useEffect(() => {
     if (!open) return;
-    const colors = ["#10B8A6", "#27C7B7", "#4AE0CB", "#F59E0B", "#8B5CF6", "#3B82F6", "#EC4899"];
+    // ✅ Couleurs des confettis (Turquoise, Bleu Marine, Ambre, Violet...)
+    const colors = ["#16B8B1", "#0F9691", "#0B1F33", "#F59E0B", "#8B5CF6", "#3B82F6", "#EC4899"];
     const items = Array.from({ length: 60 }, (_, i) => ({
       id: i,
       left: Math.random() * 100,
@@ -32,14 +29,12 @@ export default function SuccessModal({
     setConfetti(items);
   }, [open]);
 
-  // ✅ Bloque le scroll
   useEffect(() => {
     if (!open) return;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
   }, [open]);
 
-  // ✅ Ferme avec Échap
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => e.key === "Escape" && onClose();
@@ -51,7 +46,7 @@ export default function SuccessModal({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 font-['Plus_Jakarta_Sans',sans-serif]"
       role="dialog"
       aria-modal="true"
     >
@@ -85,13 +80,13 @@ export default function SuccessModal({
       </div>
 
       {/* Contenu de la modale */}
-      <div className="relative z-10 w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl">
+      <div className="relative z-10 w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-[#131E47]">
         {/* Bouton fermer */}
         <button
           type="button"
           onClick={onClose}
           aria-label="Fermer"
-          className="absolute right-4 top-4 rounded-lg p-1.5 text-[#526B83] transition hover:bg-[#F1F6FA]"
+          className="absolute right-4 top-4 rounded-lg p-1.5 text-[#526B83] transition hover:bg-[#F1F6FA] dark:text-slate-400 dark:hover:bg-white/10"
         >
           <X size={18} />
         </button>
@@ -100,45 +95,43 @@ export default function SuccessModal({
           {/* ✅ Check animé */}
           <div className="relative mb-6">
             {/* Anneaux pulsants */}
-            <span className="absolute inset-0 animate-ping-slow rounded-full bg-emerald-400/30" />
-            <span className="absolute inset-0 animate-ping-slower rounded-full bg-emerald-400/20" />
+            <span className="absolute inset-0 animate-ping-slow rounded-full bg-[#16B8B1]/30" />
+            <span className="absolute inset-0 animate-ping-slower rounded-full bg-[#16B8B1]/20" />
 
-            {/* Check principal */}
-         {/* ✅ Check principal */}
-<div className="relative flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-500 shadow-2xl shadow-emerald-500/40 animate-pop">
-  {/* Icône Check (sans CheckCircle2 pour bien voir le trait) */}
-  <svg
-    width="52"
-    height="52"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="white"
-    strokeWidth="3"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="animate-check-draw"
-  >
-    <polyline points="4 12 10 18 20 6" />
-  </svg>
-</div>
+            {/* Check principal avec dégradé Turquoise */}
+            <div className="relative flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-[#16B8B1] to-[#0F9691] shadow-2xl shadow-[#16B8B1]/40 animate-pop">
+              <svg
+                width="52"
+                height="52"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#0B1F33"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="animate-check-draw"
+              >
+                <polyline points="4 12 10 18 20 6" />
+              </svg>
+            </div>
           </div>
 
           {/* Titre */}
-          <h2 className="text-2xl font-extrabold tracking-tight text-[#102A43]">
+          <h2 className="text-2xl font-extrabold tracking-tight text-[#0B1F33] dark:text-white">
             {title}
           </h2>
 
           {/* Message */}
           {message && (
-            <p className="mt-3 max-w-sm text-sm leading-6 text-[#64788C]">
+            <p className="mt-3 max-w-sm text-sm leading-6 text-[#64788C] dark:text-slate-400">
               {message}
             </p>
           )}
 
-          {/* Badge "TalentShare" */}
-          <div className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">
-              Bonne chance ! 
+          {/* Badge "Bonne chance" en Turquoise */}
+          <div className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-[#16B8B1]/30 bg-[#16B8B1]/10 px-3 py-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#0F9691] dark:text-[#16B8B1]">
+              Bonne chance !
             </span>
           </div>
 
@@ -147,7 +140,7 @@ export default function SuccessModal({
             <Link
               to={primaryLink}
               onClick={onClose}
-              className="group inline-flex items-center justify-center gap-2 rounded-xl bg-[#102A43] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#087F83]"
+              className="group inline-flex items-center justify-center gap-2 rounded-xl bg-[#0B1F33] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#16B8B1] hover:text-[#0B1F33] dark:bg-[#16B8B1] dark:text-[#0B1F33] dark:hover:bg-[#0F9691]"
             >
               {primaryLabel}
               <ArrowRight
@@ -159,7 +152,7 @@ export default function SuccessModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl border border-[#DDE7EF] bg-white px-5 py-3 text-sm font-bold text-[#334B63] transition hover:bg-[#F6F9FB]"
+              className="rounded-xl border border-[#DDE7EF] bg-white px-5 py-3 text-sm font-bold text-[#334B63] transition hover:bg-[#F6F9FB] dark:border-white/10 dark:bg-transparent dark:text-slate-300 dark:hover:bg-white/5"
             >
               Fermer
             </button>

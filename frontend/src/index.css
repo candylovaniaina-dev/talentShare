@@ -1,37 +1,54 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  /* ✅ Application de la police Plus Jakarta Sans */
+  font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-optical-sizing: auto;
+  
+  /* ✅ Couleurs de base en mode CLAIR */
   --brand-navy: #0B1F33;
   --brand-teal: #16B8B1;
   --brand-teal-deep: #0F9691;
-  --app-background: #F5F8FA;
+  --app-background: #F3F6FC; /* Fond bleu pâle comme la maquette */
   --surface: #FFFFFF;
-  --ink: #102A43;
-  --muted: #718096;
-  --line: #E1E8EF;
+  --ink: #0B1437;
+  --muted: #5B6785;
+  --line: #DDE3F1;
   --focus-ring: rgba(22, 184, 177, .22);
 }
 
 html, body, #root { min-height: 100vh; }
 html { scroll-behavior: smooth; scroll-padding-top: 100px; }
-body { margin: 0; background: var(--app-background); color: var(--ink); transition: background-color .2s ease, color .2s ease; }
+
+body { 
+  margin: 0; 
+  background: var(--app-background); 
+  color: var(--ink); 
+  transition: background-color .2s ease, color .2s ease; 
+  /* ✅ Force la police sur le body */
+  font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
 ::selection { background: rgba(22, 184, 177, .2); color: var(--brand-navy); }
 
+/* ✅ Couleurs de base en mode SOMBRE */
 html.dark {
-  --app-background: #0B1F33;
-  --surface: #111B35;
-  --ink: #F8FAFC;
-  --muted: #94A3B8;
-  --line: rgba(255,255,255,.12);
+  --app-background: #0A1230; /* Bleu marine foncé */
+  --surface: #131E47;
+  --ink: #FFFFFF;
+  --muted: #A6B2D1;
+  --line: rgba(255,255,255,.10);
 }
+
 html.light { color-scheme: light; }
 html.dark { color-scheme: dark; }
 html.font-small { font-size: 14px; }
@@ -43,8 +60,10 @@ button, input, textarea, select { font: inherit; }
 button:not(:disabled), a, select { -webkit-tap-highlight-color: transparent; }
 button:disabled { cursor: not-allowed; }
 input, textarea, select { max-width: 100%; }
+
 input[type="text"], input[type="email"], input[type="password"], input[type="search"], input[type="url"], input[type="number"], input[type="date"], input[type="time"], input[type="tel"], textarea, select {
   transition: border-color .16s ease, box-shadow .16s ease, background-color .16s ease;
+  font-family: inherit;
 }
 input:focus, textarea:focus, select:focus { outline: none; }
 
@@ -52,14 +71,13 @@ input:focus, textarea:focus, select:focus { outline: none; }
 ::-webkit-scrollbar-track { background: var(--app-background); }
 ::-webkit-scrollbar-thumb { background: rgba(16, 42, 67, .2); border: 2px solid var(--app-background); border-radius: 999px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(15, 150, 145, .58); }
-html.dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.22); border-color: #0B1F33; }
+html.dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.22); border-color: #0A1230; }
 
 html.high-contrast { --line: rgba(15, 23, 42, .4); --muted: #334155; }
 html.dark.high-contrast { --line: rgba(255,255,255,.4); --muted: #CBD5E1; }
 html.high-contrast * { font-weight: 500; }
 html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
 
-/* Contrôles natifs cohérents, en respectant les champs des interfaces sombres. */
 html.light select { color-scheme: light; }
 html.light select option { background: #FFFFFF; color: #102A43; }
 html.dark select option { background: #12364D; color: #FFFFFF; }
@@ -94,13 +112,12 @@ select, select option { font-family: inherit; }
 .app-content :is(button, a) { -webkit-tap-highlight-color: transparent; }
 .app-content button:focus-visible, .app-content a:focus-visible { outline: 3px solid var(--brand-teal); outline-offset: 3px; }
 
-/* Lisibilité uniforme pour pages publiques, authentification et portfolios. */
 :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), textarea, select) { max-width: 100%; }
 :is(input, textarea, select)::placeholder { opacity: .78; }
 button, [role="button"] { touch-action: manipulation; }
 img { max-width: 100%; }
 
-/* Surfaces communes : même traitement pour les cartes blanches des différentes vues. */
+/* Surfaces communes */
 :where(#root) :is(div, section, article)[class*="rounded-2xl"][class*="border"][class~="bg-white"],
 :where(#root) :is(div, section, article)[class*="rounded-3xl"][class*="border"][class~="bg-white"] {
   border-color: var(--line);
@@ -116,15 +133,11 @@ img { max-width: 100%; }
   .app-content :is(th, td) { padding: .65rem .7rem; }
 }
 
-/* ============================================================
-   ANIMATIONS — Modale de succès
-   ============================================================ */
-
+/* ... Animations ... */
 @keyframes confetti-fall {
   0% { transform: translateY(0) rotate(0deg); opacity: 1; }
   100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
 }
-
 .animate-confetti { animation: confetti-fall linear forwards; }
 
 @keyframes pop {
@@ -132,46 +145,35 @@ img { max-width: 100%; }
   50% { transform: scale(1.15); opacity: 1; }
   100% { transform: scale(1); opacity: 1; }
 }
-
 .animate-pop { animation: pop 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards; }
 
 @keyframes draw-check {
   0% { stroke-dashoffset: 30; }
   100% { stroke-dashoffset: 0; }
 }
-
 .animate-check-draw { stroke-dasharray: 30; stroke-dashoffset: 30; animation: draw-check 0.7s ease-out 0.4s forwards; }
 
 @keyframes ping-slow {
   0% { transform: scale(0.9); opacity: 0.6; }
   100% { transform: scale(2); opacity: 0; }
 }
-
 .animate-ping-slow { animation: ping-slow 1.8s cubic-bezier(0, 0, 0.2, 1) infinite; }
 .animate-ping-slower { animation: ping-slow 1.8s cubic-bezier(0, 0, 0.2, 1) 0.6s infinite; }
 
-/* ============================================================
-   ✅ MODE SOMBRE : CORRECTION ET NETTOYAGE
-   ============================================================ */
-
 html.dark {
-  /* On retire toutes les règles agressives sur les inputs qui cassaient le design */
-  
-  /* Le menu de gauche est déjà sombre, on laisse le dégradé du composant s'afficher */
   .app-shell aside {
     background-color: transparent !important;
   }
 }
 
-/* ✅ Assurer que la transition de thème est fluide */
 html, body, #root, .app-shell, header, aside, main, section, div, button, a, input, textarea, select {
   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
-/* ✅ LA RÈGLE ULTIME POUR LE MODE SOMBRE GLOBAL (sans casser les composants) */
-html.dark,
-html.dark body,
-html.dark #root,
-html.dark .app-shell {
-  background-color: #0B1F33 !important;
+/* ✅ LA RÈGLE ULTIME POUR LE FOND GLOBAL */
+html.dark, html.dark body, html.dark #root, html.dark .app-shell {
+  background-color: #0A1230 !important;
+}
+html.light, html.light body, html.light #root, html.light .app-shell {
+  background-color: #F3F6FC !important;
 }

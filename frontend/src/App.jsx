@@ -9,7 +9,7 @@ import Register from "./pages/auth/Register";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 import VerifyEmail from "./pages/auth/VerifyEmail";
-import OAuthCallback from "./pages/auth/OAuthCallback";        // ✅ AJOUT
+import OAuthCallback from "./pages/auth/OAuthCallback";
 import Dashboard from "./pages/dashboard/Dashboard";
 import Profile from "./pages/Profile";
 import AccountSettings from "./pages/dashboard/AccountSettings";
@@ -36,7 +36,7 @@ import ResourceOffers from "./pages/ResourceOffers";
 import BrowseResourceOffers from "./pages/BrowseResourceOffers";
 import ResourceOfferDetail from "./pages/ResourceOfferDetail";
 import CreateProposal from "./pages/CreateProposal";
-import ProposalDetail from "./pages/ProposalDetail";
+// import ProposalDetail from "./pages/ProposalDetail"; // ❌ REMPLACÉ par ProposalRouter
 import Appearance from "./pages/Appearance";
 import OfferApplications from "./pages/dashboard/OfferApplications";
 import ApplicationDetail from "./pages/dashboard/ApplicationDetail";
@@ -47,6 +47,14 @@ import JobOfferDetail from "./pages/JobOfferDetail";
 import ActivityHistoryPage from "./pages/ActivityHistoryPage";
 import Explorer from "./pages/Explorer";
 import CreateCompanyPage from "./pages/CreateCompanyPage";
+
+// ✅ P0-7 / P0-11 : Nouveaux imports
+import ResourceOfferForm from "./pages/ResourceOfferForm";
+import ResourceProposals from "./pages/ResourceProposals";
+import ProposalRouter from "./pages/ProposalRouter";
+import CompanyPublicProfile from "./pages/CompanyPublicProfile";
+import InterviewRoom from "./pages/InterviewRoom";
+
 /* ============================================================
     GUARDS
 ============================================================ */
@@ -97,14 +105,15 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/email/verify" element={<VerifyEmail />} />
+        <Route path="/entreprises/:id" element={<CompanyPublicProfile />} />
 
-        {/* ✅ OAuth callback */}
         <Route path="/auth/callback" element={<OAuthCallback />} />
 
         <Route path="/explore" element={<Explore />} />
         <Route path="/talents/:id" element={<TalentProfile />} />
         <Route path="/portfolio/:slug" element={<PublicPortfolio />} />
 
+        {/* ✅ Routes publiques de partage d'offres */}
         <Route path="/resource-offers/browse" element={<BrowseResourceOffers />} />
         <Route path="/resource-offers/:id" element={<ResourceOfferDetail />} />
 
@@ -116,14 +125,14 @@ function App() {
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/explore-dashboard" element={<ProtectedRoute><ExploreDashboard /></ProtectedRoute>} />
         <Route path="/my-activity" element={<ProtectedRoute><MyActivity /></ProtectedRoute>} />
+        <Route path="/interview/:roomId" element={<ProtectedRoute><InterviewRoom /></ProtectedRoute>} />
 
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/profile/view" element={<Navigate to="/profile" replace />} />
         <Route path="/account-settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
 
         <Route path="/company" element={<ProtectedRoute><CompanyProfile /></ProtectedRoute>} />
-        <Route path="/company" element={<ProtectedRoute><CompanyProfile /></ProtectedRoute>} />
-<Route path="/company/create" element={<ProtectedRoute><CreateCompanyPage /></ProtectedRoute>} />
+        <Route path="/company/create" element={<ProtectedRoute><CreateCompanyPage /></ProtectedRoute>} />
 
         <Route path="/opportunites" element={<ProtectedRoute><Opportunities /></ProtectedRoute>} />
         <Route path="/opportunites/:id" element={<ProtectedRoute><Opportunities /></ProtectedRoute>} />
@@ -165,7 +174,9 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="/proposals/:id" element={<ProtectedRoute><ProposalDetail /></ProtectedRoute>} />
+
+        {/* ✅ P0-11 : ProposalRouter remplace ProposalDetail */}
+        <Route path="/proposals/:id" element={<ProtectedRoute><ProposalRouter /></ProtectedRoute>} />
 
         <Route path="/job-offers/:id/applications" element={<ProtectedRoute><OfferApplications /></ProtectedRoute>} />
         <Route path="/applications/:id" element={<ProtectedRoute><ApplicationDetail /></ProtectedRoute>} />
@@ -185,7 +196,14 @@ function App() {
         <Route path="/history" element={<ProtectedRoute><ActivityHistoryPage /></ProtectedRoute>} />
         <Route path="/confidentialite" element={<ProtectedRoute><Confidentialite /></ProtectedRoute>} />
 
+        {/* ✅ P0-7 : Page d'accueil des offres (mes offres) */}
         <Route path="/resource-offers" element={<ProtectedRoute><ResourceOffers /></ProtectedRoute>} />
+        {/* ✅ P0-7 : Création & édition d'offres */}
+        <Route path="/resource-offers/new" element={<ProtectedRoute><ResourceOfferForm /></ProtectedRoute>} />
+        <Route path="/resource-offers/:id/edit" element={<ProtectedRoute><ResourceOfferForm /></ProtectedRoute>} />
+
+        {/* ✅ P0-11 : Liste des propositions entreprises */}
+        <Route path="/resource-proposals" element={<ProtectedRoute><RequireCompany><ResourceProposals /></RequireCompany></ProtectedRoute>} />
 
         <Route path="/appearance" element={<Appearance />} />
 

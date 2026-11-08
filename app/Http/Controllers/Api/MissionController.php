@@ -28,9 +28,13 @@ class MissionController extends Controller
             ->with([
                 'requestingCompany:id,name,owner_user_id',
                 'supplyingCompany:id,name,owner_user_id',
-                'profile.user:id,name,first_name,last_name',
+                'profile.user:id,name,first_name,last_name,avatar_path',
                 'resourceOffer:id,title',
-                'proposal.resourceRequest:id,title',
+                               'jobOffer:id,title,offer_type,duration_months',
+                'proposal' => function ($query) {
+                    $query->select('id', 'resource_request_id', 'resource_offer_id')
+                          ->with(['resourceRequest:id,title', 'resourceOffer:id,title']);
+                },
             ])
             ->latest()
             ->get();
@@ -44,6 +48,7 @@ class MissionController extends Controller
             'profile.user',
             'proposal.resourceRequest',
             'resourceOffer',
+            'jobOffer',
         ]);
     }
 
@@ -90,6 +95,7 @@ class MissionController extends Controller
             'workload_percent'        => $data['workload_unit'] === 'percentage' ? $data['workload_value'] : 100,
             'remote'                  => in_array($offer->location_type, ['remote', 'hybrid']),
             'status'                  => 'pending_employee',
+                        'contract_type'           => 'sharing',
         ]);
 
         if ($offer->profile->user) {
@@ -134,8 +140,35 @@ class MissionController extends Controller
             return response()->json(['message' => 'Cette mission ne peut plus être acceptée.'], 409);
         }
 
-        $mission->update(['status' => 'planned']);
+        // ✅ On détermine un titre propre
+        $title = $mission->title 
+            ?? $mission->resourceOffer?->title 
+            ?? $mission->proposal?->resourceRequest?->title 
+            ?? $mission->proposal?->resourceOffer?->title
+            ?? "Mission de " . ($user->name ?? 'Talent');
+
+        $mission->update([
+            'status' => 'planned',
+            'title' => $mission->title ?? $title,
+        ]);
+        
         $mission->resourceOffer?->update(['status' => 'closed']);
+
+        // ✅ NOTIFICATION : Mission acceptée / Prête à démarrer (pour le salarié)
+        try {
+            $notifications->notify(
+                $user,
+                'mission_accepted',
+                '✅ Mission acceptée',
+                "Vous avez accepté la mission « {$title} » du " .
+                $mission->start_at->format('d/m/Y') . " au " .
+                $mission->end_at->format('d/m/Y') . ". Préparez-vous !",
+                $mission,
+                ['url' => "/missions/{$mission->id}", 'mission_id' => $mission->id]
+            );
+        } catch (\Exception $e) {
+            \Log::warning('Notification failed: ' . $e->getMessage());
+        }
 
         if ($mission->supplyingCompany?->owner) {
             $notifications->notify(
@@ -189,7 +222,7 @@ class MissionController extends Controller
         return response()->json($mission);
     }
 
-    public function updateStatus(Request $request, Mission $mission)
+    public function updateStatus(Request $request, Mission $mission, NotificationService $notifications)
     {
         $request->validate(['status' => 'required|string|in:active,completed,cancelled']);
         $user = $request->user();
@@ -209,7 +242,80 @@ class MissionController extends Controller
             }
         }
 
+            $oldStatus = $mission->status;
         $mission->update(['status' => $request->status]);
+                // ✅ Fin de contrat : on fige la date de fin et on clôture le salarié
+        if ($request->status === 'completed' && $oldStatus !== 'completed') {
+            if (!$mission->end_at) {
+                $mission->update(['end_at' => now()->toDateString()]); // ex : fin d'un CDI
+            }
+            $this->closeEmployee($mission);
+        }
+
+        // ✅ NOTIFICATION : Mission terminée par une des parties
+        if ($request->status === 'completed' && $oldStatus !== 'completed') {
+            $initiatorName = $user->name ?? 'Votre partenaire';
+            
+            // On notifie le talent
+            if ($mission->profile?->user && $mission->profile->user->id !== $user->id) {
+                try {
+                    $notifications->notify(
+                        $mission->profile->user,
+                        'mission_completed',
+                        '🏁 Mission terminée',
+                        "{$initiatorName} a clôturé la mission « " . ($mission->title ?? 'Mission') . " ». Vous pouvez maintenant laisser une évaluation.",
+                        $mission,
+                        ['url' => "/missions/{$mission->id}", 'mission_id' => $mission->id]
+                    );
+                } catch (\Exception $e) { \Log::warning('Notif failed: ' . $e->getMessage()); }
+            }
+
+            // On notifie l'entreprise demandeuse (si ce n'est pas elle qui a clôturé)
+            if ($mission->requestingCompany?->owner && $mission->requestingCompany->owner_user_id !== $user->id) {
+                try {
+                    $notifications->notify(
+                        $mission->requestingCompany->owner,
+                        'mission_completed',
+                        '🏁 Mission terminée',
+                        "{$initiatorName} a clôturé la mission « " . ($mission->title ?? 'Mission') . " ». Pensez à évaluer le talent.",
+                        $mission,
+                        ['url' => "/missions/{$mission->id}", 'mission_id' => $mission->id]
+                    );
+                } catch (\Exception $e) { \Log::warning('Notif failed: ' . $e->getMessage()); }
+            }
+
+            // On notifie l'entreprise fournisseuse (si différente de la demandeuse)
+            if ($mission->supplyingCompany?->owner 
+                && $mission->supplyingCompany->owner_user_id !== $user->id
+                && $mission->supplying_company_id !== $mission->requesting_company_id) {
+                try {
+                    $notifications->notify(
+                        $mission->supplyingCompany->owner,
+                        'mission_completed',
+                        '🏁 Mission terminée',
+                        "{$initiatorName} a clôturé la mission « " . ($mission->title ?? 'Mission') . " » pour {$mission->profile?->user?->name}.",
+                        $mission,
+                        ['url' => "/missions/{$mission->id}", 'mission_id' => $mission->id]
+                    );
+                } catch (\Exception $e) { \Log::warning('Notif failed: ' . $e->getMessage()); }
+            }
+        }
+
+        // ✅ NOTIFICATION : Mission démarrée (pour le salarié)
+        if ($request->status === 'active' && $oldStatus !== 'active') {
+            try {
+                $notifications->notify(
+                    $mission->profile->user,
+                    'mission_accepted',
+                    '🚀 La mission a démarré !',
+                    "La mission « " . ($mission->title ?? 'Mission') . " » a officiellement commencé. Bon courage !",
+                    $mission,
+                    ['url' => "/missions/{$mission->id}", 'mission_id' => $mission->id]
+                );
+            } catch (\Exception $e) {
+                \Log::warning('Notification failed: ' . $e->getMessage());
+            }
+        }
 
         return response()->json([
             'message' => 'Statut mis à jour',
@@ -217,11 +323,6 @@ class MissionController extends Controller
         ]);
     }
 
-    // ============================================================
-    // ✅ EMPLOI : fin de la période d'essai
-    // ============================================================
-
-    /** Le recruteur confirme le talent → CDI (sans date de fin) + il devient SALARIÉ de l'entreprise */
     public function validateTrial(Request $request, Mission $mission, NotificationService $notifications)
     {
         $this->authorizeRequestingCompany($request, $mission, 'valider la période d\'essai');
@@ -233,7 +334,7 @@ class MissionController extends Controller
         DB::transaction(function () use ($mission) {
             $mission->update([
                 'status'   => 'active',
-                'end_at'   => null,   // CDI : pas de date de fin
+                'end_at'   => null,
                 'is_trial' => false,
             ]);
 
@@ -260,44 +361,42 @@ class MissionController extends Controller
         ]);
     }
 
-    /** Le recruteur ne confirme pas le talent → fin de la collaboration */
-    public function rejectTrial(Request $request, Mission $mission, NotificationService $notifications)
-    {
-        $this->authorizeRequestingCompany($request, $mission, 'mettre fin à la période d\'essai');
+   public function rejectTrial(Request $request, Mission $mission, NotificationService $notifications)
+{
+    $this->authorizeRequestingCompany($request, $mission, 'mettre fin à la période d\'essai');
 
-        if ($mission->status !== 'trial') {
-            return response()->json(['message' => 'Cette mission n\'est pas en période d\'essai.'], 409);
-        }
-
-        $mission->update([
-            'status'   => 'cancelled',
-            'is_trial' => false,
-        ]);
-
-        try {
-            $companyName = $mission->requestingCompany?->name ?? "L'entreprise";
-            $notifications->notify(
-                $mission->profile->user,
-                'mission_declined',
-                'Période d\'essai non confirmée',
-                "{$companyName} n'a pas confirmé votre embauche à l'issue de la période d'essai.",
-                $mission,
-                ['url' => "/missions/{$mission->id}", 'mission_id' => $mission->id]
-            );
-        } catch (\Exception $e) {
-            \Log::warning('Notification failed: ' . $e->getMessage());
-        }
-
-        return response()->json([
-            'message' => 'La période d\'essai n\'a pas été confirmée.',
-            'mission' => $mission->fresh(),
-        ]);
+    if ($mission->status !== 'trial') {
+        return response()->json(['message' => 'Cette mission n\'est pas en période d\'essai.'], 409);
     }
 
-    // ============================================================
-    // HELPERS
-    // ============================================================
+    $mission->update([
+        'status'   => 'cancelled',
+        'is_trial' => false,
+    ]);
 
+    // ✅ AJOUTE CETTE LIGNE ICI :
+    // Elle va chercher l'employé lié à cette mission et mettre à jour sa date de fin / son statut
+    $this->closeEmployee($mission);
+
+    try {
+        $companyName = $mission->requestingCompany?->name ?? "L'entreprise";
+        $notifications->notify(
+            $mission->profile->user,
+            'mission_declined',
+            'Période d\'essai non confirmée',
+            "{$companyName} n'a pas confirmé votre embauche à l'issue de la période d'essai.",
+            $mission,
+            ['url' => "/missions/{$mission->id}", 'mission_id' => $mission->id]
+        );
+    } catch (\Exception $e) {
+        \Log::warning('Notification failed: ' . $e->getMessage());
+    }
+
+    return response()->json([
+        'message' => 'La période d\'essai n\'a pas été confirmée.',
+        'mission' => $mission->fresh(),
+    ]);
+}
     private function authorizeRequestingCompany(Request $request, Mission $mission, string $action): void
     {
         $companyIds = $request->user()->companies()->pluck('id')->toArray();
@@ -309,8 +408,7 @@ class MissionController extends Controller
         );
     }
 
-    /** Ajoute le talent aux salariés (+ membres) de l'entreprise, comme CompanyController@addEmployee */
-    private function makeEmployee(Mission $mission): void
+      private function makeEmployee(Mission $mission): void
     {
         $company = $mission->requestingCompany;
         $talent  = $mission->profile?->user;
@@ -320,18 +418,23 @@ class MissionController extends Controller
         }
 
         $position = $mission->profile?->headline
+            ?? $mission->title
             ?? $mission->proposal?->resourceRequest?->title
             ?? 'Salarié';
 
-        $company->employees()->firstOrCreate(
+        // Fin de période d'essai -> CDI confirmé
+        $company->employees()->updateOrCreate(
             ['user_id' => $talent->id],
             [
-                'position'    => $position,
-                'status'      => 'active',
-                'email'       => $talent->email,
-                'first_name'  => $talent->first_name ?: $talent->name,
-                'last_name'   => $talent->last_name ?: '',
-                'has_account' => true,
+                'position'      => $position,
+                'status'        => 'active',
+                'contract_type' => 'permanent',
+                'start_date'    => $mission->start_at,
+                'end_date'      => null,
+                'email'         => $talent->email,
+                'first_name'    => $talent->first_name ?: $talent->name,
+                'last_name'     => $talent->last_name ?: '',
+                'has_account'   => true,
             ]
         );
 
@@ -339,5 +442,15 @@ class MissionController extends Controller
             ['user_id' => $talent->id],
             ['role' => 'member', 'status' => 'active']
         );
+    }
+
+    private function closeEmployee(Mission $mission): void
+    {
+        if (!$mission->requesting_company_id || !$mission->profile?->user_id) return;
+        if ($mission->supplying_company_id) return; // un talent prêté reste salarié de son entreprise
+
+        \App\Models\Employee::where('company_id', $mission->requesting_company_id)
+            ->where('user_id', $mission->profile->user_id)
+            ->update(['status' => 'ended', 'end_date' => $mission->end_at]);
     }
 }

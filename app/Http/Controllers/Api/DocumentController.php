@@ -11,32 +11,22 @@ use Illuminate\Support\Facades\Validator;
 
 class DocumentController extends Controller
 {
-    /**
-     * Types de documents autorisés
-     */
     const DOCUMENT_TYPES = ['contract', 'agreement', 'invoice', 'quote', 'attachment', 'other'];
     const DOCUMENT_STATUSES = ['draft', 'pending', 'signed', 'expired', 'cancelled'];
 
-    /**
-     * ✅ Liste des documents (filtrée par documentable_type/id)
-     */
     public function index(Request $request)
     {
         $query = Document::query()
             ->with(['uploader:id,name,email,avatar_path', 'currentVersionFile'])
             ->where(function ($q) use ($request) {
-                // ✅ Sécurité : ne voir que les documents liés à des ressources accessibles
                 $q->where('uploaded_by', $request->user()->id);
-
-                // Ou ceux liés à une mission/proposition où je suis impliqué
                 $q->orWhereHasMorph('documentable', ['App\Models\Mission', 'App\Models\Proposal'], function ($qq) use ($request) {
-                    // Le contrôleur appelant gère plus finement si besoin
                 });
             });
 
         if ($request->has('documentable_type') && $request->has('documentable_id')) {
-            // ✅ On accepte les alias et les classes complètes
-            $type = $request->documentable_type;
+            $type = str_replace('\\\\', '\\', $request->documentable_type);
+            
             if ($type === 'proposal') $type = \App\Models\Proposal::class;
             if ($type === 'mission') $type = \App\Models\Mission::class;
             
@@ -55,17 +45,13 @@ class DocumentController extends Controller
         return $query->latest()->get();
     }
 
-    /**
-     * ✅ Upload d'un document
-     */
     public function upload(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'file' => [
-                'required', 'file', 'max:10240', // 10 Mo
+                'required', 'file', 'max:10240',
                 'mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,webp,txt',
             ],
-            // ✅ On accepte n'importe quelle string pour ensuite la convertir
             'documentable_type' => ['required', 'string'],
             'documentable_id' => ['required', 'integer'],
             'document_type' => ['required', 'string', 'in:' . implode(',', self::DOCUMENT_TYPES)],
@@ -79,8 +65,8 @@ class DocumentController extends Controller
         }
 
         $data = $validator->validated();
+        $data['documentable_type'] = str_replace('\\\\', '\\', $data['documentable_type']);
 
-        // ✅ Conversion automatique des alias si le front envoie le nom court
         $typeMap = [
             'proposal' => \App\Models\Proposal::class,
             'mission' => \App\Models\Mission::class,
@@ -91,17 +77,15 @@ class DocumentController extends Controller
             $data['documentable_type'] = $typeMap[$data['documentable_type']];
         }
 
-        // ✅ Vérifier que l'utilisateur a accès au documentable
         $this->authorizeDocumentable($request, $data['documentable_type'], $data['documentable_id']);
 
-        // ✅ Upload sécurisé
         $file = $request->file('file');
         $path = $file->store('documents/' . date('Y/m'), 'public');
 
         $document = Document::create([
             'documentable_type' => $data['documentable_type'],
             'documentable_id' => $data['documentable_id'],
-            'type' => $data['document_type'], // compat ancien champ
+            'type' => $data['document_type'],
             'document_type' => $data['document_type'],
             'status' => $data['status'] ?? 'draft',
             'file_path' => $path,
@@ -114,7 +98,6 @@ class DocumentController extends Controller
             'uploaded_by' => $request->user()->id,
         ]);
 
-        // ✅ Créer la version 1
         $document->versions()->create([
             'version_number' => 1,
             'file_path' => $path,
@@ -132,9 +115,6 @@ class DocumentController extends Controller
         ], 201);
     }
 
-    /**
-     * ✅ Détails d'un document
-     */
     public function show(Request $request, Document $document)
     {
         $this->authorizeDocumentAccess($request, $document);
@@ -147,9 +127,6 @@ class DocumentController extends Controller
         ]);
     }
 
-    /**
-     * ✅ Mettre à jour les métadonnées
-     */
     public function update(Request $request, Document $document)
     {
         $this->authorizeDocumentAccess($request, $document);
@@ -164,7 +141,6 @@ class DocumentController extends Controller
         $old = $document->only(array_keys($data));
         $document->update($data);
 
-        // ✅ Logger chaque changement
         foreach ($data as $key => $value) {
             if (($old[$key] ?? null) != $value) {
                 $document->logHistory(
@@ -182,9 +158,6 @@ class DocumentController extends Controller
         ]);
     }
 
-    /**
-     * ✅ Upload d'une nouvelle version
-     */
     public function uploadVersion(Request $request, Document $document)
     {
         $this->authorizeDocumentAccess($request, $document);
@@ -218,9 +191,6 @@ class DocumentController extends Controller
         ], 201);
     }
 
-    /**
-     * ✅ Marquer comme signé
-     */
     public function markAsSigned(Request $request, Document $document)
     {
         $this->authorizeDocumentAccess($request, $document);
@@ -244,9 +214,6 @@ class DocumentController extends Controller
         ]);
     }
 
-    /**
-     * ✅ Télécharger (log dans l'historique)
-     */
     public function download(Request $request, Document $document)
     {
         $this->authorizeDocumentAccess($request, $document);
@@ -261,9 +228,6 @@ class DocumentController extends Controller
         return response()->download($path, $document->original_name);
     }
 
-    /**
-     * ✅ Télécharger une version spécifique
-     */
     public function downloadVersion(Request $request, Document $document, DocumentVersion $version)
     {
         $this->authorizeDocumentAccess($request, $document);
@@ -277,9 +241,6 @@ class DocumentController extends Controller
         return response()->download($path, $version->original_name);
     }
 
-    /**
-     * ✅ Historique
-     */
     public function history(Request $request, Document $document)
     {
         $this->authorizeDocumentAccess($request, $document);
@@ -287,9 +248,6 @@ class DocumentController extends Controller
         return $document->history()->with('user:id,name,email,avatar_path')->get();
     }
 
-    /**
-     * ✅ Supprimer (soft delete)
-     */
     public function destroy(Request $request, Document $document)
     {
         $this->authorizeDocumentAccess($request, $document);
@@ -300,17 +258,15 @@ class DocumentController extends Controller
         return response()->json(['message' => 'Document supprimé']);
     }
 
-       private function authorizeDocumentAccess(Request $request, Document $document): void
+    private function authorizeDocumentAccess(Request $request, Document $document): void
     {
         $user = $request->user();
 
-        // 1. Propriétaire direct du document
         if ($document->uploaded_by === $user->id) return;
 
         $companyIds = $user->companies()->pluck('id')->toArray();
         $profileId = $user->professionalProfile?->id;
 
-        // 2. Si le document est lié à une MISSION
         if ($document->documentable_type === 'App\Models\Mission') {
             $mission = $document->documentable;
             if ($mission && (
@@ -320,7 +276,6 @@ class DocumentController extends Controller
             )) return;
         }
 
-        // ✅ 3. NOUVEAU : Si le document est lié à une PROPOSITION
         if ($document->documentable_type === 'App\Models\Proposal') {
             $proposal = $document->documentable;
             if ($proposal) {
@@ -328,7 +283,6 @@ class DocumentController extends Controller
                 $isRecipient = in_array($proposal->to_company_id, $companyIds);
                 $isTalent = $proposal->professional_profile_id === $profileId;
                 
-                // Si l'utilisateur est l'un des participants de la proposition
                 if ($isSender || $isRecipient || $isTalent) return;
             }
         }
@@ -341,16 +295,33 @@ class DocumentController extends Controller
         $model = $type::find($id);
         abort_unless($model, 404, 'Ressource introuvable.');
 
-        // Pour MVP : on accepte si l'utilisateur est lié à la ressource
         $user = $request->user();
+        $companyIds = $user->companies()->pluck('id')->toArray();
+        $profileId = $user->professionalProfile?->id;
 
-        if ($type === 'App\Models\Mission' && $model->employee_id !== $user->id) {
-            $companyIds = $user->companies()->pluck('id')->toArray();
+        // ✅ SÉCURITÉ POUR LES MISSIONS
+        if ($type === 'App\Models\Mission') {
+            $isEmployee = $model->professional_profile_id === $profileId;
+            $isSupplying = in_array($model->supplying_company_id, $companyIds);
+            $isRequesting = in_array($model->requesting_company_id, $companyIds);
+
             abort_unless(
-                in_array($model->supplying_company_id, $companyIds) ||
-                in_array($model->requesting_company_id, $companyIds),
+                $isEmployee || $isSupplying || $isRequesting,
                 403,
                 'Vous n\'êtes pas autorisé à ajouter des documents à cette mission.'
+            );
+        }
+
+        // ✅ SÉCURITÉ POUR LES PROPOSITIONS
+        if ($type === 'App\Models\Proposal') {
+            // 👇 On force l'ajout de document UNIQUEMENT par l'entreprise qui a proposé (Fournisseuse / Sender)
+            $isSender = in_array($model->proposed_by_company_id, $companyIds);
+            
+            // Si tu veux autoriser aussi le talent, ajoute : || $model->professional_profile_id === $profileId
+            abort_unless(
+                $isSender, 
+                403, 
+                'Seule l\'entreprise fournisseuse peut ajouter des documents à cette proposition.'
             );
         }
     }

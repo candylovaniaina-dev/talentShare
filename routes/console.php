@@ -28,3 +28,6 @@ Schedule::job(new ExpireProposals)->dailyAt('02:00');
 
 // ✅ Rappels d'entretien (30 min avant, vérifié toutes les 5 min)
 Schedule::command('interviews:send-reminders')->everyFiveMinutes();
+
+Schedule::command('missions:close-expired')->dailyAt('00:00');
+Schedule::command('contracts:close-expired')->dailyAt('00:10')->timezone('Indian/Antananarivo');

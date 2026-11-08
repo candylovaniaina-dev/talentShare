@@ -1,3 +1,4 @@
+/* navy-theme */
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -29,6 +30,13 @@ import { useAuth } from "../context/AuthContext";
 
 const ITEMS_PER_PAGE = 9;
 
+// ✅ Ajout des labels pour les types de mission
+const MISSION_LABELS = {
+  mission: "Mission ponctuelle",
+  staffing: "Mise à disposition",
+  freelance: "Prestation freelance",
+};
+
 const TYPE_OPTIONS = [
   { id: "all", label: "Toutes les demandes" },
   { id: "company", label: "Entreprises" },
@@ -43,12 +51,12 @@ const BUDGET_OPTIONS = [
 ];
 
 const LABEL =
-  "font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-[#6F877E] dark:text-slate-400";
+  "text-[11px] font-medium uppercase tracking-[0.14em] text-[#6B7F95] dark:text-slate-400";
 
 const FIELD =
-  "w-full rounded-xl border border-[#E0EAE6] bg-[#F9FCFA] py-3 pl-10 pr-9 text-sm text-[#173A39] outline-none transition " +
-  "placeholder:text-[#93A6A0] focus:border-[#10B981] focus:bg-white focus:ring-4 focus:ring-[#10B981]/10 " +
-  "dark:border-white/10 dark:bg-[#0B1F33] dark:text-white dark:placeholder:text-slate-500 dark:focus:border-emerald-500 dark:focus:bg-[#112A3A]";
+  "w-full rounded-xl border border-[#E4EBF1] bg-[#F5F8FC] py-3 pl-10 pr-9 text-sm text-[#0B1F33] outline-none transition " +
+  "placeholder:text-[#94A3B8] focus:border-[#16B8B1] focus:bg-white focus:ring-4 focus:ring-[#16B8B1]/10 " +
+  "dark:border-white/10 dark:bg-[#131E47] dark:text-white dark:placeholder:text-slate-500 dark:focus:border-[#16B8B1] dark:focus:bg-[#1A2650]";
 
 const asArray = (data) => {
   if (Array.isArray(data)) return data;
@@ -157,7 +165,6 @@ export default function BrowseResourceRequests({
   const [currentPage, setCurrentPage] = useState(1);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  // ✅ SAUVEGARDE PERSISTANTE DES DEMANDES
   const [savedRequests, setSavedRequests] = useState(() => {
     try {
       const saved = localStorage.getItem("talentshare_saved_requests");
@@ -344,11 +351,11 @@ export default function BrowseResourceRequests({
 
   return (
     <Shell>
-      <ContentTag className="min-h-screen bg-[#F2F7F5] text-[#0B2A30] dark:bg-[#0B1F33] dark:text-slate-200">
+      <ContentTag className="min-h-screen bg-transparent text-[#131E47] dark:bg-transparent dark:text-slate-200 font-['Plus_Jakarta_Sans',sans-serif]">
         <div className="mx-auto w-full max-w-[1500px] px-4 py-5 sm:px-6 sm:py-7 lg:px-8">
           <div className="grid items-start gap-6 lg:grid-cols-[270px_minmax(0,1fr)]">
             <aside className="lg:sticky lg:top-6">
-              <div className="rounded-2xl border border-[#E0EAE5] bg-white p-4 shadow-[0_5px_20px_rgba(11,42,48,0.035)] dark:border-white/10 dark:bg-[#112A3A] dark:shadow-none">
+              <div className="rounded-2xl border border-[#E4EBF1] bg-white p-4 shadow-[0_5px_20px_rgba(11,42,48,0.035)] dark:border-white/10 dark:bg-[#1A2650] dark:shadow-none">
                 <div className="flex items-center justify-between gap-2">
                   <button
                     type="button"
@@ -356,10 +363,10 @@ export default function BrowseResourceRequests({
                     aria-expanded={filtersOpen}
                     className={`inline-flex items-center gap-2 lg:pointer-events-none ${LABEL}`}
                   >
-                    <SlidersHorizontal size={14} className="text-[#10A66A] dark:text-emerald-400" />
+                    <SlidersHorizontal size={14} className="text-[#0F9691] dark:text-[#16B8B1]" />
                     Filtres
                     {activeFiltersCount > 0 && (
-                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#10B981] px-1 font-sans text-[11px] font-bold text-white">
+                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#16B8B1] px-1 font-sans text-[11px] font-bold text-white">
                         {activeFiltersCount}
                       </span>
                     )}
@@ -373,7 +380,7 @@ export default function BrowseResourceRequests({
                     <button
                       type="button"
                       onClick={resetFilters}
-                      className="text-xs font-bold text-[#0D9663] transition hover:text-[#08754D] dark:text-emerald-400 dark:hover:text-emerald-300"
+                      className="text-xs font-bold text-[#0F9691] transition hover:text-[#0B6F6B] dark:text-[#16B8B1] dark:hover:text-[#7FD3CF]"
                     >
                       Réinitialiser
                     </button>
@@ -386,7 +393,7 @@ export default function BrowseResourceRequests({
                       <label className="relative block">
                         <Search
                           size={16}
-                          className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#7D958A] dark:text-slate-500"
+                          className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6B7F95] dark:text-slate-500"
                         />
                         <input
                           value={search}
@@ -400,7 +407,7 @@ export default function BrowseResourceRequests({
                             type="button"
                             onClick={() => setSearch("")}
                             aria-label="Effacer la recherche"
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-[#8AA097] hover:bg-[#E8F4ED] dark:text-slate-500 dark:hover:bg-white/10 dark:hover:text-white"
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-[#6B7F95] hover:bg-[#E8F8F7] dark:text-slate-500 dark:hover:bg-white/10 dark:hover:text-white"
                           >
                             <X size={14} />
                           </button>
@@ -411,7 +418,7 @@ export default function BrowseResourceRequests({
                     <label className="relative block">
                       <MapPin
                         size={16}
-                        className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#7D958A] dark:text-slate-500"
+                        className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6B7F95] dark:text-slate-500"
                       />
                       <input
                         value={citySearch}
@@ -425,7 +432,7 @@ export default function BrowseResourceRequests({
                           type="button"
                           onClick={() => setCitySearch("")}
                           aria-label="Effacer la ville"
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-[#8AA097] hover:bg-[#E8F4ED] dark:text-slate-500 dark:hover:bg-white/10 dark:hover:text-white"
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-[#6B7F95] hover:bg-[#E8F8F7] dark:text-slate-500 dark:hover:bg-white/10 dark:hover:text-white"
                         >
                           <X size={14} />
                         </button>
@@ -472,8 +479,7 @@ export default function BrowseResourceRequests({
             </aside>
 
             <section className="min-w-0">
-              {/* ✅ BARRE COMPACTE AVEC SAUVEGARDES ET URGENT */}
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E0EAE5] pb-4 dark:border-white/10">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E4EBF1] pb-4 dark:border-white/10">
                 <div className="flex items-center gap-3">
                   <p className={LABEL} aria-live="polite">
                     {loading
@@ -485,8 +491,8 @@ export default function BrowseResourceRequests({
                     onClick={() => setShowSavedOnly(!showSavedOnly)}
                     className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition ${
                       showSavedOnly 
-                        ? "bg-[#0B2A30] text-white border border-[#0B2A30] dark:bg-emerald-600 dark:border-emerald-600" 
-                        : "bg-white text-slate-500 border border-[#DFEAE4] hover:bg-slate-50 dark:bg-[#112A3A] dark:text-slate-400 dark:border-white/10 dark:hover:bg-white/5"
+                        ? "bg-[#0B1F33] text-white border border-[#0B1F33] dark:bg-[#0F9691] dark:border-[#0F9691]" 
+                        : "bg-white text-slate-500 border border-[#E4EBF1] hover:bg-slate-50 dark:bg-[#1A2650] dark:text-slate-400 dark:border-white/10 dark:hover:bg-white/5"
                     }`}
                   >
                     <Bookmark size={12} fill={showSavedOnly ? "currentColor" : "none"} />
@@ -500,14 +506,14 @@ export default function BrowseResourceRequests({
                     className={`inline-flex h-9 items-center gap-2 rounded-xl border px-3 text-xs font-semibold transition ${
                       onlyUrgent
                         ? "border-rose-200 bg-rose-50 text-rose-600 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400"
-                        : "border-[#DFEAE4] bg-white text-[#648076] hover:bg-slate-50 dark:border-white/10 dark:bg-[#112A3A] dark:text-slate-400 dark:hover:bg-white/5"
+                        : "border-[#E4EBF1] bg-white text-[#6B7F95] hover:bg-slate-50 dark:border-white/10 dark:bg-[#1A2650] dark:text-slate-400 dark:hover:bg-white/5"
                     }`}
                   >
                     <Flame size={14} className={onlyUrgent ? "text-rose-500 dark:text-rose-400" : "text-slate-400 dark:text-slate-500"} />
                     Urgent
                   </button>
 
-                  <div className="h-6 w-px bg-[#E0EAE5] mx-1 hidden sm:block dark:bg-white/10"></div>
+                  <div className="h-6 w-px bg-[#E4EBF1] mx-1 hidden sm:block dark:bg-white/10"></div>
 
                   <button
                     type="button"
@@ -515,7 +521,7 @@ export default function BrowseResourceRequests({
                     disabled={loading || refreshing}
                     title="Actualiser les demandes"
                     aria-label="Actualiser les demandes"
-                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#DFEAE4] bg-white text-[#648076] transition hover:border-[#A8D9BD] hover:text-[#0D9663] disabled:opacity-50 dark:border-white/10 dark:bg-[#112A3A] dark:text-slate-400 dark:hover:border-emerald-500/50 dark:hover:text-emerald-400"
+                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#E4EBF1] bg-white text-[#6B7F95] transition hover:border-[#BFE3E0] hover:text-[#0F9691] disabled:opacity-50 dark:border-white/10 dark:bg-[#1A2650] dark:text-slate-400 dark:hover:border-[#16B8B1]/50 dark:hover:text-[#16B8B1]"
                   >
                     <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
                   </button>
@@ -525,23 +531,23 @@ export default function BrowseResourceRequests({
                     <select
                       value={sortBy}
                       onChange={(event) => setSortBy(event.target.value)}
-                      className="h-9 appearance-none rounded-xl border border-[#DFEAE4] bg-white pl-3.5 pr-9 text-xs font-semibold text-[#294840] outline-none transition focus:border-[#10B981] focus:ring-4 focus:ring-[#10B981]/10 dark:border-white/10 dark:bg-[#112A3A] dark:text-slate-200 dark:focus:border-emerald-500"
+                      className="h-9 appearance-none rounded-xl border border-[#E4EBF1] bg-white pl-3.5 pr-9 text-xs font-semibold text-[#1F3550] outline-none transition focus:border-[#16B8B1] focus:ring-4 focus:ring-[#16B8B1]/10 dark:border-white/10 dark:bg-[#1A2650] dark:text-slate-200 dark:focus:border-[#16B8B1]"
                     >
                       {isTalent && <option value="match">Meilleure correspondance</option>}
                       <option value="recent">Plus récentes</option>
                       <option value="budget">Budget décroissant</option>
                       <option value="title">Ordre alphabétique</option>
                     </select>
-                    <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#7D958A] dark:text-slate-500" />
+                    <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#6B7F95] dark:text-slate-500" />
                   </label>
 
                   {canPublish && (
                     <Link
                       to="/resource-requests/new"
-                      className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-[#0B2A30] px-4 text-xs font-bold text-white shadow-sm transition hover:bg-[#16463F] dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                      className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-[#0B1F33] px-4 text-xs font-bold text-white shadow-sm transition hover:bg-[#16324F] dark:bg-[#0F9691] dark:hover:bg-[#16B8B1]"
                     >
                       <Plus size={14} />
-                      Publier
+                      Nouvelle demande
                     </Link>
                   )}
                 </div>
@@ -552,34 +558,34 @@ export default function BrowseResourceRequests({
                   {[1, 2, 3, 4, 5, 6].map((item) => (
                     <div
                       key={item}
-                      className="animate-pulse rounded-2xl border border-[#E0EAE5] bg-white p-4 dark:border-white/10 dark:bg-[#112A3A]"
+                      className="animate-pulse rounded-2xl border border-[#E4EBF1] bg-white p-4 dark:border-white/10 dark:bg-[#1A2650]"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-xl bg-[#EAF2ED] dark:bg-white/10" />
+                        <div className="h-10 w-10 rounded-xl bg-[#E4EBF1] dark:bg-white/10" />
                         <div className="flex-1 space-y-2">
-                          <div className="h-3 w-2/5 rounded bg-[#EAF2ED] dark:bg-white/10" />
-                          <div className="h-2.5 w-1/3 rounded bg-[#EAF2ED] dark:bg-white/10" />
+                          <div className="h-3 w-2/5 rounded bg-[#E4EBF1] dark:bg-white/10" />
+                          <div className="h-2.5 w-1/3 rounded bg-[#E4EBF1] dark:bg-white/10" />
                         </div>
-                        <div className="h-9 w-9 rounded-full bg-[#EAF2ED] dark:bg-white/10" />
+                        <div className="h-9 w-9 rounded-full bg-[#E4EBF1] dark:bg-white/10" />
                       </div>
-                      <div className="mt-4 h-4 w-3/4 rounded bg-[#EAF2ED] dark:bg-white/10" />
-                      <div className="mt-3 h-3 rounded bg-[#EAF2ED] dark:bg-white/10" />
-                      <div className="mt-2 h-3 w-4/5 rounded bg-[#EAF2ED] dark:bg-white/10" />
-                      <div className="mt-4 h-10 rounded-xl bg-[#EAF2ED] dark:bg-white/10" />
+                      <div className="mt-4 h-4 w-3/4 rounded bg-[#E4EBF1] dark:bg-white/10" />
+                      <div className="mt-3 h-3 rounded bg-[#E4EBF1] dark:bg-white/10" />
+                      <div className="mt-2 h-3 w-4/5 rounded bg-[#E4EBF1] dark:bg-white/10" />
+                      <div className="mt-4 h-10 rounded-xl bg-[#E4EBF1] dark:bg-white/10" />
                     </div>
                   ))}
                 </div>
               )}
 
               {!loading && paginatedRequests.length === 0 && (
-                <div className="mt-5 rounded-2xl border border-dashed border-[#CFE0D5] bg-white px-5 py-16 text-center dark:border-white/20 dark:bg-[#0B1F33]">
-                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E8F7EE] text-[#139765] dark:bg-emerald-500/10 dark:text-emerald-400">
+                <div className="mt-5 rounded-2xl border border-dashed border-[#BFE3E0] bg-white px-5 py-16 text-center dark:border-white/20 dark:bg-[#131E47]">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E8F8F7] text-[#0F9691] dark:bg-[#16B8B1]/10 dark:text-[#16B8B1]">
                     <Search size={24} />
                   </div>
-                  <h3 className="mt-5 text-lg font-extrabold text-[#0B2A30] dark:text-white">
+                  <h3 className="mt-5 text-lg font-extrabold text-[#0B1F33] dark:text-white">
                     {requests.length === 0 ? "Aucune demande disponible" : "Aucun résultat trouvé"}
                   </h3>
-                  <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#7A9186] dark:text-slate-400">
+                  <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#6B7F95] dark:text-slate-400">
                     {requests.length === 0
                       ? "Les demandes publiées apparaîtront ici dès qu'elles seront disponibles."
                       : "Essayez d'autres mots-clés ou retirez certains filtres pour élargir votre recherche."}
@@ -588,7 +594,7 @@ export default function BrowseResourceRequests({
                     <button
                       type="button"
                       onClick={resetFilters}
-                      className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#0B2A30] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#16463F] dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                      className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#0B1F33] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#16324F] dark:bg-[#0F9691] dark:hover:bg-[#16B8B1]"
                     >
                       <X size={15} />
                       Effacer les filtres
@@ -597,7 +603,6 @@ export default function BrowseResourceRequests({
                 </div>
               )}
 
-              {/* ✅ GRILLE */}
               {!loading && paginatedRequests.length > 0 && (
                 <div className="mt-5 grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {paginatedRequests.map((request) => (
@@ -621,7 +626,7 @@ export default function BrowseResourceRequests({
                     onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
                     disabled={safePage === 1}
                     aria-label="Page précédente"
-                    className="flex h-10 items-center gap-1 rounded-xl border border-[#DFEAE4] bg-white px-3 text-xs font-bold text-[#5C786A] transition hover:border-[#B4DEC3] hover:text-[#148052] disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/10 dark:bg-[#112A3A] dark:text-slate-300 dark:hover:border-emerald-500/50 dark:hover:text-emerald-400"
+                    className="flex h-10 items-center gap-1 rounded-xl border border-[#E4EBF1] bg-white px-3 text-xs font-bold text-[#6B7F95] transition hover:border-[#BFE3E0] hover:text-[#0F9691] disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/10 dark:bg-[#1A2650] dark:text-slate-300 dark:hover:border-[#16B8B1]/50 dark:hover:text-[#16B8B1]"
                   >
                     <ChevronLeft size={15} />
                     Précédent
@@ -635,8 +640,8 @@ export default function BrowseResourceRequests({
                       aria-current={safePage === page ? "page" : undefined}
                       className={`flex h-10 min-w-10 items-center justify-center rounded-xl px-3 text-xs font-bold transition ${
                         safePage === page
-                          ? "bg-[#0B2A30] text-white shadow-sm dark:bg-emerald-600"
-                          : "border border-[#DFEAE4] bg-white text-[#648074] hover:border-[#B4DEC3] hover:text-[#148052] dark:border-white/10 dark:bg-[#112A3A] dark:text-slate-300 dark:hover:border-emerald-500/50 dark:hover:text-emerald-400"
+                          ? "bg-[#0B1F33] text-white shadow-sm dark:bg-[#0F9691]"
+                          : "border border-[#E4EBF1] bg-white text-[#6B7F95] hover:border-[#BFE3E0] hover:text-[#0F9691] dark:border-white/10 dark:bg-[#1A2650] dark:text-slate-300 dark:hover:border-[#16B8B1]/50 dark:hover:text-[#16B8B1]"
                       }`}
                     >
                       {page}
@@ -648,7 +653,7 @@ export default function BrowseResourceRequests({
                     onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
                     disabled={safePage === totalPages}
                     aria-label="Page suivante"
-                    className="flex h-10 items-center gap-1 rounded-xl border border-[#DFEAE4] bg-white px-3 text-xs font-bold text-[#5C786A] transition hover:border-[#B4DEC3] hover:text-[#148052] disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/10 dark:bg-[#112A3A] dark:text-slate-300 dark:hover:border-emerald-500/50 dark:hover:text-emerald-400"
+                    className="flex h-10 items-center gap-1 rounded-xl border border-[#E4EBF1] bg-white px-3 text-xs font-bold text-[#6B7F95] transition hover:border-[#BFE3E0] hover:text-[#0F9691] disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/10 dark:bg-[#1A2650] dark:text-slate-300 dark:hover:border-[#16B8B1]/50 dark:hover:text-[#16B8B1]"
                   >
                     Suivant
                     <ChevronRight size={15} />
@@ -662,10 +667,10 @@ export default function BrowseResourceRequests({
         {toast && (
           <div
             role="status"
-            className={`fixed bottom-5 right-5 z-[120] flex max-w-[calc(100vw-2.5rem)] items-center gap-3 rounded-2xl border bg-white px-4 py-3.5 text-sm shadow-[0_12px_40px_rgba(11,42,48,0.15)] dark:bg-[#112A3A] ${
+            className={`fixed bottom-5 right-5 z-[120] flex max-w-[calc(100vw-2.5rem)] items-center gap-3 rounded-2xl border bg-white px-4 py-3.5 text-sm shadow-[0_12px_40px_rgba(11,42,48,0.15)] dark:bg-[#1A2650] ${
               toast.type === "error"
                 ? "border-rose-200 text-rose-700 dark:border-rose-500/30 dark:text-rose-400"
-                : "border-[#CDEBDD] text-[#176E4B] dark:border-emerald-500/30 dark:text-emerald-400"
+                : "border-[#BFE3E0] text-[#0F9691] dark:border-[#16B8B1]/30 dark:text-[#16B8B1]"
             }`}
           >
             {toast.type === "error" ? (
@@ -678,7 +683,7 @@ export default function BrowseResourceRequests({
               type="button"
               onClick={() => setToast(null)}
               aria-label="Fermer la notification"
-              className="ml-1 rounded-lg p-1 text-[#8BA096] hover:bg-[#F0F6F2] dark:text-slate-500 dark:hover:bg-white/10"
+              className="ml-1 rounded-lg p-1 text-[#6B7F95] hover:bg-[#F5F8FC] dark:text-slate-500 dark:hover:bg-white/10"
             >
               <X size={15} />
             </button>
@@ -693,7 +698,7 @@ function FilterSection({ title, children, defaultOpen = true }) {
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <div className="mt-5 border-t border-[#EAF0EC] pt-4 dark:border-white/10">
+    <div className="mt-5 border-t border-[#E4EBF1] pt-4 dark:border-white/10">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
@@ -714,10 +719,10 @@ function FilterPill({ active, onClick, children }) {
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`w-full rounded-full border px-4 py-2 text-center font-mono text-xs transition ${
+      className={`w-full rounded-full border px-4 py-2 text-center text-xs transition ${
         active
-          ? "border-[#10B981] bg-[#EAF7EF] font-semibold text-[#11875B] dark:border-emerald-500/50 dark:bg-emerald-500/10 dark:text-emerald-300"
-          : "border-[#DFEAE4] bg-white text-[#5C786A] hover:border-[#A8D9BD] hover:text-[#167C52] dark:border-white/10 dark:bg-[#112A3A] dark:text-slate-400 dark:hover:border-emerald-500/30 dark:hover:text-emerald-400"
+          ? "border-[#16B8B1] bg-[#E8F8F7] font-semibold text-[#0F9691] dark:border-[#16B8B1]/50 dark:bg-[#16B8B1]/10 dark:text-[#7FD3CF]"
+          : "border-[#E4EBF1] bg-white text-[#6B7F95] hover:border-[#BFE3E0] hover:text-[#0F9691] dark:border-white/10 dark:bg-[#1A2650] dark:text-slate-400 dark:hover:border-[#16B8B1]/30 dark:hover:text-[#16B8B1]"
       }`}
     >
       {children}
@@ -726,7 +731,7 @@ function FilterPill({ active, onClick, children }) {
 }
 
 function MatchRing({ score }) {
-  const color = score >= 70 ? "#10B981" : score >= 50 ? "#F59E0B" : "#94A3B8";
+  const color = score >= 70 ? "#16B8B1" : score >= 50 ? "#F59E0B" : "#94A3B8";
 
   return (
     <div
@@ -736,7 +741,7 @@ function MatchRing({ score }) {
       aria-label={`${Math.round(score)}% de correspondance avec votre profil`}
     >
       <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 36 36" aria-hidden="true">
-        <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" className="text-[#E6EEE9] dark:text-white/10" strokeWidth="3" />
+        <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" className="text-[#E4EBF1] dark:text-white/10" strokeWidth="3" />
         <circle
           cx="18"
           cy="18"
@@ -765,7 +770,7 @@ function Avatar({ url, name, isTalent }) {
         src={url}
         alt={name}
         onError={() => setFailed(true)}
-        className="h-10 w-10 shrink-0 rounded-xl border border-[#E2EEE6] object-cover dark:border-white/10"
+        className="h-10 w-10 shrink-0 rounded-xl border border-[#E4EBF1] object-cover dark:border-white/10"
       />
     );
   }
@@ -775,7 +780,7 @@ function Avatar({ url, name, isTalent }) {
       className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-xs font-extrabold ${
         isTalent
           ? "border-indigo-100 bg-indigo-50 text-indigo-600 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-400"
-          : "border-[#E2EEE6] bg-[#EDF8F0] text-[#11875B] dark:border-white/10 dark:bg-emerald-500/10 dark:text-emerald-400"
+          : "border-[#E4EBF1] bg-[#E8F8F7] text-[#0F9691] dark:border-white/10 dark:bg-[#16B8B1]/10 dark:text-[#16B8B1]"
       }`}
     >
       {getInitials(name)}
@@ -810,19 +815,16 @@ function RequestCard({ request, saved, onToggleSaved }) {
           ? `Jusqu'au ${endDate}`
           : null;
 
-  // ✅ Classes pour le bouton favori (Rond, avec effet Jaune)
   const favBtnClass = `flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-all duration-200 ${
     saved
-      ? "border-amber-200 bg-amber-50 text-amber-500 shadow-sm dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400" // ✅ Jaune quand sauvegardé
-      : "border-slate-200 bg-white text-slate-400 hover:border-amber-200 hover:bg-amber-50 hover:text-amber-500 dark:border-white/10 dark:bg-[#112A3A] dark:text-slate-500 dark:hover:border-amber-500/30 dark:hover:bg-amber-500/10 dark:hover:text-amber-400"
+      ? "border-amber-200 bg-amber-50 text-amber-500 shadow-sm dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400"
+      : "border-slate-200 bg-white text-slate-400 hover:border-amber-200 hover:bg-amber-50 hover:text-amber-500 dark:border-white/10 dark:bg-[#1A2650] dark:text-slate-500 dark:hover:border-amber-500/30 dark:hover:bg-amber-500/10 dark:hover:text-amber-400"
   }`;
 
   return (
-    // ✅ CARTE COMPACTE : max-w-sm, padding réduit
-    <article className="group relative flex h-full max-w-sm flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md dark:border-white/10 dark:bg-[#0B1F33] dark:hover:border-emerald-500/30 dark:hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
+    <article className="group relative flex h-full max-w-sm flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#A9E3E0] hover:shadow-md dark:border-white/10 dark:bg-[#131E47] dark:hover:border-[#16B8B1]/30 dark:hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
       <div className="flex flex-1 flex-col p-4">
 
-        {/* 1. AUTEUR + ANNEAU + BOUTON SAUVEGARDER */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2.5">
             <Avatar url={avatarUrl} name={authorName} isTalent={isTalent} />
@@ -838,19 +840,25 @@ function RequestCard({ request, saved, onToggleSaved }) {
 
           <div className="flex shrink-0 items-center gap-1.5">
             {hasMatch && <MatchRing score={matchScore} />}
-            {/* ✅ BOUTON FAVORI STYLE PHOTO 2 */}
             <button onClick={onToggleSaved} className={favBtnClass}>
               <Bookmark size={16} fill={saved ? "currentColor" : "none"} />
             </button>
           </div>
         </div>
 
-        {/* 2. PUCES DE STATUT */}
         <div className="mt-3 flex flex-wrap gap-1.5">
-          <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold ${isTalent ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300" : "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"}`}>
+          <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold ${isTalent ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300" : "bg-[#E8F8F7] text-[#0F9691] dark:bg-[#16B8B1]/10 dark:text-[#7FD3CF]"}`}>
             {isTalent ? <User size={11} /> : <Building2 size={11} />}
             {isTalent ? "Talent" : "Entreprise"}
           </span>
+
+          {/* ✅ AJOUT DE LA PASTILLE MISSION TYPE ICI */}
+          {request.mission_type && MISSION_LABELS[request.mission_type] && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-[#0B1F33]/5 px-2 py-1 text-[10px] font-bold text-[#0B1F33] dark:bg-white/10 dark:text-slate-200">
+              {MISSION_LABELS[request.mission_type]}
+            </span>
+          )}
+          
           {isUrgent && (
             <span className="inline-flex items-center gap-1 rounded-md bg-rose-50 px-2 py-1 text-[10px] font-bold text-rose-700 dark:bg-rose-500/10 dark:text-rose-400">
               <span className="h-1 w-1 rounded-full bg-rose-500" />
@@ -865,22 +873,19 @@ function RequestCard({ request, saved, onToggleSaved }) {
           )}
         </div>
 
-        {/* 3. TITRE */}
-        <h3 className="mt-2 line-clamp-2 text-[15px] font-extrabold leading-snug text-slate-900 transition group-hover:text-emerald-700 dark:text-white dark:group-hover:text-emerald-400">
+        <h3 className="mt-2 line-clamp-2 text-[15px] font-extrabold leading-snug text-slate-900 transition group-hover:text-[#0F9691] dark:text-white dark:group-hover:text-[#16B8B1]">
           {request.title || "Demande sans titre"}
         </h3>
 
-        {/* 4. LIEU */}
         {location && (
           <div className="mt-1 flex flex-wrap items-center gap-x-2 text-[11px] text-slate-500 dark:text-slate-400">
             <span className="inline-flex items-center gap-1">
-              <MapPin size={12} className="text-emerald-600 dark:text-emerald-500" />
+              <MapPin size={12} className="text-[#0F9691] dark:text-[#16B8B1]" />
               {location}
             </span>
           </div>
         )}
 
-        {/* 5. COMPÉTENCES */}
         <div className="mt-2 flex flex-wrap gap-1">
           {skills.length > 0 ? (
             <>
@@ -900,15 +905,13 @@ function RequestCard({ request, saved, onToggleSaved }) {
           )}
         </div>
 
-        {/* 6. DESCRIPTION */}
         <p className="mt-2 line-clamp-2 text-[12px] leading-[1.4] text-slate-600 dark:text-slate-400">
           {request.description || "Consultez les détails de cette demande."}
         </p>
 
-        {/* 7. ENCART BUDGET */}
         <div className="mt-auto pt-3">
           <div className="flex items-center gap-2 rounded-lg bg-slate-50 px-2.5 py-2 dark:bg-white/5">
-            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-white text-emerald-600 dark:bg-white/10 dark:text-emerald-400">
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-white text-[#0F9691] dark:bg-white/10 dark:text-[#16B8B1]">
               <Banknote size={12} />
             </div>
             <div className="min-w-0">
@@ -920,7 +923,6 @@ function RequestCard({ request, saved, onToggleSaved }) {
           </div>
         </div>
 
-        {/* 8. PIED DE CARTE */}
         <div className="mt-3 flex items-end justify-between gap-2 border-t border-slate-100 pt-3 dark:border-white/10">
           <div className="min-w-0">
             <p className="flex items-center gap-1 text-[9px] text-slate-500 dark:text-slate-400">
@@ -934,7 +936,7 @@ function RequestCard({ request, saved, onToggleSaved }) {
 
           <Link
             to={`/resource-requests/${request.id}`}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#0B2A30] px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#0B1F33] px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-[#0F9691] dark:bg-[#0F9691] dark:hover:bg-[#16B8B1]"
           >
             Voir
             <ArrowUpRight size={12} />
