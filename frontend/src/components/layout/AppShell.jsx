@@ -1,38 +1,42 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import {
-  LayoutDashboard, UserRound, BriefcaseBusiness, MessageCircle,
+  LayoutDashboard, UserRound, BriefcaseBusiness, MessageSquareText,
   Building2, Layers3, Menu, X, Settings, ChevronDown, LogOut,
   Home, Compass, Contact, Users, ShieldCheck, LifeBuoy,
-  Globe, Briefcase,
-  Handshake, 
+  Globe, Briefcase, Target, // ✅ AJOUTÉ ICI
+  ClipboardList, 
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import NotificationBell from "./NotificationBell";
 import api from "../../services/api";
 import ActivityHistory from "./ActivityHistory";
 
+const COLLAB_MATCH = ["/collaborations", "/missions", "/proposals", "/resource-proposals"];
+
+// ✅ AJOUT DES BADGES DANS LA CONFIGURATION DES MENUS
 const navByRole = {
   company: [
     { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-    { to: "/my-publications", label: "Espace recrutement", icon: BriefcaseBusiness },
+    { to: "/my-publications", label: "Espace recrutement", icon: BriefcaseBusiness, badge: "newProposals" },
     { to: "/resource-offers/browse", label: "Ressources disponibles", icon: Users },
-    { to: "/resource-proposals", label: "Propositions entreprises", icon: Handshake },
+    { to: "/collaborations", label: "Collaborations", icon: ClipboardList, badge: "newProposals", match: COLLAB_MATCH },
   ],
   employee: [
     { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-    { to: "/profile", label: "Mon Portfolio", icon: Contact },
+    { to: "/profile", label: "Mon Portfolio", icon: Contact }, { to: "/opportunites", label: "Mon radar", icon: Target, badge: "newRadar" }, // ✅ AJOUTÉ
     { to: "/explorer", label: "Explorer", icon: Compass, badge: "newExplorer" },
   ],
   student: [
     { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
     { to: "/profile", label: "Mon Portfolio", icon: Contact },
+
     { to: "/explorer", label: "Explorer", icon: Compass, badge: "newExplorer" },
   ],
   university: [{ to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard }],
   admin: [
     { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-    { to: "/admin/verifications", label: "Vérifications", icon: ShieldCheck },
+    { to: "/admin/verifications", label: "Vérifications", icon: ShieldCheck, badge: "newProposals" },
   ],
 };
 
@@ -48,27 +52,23 @@ const getTabs = (role) => [
     label: "Profil", 
     icon: UserRound, 
     to: role === "company" ? "/company?tab=profile" : "/my-activity?tab=profile" 
-  },
-  { 
-    id: "companies", 
-    label: "Réseau", 
-    icon: Globe, 
-    roles: ["student", "employee"],
-    to: "/my-activity?tab=companies"
   }
 ];
-
 const EXTRA_LABELS = [
   ["/messages", "Messagerie"],
   ["/account-settings", "Paramètres du compte"],
   ["/help", "Aide"],
   ["/guide", "Guide"],
   ["/history", "Historique"],
-["/job-offers", "Recrutement"],
+  ["/opportunites", "Mon radar"], // ✅ AJOUTÉ
+  ["/job-offers", "Recrutement"],
   ["/browse-requests", "Demandes de ressources"],
   ["/resource-requests", "Demandes de ressources"],
   ["/companies", "Entreprise"],
   ["/resource-proposals", "Propositions entreprises"],
+  ["/collaborations", "Collaborations"],
+  ["/missions", "Missions"],
+  ["/proposals", "Propositions"],
 ];
 
 function roleLabel(role) {
@@ -83,6 +83,10 @@ function roleLabel(role) {
 
 function isRouteActive(pathname, to) {
   return pathname === to || pathname.startsWith(`${to}/`);
+}
+
+function isItemActive(pathname, item) {
+  return (item.match || [item.to]).some((p) => isRouteActive(pathname, p));
 }
 
 const getFirstName = (user) => {
@@ -162,6 +166,7 @@ export default function AppShell({ children }) {
   const [newOffersCount, setNewOffersCount] = useState(0);
   const [newRequestsCount, setNewRequestsCount] = useState(0);
   const [newProposalsCount, setNewProposalsCount] = useState(0);
+  const [newRadarCount, setNewRadarCount] = useState(0); // ✅ AJOUTÉ
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(() => {
@@ -189,7 +194,7 @@ export default function AppShell({ children }) {
       const tab = tabs.find((t) => t.id === currentTab);
       return tab ? `Mon activité · ${tab.label}` : "Mon activité";
     }
-    const inMenu = nav.find((i) => isRouteActive(location.pathname, i.to));
+    const inMenu = nav.find((i) => isItemActive(location.pathname, i));
     if (inMenu) return inMenu.label;
     const extra = EXTRA_LABELS.find(([path]) => isRouteActive(location.pathname, path));
     return extra ? extra[1] : "Espace de travail";
@@ -252,7 +257,7 @@ export default function AppShell({ children }) {
 
   useEffect(() => {
     if (!user?.id) return;
-    if (location.pathname.startsWith("/my-activity") || location.pathname.startsWith("/company")) { setNewProposalsCount(0); return; }
+    if (location.pathname.startsWith("/my-activity") || location.pathname.startsWith("/company") || location.pathname.startsWith("/collaborations")) { setNewProposalsCount(0); return; }
     let cancelled = false;
     const fetchNewProposals = async () => {
       try {
@@ -266,30 +271,48 @@ export default function AppShell({ children }) {
   }, [user?.id, location.pathname]);
 
   useEffect(() => {
-    if ((!location.pathname.startsWith("/my-activity") && !location.pathname.startsWith("/company")) || !user?.id) return;
+    if ((!location.pathname.startsWith("/my-activity") && !location.pathname.startsWith("/company") && !location.pathname.startsWith("/collaborations")) || !user?.id) return;
     api.post("/proposals/mark-seen").then(() => setNewProposalsCount(0)).catch(() => setNewProposalsCount(0));
   }, [location.pathname, user?.id]);
 
+  // ✅ NOUVEL EFFET POUR LE RADAR
+  useEffect(() => {
+    if (!user?.id || !["student", "employee"].includes(user?.role)) return;
+    if (location.pathname.startsWith("/opportunites")) { setNewRadarCount(0); return; }
+    let cancelled = false;
+    const fetchRadar = async () => {
+      try {
+        const since = localStorage.getItem(`talentshare_radar_seen_${user.id}`);
+        const res = await api.get("/radar/count-new", { params: since ? { since } : {} });
+        if (!cancelled) setNewRadarCount(res.data?.count || 0);
+      } catch { /* silencieux */ }
+    };
+    fetchRadar();
+    const interval = setInterval(fetchRadar, 60000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [user?.id, user?.role, location.pathname]);
+
   const countFor = (badge) =>
+    badge === "newRadar" ? newRadarCount :
     badge === "newExplorer" ? newOffersCount + newRequestsCount :
     badge === "newOffers" ? newOffersCount :
     badge === "newRequests" ? newRequestsCount :
     badge === "newProposals" ? newProposalsCount : 0;
-
+    
   const renderBadge = (count, active, compact) => {
     if (count <= 0) return null;
     if (compact) {
-      return <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-[#F59E0B] ring-2 ring-[#0B1F33]" />;
+      return <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-[#0B1F33]" />;
     }
     return (
-      <span className={`ml-auto flex h-5 min-w-[24px] shrink-0 items-center justify-center rounded-full px-1.5 text-[10px] font-extrabold leading-none ${active ? "bg-[#0B1F33] text-white" : "bg-[#F59E0B] text-white"}`}>
+      <span className={`ml-auto flex h-5 min-w-[24px] shrink-0 items-center justify-center rounded-full px-1.5 text-[10px] font-extrabold leading-none ${active ? "bg-[#0B1F33] text-white" : "bg-rose-500 text-white"}`}>
         +{count > 99 ? "99" : count}
       </span>
     );
   };
 
-  const renderNavLink = ({ to, label, icon: Icon, badge }, compact) => {
-    const active = isRouteActive(location.pathname, to);
+  const renderNavLink = ({ to, label, icon: Icon, badge, match }, compact) => {
+    const active = isItemActive(location.pathname, { to, match });
     const count = active ? 0 : countFor(badge);
 
     return (
@@ -299,23 +322,22 @@ export default function AppShell({ children }) {
         title={compact ? label : undefined}
         onClick={() => setMobileNavOpen(false)}
         aria-current={active ? "page" : undefined}
-        // ✅ Changement : rounded-full pour l'effet pilule, et espacements ajustés
         className={`group relative flex items-center rounded-full transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16B8B1] ${
-          compact ? "h-12 w-12 justify-center self-center" : "min-h-[44px] gap-2.5 px-3 py-2 text-[13px]" // ✅ Texte en 13px au lieu de 14px
+          compact ? "h-12 w-12 justify-center self-center" : "min-h-[44px] gap-2.5 px-3 py-2 text-[13px]"
         } ${
           active
-            ? "bg-[#16B8B1] font-bold text-[#0B1F33]" // ✅ Bouton actif Turquoise
+            ? "bg-[#16B8B1] font-bold text-[#0B1F33]"
             : "font-medium text-white/65 hover:bg-white/[0.07] hover:text-white"
         }`}
       >
         <span
-          className={`flex h-8 w-8 shrink-0 items-center justify-center transition ${ // ✅ Icône réduite de 9 à 8
+          className={`flex h-8 w-8 shrink-0 items-center justify-center transition ${
             active
               ? "bg-transparent text-[#0B1F33]" 
               : "rounded-[10px] bg-white/[0.06] text-white/70 group-hover:text-[#16B8B1]"
           }`}
         >
-          <Icon size={17} strokeWidth={active ? 2.5 : 1.9} /> {/* ✅ Icône réduite de 18 à 17 */}
+          <Icon size={17} strokeWidth={active ? 2.5 : 1.9} />
         </span>
         {!compact && <span className="min-w-0 flex-1 truncate">{label}</span>}
         {renderBadge(count, active, compact)}
@@ -497,12 +519,14 @@ export default function AppShell({ children }) {
                   title="Messagerie"
                   className={`${headerBtn} relative`}
                 >
-                  <MessageCircle size={19} strokeWidth={1.9} />
-                  {unreadMessages > 0 && (
-                    <span className="absolute -right-1 -top-1 flex min-w-[18px] items-center justify-center rounded-full bg-[#F59E0B] px-1 text-[10px] font-bold leading-[18px] text-white shadow-sm">
-                      {unreadMessages > 99 ? "99+" : unreadMessages}
-                    </span>
-                  )}
+                  {/* ✅ ICÔNE MESSENGER / BULLE DE CHAT ICI */}
+                  <MessageSquareText size={19} strokeWidth={2.2} />
+                  
+                 {unreadMessages > 0 && (
+                  <span className="absolute -right-1 -top-1 flex min-w-[18px] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold leading-[18px] text-white shadow-sm">
+                    {unreadMessages > 99 ? "99+" : unreadMessages}
+                  </span>
+                )}
                 </Link>
 
                 <ActivityHistory />

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { X } from "lucide-react";
+import { X,FileText, MapPin, Clock, Calendar } from "lucide-react";
 
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -89,19 +89,23 @@ const logoSrc = (company) => {
 /* ----------------------------- Petites briques ----------------------------- */
 
 const Section = ({ title, hint, children, className = "" }) => (
-  <section className={`border-t border-[#E4EBF1] px-5 py-6 dark:border-white/10 sm:px-8 ${className}`}>
+  <section className={`border-t border-slate-100 px-5 py-6 dark:border-white/10 sm:px-8 ${className}`}>
     <h2 className="text-[15px] font-bold tracking-tight text-[#0B1F33] dark:text-white">{title}</h2>
     {hint && <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{hint}</p>}
     <div className="mt-4">{children}</div>
   </section>
 );
 
-const HeaderPill = ({ children, accent = false }) => (
+/* ✅ COMPOSANT HEADERPILL ADOUCI AVEC ICÔNES */
+const HeaderPill = ({ children, accent = false, icon: Icon }) => (
   <span
-    className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${
-      accent ? "bg-[#16B8B1] text-[#0B1F33]" : "bg-white/10 text-white/90 ring-1 ring-white/10"
+    className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold backdrop-blur-sm transition-all ${
+      accent 
+        ? "bg-[#16B8B1] text-[#0B1F33] shadow-sm" 
+        : "bg-white/10 text-white/90 ring-1 ring-white/10"
     }`}
   >
+    {Icon && <Icon size={13} className={accent ? "text-[#0B1F33]" : "text-[#16B8B1]"} />}
     {children}
   </span>
 );
@@ -233,7 +237,6 @@ export default function JobOfferDetail({ offerId: propOfferId, onClose }) {
     try {
       let cvPath = null;
 
-      // ✅ 1. Si le candidat upload un NOUVEAU CV
       if (!useExistingCv && cvFile) {
         const formData = new FormData();
         formData.append("cv", cvFile);
@@ -242,7 +245,6 @@ export default function JobOfferDetail({ offerId: propOfferId, onClose }) {
           headers: { "Content-Type": "multipart/form-data" },
         });
         
-        // ✅ On cherche le chemin du CV dans tous les formats possibles renvoyés par Laravel
         cvPath = cvRes.data?.cv_path 
               || cvRes.data?.data?.cv_path 
               || cvRes.data?.path 
@@ -254,7 +256,6 @@ export default function JobOfferDetail({ offerId: propOfferId, onClose }) {
           throw new Error("Le CV a été uploadé mais l'API n'a pas renvoyé le chemin du fichier. Vérifiez la route /profile/cv.");
         }
       } 
-      // ✅ 2. Si le candidat utilise le CV de son profil
       else if (useExistingCv && user?.cv_path) {
         cvPath = user.cv_path;
       }
@@ -265,7 +266,6 @@ export default function JobOfferDetail({ offerId: propOfferId, onClose }) {
         portfolio_id: portfolio?.id || null,
       };
       
-      // ✅ On ajoute le CV au payload s'il existe
       if (cvPath) {
         payload.cv_path = cvPath;
       }
@@ -323,9 +323,12 @@ export default function JobOfferDetail({ offerId: propOfferId, onClose }) {
         </div>
       ) : (
         <div className="bg-white dark:bg-[#131E47]">
-          {/* ===== En-tête ===== */}
-          <header className="relative overflow-hidden bg-[#0B1F33] px-5 py-7 text-white sm:px-8">
+          
+          {/* ===== ✅ EN-TÊTE ADOUCI ===== */}
+          <header className="relative overflow-hidden rounded-t-2xl bg-gradient-to-br from-[#0B1F33] to-[#122b45] px-5 py-7 text-white sm:px-8">
+            {/* Effets de lumière en arrière-plan */}
             <div className="pointer-events-none absolute -right-12 -top-16 h-52 w-52 rounded-full bg-[#16B8B1]/20 blur-3xl" />
+            <div className="pointer-events-none absolute -left-10 -bottom-12 h-40 w-40 rounded-full bg-blue-500/10 blur-3xl" />
             <div
               className="pointer-events-none absolute inset-0 opacity-[0.07]"
               style={{ backgroundImage: "radial-gradient(#fff 1px, transparent 1px)", backgroundSize: "22px 22px" }}
@@ -336,18 +339,20 @@ export default function JobOfferDetail({ offerId: propOfferId, onClose }) {
                 type="button"
                 aria-label="Fermer"
                 onClick={onClose}
-                className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white/80 transition hover:bg-white/20 hover:text-white"
+                className="absolute right-4 top-4 z-20 flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white/80 transition hover:bg-white/20 hover:text-white"
               >
                 <X size={17} />
               </button>
             )}
 
             <div className="relative flex items-start gap-4 sm:gap-5">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-lg sm:h-16 sm:w-16">
+              
+              {/* ✅ LOGO SANS FOND BLANC */}
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white/10 p-2 backdrop-blur-md sm:h-16 sm:w-16">
                 {logo ? (
-                  <img src={logo} alt="" className="h-full w-full object-contain p-1.5" />
+                  <img src={logo} alt="" className="h-full w-full object-contain drop-shadow-md" />
                 ) : (
-                  <span className="text-lg font-extrabold text-[#0B1F33]">{companyName.slice(0, 2).toUpperCase()}</span>
+                  <span className="text-lg font-extrabold text-white">{companyName.slice(0, 2).toUpperCase()}</span>
                 )}
               </div>
 
@@ -363,30 +368,50 @@ export default function JobOfferDetail({ offerId: propOfferId, onClose }) {
                   {offer.title}
                 </h1>
 
+                {/* ✅ BADGES AVEC ICÔNES */}
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <HeaderPill>{OFFER_TYPE_LABEL[offer.offer_type] || offer.offer_type || "Opportunité"}</HeaderPill>
+                  <HeaderPill icon={FileText}>
+                    {OFFER_TYPE_LABEL[offer.offer_type] || offer.offer_type || "Opportunité"}
+                  </HeaderPill>
+
                   {(offer.city || offer.country) && (
-                    <HeaderPill>{[offer.city, offer.country].filter(Boolean).join(", ")}</HeaderPill>
+                    <HeaderPill icon={MapPin}>
+                      {[offer.city, offer.country].filter(Boolean).join(", ")}
+                    </HeaderPill>
                   )}
-                  {formatDuration(offer) && <HeaderPill>{formatDuration(offer)}</HeaderPill>}
-                  {offer.remote && <HeaderPill>Télétravail</HeaderPill>}
-                  {salary && <HeaderPill accent>{salary}</HeaderPill>}
+
+                  {formatDuration(offer) && (
+                    <HeaderPill icon={Clock}>
+                      {formatDuration(offer)}
+                    </HeaderPill>
+                  )}
+
+                  {offer.remote && (
+                    <HeaderPill icon={MapPin}>
+                      Télétravail
+                    </HeaderPill>
+                  )}
+
+                  {salary && <HeaderPill accent icon={Briefcase}>{salary}</HeaderPill>}
                 </div>
               </div>
             </div>
           </header>
 
-          {/* ===== Bandeau date limite ===== */}
+          {/* ===== ✅ BANDEAU DATE LIMITE ADOUCI ===== */}
           {offer.application_deadline && (
-            <div className="flex items-center justify-between gap-3 bg-[#F3F6FC] px-5 py-3 text-xs dark:bg-[#0A1230] sm:px-8">
-              <span className="text-slate-500 dark:text-slate-400">Candidatures ouvertes jusqu'au</span>
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/80 px-5 py-3.5 text-sm dark:border-white/10 dark:bg-[#0A1230] sm:px-8">
+              <span className="flex items-center gap-2 font-medium text-slate-500 dark:text-slate-400">
+                <Calendar size={16} />
+                Candidatures ouvertes jusqu'au
+              </span>
               <strong className="font-bold text-[#0B1F33] dark:text-white">{formatDate(offer.application_deadline)}</strong>
             </div>
           )}
 
-          {/* ===== Description ===== */}
+          {/* ===== DESCRIPTION ===== */}
           <Section title="Description du poste" className={offer.application_deadline ? "border-t-0" : ""}>
-            <div className="whitespace-pre-line text-sm leading-7 text-slate-600 dark:text-slate-300">
+            <div className="whitespace-pre-line text-sm leading-relaxed text-slate-600 dark:text-slate-300">
               {offer.description || "Aucune description renseignée."}
             </div>
 
@@ -410,7 +435,7 @@ export default function JobOfferDetail({ offerId: propOfferId, onClose }) {
             )}
           </Section>
 
-          {/* ===== Candidature ===== */}
+          {/* ===== CANDIDATURE ===== */}
           {!application ? (
             <Section title="Postuler à cette offre" hint="Votre portfolio, votre CV et un message : trois étapes.">
               {error && (
@@ -600,11 +625,11 @@ export default function JobOfferDetail({ offerId: propOfferId, onClose }) {
 
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-3 font-['Plus_Jakarta_Sans',sans-serif] sm:p-6" role="dialog" aria-modal="true">
-        <button type="button" aria-label="Fermer" onClick={onClose} className="absolute inset-0 bg-[#06141F]/70 backdrop-blur-sm" />
+        <button type="button" aria-label="Fermer" onClick={onClose} className="absolute inset-0 bg-[#0B1F33]/50 backdrop-blur-sm" />
 
         <div className={`relative z-10 flex w-full items-stretch justify-center gap-4 ${hasSidePanel ? "max-w-[1200px]" : "max-w-3xl"}`}>
           <div
-            className={`flex max-h-[92vh] flex-col overflow-hidden rounded-2xl bg-white shadow-[0_30px_100px_rgba(6,20,31,0.5)] dark:bg-[#131E47] ${
+            className={`flex max-h-[92vh] flex-col overflow-hidden rounded-3xl bg-white shadow-[0_30px_100px_rgba(6,20,31,0.3)] dark:bg-[#131E47] ${
               hasSidePanel ? "hidden w-full max-w-xl lg:flex lg:w-1/2" : "w-full"
             }`}
           >
@@ -612,7 +637,7 @@ export default function JobOfferDetail({ offerId: propOfferId, onClose }) {
           </div>
 
           {hasSidePanel && (
-            <div className="hidden max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-[0_30px_100px_rgba(6,20,31,0.4)] dark:bg-[#131E47] lg:flex lg:w-1/2">
+            <div className="hidden max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-3xl bg-white shadow-[0_30px_100px_rgba(6,20,31,0.3)] dark:bg-[#131E47] lg:flex lg:w-1/2">
               <ApplicationDetailModal applicationId={application.id} onClose={() => setShowApplicationDetail(false)} embedded />
             </div>
           )}
@@ -642,7 +667,7 @@ export default function JobOfferDetail({ offerId: propOfferId, onClose }) {
 
   return (
     <div className="relative min-h-screen bg-[#F3F6FC] font-['Plus_Jakarta_Sans',sans-serif] dark:bg-[#0A1230]">
-      <div className="relative mx-auto max-w-3xl overflow-hidden bg-white shadow-xl dark:bg-[#131E47] sm:my-6 sm:rounded-2xl">
+      <div className="relative mx-auto max-w-3xl overflow-hidden bg-white shadow-xl dark:bg-[#131E47] sm:my-6 sm:rounded-3xl">
         <button
           type="button"
           onClick={() => navigate("/job-offers")}

@@ -6,8 +6,10 @@ use App\Models\ProfessionalProfile;
 use App\Models\ResourceRequest;
 use App\Models\MatchWeight;
 use App\Models\MatchInteraction;
+use App\Models\JobOffer; // ✅ Ajouté
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str; // ✅ Ajouté pour utiliser Str::slug au lieu de \Str
 
 class MatchingService
 {
@@ -43,7 +45,7 @@ class MatchingService
         ];
     }
 
-       /**
+    /**
      * ✅ Score par compétences avec matching FUZZY (tolérant)
      */
     private function skillScore(Collection $required, Collection $profileSkills): float
@@ -88,7 +90,7 @@ class MatchingService
     /**
      * ✅ Cherche la meilleure correspondance fuzzy pour un nom de skill
      */
-        private function findFuzzySkillMatch(string $requiredName, Collection $profileSkills): ?array
+    private function findFuzzySkillMatch(string $requiredName, Collection $profileSkills): ?array
     {
         $requiredNorm = $this->normalizeSkillName($requiredName);
         if (empty($requiredNorm)) return null;
@@ -96,7 +98,7 @@ class MatchingService
         // ✅ Étape 1 : Cherche dans les ALIAS en base
         $aliasMatch = \DB::table('skill_aliases')
             ->join('skills', 'skill_aliases.skill_id', '=', 'skills.id')
-            ->where('skill_aliases.alias_slug', \Str::slug($requiredName))
+            ->where('skill_aliases.alias_slug', Str::slug($requiredName))
             ->first();
 
         if ($aliasMatch) {
@@ -242,6 +244,71 @@ class MatchingService
             ->sortByDesc(fn ($item) => $item['match']['total'])
             ->take($limit)
             ->values();
+    }
+
+    // ============================================
+    // 1️⃣-bis MÉTHODES POUR LE RADAR (offres d'emploi) ✅ AJOUTÉ
+    // ============================================
+
+    /**
+     * Score de compatibilité profil × offre d'emploi (0-100)
+     * Compétences 65 % + localisation 35 %
+     */
+    public function scoreJobOffer(JobOffer $offer, ProfessionalProfile $profile, array $prefs = []): array
+    {
+        $required = $offer->skills;
+        $profileSkills = $profile->skills->keyBy('id');
+
+        // Offre sans compétence listée : score neutre
+        $skillScore = $required->isEmpty() ? 50 : $this->skillScore($required, $profileSkills);
+
+        $wantedCity = mb_strtolower(trim($prefs['city'] ?? '')) ?: mb_strtolower(trim($profile->city ?? ''));
+        $offerCity = mb_strtolower(trim($offer->city ?? ''));
+
+        if ($offer->remote) {
+            $locationScore = 100;
+        } elseif ($wantedCity && $offerCity && $wantedCity === $offerCity) {
+            $locationScore = 100;
+        } elseif ($offer->country && $profile->country && strcasecmp($offer->country, $profile->country) === 0) {
+            $locationScore = 70;
+        } else {
+            $locationScore = 30;
+        }
+
+        $total = round($skillScore * 0.65 + $locationScore * 0.35);
+
+        return [
+            'total' => (int) $total,
+            'breakdown' => [
+                'skills' => (int) $skillScore,
+                'location' => (int) $locationScore,
+            ],
+        ];
+    }
+
+    /**
+     * Compétences demandées que le profil a / n'a pas (tolérance fuzzy)
+     */
+    public function skillGap(Collection $required, Collection $profileSkills): array
+    {
+        $owned = $profileSkills->keyBy('id');
+        $matched = [];
+        $missing = [];
+
+        foreach ($required as $skill) {
+            if ($owned->has($skill->id)) {
+                $matched[] = $skill->name;
+                continue;
+            }
+            $fuzzy = $this->findFuzzySkillMatch($skill->name, $owned);
+            if ($fuzzy && $fuzzy['similarity'] >= 0.6) {
+                $matched[] = $skill->name;
+            } else {
+                $missing[] = $skill->name;
+            }
+        }
+
+        return ['matched' => $matched, 'missing' => $missing];
     }
 
     // ============================================

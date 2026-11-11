@@ -1,36 +1,64 @@
-/* navy-theme */
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Search,
   MapPin,
   Building2,
   User,
   Banknote,
   CalendarDays,
   ArrowUpRight,
-  RefreshCw,
-  X,
-  SlidersHorizontal,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  Clock3,
-  Wifi,
   Plus,
-  AlertCircle,
-  CheckCircle2,
+  Wifi,
+  Clock3,
   Bookmark,
   Flame,
+  Search,
+  Sparkles,
+  Users,
 } from "lucide-react";
 
 import AppShell from "../components/layout/AppShell";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
+import {
+  ExplorerStyles,
+  FONT,
+  LABEL,
+  AnimatedNumber,
+  ActiveFilters,
+  Avatar,
+  DrawerSection,
+  EmptyState,
+  FilterDrawer,
+  FiltersButton,
+  IconButton,
+  InfoTile,
+  MatchRing,
+  OptionPill,
+  Pagination,
+  QuickChip,
+  ResultsGrid,
+  SearchField,
+  SelectBox,
+  SkeletonCards,
+  StatusBadge,
+  Toast,
+  ViewToggle,
+  asArray,
+  daysSince,
+  formatDate,
+  formatRelativeDate,
+  hasValue,
+  useSavedIds,
+  useToast,
+} from "../components/explorer/ExplorerKit";
+
+/* ============================================================
+   CONFIGURATION
+============================================================ */
 
 const ITEMS_PER_PAGE = 9;
 
-// ✅ Ajout des labels pour les types de mission
 const MISSION_LABELS = {
   mission: "Mission ponctuelle",
   staffing: "Mise à disposition",
@@ -50,53 +78,16 @@ const BUDGET_OPTIONS = [
   { id: "gte600", label: "600 € et plus / jour", test: (v) => v >= 600 },
 ];
 
-const LABEL =
-  "text-[11px] font-medium uppercase tracking-[0.14em] text-[#6B7F95] dark:text-slate-400";
-
-const FIELD =
-  "w-full rounded-xl border border-[#E4EBF1] bg-[#F5F8FC] py-3 pl-10 pr-9 text-sm text-[#0B1F33] outline-none transition " +
-  "placeholder:text-[#94A3B8] focus:border-[#16B8B1] focus:bg-white focus:ring-4 focus:ring-[#16B8B1]/10 " +
-  "dark:border-white/10 dark:bg-[#131E47] dark:text-white dark:placeholder:text-slate-500 dark:focus:border-[#16B8B1] dark:focus:bg-[#1A2650]";
-
-const asArray = (data) => {
-  if (Array.isArray(data)) return data;
-  if (data && Array.isArray(data.data)) return data.data;
-  return [];
-};
-
-const hasValue = (v) => v !== null && v !== undefined && v !== "";
-
-const formatDate = (value) => {
-  if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-  return new Intl.DateTimeFormat("fr-FR", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(date);
-};
-
-const formatRelativeDate = (value) => {
-  if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-
-  const diffDays = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
-
-  if (diffDays <= 0) return "Aujourd'hui";
-  if (diffDays === 1) return "Hier";
-  if (diffDays < 30) return `Il y a ${diffDays} jours`;
-  return formatDate(value);
-};
+/* ============================================================
+   HELPERS
+============================================================ */
 
 const formatBudget = (min, max) => {
   const hasMin = hasValue(min);
   const hasMax = hasValue(max);
   if (!hasMin && !hasMax) return null;
 
-  const fmt = (value) =>
-    new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 2 }).format(Number(value));
+  const fmt = (value) => new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 2 }).format(Number(value));
 
   if (hasMin && hasMax) return `${fmt(min)} – ${fmt(max)} € / jour`;
   if (hasMin) return `Dès ${fmt(min)} € / jour`;
@@ -109,16 +100,7 @@ const getBudgetValue = (request) => {
   return null;
 };
 
-const getAuthorName = (request) =>
-  request.company?.name || request.author?.name || "Utilisateur";
-
-const getInitials = (name = "") =>
-  name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("") || "TS";
+const getAuthorName = (request) => request.company?.name || request.author?.name || "Utilisateur";
 
 const getAvatarPath = (request, isTalent) =>
   isTalent
@@ -135,13 +117,13 @@ const getAvatarUrl = (path) => {
   return `http://localhost:8001/storage/${path.replace(/^\/+/, "")}`;
 };
 
-const getSkillName = (skill) =>
-  typeof skill === "string" ? skill : skill?.name || skill?.label || "";
+const getSkillName = (skill) => (typeof skill === "string" ? skill : skill?.name || skill?.label || "");
 
-export default function BrowseResourceRequests({
-  embedded = false,
-  sharedSearch = "",
-} = {}) {
+/* ============================================================
+   PAGE PRINCIPALE
+============================================================ */
+
+export default function BrowseResourceRequests({ embedded = false, sharedSearch = "", onCountChange } = {}) {
   const Shell = embedded ? React.Fragment : AppShell;
   const ContentTag = embedded ? "div" : "main";
   const { user } = useAuth();
@@ -152,8 +134,7 @@ export default function BrowseResourceRequests({
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [toast, setToast] = useState(null);
-  const [matchCount, setMatchCount] = useState(0);
+  const [toast, flash, closeToast] = useToast();
 
   const [search, setSearch] = useState("");
   const [citySearch, setCitySearch] = useState("");
@@ -161,53 +142,24 @@ export default function BrowseResourceRequests({
   const [onlyUrgent, setOnlyUrgent] = useState(false);
   const [onlyRemote, setOnlyRemote] = useState(false);
   const [budgetFilter, setBudgetFilter] = useState("");
-  const [sortBy, setSortBy] = useState(isTalent ? "match" : "recent");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [filtersOpen, setFiltersOpen] = useState(false);
-
-  const [savedRequests, setSavedRequests] = useState(() => {
-    try {
-      const saved = localStorage.getItem("talentshare_saved_requests");
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
   const [showSavedOnly, setShowSavedOnly] = useState(false);
+  const [sortBy, setSortBy] = useState(isTalent ? "match" : "recent");
+  const [view, setView] = useState("grid");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
-  useEffect(() => {
-    localStorage.setItem("talentshare_saved_requests", JSON.stringify(savedRequests));
-  }, [savedRequests]);
-
-  const toggleSaved = (id) => {
-    setSavedRequests((current) =>
-      current.includes(id) ? current.filter((savedId) => savedId !== id) : [...current, id]
-    );
-  };
-
-  const flash = (msg, type = "success") => {
-    setToast({ msg, type });
-    window.setTimeout(() => setToast(null), 3500);
-  };
+  const [savedRequests, toggleSaved] = useSavedIds(`talentshare_saved_requests_${user?.id || "guest"}`);
 
   const load = async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
 
     try {
-      if (isTalent) {
-        const res = await api.get("/resource-requests/matching-for-me");
-        setRequests(asArray(res.data));
-        setMatchCount(res.data?.match_count || 0);
-      } else {
-        const res = await api.get("/resource-requests");
-        setRequests(asArray(res.data));
-        setMatchCount(0);
-      }
+      const res = await api.get(isTalent ? "/resource-requests/matching-for-me" : "/resource-requests");
+      setRequests(asArray(res.data));
     } catch (error) {
       console.error("Erreur chargement :", error);
       setRequests([]);
-      setMatchCount(0);
       flash("Impossible de charger les demandes pour le moment.", "error");
     } finally {
       setLoading(false);
@@ -219,37 +171,34 @@ export default function BrowseResourceRequests({
     load();
   }, []);
 
+  const activeQuery = embedded ? sharedSearch : search;
+
   const filteredRequests = useMemo(() => {
-    const query = embedded
-      ? sharedSearch.trim().toLowerCase()
-      : search.trim().toLowerCase();
+    const query = activeQuery.trim().toLowerCase();
     const cityQuery = citySearch.trim().toLowerCase();
     const budgetRule = BUDGET_OPTIONS.find((option) => option.id === budgetFilter);
 
     const result = requests.filter((request) => {
+      if (request.display_status === 'filled') return false;
+
       const searchableFields = [
         request.title,
         request.description,
         getAuthorName(request),
         request.city,
         request.country,
+        MISSION_LABELS[request.mission_type],
         ...asArray(request.skills).map(getSkillName),
       ];
 
       const matchesSearch =
-        !query ||
-        searchableFields
-          .filter(Boolean)
-          .some((value) => String(value).toLowerCase().includes(query));
+        !query || searchableFields.filter(Boolean).some((value) => String(value).toLowerCase().includes(query));
 
       const matchesCity =
         !cityQuery ||
-        [request.city, request.country]
-          .filter(Boolean)
-          .some((value) => String(value).toLowerCase().includes(cityQuery));
+        [request.city, request.country].filter(Boolean).some((value) => String(value).toLowerCase().includes(cityQuery));
 
       const isTalentRequest = request.author_type === "talent";
-
       const matchesType =
         typeFilter === "all" ||
         (typeFilter === "company" && !isTalentRequest) ||
@@ -259,20 +208,11 @@ export default function BrowseResourceRequests({
       const matchesRemote = !onlyRemote || Boolean(request.remote);
 
       const budgetValue = getBudgetValue(request);
-      const matchesBudget =
-        !budgetRule || (budgetValue !== null && budgetRule.test(budgetValue));
+      const matchesBudget = !budgetRule || (budgetValue !== null && budgetRule.test(budgetValue));
 
       const matchesSaved = !showSavedOnly || savedRequests.includes(request.id);
 
-      return (
-        matchesSearch &&
-        matchesCity &&
-        matchesType &&
-        matchesUrgent &&
-        matchesRemote &&
-        matchesBudget &&
-        matchesSaved
-      );
+      return matchesSearch && matchesCity && matchesType && matchesUrgent && matchesRemote && matchesBudget && matchesSaved;
     });
 
     if (sortBy === "match") {
@@ -282,41 +222,19 @@ export default function BrowseResourceRequests({
     } else if (sortBy === "budget") {
       result.sort((a, b) => (getBudgetValue(b) || 0) - (getBudgetValue(a) || 0));
     } else {
-      result.sort(
-        (a, b) =>
-          new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
-      );
+      result.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
     }
 
     return result;
-  }, [
-    requests,
-    search,
-    sharedSearch,
-    embedded,
-    citySearch,
-    typeFilter,
-    onlyUrgent,
-    onlyRemote,
-    budgetFilter,
-    sortBy,
-    showSavedOnly,
-    savedRequests,
-  ]);
+  }, [requests, activeQuery, citySearch, typeFilter, onlyUrgent, onlyRemote, budgetFilter, sortBy, showSavedOnly, savedRequests]);
+
+  useEffect(() => {
+    onCountChange?.(loading ? null : filteredRequests.length);
+  }, [filteredRequests.length, loading, onCountChange]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [
-    search,
-    sharedSearch,
-    citySearch,
-    typeFilter,
-    onlyUrgent,
-    onlyRemote,
-    budgetFilter,
-    sortBy,
-    showSavedOnly,
-  ]);
+  }, [activeQuery, citySearch, typeFilter, onlyUrgent, onlyRemote, budgetFilter, sortBy, showSavedOnly]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRequests.length / ITEMS_PER_PAGE));
   const safePage = Math.min(currentPage, totalPages);
@@ -326,14 +244,21 @@ export default function BrowseResourceRequests({
     return filteredRequests.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredRequests, safePage]);
 
-  const activeFiltersCount =
-    (search.trim() ? 1 : 0) +
-    (citySearch.trim() ? 1 : 0) +
-    (typeFilter !== "all" ? 1 : 0) +
-    (onlyUrgent ? 1 : 0) +
-    (onlyRemote ? 1 : 0) +
-    (budgetFilter ? 1 : 0) +
-    (showSavedOnly ? 1 : 0);
+  const activeItems = [
+    !embedded && search.trim() && { label: `« ${search.trim()} »`, onRemove: () => setSearch("") },
+    citySearch.trim() && { label: citySearch.trim(), onRemove: () => setCitySearch("") },
+    typeFilter !== "all" && {
+      label: TYPE_OPTIONS.find((o) => o.id === typeFilter)?.label,
+      onRemove: () => setTypeFilter("all"),
+    },
+    onlyUrgent && { label: "Urgent", onRemove: () => setOnlyUrgent(false) },
+    onlyRemote && { label: "Télétravail", onRemove: () => setOnlyRemote(false) },
+    budgetFilter && {
+      label: BUDGET_OPTIONS.find((o) => o.id === budgetFilter)?.label,
+      onRemove: () => setBudgetFilter(""),
+    },
+    showSavedOnly && { label: "Sauvegardées", onRemove: () => setShowSavedOnly(false) },
+  ].filter(Boolean);
 
   const resetFilters = () => {
     setSearch("");
@@ -342,8 +267,8 @@ export default function BrowseResourceRequests({
     setOnlyUrgent(false);
     setOnlyRemote(false);
     setBudgetFilter("");
-    setSortBy(isTalent ? "match" : "recent");
     setShowSavedOnly(false);
+    setSortBy(isTalent ? "match" : "recent");
     setCurrentPage(1);
   };
 
@@ -351,444 +276,208 @@ export default function BrowseResourceRequests({
 
   return (
     <Shell>
-      <ContentTag className="min-h-screen bg-transparent text-[#131E47] dark:bg-transparent dark:text-slate-200 font-['Plus_Jakarta_Sans',sans-serif]">
-        <div className="mx-auto w-full max-w-[1500px] px-4 py-5 sm:px-6 sm:py-7 lg:px-8">
-          <div className="grid items-start gap-6 lg:grid-cols-[270px_minmax(0,1fr)]">
-            <aside className="lg:sticky lg:top-6">
-              <div className="rounded-2xl border border-[#E4EBF1] bg-white p-4 shadow-[0_5px_20px_rgba(11,42,48,0.035)] dark:border-white/10 dark:bg-[#1A2650] dark:shadow-none">
-                <div className="flex items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setFiltersOpen((open) => !open)}
-                    aria-expanded={filtersOpen}
-                    className={`inline-flex items-center gap-2 lg:pointer-events-none ${LABEL}`}
-                  >
-                    <SlidersHorizontal size={14} className="text-[#0F9691] dark:text-[#16B8B1]" />
-                    Filtres
-                    {activeFiltersCount > 0 && (
-                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#16B8B1] px-1 font-sans text-[11px] font-bold text-white">
-                        {activeFiltersCount}
-                      </span>
-                    )}
-                    <ChevronDown
-                      size={14}
-                      className={`transition lg:hidden ${filtersOpen ? "rotate-180" : ""}`}
-                    />
-                  </button>
+      {!embedded && <ExplorerStyles />}
+      <ContentTag className={`${FONT} bg-transparent text-[#131E47] dark:text-slate-200 ${embedded ? "" : "min-h-screen"}`}>
+        <div className={`mx-auto w-full max-w-[1680px] ${embedded ? "" : "px-4 py-6 sm:px-7 lg:px-10"}`}>
+          
+          {/* =============== BARRE D'OUTILS UNIFIÉE =============== */}
+          <div
+            className={
+              embedded
+                ? "pb-3"
+                : "rounded-2xl border border-[#DCE5EF] bg-white p-3 shadow-sm dark:border-white/10 dark:bg-[#112A3A]"
+            }
+          >
+            <div className="flex min-w-0 items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:thin]">
 
-                  {activeFiltersCount > 0 && (
-                    <button
-                      type="button"
-                      onClick={resetFilters}
-                      className="text-xs font-bold text-[#0F9691] transition hover:text-[#0B6F6B] dark:text-[#16B8B1] dark:hover:text-[#7FD3CF]"
-                    >
-                      Réinitialiser
-                    </button>
-                  )}
-                </div>
-
-                <div className={`${filtersOpen ? "block" : "hidden"} lg:block`}>
-                  <div className="mt-4 space-y-2.5">
-                    {!embedded && (
-                      <label className="relative block">
-                        <Search
-                          size={16}
-                          className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6B7F95] dark:text-slate-500"
-                        />
-                        <input
-                          value={search}
-                          onChange={(event) => setSearch(event.target.value)}
-                          placeholder="Intitulé, compétence…"
-                          aria-label="Rechercher une demande"
-                          className={FIELD}
-                        />
-                        {search && (
-                          <button
-                            type="button"
-                            onClick={() => setSearch("")}
-                            aria-label="Effacer la recherche"
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-[#6B7F95] hover:bg-[#E8F8F7] dark:text-slate-500 dark:hover:bg-white/10 dark:hover:text-white"
-                          >
-                            <X size={14} />
-                          </button>
-                        )}
-                      </label>
-                    )}
-
-                    <label className="relative block">
-                      <MapPin
-                        size={16}
-                        className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6B7F95] dark:text-slate-500"
-                      />
-                      <input
-                        value={citySearch}
-                        onChange={(event) => setCitySearch(event.target.value)}
-                        placeholder="Ville ou pays"
-                        aria-label="Filtrer par ville ou pays"
-                        className={FIELD}
-                      />
-                      {citySearch && (
-                        <button
-                          type="button"
-                          onClick={() => setCitySearch("")}
-                          aria-label="Effacer la ville"
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-[#6B7F95] hover:bg-[#E8F8F7] dark:text-slate-500 dark:hover:bg-white/10 dark:hover:text-white"
-                        >
-                          <X size={14} />
-                        </button>
-                      )}
-                    </label>
-                  </div>
-
-                  <FilterSection title="Type de demande">
-                    {TYPE_OPTIONS.map((option) => (
-                      <FilterPill
-                        key={option.id}
-                        active={typeFilter === option.id}
-                        onClick={() => setTypeFilter(option.id)}
-                      >
-                        {option.label}
-                      </FilterPill>
-                    ))}
-                  </FilterSection>
-
-                  <FilterSection title="Critères">
-                    <FilterPill active={onlyUrgent} onClick={() => setOnlyUrgent((v) => !v)}>
-                      Urgent
-                    </FilterPill>
-                    <FilterPill active={onlyRemote} onClick={() => setOnlyRemote((v) => !v)}>
-                      Télétravail
-                    </FilterPill>
-                  </FilterSection>
-
-                  <FilterSection title="Budget journalier">
-                    {BUDGET_OPTIONS.map((option) => (
-                      <FilterPill
-                        key={option.id}
-                        active={budgetFilter === option.id}
-                        onClick={() =>
-                          setBudgetFilter((current) => (current === option.id ? "" : option.id))
-                        }
-                      >
-                        {option.label}
-                      </FilterPill>
-                    ))}
-                  </FilterSection>
-                </div>
-              </div>
-            </aside>
-
-            <section className="min-w-0">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E4EBF1] pb-4 dark:border-white/10">
-                <div className="flex items-center gap-3">
-                  <p className={LABEL} aria-live="polite">
-                    {loading
-                      ? "Chargement…"
-                      : `${count} demande${count > 1 ? "s" : ""} trouvée${count > 1 ? "s" : ""}`}
-                  </p>
-                  
-                  <button
-                    onClick={() => setShowSavedOnly(!showSavedOnly)}
-                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition ${
-                      showSavedOnly 
-                        ? "bg-[#0B1F33] text-white border border-[#0B1F33] dark:bg-[#0F9691] dark:border-[#0F9691]" 
-                        : "bg-white text-slate-500 border border-[#E4EBF1] hover:bg-slate-50 dark:bg-[#1A2650] dark:text-slate-400 dark:border-white/10 dark:hover:bg-white/5"
-                    }`}
-                  >
-                    <Bookmark size={12} fill={showSavedOnly ? "currentColor" : "none"} />
-                    Sauvegardées ({savedRequests.length})
-                  </button>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    onClick={() => setOnlyUrgent(!onlyUrgent)}
-                    className={`inline-flex h-9 items-center gap-2 rounded-xl border px-3 text-xs font-semibold transition ${
-                      onlyUrgent
-                        ? "border-rose-200 bg-rose-50 text-rose-600 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400"
-                        : "border-[#E4EBF1] bg-white text-[#6B7F95] hover:bg-slate-50 dark:border-white/10 dark:bg-[#1A2650] dark:text-slate-400 dark:hover:bg-white/5"
-                    }`}
-                  >
-                    <Flame size={14} className={onlyUrgent ? "text-rose-500 dark:text-rose-400" : "text-slate-400 dark:text-slate-500"} />
-                    Urgent
-                  </button>
-
-                  <div className="h-6 w-px bg-[#E4EBF1] mx-1 hidden sm:block dark:bg-white/10"></div>
-
-                  <button
-                    type="button"
-                    onClick={() => load(true)}
-                    disabled={loading || refreshing}
-                    title="Actualiser les demandes"
-                    aria-label="Actualiser les demandes"
-                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#E4EBF1] bg-white text-[#6B7F95] transition hover:border-[#BFE3E0] hover:text-[#0F9691] disabled:opacity-50 dark:border-white/10 dark:bg-[#1A2650] dark:text-slate-400 dark:hover:border-[#16B8B1]/50 dark:hover:text-[#16B8B1]"
-                  >
-                    <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
-                  </button>
-
-                  <label className="relative">
-                    <span className="sr-only">Trier par</span>
-                    <select
-                      value={sortBy}
-                      onChange={(event) => setSortBy(event.target.value)}
-                      className="h-9 appearance-none rounded-xl border border-[#E4EBF1] bg-white pl-3.5 pr-9 text-xs font-semibold text-[#1F3550] outline-none transition focus:border-[#16B8B1] focus:ring-4 focus:ring-[#16B8B1]/10 dark:border-white/10 dark:bg-[#1A2650] dark:text-slate-200 dark:focus:border-[#16B8B1]"
-                    >
-                      {isTalent && <option value="match">Meilleure correspondance</option>}
-                      <option value="recent">Plus récentes</option>
-                      <option value="budget">Budget décroissant</option>
-                      <option value="title">Ordre alphabétique</option>
-                    </select>
-                    <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#6B7F95] dark:text-slate-500" />
-                  </label>
-
-                  {canPublish && (
-                    <Link
-                      to="/resource-requests/new"
-                      className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-[#0B1F33] px-4 text-xs font-bold text-white shadow-sm transition hover:bg-[#16324F] dark:bg-[#0F9691] dark:hover:bg-[#16B8B1]"
-                    >
-                      <Plus size={14} />
-                      Nouvelle demande
-                    </Link>
-                  )}
-                </div>
-              </div>
-
-              {loading && (
-                <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {[1, 2, 3, 4, 5, 6].map((item) => (
-                    <div
-                      key={item}
-                      className="animate-pulse rounded-2xl border border-[#E4EBF1] bg-white p-4 dark:border-white/10 dark:bg-[#1A2650]"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-xl bg-[#E4EBF1] dark:bg-white/10" />
-                        <div className="flex-1 space-y-2">
-                          <div className="h-3 w-2/5 rounded bg-[#E4EBF1] dark:bg-white/10" />
-                          <div className="h-2.5 w-1/3 rounded bg-[#E4EBF1] dark:bg-white/10" />
-                        </div>
-                        <div className="h-9 w-9 rounded-full bg-[#E4EBF1] dark:bg-white/10" />
-                      </div>
-                      <div className="mt-4 h-4 w-3/4 rounded bg-[#E4EBF1] dark:bg-white/10" />
-                      <div className="mt-3 h-3 rounded bg-[#E4EBF1] dark:bg-white/10" />
-                      <div className="mt-2 h-3 w-4/5 rounded bg-[#E4EBF1] dark:bg-white/10" />
-                      <div className="mt-4 h-10 rounded-xl bg-[#E4EBF1] dark:bg-white/10" />
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {!loading && paginatedRequests.length === 0 && (
-                <div className="mt-5 rounded-2xl border border-dashed border-[#BFE3E0] bg-white px-5 py-16 text-center dark:border-white/20 dark:bg-[#131E47]">
-                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E8F8F7] text-[#0F9691] dark:bg-[#16B8B1]/10 dark:text-[#16B8B1]">
-                    <Search size={24} />
-                  </div>
-                  <h3 className="mt-5 text-lg font-extrabold text-[#0B1F33] dark:text-white">
-                    {requests.length === 0 ? "Aucune demande disponible" : "Aucun résultat trouvé"}
-                  </h3>
-                  <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#6B7F95] dark:text-slate-400">
-                    {requests.length === 0
-                      ? "Les demandes publiées apparaîtront ici dès qu'elles seront disponibles."
-                      : "Essayez d'autres mots-clés ou retirez certains filtres pour élargir votre recherche."}
-                  </p>
-                  {requests.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={resetFilters}
-                      className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#0B1F33] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#16324F] dark:bg-[#0F9691] dark:hover:bg-[#16B8B1]"
-                    >
-                      <X size={15} />
-                      Effacer les filtres
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {!loading && paginatedRequests.length > 0 && (
-                <div className="mt-5 grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {paginatedRequests.map((request) => (
-                    <RequestCard 
-                      key={request.id} 
-                      request={request} 
-                      saved={savedRequests.includes(request.id)}
-                      onToggleSaved={() => toggleSaved(request.id)}
-                    />
-                  ))}
-                </div>
-              )}
-
-              {!loading && totalPages > 1 && (
-                <nav
-                  aria-label="Pagination des demandes"
-                  className="flex flex-wrap items-center justify-center gap-2 pt-8"
+              {/* FILTRES RAPIDES */}
+              <div className="flex shrink-0 items-center gap-2">
+                <QuickChip
+                  active={onlyUrgent}
+                  onClick={() => setOnlyUrgent((value) => !value)}
+                  icon={Flame}
+                  tone="rose"
                 >
-                  <button
-                    type="button"
-                    onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-                    disabled={safePage === 1}
-                    aria-label="Page précédente"
-                    className="flex h-10 items-center gap-1 rounded-xl border border-[#E4EBF1] bg-white px-3 text-xs font-bold text-[#6B7F95] transition hover:border-[#BFE3E0] hover:text-[#0F9691] disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/10 dark:bg-[#1A2650] dark:text-slate-300 dark:hover:border-[#16B8B1]/50 dark:hover:text-[#16B8B1]"
-                  >
-                    <ChevronLeft size={15} />
-                    Précédent
-                  </button>
+                  Urgent
+                </QuickChip>
 
-                  {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
-                    <button
-                      key={page}
-                      type="button"
-                      onClick={() => setCurrentPage(page)}
-                      aria-current={safePage === page ? "page" : undefined}
-                      className={`flex h-10 min-w-10 items-center justify-center rounded-xl px-3 text-xs font-bold transition ${
-                        safePage === page
-                          ? "bg-[#0B1F33] text-white shadow-sm dark:bg-[#0F9691]"
-                          : "border border-[#E4EBF1] bg-white text-[#6B7F95] hover:border-[#BFE3E0] hover:text-[#0F9691] dark:border-white/10 dark:bg-[#1A2650] dark:text-slate-300 dark:hover:border-[#16B8B1]/50 dark:hover:text-[#16B8B1]"
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
+                <QuickChip
+                  active={onlyRemote}
+                  onClick={() => setOnlyRemote((value) => !value)}
+                  icon={Wifi}
+                >
+                  Télétravail
+                </QuickChip>
 
-                  <button
-                    type="button"
-                    onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-                    disabled={safePage === totalPages}
-                    aria-label="Page suivante"
-                    className="flex h-10 items-center gap-1 rounded-xl border border-[#E4EBF1] bg-white px-3 text-xs font-bold text-[#6B7F95] transition hover:border-[#BFE3E0] hover:text-[#0F9691] disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/10 dark:bg-[#1A2650] dark:text-slate-300 dark:hover:border-[#16B8B1]/50 dark:hover:text-[#16B8B1]"
+                <QuickChip
+                  active={showSavedOnly}
+                  onClick={() => setShowSavedOnly((value) => !value)}
+                  icon={Bookmark}
+                  tone="amber"
+                >
+                  Sauvegardées ({savedRequests.length})
+                </QuickChip>
+              </div>
+
+              <div className="mx-1 h-7 w-px shrink-0 bg-[#E5EBF2] dark:bg-white/10" />
+
+              {/* FILTRES AVANCÉS ET TRI */}
+              <div className="ml-auto flex shrink-0 items-center gap-2">
+                <FiltersButton
+                  count={activeItems.length}
+                  onClick={() => setDrawerOpen(true)}
+                />
+
+                <SelectBox
+                  value={sortBy}
+                  onChange={setSortBy}
+                  label="Trier par"
+                >
+                  {isTalent && (
+                    <option value="match">Meilleure correspondance</option>
+                  )}
+                  <option value="recent">Plus récentes</option>
+                  <option value="budget">Budget décroissant</option>
+                  <option value="title">Ordre alphabétique</option>
+                </SelectBox>
+
+                <ViewToggle value={view} onChange={setView} />
+
+                <IconButton
+                  onClick={() => load(true)}
+                  disabled={loading || refreshing}
+                  spinning={refreshing}
+                  label="Actualiser les demandes"
+                />
+
+                {canPublish && (
+                  <Link
+                    to="/resource-requests/new"
+                    className="inline-flex h-10 shrink-0 items-center justify-center whitespace-nowrap rounded-xl bg-[#102B43] px-4 text-xs font-bold text-white shadow-sm transition hover:bg-[#0F9691] dark:bg-[#0F9691] dark:hover:bg-[#16B8B1]"
                   >
-                    Suivant
-                    <ChevronRight size={15} />
-                  </button>
-                </nav>
-              )}
-            </section>
+                    <Plus size={14} className="mr-2" />
+                    Nouvelle demande
+                  </Link>
+                )}
+              </div>
+            </div>
           </div>
+
+          {/* =============== RÉSUMÉ =============== */}
+          <div className={`flex flex-wrap items-center gap-x-4 gap-y-2 px-1 ${embedded ? "mb-3" : "mt-4"}`}>
+            <p className={LABEL} aria-live="polite">
+              {loading ? (
+                "Chargement…"
+              ) : (
+                <>
+                  <span className="text-sm font-extrabold normal-case tracking-normal text-[#0B1F33] dark:text-white">
+                    <AnimatedNumber value={count} />
+                  </span>{" "}
+                  demande{count > 1 ? "s" : ""} trouvée{count > 1 ? "s" : ""}
+                </>
+              )}
+            </p>
+            <ActiveFilters items={activeItems} onReset={resetFilters} />
+          </div>
+
+          {/* =============== CONTENU =============== */}
+          {loading && <SkeletonCards view={view} />}
+
+          {!loading && paginatedRequests.length === 0 && (
+            <EmptyState
+              icon={Search}
+              title={requests.length === 0 ? "Aucune demande disponible" : "Aucun résultat trouvé"}
+              text={
+                requests.length === 0
+                  ? "Les demandes publiées apparaîtront ici dès qu'elles seront disponibles."
+                  : "Essayez d'autres mots-clés ou retirez certains filtres pour élargir votre recherche."
+              }
+              actionLabel="Effacer les filtres"
+              onAction={requests.length > 0 ? resetFilters : undefined}
+            />
+          )}
+
+          {!loading && paginatedRequests.length > 0 && (
+            <ResultsGrid view={view}>
+              {paginatedRequests.map((request, index) => (
+                <RequestCard
+                  key={request.id}
+                  request={request}
+                  view={view}
+                  index={index}
+                  saved={savedRequests.includes(request.id)}
+                  onToggleSaved={() => toggleSaved(request.id)}
+                />
+              ))}
+            </ResultsGrid>
+          )}
+
+          {!loading && (
+            <Pagination page={safePage} totalPages={totalPages} onChange={setCurrentPage} label="Pagination des demandes" />
+          )}
         </div>
 
-        {toast && (
-          <div
-            role="status"
-            className={`fixed bottom-5 right-5 z-[120] flex max-w-[calc(100vw-2.5rem)] items-center gap-3 rounded-2xl border bg-white px-4 py-3.5 text-sm shadow-[0_12px_40px_rgba(11,42,48,0.15)] dark:bg-[#1A2650] ${
-              toast.type === "error"
-                ? "border-rose-200 text-rose-700 dark:border-rose-500/30 dark:text-rose-400"
-                : "border-[#BFE3E0] text-[#0F9691] dark:border-[#16B8B1]/30 dark:text-[#16B8B1]"
-            }`}
-          >
-            {toast.type === "error" ? (
-              <AlertCircle size={18} className="shrink-0" />
-            ) : (
-              <CheckCircle2 size={18} className="shrink-0" />
-            )}
-            <span className="font-semibold">{toast.msg}</span>
-            <button
-              type="button"
-              onClick={() => setToast(null)}
-              aria-label="Fermer la notification"
-              className="ml-1 rounded-lg p-1 text-[#6B7F95] hover:bg-[#F5F8FC] dark:text-slate-500 dark:hover:bg-white/10"
-            >
-              <X size={15} />
-            </button>
-          </div>
-        )}
+        <FilterDrawer
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          activeCount={activeItems.length}
+          onReset={resetFilters}
+          resultCount={count}
+        >
+          <DrawerSection title="Type de demande">
+            <div className="flex flex-wrap gap-2">
+              {TYPE_OPTIONS.map((option) => (
+                <OptionPill key={option.id} active={typeFilter === option.id} onClick={() => setTypeFilter(option.id)}>
+                  {option.label}
+                </OptionPill>
+              ))}
+            </div>
+          </DrawerSection>
+
+          <DrawerSection title="Critères">
+            <div className="flex flex-wrap gap-2">
+              <OptionPill active={onlyUrgent} onClick={() => setOnlyUrgent((v) => !v)}>
+                Urgent
+              </OptionPill>
+              <OptionPill active={onlyRemote} onClick={() => setOnlyRemote((v) => !v)}>
+                Télétravail
+              </OptionPill>
+              <OptionPill active={showSavedOnly} onClick={() => setShowSavedOnly((v) => !v)}>
+                Mes sauvegardes
+              </OptionPill>
+            </div>
+          </DrawerSection>
+
+          <DrawerSection title="Budget journalier">
+            <div className="flex flex-wrap gap-2">
+              {BUDGET_OPTIONS.map((option) => (
+                <OptionPill
+                  key={option.id}
+                  active={budgetFilter === option.id}
+                  onClick={() => setBudgetFilter((current) => (current === option.id ? "" : option.id))}
+                >
+                  {option.label}
+                </OptionPill>
+              ))}
+            </div>
+          </DrawerSection>
+
+          <DrawerSection title="Localisation">
+            <SearchField value={citySearch} onChange={setCitySearch} placeholder="Ville ou pays" icon={MapPin} />
+          </DrawerSection>
+        </FilterDrawer>
+
+        <Toast toast={toast} onClose={closeToast} />
       </ContentTag>
     </Shell>
   );
 }
 
-function FilterSection({ title, children, defaultOpen = true }) {
-  const [open, setOpen] = useState(defaultOpen);
+const MISSION_ICON_TONE = "slate";
 
-  return (
-    <div className="mt-5 border-t border-[#E4EBF1] pt-4 dark:border-white/10">
-      <button
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        aria-expanded={open}
-        className={`flex w-full items-center justify-between ${LABEL}`}
-      >
-        {title}
-        <ChevronDown size={14} className={`transition ${open ? "" : "rotate-180"}`} />
-      </button>
-      {open && <div className="mt-3 space-y-2">{children}</div>}
-    </div>
-  );
-}
+function RequestCard({ request, view, index, saved, onToggleSaved }) {
+  const list = view === "list";
 
-function FilterPill({ active, onClick, children }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={`w-full rounded-full border px-4 py-2 text-center text-xs transition ${
-        active
-          ? "border-[#16B8B1] bg-[#E8F8F7] font-semibold text-[#0F9691] dark:border-[#16B8B1]/50 dark:bg-[#16B8B1]/10 dark:text-[#7FD3CF]"
-          : "border-[#E4EBF1] bg-white text-[#6B7F95] hover:border-[#BFE3E0] hover:text-[#0F9691] dark:border-white/10 dark:bg-[#1A2650] dark:text-slate-400 dark:hover:border-[#16B8B1]/30 dark:hover:text-[#16B8B1]"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function MatchRing({ score }) {
-  const color = score >= 70 ? "#16B8B1" : score >= 50 ? "#F59E0B" : "#94A3B8";
-
-  return (
-    <div
-      className="relative flex h-10 w-10 shrink-0 items-center justify-center"
-      title={`${Math.round(score)}% de correspondance avec votre profil`}
-      role="img"
-      aria-label={`${Math.round(score)}% de correspondance avec votre profil`}
-    >
-      <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 36 36" aria-hidden="true">
-        <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" className="text-[#E4EBF1] dark:text-white/10" strokeWidth="3" />
-        <circle
-          cx="18"
-          cy="18"
-          r="15"
-          fill="none"
-          stroke={color}
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeDasharray="94.25"
-          strokeDashoffset={94.25 - (94.25 * score) / 100}
-        />
-      </svg>
-      <span className="relative text-[9px] font-extrabold" style={{ color }}>
-        {Math.round(score)}%
-      </span>
-    </div>
-  );
-}
-
-function Avatar({ url, name, isTalent }) {
-  const [failed, setFailed] = useState(false);
-
-  if (url && !failed) {
-    return (
-      <img
-        src={url}
-        alt={name}
-        onError={() => setFailed(true)}
-        className="h-10 w-10 shrink-0 rounded-xl border border-[#E4EBF1] object-cover dark:border-white/10"
-      />
-    );
-  }
-
-  return (
-    <div
-      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-xs font-extrabold ${
-        isTalent
-          ? "border-indigo-100 bg-indigo-50 text-indigo-600 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-400"
-          : "border-[#E4EBF1] bg-[#E8F8F7] text-[#0F9691] dark:border-white/10 dark:bg-[#16B8B1]/10 dark:text-[#16B8B1]"
-      }`}
-    >
-      {getInitials(name)}
-    </div>
-  );
-}
-
-function RequestCard({ request, saved, onToggleSaved }) {
   const isTalent = request.author_type === "talent";
   const isUrgent = request.urgency === "urgent";
   const isRemote = Boolean(request.remote);
@@ -806,6 +495,10 @@ function RequestCard({ request, saved, onToggleSaved }) {
   const startDate = formatDate(request.start_at);
   const endDate = formatDate(request.end_at);
 
+  const positionsLeft = request.remaining_positions !== undefined 
+    ? request.remaining_positions 
+    : (request.positions_count || 1);
+
   const period =
     startDate && endDate
       ? `${startDate} → ${endDate}`
@@ -815,22 +508,129 @@ function RequestCard({ request, saved, onToggleSaved }) {
           ? `Jusqu'au ${endDate}`
           : null;
 
-  const favBtnClass = `flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-all duration-200 ${
-    saved
-      ? "border-amber-200 bg-amber-50 text-amber-500 shadow-sm dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400"
-      : "border-slate-200 bg-white text-slate-400 hover:border-amber-200 hover:bg-amber-50 hover:text-amber-500 dark:border-white/10 dark:bg-[#1A2650] dark:text-slate-500 dark:hover:border-amber-500/30 dark:hover:bg-amber-500/10 dark:hover:text-amber-400"
-  }`;
+  const age = daysSince(request.created_at);
+  const isNew = age !== null && age <= 3;
+
+  const delay = { animationDelay: `${Math.min(index, 8) * 45}ms` };
+
+  const accent = isTalent ? "from-indigo-400 to-indigo-600" : "from-[#16B8B1] to-[#0F9691]";
+
+  const saveButton = (
+    <button
+      type="button"
+      onClick={onToggleSaved}
+      aria-pressed={saved}
+      aria-label={saved ? "Retirer des sauvegardes" : "Sauvegarder la demande"}
+      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-all duration-200 active:scale-90 ${
+        saved
+          ? "border-amber-200 bg-amber-50 text-amber-500 shadow-sm dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400"
+          : "border-slate-200 bg-white text-slate-400 hover:border-amber-200 hover:bg-amber-50 hover:text-amber-500 dark:border-white/10 dark:bg-[#1A2650] dark:text-slate-500 dark:hover:border-amber-500/30 dark:hover:bg-amber-500/10 dark:hover:text-amber-400"
+      }`}
+    >
+      <Bookmark size={16} fill={saved ? "currentColor" : "none"} />
+    </button>
+  );
+
+  const badges = (
+    <div className="flex flex-wrap gap-1.5">
+      <StatusBadge tone={isTalent ? "indigo" : "teal"}>
+        {isTalent ? <User size={11} /> : <Building2 size={11} />}
+        {isTalent ? "Talent" : "Entreprise"}
+      </StatusBadge>
+      {request.mission_type && MISSION_LABELS[request.mission_type] && (
+        <StatusBadge tone={MISSION_ICON_TONE}>{MISSION_LABELS[request.mission_type]}</StatusBadge>
+      )}
+      {isUrgent && (
+        <StatusBadge tone="rose">
+          <span className="h-1 w-1 rounded-full bg-rose-500" />
+          Urgent
+        </StatusBadge>
+      )}
+      {isRemote && (
+        <StatusBadge tone="slate">
+          <Wifi size={11} />
+          Télétravail
+        </StatusBadge>
+      )}
+      {positionsLeft > 0 && (
+        <StatusBadge tone="amber">
+          <Users size={11} />
+          {positionsLeft} poste{positionsLeft > 1 ? "s" : ""} dispo
+        </StatusBadge>
+      )}
+    </div>
+  );
+
+  const openLink = (
+    <Link
+      to={`/resource-requests/${request.id}`}
+      className={`group/btn inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[#0B1F33] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#0F9691] dark:bg-[#0F9691] dark:hover:bg-[#16B8B1] ${
+        list ? "" : "w-full"
+      }`}
+    >
+      Voir la demande
+      <ArrowUpRight size={14} className="transition group-hover/btn:-translate-y-0.5 group-hover/btn:translate-x-0.5" />
+    </Link>
+  );
+
+  const articleBase =
+    "ts-rise group relative overflow-hidden rounded-2xl border border-[#E4EBF1] bg-white shadow-sm transition-all duration-200 hover:border-[#A9E3E0] hover:shadow-md dark:border-white/10 dark:bg-[#131E47] dark:hover:border-[#16B8B1]/30 dark:hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)]";
+
+  if (list) {
+    return (
+      <article style={delay} className={`${articleBase} flex flex-col gap-4 p-4 md:flex-row md:items-center`}>
+        <span aria-hidden="true" className={`absolute inset-y-0 left-0 w-1 bg-gradient-to-b ${accent}`} />
+
+        <div className="flex min-w-0 flex-1 items-center gap-3.5 pl-1.5">
+          <Avatar url={avatarUrl} name={authorName} tone={isTalent ? "indigo" : "teal"} />
+          <div className="min-w-0 flex-1">
+            <p className="flex flex-wrap items-center gap-x-2 text-[11px] text-[#6B7F95] dark:text-slate-400">
+              <span className="truncate font-bold text-slate-900 dark:text-white">{authorName}</span>
+              {publishedDate && (
+                <span className="inline-flex items-center gap-1">
+                  <Clock3 size={10} />
+                  {publishedDate}
+                </span>
+              )}
+              {location && (
+                <span className="inline-flex items-center gap-1">
+                  <MapPin size={11} className="text-[#0F9691] dark:text-[#16B8B1]" />
+                  {location}
+                </span>
+              )}
+            </p>
+            <h3 className="mt-0.5 truncate text-[15px] font-extrabold text-slate-900 transition group-hover:text-[#0F9691] dark:text-white dark:group-hover:text-[#16B8B1]">
+              {request.title || "Demande sans titre"}
+            </h3>
+            <div className="mt-1.5">{badges}</div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 md:w-[400px]">
+          <InfoTile icon={Banknote} label="Budget journalier" value={budget || "À définir"} muted={!budget} />
+          <InfoTile icon={CalendarDays} label="Période" value={period || "Non précisée"} muted={!period} />
+        </div>
+
+        <div className="flex items-center justify-between gap-2 md:justify-end">
+          {hasMatch && <MatchRing score={matchScore} />}
+          {saveButton}
+          {openLink}
+        </div>
+      </article>
+    );
+  }
 
   return (
-    <article className="group relative flex h-full max-w-sm flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#A9E3E0] hover:shadow-md dark:border-white/10 dark:bg-[#131E47] dark:hover:border-[#16B8B1]/30 dark:hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
-      <div className="flex flex-1 flex-col p-4">
+    <article style={delay} className={`${articleBase} flex h-full flex-col`}>
+      <span aria-hidden="true" className={`h-1 w-full bg-gradient-to-r ${accent}`} />
 
+      <div className="flex flex-1 flex-col p-5">
         <div className="flex items-start justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <Avatar url={avatarUrl} name={authorName} isTalent={isTalent} />
+          <div className="flex min-w-0 items-center gap-3">
+            <Avatar url={avatarUrl} name={authorName} tone={isTalent ? "indigo" : "teal"} />
             <div className="min-w-0">
               <p className="truncate text-[13px] font-bold text-slate-900 dark:text-white">{authorName}</p>
-              <p className="mt-0.5 flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400">
+              <p className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
                 <Clock3 size={10} />
                 {isTalent ? "Talent" : "Entreprise"}
                 {publishedDate ? ` · ${publishedDate}` : ""}
@@ -840,108 +640,51 @@ function RequestCard({ request, saved, onToggleSaved }) {
 
           <div className="flex shrink-0 items-center gap-1.5">
             {hasMatch && <MatchRing score={matchScore} />}
-            <button onClick={onToggleSaved} className={favBtnClass}>
-              <Bookmark size={16} fill={saved ? "currentColor" : "none"} />
-            </button>
+            {saveButton}
           </div>
         </div>
 
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold ${isTalent ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300" : "bg-[#E8F8F7] text-[#0F9691] dark:bg-[#16B8B1]/10 dark:text-[#7FD3CF]"}`}>
-            {isTalent ? <User size={11} /> : <Building2 size={11} />}
-            {isTalent ? "Talent" : "Entreprise"}
-          </span>
+        <div className="mt-4">{badges}</div>
 
-          {/* ✅ AJOUT DE LA PASTILLE MISSION TYPE ICI */}
-          {request.mission_type && MISSION_LABELS[request.mission_type] && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-[#0B1F33]/5 px-2 py-1 text-[10px] font-bold text-[#0B1F33] dark:bg-white/10 dark:text-slate-200">
-              {MISSION_LABELS[request.mission_type]}
-            </span>
-          )}
-          
-          {isUrgent && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-rose-50 px-2 py-1 text-[10px] font-bold text-rose-700 dark:bg-rose-500/10 dark:text-rose-400">
-              <span className="h-1 w-1 rounded-full bg-rose-500" />
-              Urgent
-            </span>
-          )}
-          {isRemote && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-600 dark:bg-white/10 dark:text-slate-300">
-              <Wifi size={11} />
-              Télétravail
-            </span>
-          )}
-        </div>
-
-        <h3 className="mt-2 line-clamp-2 text-[15px] font-extrabold leading-snug text-slate-900 transition group-hover:text-[#0F9691] dark:text-white dark:group-hover:text-[#16B8B1]">
+        <h3 className="mt-3 line-clamp-2 text-base font-extrabold leading-snug text-slate-900 transition group-hover:text-[#0F9691] dark:text-white dark:group-hover:text-[#16B8B1]">
           {request.title || "Demande sans titre"}
         </h3>
 
         {location && (
-          <div className="mt-1 flex flex-wrap items-center gap-x-2 text-[11px] text-slate-500 dark:text-slate-400">
-            <span className="inline-flex items-center gap-1">
-              <MapPin size={12} className="text-[#0F9691] dark:text-[#16B8B1]" />
-              {location}
-            </span>
+          <p className="mt-1.5 inline-flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+            <MapPin size={12} className="text-[#0F9691] dark:text-[#16B8B1]" />
+            {location}
+          </p>
+        )}
+
+        {skills.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {skills.slice(0, 3).map((skill) => (
+              <span
+                key={skill}
+                className="max-w-full truncate rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300"
+              >
+                {skill}
+              </span>
+            ))}
+            {skills.length > 3 && (
+              <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:bg-white/10 dark:text-slate-400">
+                +{skills.length - 3}
+              </span>
+            )}
           </div>
         )}
 
-        <div className="mt-2 flex flex-wrap gap-1">
-          {skills.length > 0 ? (
-            <>
-              {skills.slice(0, 3).map((skill) => (
-                <span key={skill} className="max-w-full truncate rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[9px] font-semibold text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
-                  {skill}
-                </span>
-              ))}
-              {skills.length > 3 && (
-                <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold text-slate-500 dark:bg-white/10 dark:text-slate-400">
-                  +{skills.length - 3}
-                </span>
-              )}
-            </>
-          ) : (
-             <div className="h-2"></div>
-          )}
-        </div>
-
-        <p className="mt-2 line-clamp-2 text-[12px] leading-[1.4] text-slate-600 dark:text-slate-400">
+        <p className="mt-3 line-clamp-2 text-[13px] leading-5 text-slate-600 dark:text-slate-400">
           {request.description || "Consultez les détails de cette demande."}
         </p>
 
-        <div className="mt-auto pt-3">
-          <div className="flex items-center gap-2 rounded-lg bg-slate-50 px-2.5 py-2 dark:bg-white/5">
-            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-white text-[#0F9691] dark:bg-white/10 dark:text-[#16B8B1]">
-              <Banknote size={12} />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[9px] font-medium text-slate-500 dark:text-slate-400">Budget journalier</p>
-              <p className={`truncate text-[11px] font-extrabold ${budget ? "text-slate-900 dark:text-white" : "text-slate-400 dark:text-slate-500"}`}>
-                {budget || "À définir"}
-              </p>
-            </div>
-          </div>
+        <div className="mt-auto grid grid-cols-1 gap-2 pt-4 min-[420px]:grid-cols-2">
+          <InfoTile icon={Banknote} label="Budget journalier" value={budget || "À définir"} muted={!budget} />
+          <InfoTile icon={CalendarDays} label="Période" value={period || "Non précisée"} muted={!period} />
         </div>
 
-        <div className="mt-3 flex items-end justify-between gap-2 border-t border-slate-100 pt-3 dark:border-white/10">
-          <div className="min-w-0">
-            <p className="flex items-center gap-1 text-[9px] text-slate-500 dark:text-slate-400">
-              <CalendarDays size={10} />
-              Période
-            </p>
-            <p className={`mt-0.5 text-[11px] ${period ? "font-bold text-slate-900 dark:text-white" : "text-slate-400 dark:text-slate-500"}`}>
-              {period || "Non précisée"}
-            </p>
-          </div>
-
-          <Link
-            to={`/resource-requests/${request.id}`}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#0B1F33] px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-[#0F9691] dark:bg-[#0F9691] dark:hover:bg-[#16B8B1]"
-          >
-            Voir
-            <ArrowUpRight size={12} />
-          </Link>
-        </div>
+        <div className="mt-4">{openLink}</div>
       </div>
     </article>
   );

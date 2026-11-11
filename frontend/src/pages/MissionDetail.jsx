@@ -130,7 +130,7 @@ function SectionHeading({ icon: Icon, title, subtitle, action }) {
           <Icon size={18} />
         </div>
         <div className="min-w-0">
-          <h2 className="text-sm font-bold text-slate-900 dark:text-white">{title}</h2>
+          <h2 className="text-sm font-semibold text-slate-800 dark:text-white">{title}</h2>
           {subtitle && <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{subtitle}</p>}
         </div>
       </div>
@@ -141,7 +141,7 @@ function SectionHeading({ icon: Icon, title, subtitle, action }) {
 
 function InfoCard({ icon: Icon, label, value, subtext, imageSrc }) {
   return (
-    <div className="flex min-w-0 items-start gap-3 rounded-xl border border-slate-200/80 bg-white p-4 dark:border-slate-800 dark:bg-[#131E47]">
+    <div className="flex min-w-0 items-start gap-3 rounded-xl border border-slate-200/60 bg-white p-4 dark:border-slate-800 dark:bg-[#131E47]">
       <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
         {imageSrc ? (
           <img src={imageSrc} alt={value} className="h-full w-full object-cover" />
@@ -150,8 +150,8 @@ function InfoCard({ icon: Icon, label, value, subtext, imageSrc }) {
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">{label}</p>
-        <p className="mt-1 truncate text-sm font-bold text-slate-900 dark:text-slate-100">{value}</p>
+        <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">{label}</p>
+        <p className="mt-1 truncate text-sm font-semibold text-slate-700 dark:text-slate-100">{value}</p>
         {subtext && <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{subtext}</p>}
       </div>
     </div>
@@ -212,8 +212,8 @@ function StudentDocumentView({ documentableType, documentableId, refreshKey = 0 
         <div className="flex items-start gap-3">
           <AlertCircle size={19} className="mt-0.5 text-rose-600 dark:text-rose-400" />
           <div>
-            <p className="text-sm font-bold text-rose-800 dark:text-rose-300">Impossible de charger les documents</p>
-            <button type="button" onClick={() => setRetryKey((v) => v + 1)} className="mt-3 inline-flex items-center gap-2 text-xs font-bold text-rose-700 underline dark:text-rose-300">
+            <p className="text-sm font-medium text-rose-800 dark:text-rose-300">Impossible de charger les documents</p>
+            <button type="button" onClick={() => setRetryKey((v) => v + 1)} className="mt-3 inline-flex items-center gap-2 text-xs font-medium text-rose-700 underline dark:text-rose-300">
               <RefreshCw size={13} /> Réessayer
             </button>
           </div>
@@ -226,7 +226,7 @@ function StudentDocumentView({ documentableType, documentableId, refreshKey = 0 
     return (
       <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 px-5 py-12 text-center dark:border-slate-700 dark:bg-[#0A1230]">
         <FolderOpen size={30} className="mx-auto mb-3 text-slate-400" />
-        <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Aucun document disponible</p>
+        <p className="text-sm font-medium text-slate-800 dark:text-slate-100">Aucun document disponible</p>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Les documents associés apparaîtront ici.</p>
       </div>
     );
@@ -244,11 +244,11 @@ function StudentDocumentView({ documentableType, documentableId, refreshKey = 0 
                   {isSigned ? <ShieldCheck size={22} /> : <FileText size={22} />}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h3 className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">{doc.original_name || `Document #${doc.id}`}</h3>
+                  <h3 className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">{doc.original_name || `Document #${doc.id}`}</h3>
                   <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{doc.formatted_size || "—"} · {isSigned ? "Signé" : "Disponible"}</p>
                 </div>
               </div>
-              <a href={`/api/documents/${doc.id}/download`} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0B1F33] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#16324F] dark:bg-[#16B8B1] dark:text-[#0B1F33] dark:hover:bg-[#0F9691] dark:hover:text-white">
+              <a href={`/api/documents/${doc.id}/download`} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0B1F33] px-4 py-2.5 text-xs font-medium text-white transition hover:bg-[#16324F] dark:bg-[#16B8B1] dark:text-[#0B1F33] dark:hover:bg-[#0F9691] dark:hover:text-white">
                 <Download size={14} /> Télécharger <ArrowUpRight size={13} />
               </a>
             </div>
@@ -313,13 +313,9 @@ export default function MissionDetail() {
 
   const proposalId = mission?.proposal_id ?? mission?.proposal?.id ?? proposal?.id ?? null;
 
-  // Les documents sont rattachés à la proposition si elle existe,
-  // sinon à la mission elle-même (recrutement direct : stage, CDD, CDI)
-  const docTarget = proposalId
-    ? { type: "App\\Models\\Proposal", id: proposalId }
-    : mission?.id
-      ? { type: "App\\Models\\Mission", id: mission.id }
-      : null;
+ const docTarget = mission?.id
+  ? { type: "App\\Models\\Mission", id: mission.id }
+  : null;
 
   const doAction = async (action) => {
     setActionLoading(true);
@@ -373,7 +369,6 @@ export default function MissionDetail() {
   const isRequesting = myCompanyIds.includes(Number(mission?.requesting_company_id));
   const isCompany = isSupplying || isRequesting;
 
-  // ✅ Type de contrat : vient du backend (contract_type), plus déduit de la date de fin
   const contractType = getContractType(mission);
   const contract = CONTRACTS[contractType];
   const isSharing = contractType === "sharing";
@@ -438,9 +433,9 @@ export default function MissionDetail() {
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-400 dark:border-slate-800 dark:bg-[#131E47]">
             <BriefcaseBusiness size={26} />
           </div>
-          <h1 className="mt-5 text-xl font-extrabold text-[#0B1F33] dark:text-white">Mission introuvable</h1>
+          <h1 className="mt-5 text-xl font-semibold text-[#0B1F33] dark:text-white">Mission introuvable</h1>
           <p className="mt-2 max-w-md text-sm leading-6 text-slate-500 dark:text-slate-400">Cette mission est indisponible ou vous n'y avez pas accès.</p>
-          <Link to="/missions" className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#0B1F33] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#16324F] dark:bg-[#16B8B1] dark:text-[#0B1F33] dark:hover:bg-[#0F9691] dark:hover:text-white">
+          <Link to="/missions" className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#0B1F33] px-5 py-3 text-sm font-medium text-white transition hover:bg-[#16324F] dark:bg-[#16B8B1] dark:text-[#0B1F33] dark:hover:bg-[#0F9691] dark:hover:text-white">
             <ArrowLeft size={16} /> Retour aux missions
           </Link>
         </div>
@@ -449,25 +444,27 @@ export default function MissionDetail() {
   }
 
   const primaryBtn =
-    "inline-flex items-center justify-center gap-2 rounded-xl bg-[#16B8B1] px-4 py-3 text-xs font-bold text-[#0B1F33] shadow-sm transition hover:bg-[#0F9691] hover:text-white disabled:cursor-not-allowed disabled:opacity-60";
+    "inline-flex items-center justify-center gap-2 rounded-xl bg-[#16B8B1] px-4 py-3 text-xs font-medium text-[#0B1F33] shadow-sm transition hover:bg-[#0F9691] hover:text-white disabled:cursor-not-allowed disabled:opacity-60";
 
   return (
     <AppShell>
       <main className="min-h-screen bg-[#F3F6FC] px-3 pb-10 pt-5 font-['Plus_Jakarta_Sans',sans-serif] transition-colors duration-300 dark:bg-transparent sm:px-5 lg:px-8">
         <div className="mx-auto max-w-[1350px]">
           <div className="mb-5">
-            <Link to="/missions" className="mb-5 inline-flex items-center gap-2 text-xs font-semibold text-slate-500 transition hover:text-teal-600 dark:text-slate-400 dark:hover:text-teal-400">
-              <ArrowLeft size={15} /> Toutes mes missions
-            </Link>
-
+           <Link 
+  to="/missions" 
+  className="mb-5 inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition hover:bg-slate-50 hover:text-slate-800 dark:border-white/10 dark:bg-[#131E47] dark:text-slate-300 dark:hover:bg-white/5 dark:hover:text-white"
+>
+  <ArrowLeft size={15} /> Toutes mes missions
+</Link>
             <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-[#131E47] sm:p-6">
               <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
                 <div className="min-w-0 flex-1">
                   <div className="mb-3 flex flex-wrap items-center gap-2">
-                    <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider ${STATUS_STYLES[status.tone]}`}>
+                    <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider ${STATUS_STYLES[status.tone]}`}>
                       <CircleCheck size={12} /> {status.label}
                     </span>
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-bold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                       <BriefcaseBusiness size={12} />
                       {contract
                         ? `${contract.label}${durationMonths ? ` · ${durationMonths} mois` : ""}`
@@ -475,7 +472,7 @@ export default function MissionDetail() {
                     </span>
                   </div>
 
-                  <h1 className="break-words text-xl font-extrabold tracking-tight text-[#0B1F33] dark:text-white sm:text-2xl">{title}</h1>
+                  <h1 className="break-words text-xl font-semibold tracking-tight text-[#0B1F33] dark:text-white sm:text-2xl">{title}</h1>
                   <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">{status.description}</p>
 
                   <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-3 text-xs text-slate-600 dark:text-slate-300">
@@ -491,7 +488,7 @@ export default function MissionDetail() {
                       <button type="button" onClick={() => doAction("accept")} disabled={actionLoading} className={primaryBtn}>
                         {actionLoading ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />} Accepter
                       </button>
-                      <button type="button" onClick={() => doAction("decline")} disabled={actionLoading} className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60 dark:border-slate-700 dark:bg-[#0A1230] dark:text-slate-200 dark:hover:bg-slate-800">
+                      <button type="button" onClick={() => doAction("decline")} disabled={actionLoading} className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60 dark:border-slate-700 dark:bg-[#0A1230] dark:text-slate-200 dark:hover:bg-slate-800">
                         <X size={14} /> Refuser
                       </button>
                     </>
@@ -504,7 +501,7 @@ export default function MissionDetail() {
                   )}
 
                   {isCompany && mission.status === "active" && (
-                    <button type="button" onClick={() => doAction("completed")} disabled={actionLoading} className="inline-flex items-center justify-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-xs font-bold text-teal-800 transition hover:bg-teal-100 disabled:opacity-60 dark:border-teal-900/50 dark:bg-teal-950/30 dark:text-teal-300 dark:hover:bg-teal-950/60">
+                    <button type="button" onClick={() => doAction("completed")} disabled={actionLoading} className="inline-flex items-center justify-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-xs font-medium text-teal-800 transition hover:bg-teal-100 disabled:opacity-60 dark:border-teal-900/50 dark:bg-teal-950/30 dark:text-teal-300 dark:hover:bg-teal-950/60">
                       {actionLoading ? <Loader2 size={15} className="animate-spin" /> : <Flag size={15} />} {isDirectContract ? "Mettre fin au contrat" : "Terminer la mission"}
                     </button>
                   )}
@@ -513,7 +510,7 @@ export default function MissionDetail() {
                     <button
                       type="button"
                       onClick={() => setShowReviewModal(true)}
-                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-3 text-xs font-bold text-white shadow-sm transition hover:bg-amber-400"
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-3 text-xs font-medium text-white shadow-sm transition hover:bg-amber-400"
                     >
                       <Star size={15} /> Évaluer
                     </button>
@@ -521,10 +518,10 @@ export default function MissionDetail() {
 
                   {isCompany && isTrial && (
                     <>
-                      <button type="button" onClick={validateTrial} disabled={actionLoading} className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-xs font-bold text-white transition hover:bg-violet-500 disabled:opacity-60">
+                      <button type="button" onClick={validateTrial} disabled={actionLoading} className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-xs font-medium text-white transition hover:bg-violet-500 disabled:opacity-60">
                         {actionLoading ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle size={15} />} Confirmer en CDI
                       </button>
-                      <button type="button" onClick={rejectTrial} disabled={actionLoading} className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-4 py-3 text-xs font-bold text-rose-700 transition hover:bg-rose-50 disabled:opacity-60 dark:border-rose-900/50 dark:bg-transparent dark:text-rose-300 dark:hover:bg-rose-950/30">
+                      <button type="button" onClick={rejectTrial} disabled={actionLoading} className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-4 py-3 text-xs font-medium text-rose-700 transition hover:bg-rose-50 disabled:opacity-60 dark:border-rose-900/50 dark:bg-transparent dark:text-rose-300 dark:hover:bg-rose-950/30">
                         <X size={14} /> Ne pas confirmer
                       </button>
                     </>
@@ -589,7 +586,7 @@ export default function MissionDetail() {
                       <ShieldCheck size={18} />
                     </div>
                     <div>
-                      <h2 className="text-sm font-bold text-violet-900 dark:text-violet-200">Période d'essai en cours {mission.trial_ends_at && ` · jusqu'au ${formatDate(mission.trial_ends_at)}`}</h2>
+                      <h2 className="text-sm font-medium text-violet-900 dark:text-violet-200">Période d'essai en cours {mission.trial_ends_at && ` · jusqu'au ${formatDate(mission.trial_ends_at)}`}</h2>
                       <p className="mt-1 text-xs leading-5 text-violet-800 dark:text-violet-300">
                         {isCompany ? "À l'issue de l'essai, confirmez le talent pour le passer en CDI et l'ajouter à vos salariés permanents, ou mettez fin à la collaboration." : "Si l'entreprise vous confirme à la fin de l'essai, vous devenez salarié en CDI."}
                       </p>
@@ -606,13 +603,13 @@ export default function MissionDetail() {
                         <CheckCircle size={19} />
                       </div>
                       <div>
-                        <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+                        <h2 className="text-sm font-medium text-slate-800 dark:text-white">
                           {contractType === "internship" ? "Progression du stage" : contractType === "fixed_term" ? "Progression du CDD" : contractType === "apprenticeship" ? "Progression de l'alternance" : "Progression de la mission"}
                         </h2>
                         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Suivi de la période prévue</p>
                       </div>
                     </div>
-                    <span className="inline-flex w-fit items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-bold text-teal-700 dark:border-teal-900/50 dark:bg-teal-950/30 dark:text-teal-300">
+                    <span className="inline-flex w-fit items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-medium text-teal-700 dark:border-teal-900/50 dark:bg-teal-950/30 dark:text-teal-300">
                       <Clock3 size={13} /> {timeline.notStarted ? `${timeline.daysUntilStart} jours avant le début` : timeline.finished ? "Période échue" : `${timeline.remainingDays} jours restants`}
                     </span>
                   </div>
@@ -621,7 +618,7 @@ export default function MissionDetail() {
                   </div>
                   <div className="mt-3 flex items-center justify-between gap-3 text-[10px] font-medium text-slate-400 dark:text-slate-500">
                     <span>{formatDate(mission.start_at)}</span>
-                    <span className="font-bold text-teal-600 dark:text-teal-400">{timeline.percent}% écoulé</span>
+                    <span className="font-semibold text-teal-600 dark:text-teal-400">{timeline.percent}% écoulé</span>
                     <span>{formatDate(mission.end_at)}</span>
                   </div>
                 </section>
@@ -633,15 +630,15 @@ export default function MissionDetail() {
                   <div className="space-y-5 p-5 sm:p-6">
                     {proposal.message && (
                       <div>
-                        <h3 className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Lettre de motivation / Message</h3>
+                        <h3 className="mb-2 text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">Lettre de motivation / Message</h3>
                         <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-[#0A1230]">
-                          <p className="whitespace-pre-line text-sm leading-relaxed text-slate-700 dark:text-slate-300">{proposal.message}</p>
+                          <p className="whitespace-pre-line text-sm leading-relaxed text-slate-600 dark:text-slate-300">{proposal.message}</p>
                         </div>
                       </div>
                     )}
                     {proposal.conditions && (
                       <div>
-                        <h3 className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Conditions</h3>
+                        <h3 className="mb-2 text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">Conditions</h3>
                         <p className="whitespace-pre-line text-sm leading-relaxed text-slate-600 dark:text-slate-300">{proposal.conditions}</p>
                       </div>
                     )}
@@ -655,7 +652,7 @@ export default function MissionDetail() {
                     {TABS.map(({ id: tabId, label, Icon }) => {
                       const selected = activeTab === tabId;
                       return (
-                        <button key={tabId} type="button" onClick={() => setActiveTab(tabId)} className={`relative inline-flex shrink-0 items-center gap-2 px-4 py-4 text-xs font-bold transition ${selected ? "text-teal-700 dark:text-teal-400" : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"}`}>
+                        <button key={tabId} type="button" onClick={() => setActiveTab(tabId)} className={`relative inline-flex shrink-0 items-center gap-2 px-4 py-4 text-xs font-medium transition ${selected ? "text-teal-700 dark:text-teal-400" : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"}`}>
                           <Icon size={15} /> {label}
                           {selected && <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-[#16B8B1]" />}
                         </button>
@@ -668,7 +665,7 @@ export default function MissionDetail() {
                   <div className="p-4 sm:p-6">
                     <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                       <div>
-                        <h2 className="text-base font-extrabold text-slate-900 dark:text-white">Documents de la mission</h2>
+                        <h2 className="text-base font-semibold text-slate-800 dark:text-white">Documents de la mission</h2>
                         <p className="mt-1.5 text-xs leading-5 text-slate-500 dark:text-slate-400">Retrouvez les contrats et pièces justificatives associés à cette mission.</p>
                       </div>
 
@@ -682,7 +679,7 @@ export default function MissionDetail() {
                     {!docTarget ? (
                       <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-12 text-center dark:border-slate-700 dark:bg-[#0A1230]">
                         <FolderOpen size={30} className="mx-auto text-slate-400 dark:text-slate-500" />
-                        <h3 className="mt-3 text-sm font-bold text-slate-800 dark:text-slate-100">Aucun document</h3>
+                        <h3 className="mt-3 text-sm font-medium text-slate-800 dark:text-slate-100">Aucun document</h3>
                         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Les documents de la mission apparaîtront ici.</p>
                       </div>
                     ) : isEmployee ? (
@@ -705,15 +702,15 @@ export default function MissionDetail() {
                 {activeTab === "details" && (
                   <div className="space-y-6 p-5 sm:p-6">
                     <div>
-                      <h2 className="mb-2 text-sm font-bold text-slate-900 dark:text-white">Objectif et description</h2>
+                      <h2 className="mb-2 text-sm font-medium text-slate-800 dark:text-white">Objectif et description</h2>
                       <p className="whitespace-pre-line text-sm leading-7 text-slate-600 dark:text-slate-300">{objective}</p>
                     </div>
                     {criteria.length > 0 && (
                       <div>
-                        <h2 className="mb-3 text-sm font-bold text-slate-900 dark:text-white">Compétences requises</h2>
+                        <h2 className="mb-3 text-sm font-medium text-slate-800 dark:text-white">Compétences requises</h2>
                         <div className="flex flex-wrap gap-2">
                           {criteria.map((item, index) => (
-                            <span key={index} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                            <span key={index} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                               {typeof item === "string" ? item : item.name || item.label || "Compétence"}
                             </span>
                           ))}
@@ -722,16 +719,16 @@ export default function MissionDetail() {
                     )}
                     <div className="grid gap-4 border-t border-slate-100 pt-5 dark:border-slate-800 sm:grid-cols-2">
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Type de contrat</p>
+                        <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">Type de contrat</p>
                         <p className="mt-1.5 text-sm font-semibold text-slate-800 dark:text-slate-200">{contract?.label || "Mission professionnelle"}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Entreprise demandeuse</p>
+                        <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">Entreprise demandeuse</p>
                         <p className="mt-1.5 text-sm font-semibold text-slate-800 dark:text-slate-200">{requesterName}</p>
                       </div>
                       {isSharing && (
                         <div>
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Entreprise fournisseuse</p>
+                          <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">Entreprise fournisseuse</p>
                           <p className="mt-1.5 text-sm font-semibold text-slate-800 dark:text-slate-200">{supplierName}</p>
                         </div>
                       )}
@@ -744,9 +741,9 @@ export default function MissionDetail() {
                     <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-teal-100 bg-teal-50 text-teal-600 dark:border-teal-900/50 dark:bg-teal-950/40 dark:text-teal-400">
                       <MessageSquare size={24} />
                     </div>
-                    <h2 className="mt-4 text-base font-bold text-slate-900 dark:text-white">Échanges autour de la mission</h2>
+                    <h2 className="mt-4 text-base font-medium text-slate-800 dark:text-white">Échanges autour de la mission</h2>
                     <p className="mt-2 max-w-sm text-xs leading-6 text-slate-500 dark:text-slate-400">Retrouvez vos conversations et coordonnez les prochaines étapes de la mission.</p>
-                    <Link to="/messages" className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#0B1F33] px-5 py-3 text-xs font-bold text-white transition hover:bg-[#16324F] dark:bg-[#16B8B1] dark:text-[#0B1F33] dark:hover:bg-[#0F9691] dark:hover:text-white">
+                    <Link to="/messages" className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#0B1F33] px-5 py-3 text-xs font-medium text-white transition hover:bg-[#16324F] dark:bg-[#16B8B1] dark:text-[#0B1F33] dark:hover:bg-[#0F9691] dark:hover:text-white">
                       Ouvrir la messagerie <ChevronRight size={15} />
                     </Link>
                   </div>
@@ -754,14 +751,14 @@ export default function MissionDetail() {
 
                 {activeTab === "ratings" && (
                   <div className="space-y-4 p-5 sm:p-6">
-                    <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+                    <h2 className="text-sm font-medium text-slate-800 dark:text-white">
                       Évaluations de la mission
                     </h2>
 
                     {ratings.length === 0 ? (
                       <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center dark:border-slate-700 dark:bg-[#0A1230]">
                         <Star size={28} className="mx-auto text-slate-400" />
-                        <p className="mt-3 text-sm font-bold text-slate-700 dark:text-slate-200">Aucune évaluation</p>
+                        <p className="mt-3 text-sm font-medium text-slate-700 dark:text-slate-200">Aucune évaluation</p>
                         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                           {mission.status === "completed"
                             ? "Soyez le premier à évaluer cette mission."
@@ -780,14 +777,14 @@ export default function MissionDetail() {
                             <div key={r.id} className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-[#0A1230]">
                               <div className="flex items-start justify-between gap-3">
                                 <div>
-                                  <p className="text-sm font-bold text-slate-900 dark:text-white">{r.rater?.name || "Utilisateur"}</p>
+                                  <p className="text-sm font-medium text-slate-800 dark:text-white">{r.rater?.name || "Utilisateur"}</p>
                                   <p className="mt-0.5 text-xs text-slate-500">
                                     {r.rater_role === "company" ? "Entreprise" : "Talent"}
                                   </p>
                                 </div>
                                 <div className="flex items-center gap-1 text-amber-400">
                                   <Star size={16} fill="currentColor" />
-                                  <span className="text-sm font-bold">{avg}</span>
+                                  <span className="text-sm font-semibold">{avg}</span>
                                   <span className="text-xs text-slate-500">/5</span>
                                 </div>
                               </div>
@@ -801,7 +798,7 @@ export default function MissionDetail() {
                                 ].map(([label, score]) => (
                                   <div key={label} className="rounded-lg bg-slate-50 px-2 py-1.5 dark:bg-slate-800">
                                     <p className="text-[9px] uppercase tracking-wider text-slate-400">{label}</p>
-                                    <p className="mt-0.5 text-sm font-bold text-slate-800 dark:text-white">{score}/5</p>
+                                    <p className="mt-0.5 text-sm font-medium text-slate-800 dark:text-white">{score}/5</p>
                                   </div>
                                 ))}
                               </div>
@@ -818,16 +815,16 @@ export default function MissionDetail() {
 
                 {activeTab === "history" && (
                   <div className="p-5 sm:p-6">
-                    <h2 className="mb-6 text-sm font-bold text-slate-900 dark:text-white">Historique de la mission</h2>
+                    <h2 className="mb-6 text-sm font-medium text-slate-800 dark:text-white">Historique de la mission</h2>
                     <div className="space-y-6 border-l-2 border-slate-100 pl-5 dark:border-slate-800">
                       <div className="relative">
                         <span className="absolute -left-[26px] top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#16B8B1] ring-4 ring-white dark:ring-[#131E47]" />
-                        <p className="text-sm font-bold text-slate-900 dark:text-white">Mission créée</p>
+                        <p className="text-sm font-medium text-slate-800 dark:text-white">Mission créée</p>
                         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{formatDate(mission.created_at)}</p>
                       </div>
                       <div className="relative">
                         <span className="absolute -left-[26px] top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-slate-300 ring-4 ring-white dark:bg-slate-600 dark:ring-[#131E47]" />
-                        <p className="text-sm font-bold text-slate-900 dark:text-white">Statut actuel</p>
+                        <p className="text-sm font-medium text-slate-800 dark:text-white">Statut actuel</p>
                         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{status.label}</p>
                       </div>
                     </div>
@@ -843,14 +840,54 @@ export default function MissionDetail() {
                     <Flag size={18} />
                   </div>
                   <div>
-                    <h2 className="text-sm font-bold text-slate-900 dark:text-white">Prochaine étape</h2>
+                    <h2 className="text-sm font-medium text-slate-800 dark:text-white">Prochaine étape</h2>
                     <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Action recommandée</p>
                   </div>
                 </div>
                 <div className="mt-4 rounded-xl border border-teal-100 bg-teal-50/70 p-4 dark:border-teal-900/40 dark:bg-teal-950/20">
-                  <p className="text-xs font-bold leading-5 text-teal-800 dark:text-teal-300">{nextStep}</p>
+                  <p className="text-xs font-medium leading-5 text-teal-800 dark:text-teal-300">{nextStep}</p>
                 </div>
               </section>
+
+              {/* ✅ SECTION COLLABORATEURS MODIFIÉE POUR ÊTRE CLIQUABLE */}
+              {mission.collaborators && mission.collaborators.length > 0 && (
+                <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-[#131E47]">
+                  <SectionHeading icon={Users} title="Les collaborateurs" subtitle={`${mission.collaborators.length} membre(s) sur cette mission`} />
+                  <div className="space-y-1 p-3">
+                    {mission.collaborators.map((c) => (
+                      <Link 
+                        key={c.id} 
+                        to={`/missions/${c.id}`} 
+                        className={`flex items-center gap-3 rounded-xl p-2 transition hover:bg-slate-50 dark:hover:bg-white/5 ${c.id === mission.id ? 'bg-slate-50/50 dark:bg-white/[0.02] cursor-default pointer-events-none' : ''}`}
+                      >
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-teal-50 text-teal-600 dark:bg-teal-950/40 dark:text-teal-400">
+                          {c.avatar_path ? (
+                            <img src={fileUrl(c.avatar_path)} alt={c.name} className="h-full w-full object-cover" />
+                          ) : (
+                            <UserRound size={16} />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs font-semibold text-slate-800 dark:text-white">
+                            {c.name} {c.id === mission.id && <span className="text-[10px] font-normal text-slate-400">(Vous)</span>}
+                          </p>
+                          <p className="mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">
+                            {c.status === 'active' ? 'En cours' : c.status === 'planned' ? 'Planifié' : c.status === 'trial' ? 'Essai' : 'En attente'}
+                          </p>
+                        </div>
+                        {c.id !== mission.id && <ChevronRight size={14} className="text-slate-400" />}
+                      </Link>
+                    ))}
+                    
+                    <Link
+                      to="/messages"
+                      className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-xs font-medium text-teal-700 transition hover:bg-teal-100 dark:border-teal-900/50 dark:bg-teal-950/30 dark:text-teal-300"
+                    >
+                      <MessageSquare size={14} /> Ouvrir le groupe de discussion
+                    </Link>
+                  </div>
+                </section>
+              )}
 
               <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-[#131E47]">
                 <SectionHeading icon={CalendarCheck2} title="Période de mission" subtitle="Dates prévisionnelles" />
@@ -860,8 +897,8 @@ export default function MissionDetail() {
                       <Play size={14} />
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Début</p>
-                      <p className="mt-1 text-sm font-bold text-slate-900 dark:text-white">{formatDate(mission.start_at)}</p>
+                      <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">Début</p>
+                      <p className="mt-1 text-sm font-semibold text-slate-800 dark:text-white">{formatDate(mission.start_at)}</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
@@ -869,10 +906,10 @@ export default function MissionDetail() {
                       <CheckCircle size={14} />
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                      <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
                         {mission.end_at ? "Fin prévue" : "Échéance"}
                       </p>
-                      <p className="mt-1 text-sm font-bold text-slate-900 dark:text-white">
+                      <p className="mt-1 text-sm font-semibold text-slate-800 dark:text-white">
                         {mission.end_at ? formatDate(mission.end_at) : endDateText(mission, contractType)}
                       </p>
                     </div>
@@ -883,8 +920,8 @@ export default function MissionDetail() {
                         <ShieldCheck size={14} />
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Fin de l'essai</p>
-                        <p className="mt-1 text-sm font-bold text-slate-900 dark:text-white">{formatDate(mission.trial_ends_at)}</p>
+                        <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">Fin de l'essai</p>
+                        <p className="mt-1 text-sm font-semibold text-slate-800 dark:text-white">{formatDate(mission.trial_ends_at)}</p>
                       </div>
                     </div>
                   )}
@@ -903,8 +940,8 @@ export default function MissionDetail() {
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">{contract && contract.group ? contract.short : "Talent"}</p>
-                      <p className="mt-1 truncate text-xs font-bold text-slate-900 dark:text-white">{employeeName}</p>
+                      <p className="text-[9px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">{contract && contract.group ? contract.short : "Talent"}</p>
+                      <p className="mt-1 truncate text-xs font-semibold text-slate-800 dark:text-white">{employeeName}</p>
                     </div>
                   </div>
                   <div className="flex min-w-0 items-center gap-3">
@@ -916,8 +953,8 @@ export default function MissionDetail() {
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Entreprise demandeuse</p>
-                      <p className="mt-1 truncate text-xs font-bold text-slate-900 dark:text-white">{requesterName}</p>
+                      <p className="text-[9px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">Entreprise demandeuse</p>
+                      <p className="mt-1 truncate text-xs font-semibold text-slate-800 dark:text-white">{requesterName}</p>
                     </div>
                   </div>
                   {isSharing && (
@@ -930,8 +967,8 @@ export default function MissionDetail() {
                         )}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Entreprise fournisseuse</p>
-                        <p className="mt-1 truncate text-xs font-bold text-slate-900 dark:text-white">{supplierName}</p>
+                        <p className="text-[9px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">Entreprise fournisseuse</p>
+                        <p className="mt-1 truncate text-xs font-semibold text-slate-800 dark:text-white">{supplierName}</p>
                       </div>
                     </div>
                   )}
@@ -947,7 +984,7 @@ export default function MissionDetail() {
           <div role="dialog" aria-modal="true" aria-labelledby="upload-document-title" className="relative flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-[#131E47]" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-800 sm:px-6">
               <div>
-                <h3 id="upload-document-title" className="text-base font-bold text-slate-900 dark:text-white">Ajouter un document</h3>
+                <h3 id="upload-document-title" className="text-base font-medium text-slate-800 dark:text-white">Ajouter un document</h3>
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Joignez une pièce utile à la mission.</p>
               </div>
               <button type="button" aria-label="Fermer" onClick={() => setShowUploadModal(false)} className="rounded-xl border border-slate-200 p-2 text-slate-500 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">

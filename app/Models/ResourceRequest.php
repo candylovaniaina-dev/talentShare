@@ -9,12 +9,12 @@ use Carbon\Carbon;
 class ResourceRequest extends Model
 {
     protected $fillable = [
-        'company_id', 'created_by', 'author_type',  // ✅ AJOUT
+        'company_id', 'created_by', 'author_type',
         'title', 'description',
         'start_at', 'end_at', 'workload_percent', 'remote',
         'country', 'city', 'status', 'expires_at',
         'budget_min', 'budget_max', 'positions_count', 'urgency', 'tags',
-      'views_count', 'proposals_count','shares_count', 'closed_reason', 'closed_at', 'contract_type', 'mission_type',
+        'views_count', 'proposals_count', 'shares_count', 'closed_reason', 'closed_at', 'contract_type', 'mission_type',
     ];
 
     protected $casts = [
@@ -26,26 +26,12 @@ class ResourceRequest extends Model
         'tags' => 'array',
     ];
 
-    protected $appends = ['is_talent_request'];  // ✅ AJOUT
+    // ✅ TRÈS IMPORTANT : On ajoute remaining_positions
+    protected $appends = ['is_talent_request', 'remaining_positions'];
 
-    // ============================================
-    // RELATIONS
-    // ============================================
-    public function company()
-    {
-        return $this->belongsTo(Company::class);
-    }
-
-    public function creator()
-    {
-        return $this->belongsTo(User::class, 'created_by');
-    }
-
-    // ✅ Alias sémantique
-    public function author()
-    {
-        return $this->belongsTo(User::class, 'created_by');
-    }
+    public function company() { return $this->belongsTo(Company::class); }
+    public function creator() { return $this->belongsTo(User::class, 'created_by'); }
+    public function author() { return $this->belongsTo(User::class, 'created_by'); }
 
     public function skills()
     {
@@ -54,14 +40,10 @@ class ResourceRequest extends Model
                      ->withTimestamps();
     }
 
-    public function proposals()
-    {
-        return $this->hasMany(Proposal::class);
-    }
+    public function proposals() { return $this->hasMany(Proposal::class); }
+    public function likes() { return $this->hasMany(ResourceRequestLike::class); }
+    public function comments() { return $this->hasMany(ResourceRequestComment::class); }
 
-    // ============================================
-    // SCOPES
-    // ============================================
     public function scopePublished(Builder $q): Builder
     {
         return $q->where('status', 'published')
@@ -78,28 +60,21 @@ class ResourceRequest extends Model
         return $q->whereIn('company_id', $companyIds);
     }
 
-    // ✅ Scope : mes publications (company OU talent)
     public function scopeMyPublications(Builder $q, int $userId, array $companyIds = []): Builder
     {
         return $q->where(function ($sq) use ($userId, $companyIds) {
             $sq->where('created_by', $userId);
-            if (!empty($companyIds)) {
-                $sq->orWhereIn('company_id', $companyIds);
-            }
+            if (!empty($companyIds)) $sq->orWhereIn('company_id', $companyIds);
         });
     }
 
     public function scopeSearch(Builder $q, string $s): Builder
     {
         return $q->where(function ($sq) use ($s) {
-            $sq->where('title', 'ilike', "%{$s}%")
-               ->orWhere('description', 'ilike', "%{$s}%");
+            $sq->where('title', 'ilike', "%{$s}%")->orWhere('description', 'ilike', "%{$s}%");
         });
     }
 
-    // ============================================
-    // ACCESSORS
-    // ============================================
     public function getDisplayStatusAttribute(): string
     {
         if ($this->status === 'published' && $this->expires_at && $this->expires_at < now()->startOfDay()) {
@@ -111,8 +86,7 @@ class ResourceRequest extends Model
     public function getDaysUntilExpiryAttribute(): ?int
     {
         if (!$this->expires_at) return null;
-        $days = Carbon::now()->startOfDay()->diffInDays($this->expires_at, false);
-        return max(0, (int) $days);
+        return max(0, (int) Carbon::now()->startOfDay()->diffInDays($this->expires_at, false));
     }
 
     public function getStatusLabelAttribute(): string
@@ -134,20 +108,20 @@ class ResourceRequest extends Model
             && $this->proposals()->whereIn('status', ['sent', 'viewed', 'accepted'])->count() < $this->positions_count;
     }
 
-    // ✅ Booléen : est-ce une publication de talent ?
     public function getIsTalentRequestAttribute(): bool
     {
         return $this->author_type === 'talent';
     }
- public function likes()
+
+    /**
+     * ✅ Calcul du nombre de postes restants
+     */
+    public function getRemainingPositionsAttribute()
     {
-        return $this->hasMany(ResourceRequestLike::class);
+        $filled = \App\Models\Mission::whereHas('proposal', function ($q) {
+            $q->where('resource_request_id', $this->id);
+        })->whereIn('status', ['pending_employee', 'planned', 'active', 'trial'])->count();
+
+        return max(0, $this->positions_count - $filled);
     }
-
-    public function comments()
-    {
-        return $this->hasMany(ResourceRequestComment::class);
-    }
-
-
 }

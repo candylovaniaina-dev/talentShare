@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   X, Loader2, AlertCircle, Check, BriefcaseBusiness, UserRound,
   CalendarDays, MapPin, Sparkles, Euro, ChevronRight, ChevronLeft,
@@ -37,7 +38,7 @@ const STEPS = [
 ];
 
 const inputCls =
-  "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-[#16B8B1] focus:ring-4 focus:ring-[#16B8B1]/10 dark:border-white/10 dark:bg-[#0A1230] dark:text-white";
+  "w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-[#16B8B1] focus:bg-white focus:ring-2 focus:ring-[#16B8B1]/20 dark:border-white/10 dark:bg-[#0A1230] dark:text-white dark:focus:bg-[#0A1230]";
 
 const normalize = (s = "") =>
   s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -53,7 +54,7 @@ function Avatar({ src, name, size = 40 }) {
   const [err, setErr] = useState(false);
   useEffect(() => setErr(false), [src]);
   return (
-    <div style={{ width: size, height: size }} className="flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#16B8B1] font-semibold text-[#0F2340]">
+    <div style={{ width: size, height: size }} className="flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#16B8B1] font-medium text-[#0F2340]">
       {src && !err ? (
         <img src={src} alt={name} onError={() => setErr(true)} className="h-full w-full object-cover" />
       ) : (
@@ -283,10 +284,10 @@ export default function CreateResourceOfferModal({ offerId, onClose, onSuccess }
   const empName = selectedEmployee?.user?.name;
   const empAvatar = selectedEmployee?.user?.professional_profile?.avatar_path || selectedEmployee?.user?.professionalProfile?.avatar_path || selectedEmployee?.photo_path;
 
-  return (
+  const content = (
     <>
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-[#0F2340]/60 p-3 backdrop-blur-sm sm:p-6 font-['Plus_Jakarta_Sans',sans-serif]"
+        className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#06141F]/60 p-3 backdrop-blur-sm sm:p-6 font-['Plus_Jakarta_Sans',sans-serif]"
         onClick={onClose}
       >
         <div
@@ -294,26 +295,22 @@ export default function CreateResourceOfferModal({ offerId, onClose, onSuccess }
           aria-modal="true"
           aria-labelledby="resource-offer-title"
           onClick={(e) => e.stopPropagation()}
-          className="flex max-h-[94vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl shadow-[#0F2340]/30 dark:bg-[#131E47]"
+          className="flex max-h-[94vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-[#131E47]"
         >
           {/* ===== En-tête Bleu Marine + progression ===== */}
-          <header className="relative shrink-0 overflow-hidden bg-[#0F2340] px-5 pb-5 pt-5 text-white sm:px-7">
+          <header className="relative shrink-0 overflow-hidden bg-[#0B1F33] px-5 pb-5 pt-5 text-white sm:px-7">
             <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[#16B8B1]/20 blur-3xl" />
-            <div
-              className="pointer-events-none absolute inset-0 opacity-[0.07]"
-              style={{ backgroundImage: "radial-gradient(#fff 1px, transparent 1px)", backgroundSize: "22px 22px" }}
-            />
 
             <div className="relative flex items-start justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15 text-[#16B8B1]">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 text-[#16B8B1]">
                   <BriefcaseBusiness size={21} />
                 </div>
                 <div>
-                  <h2 id="resource-offer-title" className="text-xl font-bold tracking-tight sm:text-2xl">
+                  <h2 id="resource-offer-title" className="text-lg font-semibold tracking-tight sm:text-xl">
                     {isEdit ? "Modifier l’offre" : "Proposer un talent"}
                   </h2>
-                  <p className="mt-0.5 text-sm text-white/70">
+                  <p className="mt-0.5 text-sm font-medium text-white/70">
                     Présentez un collaborateur disponible pour une nouvelle opportunité.
                   </p>
                 </div>
@@ -323,7 +320,7 @@ export default function CreateResourceOfferModal({ offerId, onClose, onSuccess }
                 type="button"
                 aria-label="Fermer"
                 onClick={onClose}
-                className="rounded-xl bg-white/10 p-2 text-white/80 transition hover:bg-white/20 hover:text-white"
+                className="rounded-lg bg-white/10 p-2 text-white/80 transition hover:bg-white/20 hover:text-white"
               >
                 <X size={18} />
               </button>
@@ -346,15 +343,15 @@ export default function CreateResourceOfferModal({ offerId, onClose, onSuccess }
                       <span
                         className={`block h-1 rounded-full transition-all ${
                           done || active ? "bg-[#16B8B1]" : "bg-white/20"
-                        } ${active ? "shadow-[0_0_12px_rgba(22,184,177,0.7)]" : ""}`}
+                        }`}
                       />
                       <span className="mt-2.5 flex items-center gap-2">
                         <span
                           className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold transition ${
                             active
-                              ? "bg-white text-[#0F2340]"
+                              ? "bg-white text-[#0B1F33]"
                               : done
-                              ? "bg-[#16B8B1] text-[#0F2340]"
+                              ? "bg-[#16B8B1] text-[#0B1F33]"
                               : "bg-white/10 text-white/70"
                           }`}
                         >
@@ -380,7 +377,7 @@ export default function CreateResourceOfferModal({ offerId, onClose, onSuccess }
           <div className="grid min-h-0 flex-1 overflow-hidden lg:grid-cols-[1fr_300px]">
             <main className="min-h-0 space-y-6 overflow-y-auto px-5 py-6 sm:px-7">
               {error && (
-                <div role="alert" className="flex items-start gap-2.5 rounded-2xl border border-rose-200 bg-rose-50 p-3.5 text-sm text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-400">
+                <div role="alert" className="flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-sm text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-400">
                   <AlertCircle size={18} className="mt-0.5 shrink-0" />
                   <span>{error}</span>
                 </div>
@@ -389,14 +386,14 @@ export default function CreateResourceOfferModal({ offerId, onClose, onSuccess }
               {loadingOffer ? (
                 <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-slate-500">
                   <Loader2 className="animate-spin text-[#16B8B1]" size={28} />
-                  <p className="text-sm">Chargement de l’offre…</p>
+                  <p className="text-sm font-medium">Chargement de l’offre…</p>
                 </div>
               ) : (
                 <>
                   {step === 0 && (
                     <StepBlock title="Quel collaborateur proposez-vous ?" text="Choisissez le talent de votre entreprise qui sera présenté dans l’offre.">
                       {employees.length === 0 ? (
-                        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm leading-relaxed text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400">
+                        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-sm leading-relaxed text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400">
                           Aucun salarié n’est disponible dans votre entreprise. Vous pourrez en ajouter depuis la rubrique « Mon entreprise ».
                         </div>
                       ) : (
@@ -452,13 +449,13 @@ export default function CreateResourceOfferModal({ offerId, onClose, onSuccess }
                             className={`${inputCls} pl-10`}
                           />
                           {suggestions.length > 0 && (
-                            <ul className="absolute z-10 mt-1.5 max-h-56 w-full overflow-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-white/10 dark:bg-[#131E47]">
+                            <ul className="absolute z-10 mt-1.5 max-h-56 w-full overflow-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg dark:border-white/10 dark:bg-[#131E47]">
                               {suggestions.map((s) => (
                                 <li key={s.id}>
                                   <button
                                     type="button"
                                     onClick={() => addSkill(s)}
-                                    className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-[#16B8B1]/10 hover:text-[#0F9691] dark:text-slate-300 dark:hover:text-[#16B8B1]"
+                                    className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-teal-50 hover:text-teal-700 dark:text-slate-300 dark:hover:text-teal-400"
                                   >
                                     {s.name}
                                     <Sparkles size={14} className="text-[#16B8B1]" />
@@ -472,9 +469,9 @@ export default function CreateResourceOfferModal({ offerId, onClose, onSuccess }
                         {form.skills.length > 0 ? (
                           <div className="mt-3 flex flex-wrap gap-2">
                             {form.skills.map((skill) => (
-                              <span key={skill.skill_id} className="inline-flex items-center gap-2 rounded-full border border-[#16B8B1]/30 bg-[#16B8B1]/10 px-3 py-1.5 text-sm font-medium text-[#0F9691] dark:text-[#16B8B1]">
+                              <span key={skill.skill_id} className="inline-flex items-center gap-2 rounded-lg border border-teal-100 bg-teal-50 px-3 py-1.5 text-sm font-medium text-teal-700 dark:border-teal-500/20 dark:bg-teal-500/10 dark:text-teal-400">
                                 {skill.name}
-                                <button type="button" aria-label={`Retirer ${skill.name}`} onClick={() => removeSkill(skill.skill_id)} className="rounded-full p-0.5 text-[#0F9691]/60 transition hover:bg-rose-100 hover:text-rose-600 dark:text-[#16B8B1]/60 dark:hover:bg-rose-500/20">
+                                <button type="button" aria-label={`Retirer ${skill.name}`} onClick={() => removeSkill(skill.skill_id)} className="rounded-full p-0.5 text-teal-600/60 transition hover:bg-rose-100 hover:text-rose-600 dark:text-teal-400/60 dark:hover:bg-rose-500/20">
                                   <X size={13} />
                                 </button>
                               </span>
@@ -573,39 +570,39 @@ export default function CreateResourceOfferModal({ offerId, onClose, onSuccess }
               )}
             </main>
 
-            <aside className="hidden min-h-0 border-l border-slate-100 bg-[#F3F6FC]/60 p-5 lg:block lg:overflow-y-auto dark:border-white/10 dark:bg-[#0A1230]/60">
-              <p className="text-xs font-bold text-slate-500 dark:text-slate-400">Aperçu de l’offre</p>
+            <aside className="hidden min-h-0 border-l border-slate-100 bg-slate-50/50 p-5 lg:block lg:overflow-y-auto dark:border-white/10 dark:bg-white/5">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Aperçu de l’offre</p>
 
-              <div className="mt-3 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#131E47]">
-                <div className="h-1.5 bg-[#16B8B1]" />
+              <div className="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#131E47]">
+                <div className="h-1 bg-[#16B8B1]" />
                 <div className="space-y-3 p-4">
                   <div className="flex items-center gap-3">
                     <Avatar src={fileUrl(empAvatar)} name={empName} size={40} />
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-bold text-[#0F2340] dark:text-white">
+                      <p className="truncate text-sm font-medium text-slate-800 dark:text-white">
                         {empName || "Collaborateur non choisi"}
                       </p>
                       <p className="truncate text-xs text-slate-400">{company?.name || "Votre entreprise"}</p>
                     </div>
                   </div>
 
-                  <h4 className={`text-sm font-bold leading-snug ${form.title ? "text-[#0F2340] dark:text-white" : "text-slate-300 dark:text-slate-600"}`}>
+                  <h4 className={`text-sm font-semibold leading-snug ${form.title ? "text-slate-800 dark:text-white" : "text-slate-300 dark:text-slate-600"}`}>
                     {form.title || "Titre de l’offre"}
                   </h4>
 
-                  <span className="inline-block rounded-md bg-[#16B8B1]/10 px-2 py-0.5 text-xs font-bold text-[#0F9691] dark:text-[#16B8B1]">
+                  <span className="inline-block rounded bg-teal-50 px-2 py-0.5 text-[10px] font-medium text-teal-600 dark:bg-teal-500/10 dark:text-teal-400">
                     {missionLabel}
                   </span>
 
                   {form.skills.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
                       {form.skills.slice(0, 4).map((s) => (
-                        <span key={s.skill_id} className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600 dark:bg-white/10 dark:text-slate-300">
+                        <span key={s.skill_id} className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:bg-white/10 dark:text-slate-300">
                           {s.name}
                         </span>
                       ))}
                       {form.skills.length > 4 && (
-                        <span className="text-[11px] text-slate-400">+{form.skills.length - 4}</span>
+                        <span className="text-[10px] text-slate-400">+{form.skills.length - 4}</span>
                       )}
                     </div>
                   )}
@@ -624,9 +621,9 @@ export default function CreateResourceOfferModal({ offerId, onClose, onSuccess }
                   </dl>
 
                   {form.daily_rate !== "" && (
-                    <div className="rounded-xl bg-[#16B8B1]/10 px-3 py-2 ring-1 ring-[#16B8B1]/20">
-                      <span className="text-base font-bold text-[#0F2340] dark:text-white">{form.daily_rate} €</span>
-                      <span className="ml-1 text-xs font-medium text-[#0F9691] dark:text-[#16B8B1]">par jour</span>
+                    <div className="rounded-lg bg-teal-50 px-3 py-1.5 dark:bg-teal-500/10">
+                      <span className="text-sm font-semibold text-teal-700 dark:text-teal-400">{form.daily_rate} €</span>
+                      <span className="ml-1 text-[10px] font-medium text-teal-600/70 dark:text-teal-400/70">par jour</span>
                     </div>
                   )}
                 </div>
@@ -637,28 +634,28 @@ export default function CreateResourceOfferModal({ offerId, onClose, onSuccess }
           <footer className="flex shrink-0 flex-col-reverse gap-3 border-t border-slate-200 bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7 dark:border-white/10 dark:bg-[#131E47]">
             <div className="flex items-center gap-2">
               {step > 0 && (
-                <button type="button" onClick={() => goTo(step - 1)} className="inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-600 transition hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/5">
+                <button type="button" onClick={() => goTo(step - 1)} className="inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-white/5">
                   <ChevronLeft size={16} />
                   Retour
                 </button>
               )}
-              <button type="button" onClick={onClose} className="rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-500 transition hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/5">
+              <button type="button" onClick={onClose} className="rounded-lg px-3.5 py-2 text-sm font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-white/5">
                 Annuler
               </button>
             </div>
 
             <div className="flex flex-col-reverse gap-2 sm:flex-row">
-              <button type="button" onClick={() => submit("draft")} disabled={submitting || loadingOffer} className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-transparent dark:text-slate-300 dark:hover:bg-white/5">
+              <button type="button" onClick={() => submit("draft")} disabled={submitting || loadingOffer} className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-transparent dark:text-slate-300 dark:hover:bg-white/5">
                 Enregistrer en brouillon
               </button>
 
               {isLast ? (
-                <button type="button" onClick={() => submit("published")} disabled={submitting || loadingOffer} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#16B8B1] px-5 py-2.5 text-sm font-bold text-[#0F2340] shadow-lg shadow-[#16B8B1]/20 transition hover:bg-[#0F9691] disabled:opacity-50">
+                <button type="button" onClick={() => submit("published")} disabled={submitting || loadingOffer} className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#16B8B1] px-5 py-2 text-sm font-medium text-[#0B1F33] shadow-sm transition hover:bg-[#0F9691] hover:text-white disabled:opacity-50">
                   {submitting ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
                   {submitting ? "Enregistrement…" : isEdit ? "Enregistrer" : "Publier l’offre"}
                 </button>
               ) : (
-                <button type="button" onClick={goNext} disabled={loadingOffer} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0F2340] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#1A2F4A] disabled:opacity-50 dark:bg-[#16B8B1] dark:text-[#0F2340] dark:hover:bg-[#0F9691]">
+                <button type="button" onClick={goNext} disabled={loadingOffer} className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#0B1F33] px-5 py-2 text-sm font-medium text-white transition hover:bg-[#163650] disabled:opacity-50 dark:bg-[#16B8B1] dark:text-[#0B1F33] dark:hover:bg-[#0F9691]">
                   Continuer
                   <ChevronRight size={16} />
                 </button>
@@ -681,6 +678,8 @@ export default function CreateResourceOfferModal({ offerId, onClose, onSuccess }
       )}
     </>
   );
+
+  return createPortal(content, document.body);
 }
 
 /* ============================================ */
@@ -690,8 +689,8 @@ function StepBlock({ title, text, children }) {
   return (
     <section className="space-y-5">
       <div>
-        <h3 className="text-lg font-bold tracking-tight text-[#0F2340] dark:text-white">{title}</h3>
-        <p className="mt-1 text-sm leading-relaxed text-slate-500 dark:text-slate-400">{text}</p>
+        <h3 className="text-base font-semibold tracking-tight text-slate-800 dark:text-white">{title}</h3>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{text}</p>
       </div>
       <div className="space-y-5">{children}</div>
     </section>
@@ -701,7 +700,7 @@ function StepBlock({ title, text, children }) {
 function Field({ label, children }) {
   return (
     <div className="min-w-0">
-      <label className="mb-1.5 block text-xs font-bold text-slate-700 dark:text-slate-300">{label}</label>
+      <label className="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-400">{label}</label>
       {children}
     </div>
   );
@@ -711,7 +710,7 @@ function Row({ label, value }) {
   return (
     <div className="flex items-center justify-between gap-3">
       <dt className="text-slate-400">{label}</dt>
-      <dd className="truncate font-medium text-slate-700 dark:text-slate-300">{value || "—"}</dd>
+      <dd className="truncate font-medium text-slate-600 dark:text-slate-300">{value || "—"}</dd>
     </div>
   );
 }
@@ -722,28 +721,28 @@ function ChoiceCard({ active, onClick, label, hint, icon: Icon }) {
       type="button"
       aria-pressed={active}
       onClick={onClick}
-      className={`relative flex items-start gap-3 rounded-2xl border p-3.5 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16B8B1] ${
+      className={`relative flex items-start gap-3 rounded-xl border p-3.5 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16B8B1] ${
         active
-          ? "border-[#16B8B1] bg-[#16B8B1]/5 ring-4 ring-[#16B8B1]/10 dark:bg-[#16B8B1]/10"
-          : "border-slate-200 bg-white hover:border-[#16B8B1]/30 hover:bg-slate-50 dark:border-white/10 dark:bg-[#0A1230] dark:hover:bg-white/5"
+          ? "border-[#16B8B1] bg-teal-50/30 dark:border-teal-500/30 dark:bg-teal-500/10"
+          : "border-slate-200 bg-white hover:border-slate-300 dark:border-white/10 dark:bg-[#0A1230] dark:hover:border-white/20"
       }`}
     >
       <span
-        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition ${
-          active ? "bg-[#16B8B1] text-[#0F2340]" : "bg-slate-100 text-slate-500 dark:bg-white/5 dark:text-slate-400"
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition ${
+          active ? "bg-teal-100 text-teal-600 dark:bg-teal-500/20" : "bg-slate-50 text-slate-400 dark:bg-white/5"
         }`}
       >
         <Icon size={17} />
       </span>
       <span className="min-w-0">
-        <span className={`block text-sm font-bold ${active ? "text-[#0F9691] dark:text-[#16B8B1]" : "text-[#0F2340] dark:text-white"}`}>
+        <span className={`block text-sm font-medium ${active ? "text-teal-700 dark:text-teal-400" : "text-slate-700 dark:text-slate-200"}`}>
           {label}
         </span>
-        <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">{hint}</span>
+        <span className="mt-0.5 block text-xs text-slate-400">{hint}</span>
       </span>
       {active && (
-        <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-[#16B8B1] text-[#0F2340]">
-          <Check size={12} />
+        <span className="absolute right-3 top-3 flex h-4 w-4 items-center justify-center rounded-full bg-[#16B8B1] text-white">
+          <Check size={10} />
         </span>
       )}
     </button>

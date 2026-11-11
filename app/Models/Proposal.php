@@ -29,7 +29,7 @@ class Proposal extends Model
         'responded_at',
         'cancelled_at',
         'contract_kind', 'interview_status', 'interview_at',
-        'interview_location', 'interview_notes', 'interview_validated_at',
+        'interview_location', 'interview_notes', 'interview_validated_at','interview_mode', 'interview_link',
     ];
 
     protected $casts = [

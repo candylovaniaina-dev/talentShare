@@ -94,6 +94,7 @@ class JobOfferController extends Controller
         $data = $request->validated();
         $skills = $data['skills'] ?? [];
         unset($data['skills']);
+        $data = $this->normalizeContractFields($data);
         $data['created_by'] = $request->user()->id;
 
         $jobOffer = JobOffer::create($data);
@@ -114,6 +115,7 @@ class JobOfferController extends Controller
         $data = $request->validated();
         $skills = $data['skills'] ?? null;
         unset($data['skills']);
+        $data = $this->normalizeContractFields($data, $jobOffer->offer_type);
 
         $jobOffer->update($data);
 
@@ -351,4 +353,25 @@ class JobOfferController extends Controller
         $request->user()->update(['last_login_at' => now()]);
         return response()->json(['message' => 'OK']);
     }
+    private function normalizeContractFields(array $data, ?string $currentType = null): array
+{
+    $type = $data['offer_type'] ?? $currentType;
+
+    if (in_array($type, ['permanent', 'first_job'], true)) {
+        // CDI : pas de durée, période d'essai d'1 mois activable
+        $data['duration_months'] = null;
+        $data['duration_text']   = null;
+        $data['trial_enabled']   = $data['trial_enabled'] ?? true;
+    } elseif ($type) {
+        // Stage / alternance / CDD : une durée est toujours utilisée pour calculer la fin
+        $data['trial_enabled'] = false;
+        $data['duration_months'] = $data['duration_months']
+            ?? \App\Services\ContractService::DEFAULT_MONTHS[
+                \App\Services\ContractService::typeFromOffer($type)
+            ] ?? null;
+        $data['duration_text'] = $data['duration_months'] ? "{$data['duration_months']} mois" : null;
+    }
+
+    return $data;
+}
 }

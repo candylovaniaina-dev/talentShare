@@ -31,6 +31,9 @@ class JobOfferRequest extends FormRequest
             'skills' => ['nullable', 'array'],
             'skills.*.skill_id' => ['required_with:skills', 'exists:skills,id'],
             'skills.*.min_level' => ['required_with:skills', 'in:beginner,intermediate,advanced,expert'],
+            'duration_months' => ['nullable', 'integer', 'min:1', 'max:60'],
+'duration_text'   => ['nullable', 'string', 'max:100'],
+'trial_enabled'   => ['nullable', 'boolean'],
         ];
     }
 }

@@ -118,28 +118,28 @@ export default function ConversationInfoModal({ conversation, onClose, onUpdated
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#06141F]/70 p-4 backdrop-blur-sm font-['Plus_Jakarta_Sans',sans-serif]"
       onClick={onClose}
     >
       <div
-        className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-2xl border border-white/10 bg-[#12364D] shadow-2xl"
+        className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-3xl border border-white/10 bg-[#0B1F33] shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-          <h2 className="text-lg font-bold text-white">
+        <div className="flex items-center justify-between border-b border-white/10 px-6 py-5">
+          <h2 className="text-[17px] font-extrabold text-white">
             {isGroup ? "Infos du groupe" : "Infos du contact"}
           </h2>
-          <button onClick={onClose} className="rounded-full p-1.5 text-slate-400 hover:bg-white/5 hover:text-white">
-            <X size={18} />
+          <button onClick={onClose} className="rounded-full p-2 text-slate-400 transition hover:bg-white/10 hover:text-white">
+            <X size={20} />
           </button>
         </div>
 
         {/* Avatar + Titre */}
         <div className="flex flex-col items-center gap-3 border-b border-white/10 p-6">
-          <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-emerald-500/20 text-emerald-400">
+          <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-[#16B8B1]/15 text-[#16B8B1]">
             {isGroup ? (
-              <Users size={40} />
+              <Users size={40} strokeWidth={1.5} />
             ) : participants[0]?.avatar_path ? (
               <img
                 src={`/storage/${participants[0].avatar_path}`}
@@ -147,13 +147,13 @@ export default function ConversationInfoModal({ conversation, onClose, onUpdated
                 alt=""
               />
             ) : (
-              <span className="text-3xl font-bold">{initials(participants[0]?.name)}</span>
+              <span className="text-3xl font-extrabold">{initials(participants[0]?.name)}</span>
             )}
           </div>
 
           {/* Titre éditable (si groupe) */}
           {isGroup && (
-            <div className="flex w-full items-center gap-2">
+            <div className="flex w-full items-center justify-center gap-2">
               {editingTitle ? (
                 <>
                   <input
@@ -161,27 +161,27 @@ export default function ConversationInfoModal({ conversation, onClose, onUpdated
                     value={titleDraft}
                     onChange={(e) => setTitleDraft(e.target.value)}
                     maxLength={180}
-                    className="flex-1 rounded-lg border border-emerald-500/50 bg-white/5 px-3 py-2 text-center text-base font-semibold text-white focus:outline-none"
+                    className="flex-1 max-w-[250px] rounded-xl border border-[#16B8B1]/50 bg-white/5 px-3 py-2 text-center text-sm font-bold text-white focus:border-[#16B8B1] focus:outline-none focus:ring-2 focus:ring-[#16B8B1]/20"
                   />
                   <button
                     onClick={saveTitle}
                     disabled={savingTitle}
-                    className="rounded-full bg-emerald-500 p-2 text-[#0B1F33] hover:bg-emerald-400 disabled:opacity-50"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#16B8B1] text-[#0B1F33] transition hover:bg-[#0F9691] disabled:opacity-50"
                   >
                     {savingTitle ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
                   </button>
                 </>
               ) : (
                 <>
-                  <h3 className="flex-1 text-center text-lg font-bold text-white">
+                  <h3 className="max-w-[80%] text-center text-lg font-extrabold leading-tight text-white">
                     {conv.title || "Groupe"}
                   </h3>
                   <button
                     onClick={() => setEditingTitle(true)}
-                    className="rounded-full p-2 text-slate-400 hover:bg-white/5 hover:text-white"
+                    className="rounded-full p-2 text-slate-400 transition hover:bg-white/10 hover:text-white"
                     title="Renommer"
                   >
-                    <Edit2 size={14} />
+                    <Edit2 size={16} />
                   </button>
                 </>
               )}
@@ -190,37 +190,37 @@ export default function ConversationInfoModal({ conversation, onClose, onUpdated
 
           {!isGroup && (
             <div className="text-center">
-              <h3 className="text-lg font-bold text-white">{participants[0]?.name || "Contact"}</h3>
-              <p className="text-xs text-slate-500">{participants[0]?.email}</p>
+              <h3 className="text-lg font-extrabold text-white">{participants[0]?.name || "Contact"}</h3>
+              <p className="mt-1 text-xs text-slate-400">{participants[0]?.email}</p>
             </div>
           )}
 
-          <p className="text-xs text-slate-500">
+          <p className="text-xs font-medium text-slate-400">
             {participants.length} participant{participants.length > 1 ? "s" : ""}
           </p>
         </div>
 
         {/* Membres */}
         <div className="border-b border-white/10 p-5">
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+          <div className="mb-4 flex items-center justify-between px-1">
+            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-slate-400">
               Membres ({participants.length})
             </p>
             {isGroup && (
               <button
                 onClick={() => setShowAddMember(!showAddMember)}
-                className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold text-emerald-300 hover:bg-emerald-500/20"
+                className="inline-flex items-center gap-1.5 rounded-full bg-[#16B8B1]/15 px-3 py-1.5 text-[11px] font-bold text-[#16B8B1] transition hover:bg-[#16B8B1]/25"
               >
-                <UserPlus size={11} /> Ajouter
+                <UserPlus size={13} /> Ajouter
               </button>
             )}
           </div>
 
           {/* Formulaire d'ajout */}
           {showAddMember && (
-            <div className="mb-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
-              <div className="flex items-center gap-2 rounded-full bg-white/5 px-3 py-2">
-                <Search size={14} className="text-slate-500" />
+            <div className="mb-4 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+              <div className="flex items-center gap-2 rounded-xl bg-white/5 px-3 py-2.5">
+                <Search size={16} className="text-slate-400" />
                 <input
                   autoFocus
                   value={search}
@@ -231,13 +231,13 @@ export default function ConversationInfoModal({ conversation, onClose, onUpdated
               </div>
 
               {searching && (
-                <div className="flex justify-center py-3">
-                  <Loader2 size={16} className="animate-spin text-emerald-500" />
+                <div className="flex justify-center py-4">
+                  <Loader2 size={18} className="animate-spin text-[#16B8B1]" />
                 </div>
               )}
 
               {!searching && search.trim().length >= 2 && searchResults.length === 0 && (
-                <p className="py-3 text-center text-xs text-slate-500">Aucun utilisateur trouvé</p>
+                <p className="py-4 text-center text-xs text-slate-400">Aucun utilisateur trouvé</p>
               )}
 
               {!searching && searchResults.map((u) => (
@@ -245,21 +245,21 @@ export default function ConversationInfoModal({ conversation, onClose, onUpdated
                   key={u.id}
                   onClick={() => addParticipant(u.id)}
                   disabled={loading}
-                  className="mt-1 flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left transition hover:bg-white/5 disabled:opacity-50"
+                  className="mt-1.5 flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition hover:bg-white/5 disabled:opacity-50"
                 >
                   {u.avatar_path ? (
                     <img src={`/storage/${u.avatar_path}`}
-                      className="h-8 w-8 rounded-full object-cover" alt="" />
+                      className="h-9 w-9 rounded-full object-cover" alt="" />
                   ) : (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/20 text-xs font-bold text-emerald-300">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#16B8B1]/20 text-xs font-bold text-[#16B8B1]">
                       {initials(u.name)}
                     </div>
                   )}
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-semibold text-white">{u.name}</p>
-                    <p className="truncate text-[10px] text-slate-500">{u.email}</p>
+                    <p className="truncate text-sm font-bold text-white">{u.name}</p>
+                    <p className="truncate text-[11px] text-slate-400">{u.email}</p>
                   </div>
-                  <UserPlus size={14} className="text-emerald-400" />
+                  <UserPlus size={16} className="text-[#16B8B1]" />
                 </button>
               ))}
             </div>
@@ -270,31 +270,31 @@ export default function ConversationInfoModal({ conversation, onClose, onUpdated
             {participants.map((p) => (
               <div
                 key={p.id}
-                className="flex items-center gap-3 rounded-lg px-2 py-2 transition hover:bg-white/5"
+                className="flex items-center gap-3 rounded-xl px-2 py-2.5 transition hover:bg-white/5"
               >
                 {p.avatar_path ? (
                   <img src={`/storage/${p.avatar_path}`}
-                    className="h-9 w-9 rounded-full object-cover" alt="" />
+                    className="h-10 w-10 rounded-full object-cover" alt="" />
                 ) : (
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/20 text-xs font-bold text-emerald-300">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0F9691] text-xs font-extrabold text-white">
                     {initials(p.name)}
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-white">
+                  <p className="truncate text-sm font-bold text-white">
                     {p.name}
-                    {p.id === user?.id && <span className="ml-1 text-[10px] text-emerald-400">(Vous)</span>}
+                    {p.id === user?.id && <span className="ml-1.5 text-[11px] font-medium text-[#16B8B1]">(Vous)</span>}
                   </p>
-                  <p className="truncate text-[11px] text-slate-500">{p.email}</p>
+                  <p className="truncate text-[11px] text-slate-400">{p.email}</p>
                 </div>
                 {isGroup && p.id !== user?.id && (
                   <button
                     onClick={() => removeParticipant(p.id)}
                     disabled={loading}
-                    className="rounded-full p-1.5 text-slate-500 transition hover:bg-rose-500/10 hover:text-rose-400 disabled:opacity-50"
+                    className="rounded-full p-2 text-slate-500 transition hover:bg-rose-500/10 hover:text-rose-400 disabled:opacity-50"
                     title="Retirer"
                   >
-                    <Trash2 size={13} />
+                    <Trash2 size={16} />
                   </button>
                 )}
               </div>
@@ -307,9 +307,9 @@ export default function ConversationInfoModal({ conversation, onClose, onUpdated
           <div className="p-5">
             <button
               onClick={leaveGroup}
-              className="flex w-full items-center justify-center gap-2 rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-2.5 text-sm font-semibold text-rose-300 transition hover:bg-rose-500/20"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-rose-900/50 bg-rose-950/20 px-4 py-3 text-sm font-bold text-rose-400 transition hover:bg-rose-950/40 hover:text-rose-300"
             >
-              <LogOut size={15} /> Quitter le groupe
+              <LogOut size={18} /> Quitter le groupe
             </button>
           </div>
         )}

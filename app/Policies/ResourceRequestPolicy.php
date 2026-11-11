@@ -10,12 +10,22 @@ class ResourceRequestPolicy
     /**
      * ✅ Voir une demande
      */
+       /**
+     * ✅ Voir une demande
+     */
     public function view(?User $user, ResourceRequest $resourceRequest): bool
     {
-        if ($resourceRequest->display_status === 'published') return true;
-        if (!$user) return false;
-        
-        return $this->isOwner($user, $resourceRequest) || $user->isAdmin();
+        // 1. Le propriétaire (ou admin) voit TOUJOURS sa demande (même fermée)
+        if ($user && ($this->isOwner($user, $resourceRequest) || $user->isAdmin())) {
+            return true;
+        }
+
+        // 2. Les autres ne voient que si c'est publié
+        if ($resourceRequest->display_status === 'published') {
+            return true;
+        }
+
+        return false;
     }
 
     /**

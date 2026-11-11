@@ -12,9 +12,6 @@ import ConversationContextMenu from "../components/ConversationContextMenu";
 import NewGroupModal from "../components/NewGroupModal";
 import ConversationInfoModal from "../components/ConversationInfoModal";
 
-// ============================================
-// CONFIG & HELPERS
-// ============================================
 const API_BASE = "http://127.0.0.1:8001";
 
 function initials(name) {
@@ -69,15 +66,55 @@ function formatDateHeader(date) {
   return d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
 }
 
-// ✅ COMPOSANT AVATAR AVEC FALLBACK API POUR LES ENTREPRISES
+// ✅ Fonction pour formater et nettoyer les messages système
+function formatSystemMessage(msg, currentUser) {
+  if (!msg.body) return "";
+  
+  // 1. On enlève les astérisques (Markdown) et on nettoie les espaces
+  let text = msg.body.replace(/\*\*/g, "").trim();
+  
+  // 2. Si c'est un message d'ajout au groupe
+  if (text.includes("a ajouté") && text.includes("au groupe")) {
+    const senderName = msg.sender?.name;
+    const currentUserName = currentUser?.name;
+
+    // Si c'est moi qui ai ajouté quelqu'un
+    if (senderName && msg.sender_id === currentUser?.id) {
+      // On remplace mon nom par "Vous" (ex: "Vous a ajouté Miariniaina...")
+      text = text.replace(senderName, "Vous");
+    } 
+    // Si c'est quelqu'un d'autre qui m'a ajouté
+    else if (currentUserName && text.includes(currentUserName)) {
+      // On extrait le nom de celui qui a ajouté (tout ce qu'il y a avant " a ajouté ")
+      const senderRegex = /^(.*?) a ajouté/;
+      const match = text.match(senderRegex);
+      
+      if (match && match[1]) {
+        const realSenderName = match[1]; // Ex: "Microsoft Corporation"
+        
+        // On remplace "Microsoft Corporation a ajouté Miariniaina... au groupe..."
+        // par "Microsoft Corporation vous a ajouté au groupe..."
+        text = text.replace(
+          `${realSenderName} a ajouté ${currentUserName}`, 
+          `${realSenderName} vous a ajouté`
+        );
+      }
+    }
+  }
+  
+  // 3. Sécurité supplémentaire : on remplace le nom actuel par "vous" si l'expression exacte n'a pas matché
+  if (currentUser?.name && text.includes(` a ajouté ${currentUser.name} `)) {
+      text = text.replace(` a ajouté ${currentUser.name} `, " vous a ajouté ");
+  }
+
+  return text;
+}
 function AvatarBubble({ path, name, size = 48, highlight = false, className = "", role, userId }) {
   const [err, setErr] = useState(false);
   const [fallbackLogo, setFallbackLogo] = useState(null);
 
-  // Si le backend n'envoie pas le logo dans le message, on va le chercher via l'API /companies
   useEffect(() => {
     if (path || role !== "company" || !userId) return;
-    
     api.get(`/companies`)
       .then((res) => {
         const list = res.data?.data || res.data || [];
@@ -100,8 +137,8 @@ function AvatarBubble({ path, name, size = 48, highlight = false, className = ""
       style={{ width: size, height: size }}
       className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full font-extrabold ${
         highlight
-          ? "bg-gradient-to-br from-emerald-400 to-teal-600 text-[#04201C]"
-          : "bg-gradient-to-br from-emerald-100 to-teal-100 text-[#0B3A36] dark:from-emerald-500/20 dark:to-teal-500/20 dark:text-emerald-400"
+          ? "bg-gradient-to-br from-[#16B8B1] to-[#0F9691] text-white"
+          : "bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-300"
       } ${className}`}
     >
       {imageUrl && !err ? (
@@ -122,19 +159,15 @@ function GroupBubble({ size = 48 }) {
   return (
     <div
       style={{ width: size, height: size }}
-      className="flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#0E4B42] to-[#0B2A35] text-emerald-300"
+      className="flex shrink-0 items-center justify-center rounded-full bg-[#0B1F33] text-[#16B8B1]"
     >
       <Users size={size * 0.42} />
     </div>
   );
 }
 
-// ============================================
-// PAGE PRINCIPALE
-// ============================================
 export default function Messages() {
   const { user } = useAuth();
-
   const [searchParams, setSearchParams] = useSearchParams();
   const targetUserId = searchParams.get("to");
 
@@ -153,7 +186,6 @@ export default function Messages() {
   const [showMobileList, setShowMobileList] = useState(true);
 
   const [contextMenu, setContextMenu] = useState(null);
-
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [attachment, setAttachment] = useState(null);
 
@@ -267,6 +299,7 @@ export default function Messages() {
       attachment_url: attachment?.preview || null,
       attachment_name: attachment?.name || null,
       sender_id: user?.id,
+      sender: user, // ✅ Ajouté pour que formatSystemMessage trouve le nom
       created_at: new Date().toISOString(),
       pending: true,
     };
@@ -324,7 +357,6 @@ export default function Messages() {
     }
   };
 
-  // ✅ ON UTILISE UNE FONCTION POUR TRIER LES MESSAGES ET CHERCHER DANS LE BON
   const getLastMessage = (conv) => {
     if (!conv.messages || conv.messages.length === 0) return null;
     return [...conv.messages].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
@@ -354,7 +386,7 @@ export default function Messages() {
     return (
       <AppShell>
         <div className="flex h-64 items-center justify-center">
-          <div className="h-9 w-9 animate-spin rounded-full border-[3px] border-emerald-500 border-t-transparent" />
+          <div className="h-9 w-9 animate-spin rounded-full border-[3px] border-[#16B8B1] border-t-transparent" />
         </div>
       </AppShell>
     );
@@ -364,14 +396,14 @@ export default function Messages() {
 
   return (
     <AppShell>
-      <div className="flex h-[calc(100vh-11rem)] min-h-[520px] overflow-hidden rounded-3xl border border-slate-200 bg-white/80 shadow-[0_20px_60px_rgba(15,60,60,0.10)] ring-1 ring-slate-900/[0.04] backdrop-blur dark:border-white/10 dark:bg-[#112A3A]/80 dark:ring-white/5">
+      <div className="flex h-[calc(100vh-11rem)] min-h-[520px] overflow-hidden rounded-3xl border border-slate-200 bg-white/80 shadow-[0_20px_60px_rgba(15,60,60,0.10)] ring-1 ring-slate-900/[0.04] backdrop-blur dark:border-white/10 dark:bg-[#112A3A]/80 dark:ring-white/5 font-['Plus_Jakarta_Sans',sans-serif]">
 
         <aside className={`w-full shrink-0 flex-col border-r border-slate-100 bg-white/90 md:flex md:w-[380px] dark:border-white/10 dark:bg-[#112A3A] ${
           showMobileList ? "flex" : "hidden"
         }`}>
           <div className="flex items-end justify-between px-5 pb-3 pt-5">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400">Messagerie</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#16B8B1]">Messagerie</p>
               <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-[#0B1F33] dark:text-white">Discussions</h2>
             </div>
             <div className="flex items-center gap-1.5">
@@ -381,7 +413,7 @@ export default function Messages() {
               <button
                 onClick={() => setShowNewModal(true)}
                 aria-label="Nouveau message"
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-400 text-[#04201C] shadow-[0_8px_20px_rgba(52,211,153,0.4)] transition hover:bg-emerald-300 dark:bg-emerald-500 dark:text-white dark:hover:bg-emerald-400"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0B1F33] text-white shadow-sm transition hover:bg-[#16324F] dark:bg-[#16B8B1] dark:text-[#0B1F33] dark:hover:bg-[#0F9691]"
               >
                 <Plus size={18} />
               </button>
@@ -389,8 +421,8 @@ export default function Messages() {
           </div>
 
           <div className="px-5 pb-3">
-            <div className="flex items-center gap-2.5 rounded-full border border-slate-200 bg-slate-50/80 px-4 py-2.5 transition focus-within:border-emerald-400 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-100 dark:border-white/10 dark:bg-white/5 dark:focus-within:border-emerald-500/50 dark:focus-within:bg-white/10 dark:focus-within:ring-emerald-500/10">
-              <Search size={16} className="text-slate-400 dark:text-slate-500" />
+            <div className="flex items-center gap-2.5 rounded-full border border-slate-200 bg-slate-50/80 px-4 py-2.5 transition focus-within:border-[#16B8B1] focus-within:bg-white focus-within:ring-4 focus-within:ring-[#16B8B1]/10 dark:border-white/10 dark:bg-white/5">
+              <Search size={16} className="text-slate-400" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -401,7 +433,7 @@ export default function Messages() {
           </div>
 
           <div className="px-5 pb-3">
-            <div className="inline-flex rounded-full bg-[#EEF3F6] p-1 dark:bg-white/5">
+            <div className="inline-flex rounded-full bg-slate-100 p-1 dark:bg-white/5">
               {[
                 { id: "all", label: "Tout" },
                 { id: "unread", label: "Non lu" },
@@ -412,8 +444,8 @@ export default function Messages() {
                   onClick={() => setFilter(tab.id)}
                   className={`rounded-full px-4 py-1.5 text-xs font-bold transition ${
                     filter === tab.id
-                      ? "bg-[#0B2A35] text-white shadow-sm dark:bg-emerald-500 dark:text-white"
-                      : "text-slate-500 hover:text-[#0B2A35] dark:text-slate-400 dark:hover:text-white"
+                      ? "bg-[#0B1F33] text-white shadow-sm dark:bg-[#16B8B1] dark:text-[#0B1F33]"
+                      : "text-slate-500 hover:text-[#0B1F33] dark:text-slate-400 dark:hover:text-white"
                   }`}
                 >
                   {tab.label}
@@ -425,15 +457,15 @@ export default function Messages() {
           <div className="flex-1 space-y-0.5 overflow-y-auto px-2.5 pb-3">
             {filtered.length === 0 && (
               <div className="px-4 py-12 text-center">
-                <span className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:ring-emerald-500/20">
-                  <span className="h-3 w-3 rounded-full bg-gradient-to-br from-emerald-300 to-teal-500" />
+                <span className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 dark:bg-white/5">
+                  <span className="h-3 w-3 rounded-full bg-[#16B8B1]" />
                 </span>
                 <p className="text-sm text-slate-500 dark:text-slate-400">Aucune conversation</p>
               </div>
             )}
             {filtered.map((conv) => {
               const other = getOtherParticipant(conv);
-              const lastMsg = getLastMessage(conv); // ✅ Utilisation de la fonction
+              const lastMsg = getLastMessage(conv);
               
               const isActive = conv.id === activeId;
               const isUnread = conv.unread_count > 0;
@@ -450,8 +482,8 @@ export default function Messages() {
                   }}
                   className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition ${
                     isActive
-                      ? "bg-emerald-50 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:ring-emerald-500/20"
-                      : "hover:bg-[#F4F8FA] dark:hover:bg-white/5"
+                      ? "bg-[#16B8B1]/10 ring-1 ring-[#16B8B1]/20 dark:bg-[#16B8B1]/10"
+                      : "hover:bg-slate-50 dark:hover:bg-white/5"
                   }`}
                 >
                   <div className="relative shrink-0">
@@ -461,7 +493,7 @@ export default function Messages() {
                       <AvatarBubble path={avatarPath} name={other?.name} size={48} highlight={isUnread} role={other?.role} userId={other?.id} />
                     )}
                     {!isGroup && (
-                      <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-500 dark:border-[#112A3A]" />
+                      <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white bg-[#16B8B1] dark:border-[#112A3A]" />
                     )}
                   </div>
 
@@ -470,7 +502,7 @@ export default function Messages() {
                       <p className={`truncate text-sm ${isUnread ? "font-extrabold text-[#0B1F33] dark:text-white" : "font-semibold text-slate-700 dark:text-slate-200"}`}>
                         {isGroup ? conv.title || "Groupe" : (other?.name || "Conversation")}
                       </p>
-                      <span className={`shrink-0 text-[11px] ${isUnread ? "font-bold text-emerald-600 dark:text-emerald-400" : "text-slate-400 dark:text-slate-500"}`}>
+                      <span className={`shrink-0 text-[11px] ${isUnread ? "font-bold text-[#16B8B1]" : "text-slate-400 dark:text-slate-500"}`}>
                         {timeAgo(lastMsg?.created_at)}
                       </span>
                     </div>
@@ -484,7 +516,7 @@ export default function Messages() {
                   </div>
 
                   {isUnread && (
-                    <span className="flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full bg-emerald-500 px-1.5 text-[10px] font-extrabold text-white shadow-sm">
+                    <span className="flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full bg-[#16B8B1] px-1.5 text-[10px] font-extrabold text-[#0B1F33] shadow-sm">
                       {conv.unread_count}
                     </span>
                   )}
@@ -494,13 +526,13 @@ export default function Messages() {
           </div>
         </aside>
 
-        <section className={`flex-1 flex-col bg-gradient-to-b from-[#F5F9FA] to-[#EBF3F3] md:flex dark:from-[#0B1F33] dark:to-[#081D2D] ${
+        <section className={`flex-1 flex-col bg-slate-50/50 md:flex dark:bg-[#0B1F33]/40 ${
           !showMobileList && hasActiveChat ? "flex" : "hidden md:flex"
         }`}>
           {!hasActiveChat ? (
             <div className="flex flex-1 flex-col items-center justify-center text-slate-500 dark:text-slate-400">
-              <div className="relative flex h-24 w-24 items-center justify-center rounded-[28px] bg-gradient-to-br from-[#0E4B42] to-[#0B2A35] text-emerald-300 shadow-[0_16px_40px_rgba(8,60,55,0.3)]">
-                <div className="pointer-events-none absolute -right-4 -top-4 h-16 w-16 rounded-full bg-emerald-400/30 blur-2xl" />
+              <div className="relative flex h-24 w-24 items-center justify-center rounded-[28px] bg-[#0B1F33] text-[#16B8B1] shadow-lg">
+                <div className="pointer-events-none absolute -right-4 -top-4 h-16 w-16 rounded-full bg-[#16B8B1]/30 blur-2xl" />
                 <Send size={34} className="relative" />
               </div>
               <p className="mt-5 text-base font-extrabold text-[#0B1F33] dark:text-white">Vos messages</p>
@@ -525,7 +557,7 @@ export default function Messages() {
                       <AvatarBubble path={getAvatarPath(otherUser)} name={otherUser?.name} size={42} role={otherUser?.role} userId={otherUser?.id} />
                     )}
                     {!activeIsGroup && (
-                      <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-emerald-500 dark:border-[#112A3A]" />
+                      <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-[#16B8B1] dark:border-[#112A3A]" />
                     )}
                   </div>
 
@@ -542,8 +574,8 @@ export default function Messages() {
                     ) : (
                       <>
                         <p className="truncate text-[15px] font-extrabold text-[#0B1F33] dark:text-white">{otherUser?.name || "Conversation"}</p>
-                        <p className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                        <p className="flex items-center gap-1.5 text-[11px] font-semibold text-[#16B8B1]">
+                          <span className="h-1.5 w-1.5 rounded-full bg-[#16B8B1]" />
                           Actif maintenant
                         </p>
                       </>
@@ -553,7 +585,7 @@ export default function Messages() {
                 {activeConv && (
                   <button
                     onClick={() => setShowInfoModal(true)}
-                    className="rounded-full p-2.5 text-slate-500 transition hover:bg-emerald-50 hover:text-emerald-700 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white"
+                    className="rounded-full p-2.5 text-slate-500 transition hover:bg-slate-100 hover:text-[#0B1F33] dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white"
                     title="Infos"
                     aria-label="Informations de la conversation"
                   >
@@ -574,10 +606,13 @@ export default function Messages() {
                   const prevMsg = messages[i - 1];
                   const nextMsg = messages[i + 1];
 
+                  // ✅ Détection du message système
+                  const isSystem = msg.type === 'system' || (msg.body && msg.body.includes("a ajouté") && msg.body.includes("au groupe"));
+
                   const showDateHeader = !prevMsg ||
                     new Date(msg.created_at).toDateString() !== new Date(prevMsg.created_at).toDateString();
 
-                  const showAvatar = !isMine && (!prevMsg || prevMsg.sender_id !== msg.sender_id);
+                  const showAvatar = !isMine && !isSystem && (!prevMsg || prevMsg.sender_id !== msg.sender_id);
 
                   const isLastInGroup = !nextMsg ||
                     nextMsg.sender_id !== msg.sender_id ||
@@ -595,58 +630,69 @@ export default function Messages() {
                         </div>
                       )}
 
-                      <div className={`flex items-end gap-2 ${isMine ? "justify-end" : "justify-start"}`}>
-                        {!isMine && (
-                          <div className="w-8 shrink-0">
-                            {showAvatar && (
-                              <AvatarBubble path={senderAvatar} name={msg.sender?.name} size={32} role={msg.sender?.role} userId={msg.sender?.id} />
-                            )}
-                          </div>
-                        )}
-
-                        <div className={`flex max-w-[72%] flex-col ${isMine ? "items-end" : "items-start"}`}>
-                          {!isMine && showAvatar && (
-                            <p className="mb-1 px-1 text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                              {msg.sender?.name}
-                            </p>
-                          )}
-
-                          <div className={`overflow-hidden rounded-3xl ${
-                            isMine
-                              ? `bg-gradient-to-br from-[#0E4B42] to-[#0B3A36] text-white shadow-[0_8px_20px_rgba(8,60,55,0.22)] dark:from-emerald-600 dark:to-teal-700 ${isLastInGroup ? "rounded-br-lg" : ""}`
-                              : `bg-white text-[#0B1F33] shadow-sm ring-1 ring-slate-100 dark:bg-[#0B1F33] dark:text-slate-200 dark:ring-white/5 ${isLastInGroup ? "rounded-bl-lg" : ""}`
-                          } ${msg.pending ? "opacity-60" : ""}`}>
-
-                            {msg.attachment_url && msg.attachment_url.match(/\.(jpg|jpeg|png|gif|webp)$/i) && (
-                              <img src={msg.attachment_url} alt="image" className="max-w-xs" />
-                            )}
-
-                            {msg.attachment_url && !msg.attachment_url.match(/\.(jpg|jpeg|png|gif|webp)$/i) && (
-                              <a href={msg.attachment_url} target="_blank" rel="noreferrer"
-                                className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold underline underline-offset-4">
-                                <FileText size={16} /> Télécharger
-                              </a>
-                            )}
-
-                            {msg.body && (
-                              <p className="whitespace-pre-wrap break-words px-4 py-2.5 text-sm leading-6">{msg.body}</p>
-                            )}
-                          </div>
-
-                          {isLastInGroup && (
-                            <div className="mt-1 flex items-center gap-1 px-1">
-                              <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
-                                {formatMessageTime(msg.created_at)}
-                              </span>
-                              {isMine && (
-                                msg.pending
-                                  ? <Check size={12} className="text-slate-400 dark:text-slate-500" />
-                                  : <CheckCheck size={12} className="text-emerald-500 dark:text-emerald-400" />
+                      {/* ✅ SI MESSAGE SYSTÈME : Affichage centré comme Facebook */}
+                      {isSystem ? (
+                        <div className="flex justify-center py-2">
+                          <p className="max-w-[80%] text-center text-xs text-slate-500 dark:text-slate-400">
+                            {formatSystemMessage(msg, user)}
+                          </p>
+                        </div>
+                      ) : (
+                        
+                        /* ✅ SINON : Affichage normal (bulle) */
+                        <div className={`flex items-end gap-2 ${isMine ? "justify-end" : "justify-start"}`}>
+                          {!isMine && (
+                            <div className="w-8 shrink-0">
+                              {showAvatar && (
+                                <AvatarBubble path={senderAvatar} name={msg.sender?.name} size={32} role={msg.sender?.role} userId={msg.sender?.id} />
                               )}
                             </div>
                           )}
+
+                          <div className={`flex max-w-[72%] flex-col ${isMine ? "items-end" : "items-start"}`}>
+                            {!isMine && showAvatar && (
+                              <p className="mb-1 px-1 text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                                {msg.sender?.name}
+                              </p>
+                            )}
+
+                            <div className={`overflow-hidden rounded-3xl ${
+                              isMine
+                                ? `bg-[#0B1F33] text-white shadow-sm dark:bg-[#16B8B1] dark:text-[#0B1F33] ${isLastInGroup ? "rounded-br-lg" : ""}`
+                                : `bg-white text-[#0B1F33] shadow-sm ring-1 ring-slate-100 dark:bg-[#0B1F33] dark:text-slate-200 dark:ring-white/5 ${isLastInGroup ? "rounded-bl-lg" : ""}`
+                            } ${msg.pending ? "opacity-60" : ""}`}>
+
+                              {msg.attachment_url && msg.attachment_url.match(/\.(jpg|jpeg|png|gif|webp)$/i) && (
+                                <img src={msg.attachment_url} alt="image" className="max-w-xs" />
+                              )}
+
+                              {msg.attachment_url && !msg.attachment_url.match(/\.(jpg|jpeg|png|gif|webp)$/i) && (
+                                <a href={msg.attachment_url} target="_blank" rel="noreferrer"
+                                  className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold underline underline-offset-4">
+                                  <FileText size={16} /> Télécharger
+                                </a>
+                              )}
+
+                              {msg.body && (
+                                <p className="whitespace-pre-wrap break-words px-4 py-2.5 text-sm leading-6">{msg.body}</p>
+                              )}
+                            </div>
+
+                            {isLastInGroup && (
+                              <div className="mt-1 flex items-center gap-1 px-1">
+                                <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
+                                  {formatMessageTime(msg.created_at)}
+                                </span>
+                                {isMine && (
+                                  msg.pending
+                                    ? <Check size={12} className="text-slate-400 dark:text-slate-500" />
+                                    : <CheckCheck size={12} className="text-[#16B8B1]" />
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </React.Fragment>
                   );
                 })}
@@ -656,11 +702,11 @@ export default function Messages() {
 
               {attachment && (
                 <div className="mx-4 mb-2 flex items-center gap-3 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-100 dark:bg-[#112A3A] dark:ring-white/10">
-                  <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl bg-emerald-50 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:ring-emerald-500/20">
+                  <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl bg-slate-100 dark:bg-white/5">
                     {attachment.isImage ? (
                       <img src={attachment.preview} className="h-full w-full object-cover" alt="" />
                     ) : (
-                      <FileText size={20} className="text-emerald-600 dark:text-emerald-400" />
+                      <FileText size={20} className="text-[#16B8B1]" />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -677,21 +723,21 @@ export default function Messages() {
 
               {showEmojiPicker && (
                 <div className="relative">
-                  <div className="absolute bottom-2 right-4 z-20 overflow-hidden rounded-2xl shadow-[0_20px_50px_rgba(15,60,60,0.25)] ring-1 ring-slate-200 dark:ring-white/10">
+                  <div className="absolute bottom-2 right-4 z-20 overflow-hidden rounded-2xl shadow-xl ring-1 ring-slate-200 dark:ring-white/10">
                     <EmojiPicker onEmojiClick={onEmojiClick} theme="dark" height={350} width={300} searchDisabled={false} skinTonesDisabled />
                   </div>
                 </div>
               )}
 
               <form onSubmit={send} className="relative border-t border-slate-100 bg-white/85 p-3.5 backdrop-blur dark:border-white/10 dark:bg-[#112A3A]/85">
-                <div className="flex items-end gap-1.5 rounded-[26px] border border-slate-200 bg-slate-50/80 px-3 py-2 transition focus-within:border-emerald-400 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-100 dark:border-white/10 dark:bg-white/5 dark:focus-within:border-emerald-500/50 dark:focus-within:bg-white/10 dark:focus-within:ring-emerald-500/10">
+                <div className="flex items-end gap-1.5 rounded-[26px] border border-slate-200 bg-slate-50/80 px-3 py-2 transition focus-within:border-[#16B8B1] focus-within:bg-white focus-within:ring-4 focus-within:ring-[#16B8B1]/10 dark:border-white/10 dark:bg-white/5">
 
-                  <button type="button" onClick={() => fileInputRef.current?.click()} className="rounded-full p-2 text-slate-500 transition hover:bg-emerald-50 hover:text-emerald-700 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white" title="Joindre un fichier">
+                  <button type="button" onClick={() => fileInputRef.current?.click()} className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-[#0B1F33] dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white" title="Joindre un fichier">
                     <Plus size={18} />
                   </button>
                   <input ref={fileInputRef} type="file" accept="image/*,application/pdf,.doc,.docx" className="hidden" onChange={handleFilePick} />
 
-                  <button type="button" onClick={() => fileInputRef.current?.click()} className="rounded-full p-2 text-slate-500 transition hover:bg-emerald-50 hover:text-emerald-700 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white" title="Envoyer une photo">
+                  <button type="button" onClick={() => fileInputRef.current?.click()} className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-[#0B1F33] dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white" title="Envoyer une photo">
                     <ImageIcon size={18} />
                   </button>
 
@@ -705,12 +751,12 @@ export default function Messages() {
                     className="max-h-24 flex-1 resize-none bg-transparent py-2 text-sm text-[#0B1F33] placeholder:text-slate-400 focus:outline-none dark:text-white dark:placeholder:text-slate-500"
                   />
 
-                  <button type="button" onClick={() => setShowEmojiPicker(!showEmojiPicker)} className={`rounded-full p-2 transition ${showEmojiPicker ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400" : "text-slate-500 hover:bg-emerald-50 hover:text-emerald-700 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white"}`} title="Emojis">
+                  <button type="button" onClick={() => setShowEmojiPicker(!showEmojiPicker)} className={`rounded-full p-2 transition ${showEmojiPicker ? "bg-[#16B8B1]/20 text-[#0B1F33] dark:text-[#16B8B1]" : "text-slate-500 hover:bg-slate-100 hover:text-[#0B1F33] dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white"}`} title="Emojis">
                     <Smile size={18} />
                   </button>
 
                   {(body.trim() || attachment) && (
-                    <button type="submit" disabled={sending} className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-400 text-[#04201C] shadow-[0_8px_20px_rgba(52,211,153,0.4)] transition hover:bg-emerald-300 disabled:opacity-40 dark:bg-emerald-500 dark:text-white dark:hover:bg-emerald-400">
+                    <button type="submit" disabled={sending} className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0B1F33] text-white shadow-sm transition hover:bg-[#16324F] disabled:opacity-40 dark:bg-[#16B8B1] dark:text-[#0B1F33] dark:hover:bg-[#0F9691]">
                       <Send size={16} />
                     </button>
                   )}
@@ -776,7 +822,7 @@ export default function Messages() {
 }
 
 // ============================================
-// MODAL NOUVELLE CONVERSATION
+// MODAL NOUVELLE CONVERSATION (Design Bleu Marine)
 // ============================================
 function NewConversationModal({ onClose, onCreated }) {
   const [search, setSearch] = useState("");
@@ -825,22 +871,23 @@ function NewConversationModal({ onClose, onCreated }) {
 
   const spinner = (
     <div className="flex justify-center py-6">
-      <div className="h-6 w-6 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#16B8B1] border-t-transparent" />
     </div>
   );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#06141F]/55 p-4 backdrop-blur-sm" onClick={onClose}>
-      <div className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-[0_30px_80px_rgba(6,25,35,0.35)] dark:bg-[#112A3A] dark:ring-1 dark:ring-white/10" onClick={(e) => e.stopPropagation()}>
-        <div className="relative flex items-center justify-between overflow-hidden bg-gradient-to-r from-[#0B2A35] via-[#0B3A36] to-[#0E4B42] px-6 py-4 text-white">
-          <div className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-emerald-400/25 blur-2xl" />
+      <div className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-[#112A3A] dark:ring-1 dark:ring-white/10 font-['Plus_Jakarta_Sans',sans-serif]" onClick={(e) => e.stopPropagation()}>
+        
+        <div className="relative flex items-center justify-between overflow-hidden bg-gradient-to-br from-[#0B1F33] to-[#142B49] px-6 py-4 text-white">
+          <div className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-[#16B8B1]/20 blur-2xl" />
           <h2 className="relative text-[15px] font-extrabold tracking-tight">Nouveau message</h2>
           <button onClick={onClose} aria-label="Fermer" className="relative flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20">
             <X size={18} />
           </button>
         </div>
 
-        <button onClick={() => onCreated(null, "openGroup")} className="flex w-full items-center gap-3 border-b border-slate-100 px-6 py-3.5 text-left transition hover:bg-emerald-50/60 dark:border-white/10 dark:hover:bg-white/5">
+        <button onClick={() => onCreated(null, "openGroup")} className="flex w-full items-center gap-3 border-b border-slate-100 px-6 py-3.5 text-left transition hover:bg-slate-50 dark:border-white/10 dark:hover:bg-white/5">
           <GroupBubble size={42} />
           <div className="flex-1">
             <p className="text-sm font-extrabold text-[#0B1F33] dark:text-white">Créer un canal / groupe</p>
@@ -849,14 +896,14 @@ function NewConversationModal({ onClose, onCreated }) {
         </button>
 
         <div className="px-5 pb-2 pt-4">
-          <div className="flex items-center gap-2.5 rounded-full border border-slate-200 bg-slate-50/80 px-4 py-2.5 transition focus-within:border-emerald-400 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-100 dark:border-white/10 dark:bg-white/5 dark:focus-within:border-emerald-500/50 dark:focus-within:bg-white/10 dark:focus-within:ring-emerald-500/10">
+          <div className="flex items-center gap-2.5 rounded-full border border-slate-200 bg-slate-50/80 px-4 py-2.5 transition focus-within:border-[#16B8B1] focus-within:bg-white focus-within:ring-4 focus-within:ring-[#16B8B1]/10 dark:border-white/10 dark:bg-white/5">
             <Search size={16} className="text-slate-400 dark:text-slate-500" />
             <input autoFocus value={search} onChange={(e) => setSearch(e.target.value)} placeholder="À : rechercher un utilisateur..." className="w-full bg-transparent text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none dark:text-white dark:placeholder:text-slate-500" />
           </div>
         </div>
 
         <div className="px-6 pb-2 pt-2">
-          <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-emerald-600 dark:text-emerald-400">
+          <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#16B8B1]">
             {showingSuggestions ? "Suggestions" : "Résultats"}
           </p>
         </div>
@@ -876,7 +923,7 @@ function NewConversationModal({ onClose, onCreated }) {
           {displayUsers.map((u) => {
             const avatarPath = getAvatarPath(u);
             return (
-              <button key={u.id} onClick={() => startDirect(u.id)} disabled={creating} className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-2.5 text-left transition hover:bg-emerald-50/60 disabled:opacity-50 dark:hover:bg-white/5">
+              <button key={u.id} onClick={() => startDirect(u.id)} disabled={creating} className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-2.5 text-left transition hover:bg-slate-50 disabled:opacity-50 dark:hover:bg-white/5">
                 <AvatarBubble path={avatarPath} name={u.name} size={42} role={u.role} userId={u.id} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-extrabold text-[#0B1F33] dark:text-white">{u.name}</p>

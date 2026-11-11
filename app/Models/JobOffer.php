@@ -9,13 +9,14 @@ class JobOffer extends Model
     protected $fillable = [
         'company_id', 'created_by', 'title', 'description', 'offer_type', 'duration_text',
         'remote', 'country', 'city', 'salary_min', 'salary_max', 'currency', 'criteria',
-        'application_deadline', 'status',
+        'application_deadline', 'status','duration_months', 'duration_text', 'trial_enabled',
     ];
 
     protected $casts = [
         'remote' => 'boolean',
         'application_deadline' => 'date',
-          'criteria' => 'array', 
+          'criteria' => 'array', 'trial_enabled'   => 'boolean',
+'duration_months' => 'integer',
     ];
 
     public function company()

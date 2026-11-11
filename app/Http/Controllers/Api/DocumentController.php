@@ -8,6 +8,9 @@ use App\Models\DocumentVersion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use App\Models\Application;
+use App\Models\Mission;
+use App\Models\Proposal;
 
 class DocumentController extends Controller
 {
@@ -16,22 +19,29 @@ class DocumentController extends Controller
 
     public function index(Request $request)
     {
-        $query = Document::query()
-            ->with(['uploader:id,name,email,avatar_path', 'currentVersionFile'])
-            ->where(function ($q) use ($request) {
-                $q->where('uploaded_by', $request->user()->id);
-                $q->orWhereHasMorph('documentable', ['App\Models\Mission', 'App\Models\Proposal'], function ($qq) use ($request) {
-                });
-            });
+        $user = $request->user();
 
-        if ($request->has('documentable_type') && $request->has('documentable_id')) {
+        $query = Document::query()
+            ->with(['uploader:id,name,email,avatar_path', 'currentVersionFile']);
+
+        if ($request->filled('documentable_type') && $request->filled('documentable_id')) {
             $type = str_replace('\\\\', '\\', $request->documentable_type);
-            
+
             if ($type === 'proposal') $type = \App\Models\Proposal::class;
-            if ($type === 'mission') $type = \App\Models\Mission::class;
+            if ($type === 'mission')  $type = \App\Models\Mission::class;
+
+            abort_unless(
+                in_array($type, [\App\Models\Mission::class, \App\Models\Proposal::class], true),
+                422,
+                'Type de ressource non supporté.'
+            );
             
+            $this->authorizeDocumentableRead($request, $type, (int) $request->documentable_id);
+
             $query->where('documentable_type', $type)
-                ->where('documentable_id', $request->documentable_id);
+                  ->where('documentable_id', $request->documentable_id);
+        } else {
+            $query->where('uploaded_by', $user->id);
         }
 
         if ($request->has('document_type')) {
@@ -252,39 +262,62 @@ class DocumentController extends Controller
     {
         $this->authorizeDocumentAccess($request, $document);
 
+        abort_unless(
+            (int) $document->uploaded_by === (int) $request->user()->id,
+            403,
+            'Seule la personne qui a ajouté ce document peut le supprimer.'
+        );
+
         $document->logHistory('deleted', null, null, 'Document supprimé');
         $document->delete();
 
         return response()->json(['message' => 'Document supprimé']);
     }
 
+    /** Rôle de l'utilisateur sur une proposition : sender | recipient | talent | null */
+    private function proposalRole(Proposal $proposal, array $companyIds, ?int $profileId): ?string
+    {
+        $proposal->loadMissing('resourceRequest');
+
+        if ($proposal->proposed_by_company_id && in_array($proposal->proposed_by_company_id, $companyIds)) {
+            return 'sender';
+        }
+
+        $requestCompanyId = $proposal->resourceRequest?->company_id;
+        if (
+            ($proposal->to_company_id && in_array($proposal->to_company_id, $companyIds))
+            || ($requestCompanyId && in_array($requestCompanyId, $companyIds))
+        ) {
+            return 'recipient';
+        }
+
+        if ($profileId && (int) $proposal->professional_profile_id === (int) $profileId) {
+            return 'talent';
+        }
+
+        return null;
+    }
+
     private function authorizeDocumentAccess(Request $request, Document $document): void
     {
         $user = $request->user();
 
-        if ($document->uploaded_by === $user->id) return;
+        if ((int) $document->uploaded_by === (int) $user->id) return;
 
         $companyIds = $user->companies()->pluck('id')->toArray();
-        $profileId = $user->professionalProfile?->id;
+        $profileId  = $user->professionalProfile?->id;
+        $target     = $document->documentable;
 
-        if ($document->documentable_type === 'App\Models\Mission') {
-            $mission = $document->documentable;
-            if ($mission && (
-                $mission->professional_profile_id === $profileId ||
-                in_array($mission->supplying_company_id, $companyIds) ||
-                in_array($mission->requesting_company_id, $companyIds)
-            )) return;
+        if ($target instanceof Mission) {
+            if (
+                (int) $target->professional_profile_id === (int) $profileId
+                || in_array($target->supplying_company_id, $companyIds)
+                || in_array($target->requesting_company_id, $companyIds)
+            ) return;
         }
 
-        if ($document->documentable_type === 'App\Models\Proposal') {
-            $proposal = $document->documentable;
-            if ($proposal) {
-                $isSender = in_array($proposal->proposed_by_company_id, $companyIds);
-                $isRecipient = in_array($proposal->to_company_id, $companyIds);
-                $isTalent = $proposal->professional_profile_id === $profileId;
-                
-                if ($isSender || $isRecipient || $isTalent) return;
-            }
+        if ($target instanceof Proposal && $this->proposalRole($target, $companyIds, $profileId)) {
+            return;
         }
 
         abort(403, 'Accès refusé à ce document.');
@@ -292,37 +325,87 @@ class DocumentController extends Controller
 
     private function authorizeDocumentable(Request $request, string $type, int $id): void
     {
+        abort_unless(
+            in_array($type, [Mission::class, Proposal::class, Application::class], true),
+            422,
+            'Type de ressource non supporté.'
+        );
+
         $model = $type::find($id);
         abort_unless($model, 404, 'Ressource introuvable.');
 
-        $user = $request->user();
+        $user       = $request->user();
         $companyIds = $user->companies()->pluck('id')->toArray();
-        $profileId = $user->professionalProfile?->id;
+        $profileId  = $user->professionalProfile?->id;
 
-        // ✅ SÉCURITÉ POUR LES MISSIONS
-        if ($type === 'App\Models\Mission') {
-            $isEmployee = $model->professional_profile_id === $profileId;
-            $isSupplying = in_array($model->supplying_company_id, $companyIds);
-            $isRequesting = in_array($model->requesting_company_id, $companyIds);
-
+        if ($model instanceof Mission) {
             abort_unless(
-                $isEmployee || $isSupplying || $isRequesting,
+                (int) $model->professional_profile_id === (int) $profileId
+                || in_array($model->supplying_company_id, $companyIds)
+                || in_array($model->requesting_company_id, $companyIds),
                 403,
-                'Vous n\'êtes pas autorisé à ajouter des documents à cette mission.'
+                "Vous n'êtes pas autorisé à ajouter des documents à cette mission."
             );
+        } elseif ($model instanceof Proposal) {
+            abort_unless(
+                in_array($this->proposalRole($model, $companyIds, $profileId), ['sender', 'recipient'], true),
+                403,
+                'Seules les entreprises concernées peuvent ajouter des documents à cette proposition.'
+            );
+        } else {
+            $model->loadMissing('jobOffer');
+            $isApplicant = $profileId && (int) $model->professional_profile_id === (int) $profileId;
+            $isRecruiter = $model->jobOffer && in_array($model->jobOffer->company_id, $companyIds);
+
+            abort_unless(
+                $isApplicant || $isRecruiter,
+                403,
+                "Vous n'êtes pas autorisé à ajouter des documents à cette candidature."
+            );
+        }
+    }
+
+    // ✅ C'EST ICI QUE LE BUG ÉTAIT (La lecture des documents par les collaborateurs)
+    private function authorizeDocumentableRead(Request $request, string $type, int $id): void
+    {
+        $model = $type::find($id);
+        abort_unless($model, 404, 'Ressource introuvable.');
+
+        $user       = $request->user();
+        $companyIds = $user->companies()->pluck('id')->toArray();
+        $profileId  = $user->professionalProfile?->id;
+
+        $allowed = false;
+
+        if ($model instanceof Mission) {
+            // 1. Est-ce le créateur de la mission ?
+            $isMainOwner = (int) $model->professional_profile_id === (int) $profileId;
+            
+            // 2. Est-ce l'entreprise ?
+            $isCompany = in_array($model->supplying_company_id, $companyIds) || in_array($model->requesting_company_id, $companyIds);
+
+            // 3. Est-ce un collaborateur (rattaché à la même proposition) ?
+            $isCollaborator = false;
+            $requestId = $model->proposal?->resource_request_id;
+            if ($requestId && $profileId) {
+                $isCollaborator = Mission::whereHas('proposal', function ($q) use ($requestId) {
+                        $q->where('resource_request_id', $requestId);
+                    })
+                    ->where('professional_profile_id', $profileId)
+                    ->exists();
+            }
+
+            $allowed = $isMainOwner || $isCompany || $isCollaborator;
+
+        } elseif ($model instanceof Proposal) {
+            // Vérifier si c'est le talent de la proposition
+            $isTalent = $profileId && (int) $model->professional_profile_id === (int) $profileId;
+            // Vérifier les entreprises
+            $isCompany = (bool) $this->proposalRole($model, $companyIds, $profileId);
+
+            $allowed = $isTalent || $isCompany;
         }
 
-        // ✅ SÉCURITÉ POUR LES PROPOSITIONS
-        if ($type === 'App\Models\Proposal') {
-            // 👇 On force l'ajout de document UNIQUEMENT par l'entreprise qui a proposé (Fournisseuse / Sender)
-            $isSender = in_array($model->proposed_by_company_id, $companyIds);
-            
-            // Si tu veux autoriser aussi le talent, ajoute : || $model->professional_profile_id === $profileId
-            abort_unless(
-                $isSender, 
-                403, 
-                'Seule l\'entreprise fournisseuse peut ajouter des documents à cette proposition.'
-            );
-        }
+        abort_unless($allowed, 403, 'Accès refusé à ces documents.');
     }
 }

@@ -64,26 +64,26 @@ const THEMES = [
   { id: "vibrant", label: "Vibrant", desc: "Coloré & moderne", preview: "bg-gradient-to-br from-pink-400 to-purple-500" },
 ];
 
-const CARD = "rounded-xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,42,61,0.04)] dark:border-white/10 dark:bg-[#112A3A] dark:shadow-none";
+const CARD = "rounded-xl border border-slate-200/60 bg-white shadow-sm dark:border-white/10 dark:bg-[#112A3A] dark:shadow-none";
 
 const FIELD_CLS =
-  "w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 transition " +
-  "hover:border-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/15 " +
-  "dark:border-white/10 dark:bg-[#0B1F33] dark:text-white dark:placeholder:text-slate-500 dark:hover:border-white/20";
+  "w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 transition " +
+  "hover:border-slate-300 focus:border-[#0B1F33] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B1F33]/10 " +
+  "dark:border-white/10 dark:bg-[#0B1F33] dark:text-white dark:placeholder:text-slate-500 dark:hover:border-white/20 dark:focus:bg-[#0B1F33] dark:focus:ring-white/10";
 
 const SKILL_FIELD = FIELD_CLS;
 const LABEL_CLS = "mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-400";
-const PILL_ON = "border-[#0B2A35] bg-[#0B2A35] text-white dark:border-[#13B89A] dark:bg-[#13B89A] dark:text-[#06251F]";
-const PILL_OFF = "border-slate-300 bg-white text-slate-600 hover:border-slate-400 hover:bg-slate-50 dark:border-white/10 dark:bg-[#0B1F33] dark:text-slate-400 dark:hover:bg-white/5";
+const PILL_ON = "border-[#0B1F33] bg-[#0B1F33] text-white dark:border-[#13B89A] dark:bg-[#13B89A] dark:text-[#06251F]";
+const PILL_OFF = "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-[#0B1F33] dark:text-slate-400 dark:hover:bg-white/5";
 
 const BTN_PRIMARY =
-  "inline-flex items-center justify-center gap-2 rounded-lg bg-[#0B2A35] px-4 py-2.5 text-sm font-medium text-white transition " +
-  "hover:bg-[#0E3B3A] focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 " +
-  "dark:bg-[#13B89A] dark:hover:bg-[#18C6A6] dark:focus-visible:ring-offset-[#112A3A]";
+  "inline-flex items-center justify-center gap-2 rounded-lg bg-[#0B1F33] px-4 py-2.5 text-sm font-medium text-white transition " +
+  "hover:bg-[#16324F] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16B8B1] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 " +
+  "dark:bg-[#16B8B1] dark:hover:bg-[#0F9691] dark:text-[#0B1F33] dark:focus-visible:ring-offset-[#112A3A]";
 
 const BTN_SECONDARY =
-  "inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition " +
-  "hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 disabled:opacity-60 " +
+  "inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 transition " +
+  "hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16B8B1] focus-visible:ring-offset-2 disabled:opacity-60 " +
   "dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10 dark:focus-visible:ring-offset-[#112A3A]";
 
 const LEVELS = [
@@ -343,15 +343,15 @@ export default function Profile() {
 
   return (
     <AppShell>
-      {/* ✅ FOND ADAPTÉ AU MODE CLAIR ET SOMBRE */}
-      <div className="min-h-screen bg-[#F4F7FA] px-3 py-4 transition-colors duration-300 dark:bg-transparent sm:px-5 sm:py-5">
-        <div className="mx-auto max-w-[1500px] text-slate-900 dark:text-slate-200">
+      <div className="min-h-screen bg-[#F8FAFC] px-3 py-4 transition-colors duration-300 dark:bg-transparent sm:px-5 sm:py-5 font-['Plus_Jakarta_Sans',sans-serif]">
+        <div className="mx-auto max-w-[1500px] text-slate-800 dark:text-slate-200">
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
           {/* ================= COLONNE PRINCIPALE ================= */}
           <div className="min-w-0 space-y-5">
             {/* ----- Carte d'identité ----- */}
             <section className={`overflow-hidden ${CARD}`}>
-              <div className="relative h-36 overflow-hidden bg-gradient-to-r from-[#0B2A35] via-[#0B3A36] to-[#0E4B42] sm:h-44">
+              {/* ✅ BANNIÈRE PASSÉE AU BLEU MARINE DU THÈME */}
+              <div className="relative h-36 overflow-hidden bg-[#0B1F33] sm:h-44">
                 {profile.cover_path ? (
                   <img
                     src={`${STORAGE_URL}/${profile.cover_path}`}
@@ -359,7 +359,7 @@ export default function Profile() {
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="pointer-events-none absolute -right-10 -top-20 h-64 w-64 rounded-full bg-emerald-400/10 blur-3xl" />
+                  <div className="pointer-events-none absolute -right-10 -top-20 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
                 )}
                 <button
                   type="button"
@@ -390,7 +390,7 @@ export default function Profile() {
                       type="button"
                       onClick={() => avatarInputRef.current?.click()}
                       disabled={uploadingAvatar}
-                      className="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-[#0B2A35] px-2.5 py-1 text-[11px] font-medium text-white ring-2 ring-white transition hover:bg-[#0E3B3A] focus:outline-none focus-visible:ring-teal-400 disabled:opacity-60 dark:bg-emerald-600 dark:ring-[#112A3A] dark:hover:bg-emerald-500"
+                      className="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-[#0B1F33] px-2.5 py-1 text-[11px] font-medium text-white ring-2 ring-white transition hover:bg-[#16324F] focus:outline-none focus-visible:ring-teal-400 disabled:opacity-60 dark:bg-[#16B8B1] dark:text-[#0B1F33] dark:ring-[#112A3A] dark:hover:bg-[#0F9691]"
                     >
                       {uploadingAvatar ? "Envoi..." : "Changer"}
                     </button>
@@ -415,7 +415,7 @@ export default function Profile() {
 
                 <div className="mt-5">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-xl font-semibold leading-tight tracking-tight text-slate-900 dark:text-white">
+                    <h2 className="text-xl font-semibold leading-tight tracking-tight text-slate-800 dark:text-white">
                       {getDisplayName(profile.user)}
                     </h2>
                     {profile.is_verified && <Chip tone="emerald">Vérifié</Chip>}
@@ -423,7 +423,7 @@ export default function Profile() {
                     {profile.looking_for_opportunity && <Chip tone="amber">En recherche</Chip>}
                   </div>
 
-                  {profile.headline && <p className="mt-1 text-sm text-teal-700 dark:text-emerald-400">{profile.headline}</p>}
+                  {profile.headline && <p className="mt-1 text-sm font-medium text-[#0F9691] dark:text-teal-400">{profile.headline}</p>}
 
                   <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] text-slate-500 dark:text-slate-400">
                     {(profile.city || profile.country) && (
@@ -439,8 +439,8 @@ export default function Profile() {
                       </span>
                     )}
                     {nextAvail && (
-                      <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                      <span className="inline-flex items-center gap-1.5 rounded-md border border-teal-200 bg-teal-50 px-2 py-0.5 text-[11px] font-medium text-teal-700 dark:border-teal-500/20 dark:bg-teal-500/10 dark:text-teal-400">
+                        <span className="h-1.5 w-1.5 rounded-full bg-teal-500" />
                         Disponible dès {new Date(nextAvail.start_at).toLocaleDateString("fr-FR", { month: "short", year: "numeric" })}
                       </span>
                     )}
@@ -455,7 +455,7 @@ export default function Profile() {
                       href={`${STORAGE_URL}/${profile.cv_path}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-4 inline-flex items-center rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
+                      className="mt-4 inline-flex items-center rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-medium text-slate-600 transition hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
                     >
                       Télécharger mon CV
                     </a>
@@ -483,7 +483,7 @@ const displayPath = [subCatName, catName].filter(Boolean).join(" · ");
                     return (
                       <li
                         key={s.id}
-                        className="group relative rounded-lg border border-slate-200 bg-white px-3.5 py-3 pr-9 transition hover:border-teal-300 hover:bg-slate-50/60 dark:border-white/10 dark:bg-[#0B1F33] dark:hover:border-[#13B89A]/40 dark:hover:bg-white/5"
+                        className="group relative rounded-lg border border-slate-200/60 bg-white px-3.5 py-3 pr-9 transition hover:border-teal-300 hover:bg-slate-50/60 dark:border-white/10 dark:bg-[#0B1F33] dark:hover:border-teal-500/40 dark:hover:bg-white/5"
                       >
                         <div className="flex items-center gap-2">
                           <span className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">{s.name}</span>
@@ -529,7 +529,7 @@ const displayPath = [subCatName, catName].filter(Boolean).join(" · ");
                 onDelete={(id) => handleDelete("experience", id)}
                 render={(i) => (
                   <>
-                    <p className="text-sm font-medium text-slate-900 dark:text-white">{i.title}</p>
+                    <p className="text-sm font-medium text-slate-800 dark:text-white">{i.title}</p>
                     <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{[i.company, i.location].filter(Boolean).join(" · ")}</p>
                     {fmtRange(i) && <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{fmtRange(i)}</p>}
                   </>
@@ -544,9 +544,9 @@ const displayPath = [subCatName, catName].filter(Boolean).join(" · ");
                 onDelete={(id) => handleDelete("education", id)}
                 render={(i) => (
                   <>
-                    <p className="text-sm font-medium text-slate-900 dark:text-white">
+                    <p className="text-sm font-medium text-slate-800 dark:text-white">
                       {i.degree}
-                      {i.study_level && <span className="font-normal text-teal-700 dark:text-emerald-400"> · {i.study_level}</span>}
+                      {i.study_level && <span className="font-normal text-teal-600 dark:text-teal-400"> · {i.study_level}</span>}
                     </p>
                     <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                       {[i.institution, i.field_of_study].filter(Boolean).join(" · ")}
@@ -576,7 +576,7 @@ const displayPath = [subCatName, catName].filter(Boolean).join(" · ");
                 onDelete={(id) => handleDelete("certification", id)}
                 render={(i) => (
                   <>
-                    <p className="text-sm font-medium text-slate-900 dark:text-white">{i.name}</p>
+                    <p className="text-sm font-medium text-slate-800 dark:text-white">{i.name}</p>
                     <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{i.issuing_organization}</p>
                     {i.issue_date && <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{fmtMonth(i.issue_date)}</p>}
                   </>
@@ -591,7 +591,7 @@ const displayPath = [subCatName, catName].filter(Boolean).join(" · ");
                 onDelete={(id) => handleDelete("language", id)}
                 render={(i) => (
                   <>
-                    <p className="text-sm font-medium text-slate-900 dark:text-white">{i.name}</p>
+                    <p className="text-sm font-medium text-slate-800 dark:text-white">{i.name}</p>
                     <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{LANGUAGE_LEVEL_LABEL[i.level] || LEVEL_LABEL[i.level] || i.level}</p>
                   </>
                 )}
@@ -602,8 +602,9 @@ const displayPath = [subCatName, catName].filter(Boolean).join(" · ");
           {/* ================= COLONNE LATÉRALE ================= */}
           <aside className="space-y-5 xl:sticky xl:top-[100px] xl:self-start">
             {/* Complétion */}
-            <section className="relative overflow-hidden rounded-xl bg-gradient-to-br from-[#0B2A35] via-[#0B3A36] to-[#0E4B42] p-5 text-white shadow-[0_8px_24px_rgba(8,60,55,0.18)]">
-              <p className="text-xs font-medium text-emerald-300/90">Complétion du profil</p>
+            {/* ✅ CARTE DE COMPLÉTION PASSÉE AU BLEU MARINE DU THÈME */}
+            <section className="relative overflow-hidden rounded-xl bg-[#0B1F33] p-5 text-white shadow-sm">
+              <p className="text-xs font-medium text-white/60">Complétion du profil</p>
               <div className="mt-4 flex items-center gap-4">
                 <div
                   className="relative h-20 w-20 shrink-0"
@@ -614,13 +615,13 @@ const displayPath = [subCatName, catName].filter(Boolean).join(" · ");
                   aria-label="Complétion du profil"
                 >
                   <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
-                    <circle cx="50" cy="50" r={ringR} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="8" />
+                    <circle cx="50" cy="50" r={ringR} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="8" />
                     <circle
                       cx="50"
                       cy="50"
                       r={ringR}
                       fill="none"
-                      stroke="#34D399"
+                      stroke="#16B8B1"
                       strokeWidth="8"
                       strokeLinecap="round"
                       strokeDasharray={ringC}
@@ -640,7 +641,7 @@ const displayPath = [subCatName, catName].filter(Boolean).join(" · ");
                 <button
                   type="button"
                   onClick={missing[0].action}
-                  className="mt-5 w-full rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-[#0B2A35] transition hover:bg-emerald-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                  className="mt-5 w-full rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-[#0B1F33] transition hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
                 >
                   Compléter mon profil
                 </button>
@@ -652,9 +653,9 @@ const displayPath = [subCatName, catName].filter(Boolean).join(" · ");
               <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">
                 Choisissez ce que les organisations peuvent découvrir avant toute mise en relation.
               </p>
-              <div className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50/70 px-4 py-3 dark:border-white/10 dark:bg-white/5">
+              <div className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-slate-200/60 bg-slate-50/70 px-4 py-3 dark:border-white/10 dark:bg-white/5">
                 <div>
-                  <p className="text-sm font-medium text-slate-800 dark:text-white">
+                  <p className="text-sm font-medium text-slate-700 dark:text-white">
                     {profile.visibility === "public" ? "Profil visible" : "Profil privé"}
                   </p>
                   <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
@@ -670,7 +671,7 @@ const displayPath = [subCatName, catName].filter(Boolean).join(" · ");
                   aria-label="Rendre le profil public"
                   onClick={toggleVisibility}
                   className={`relative h-6 w-11 shrink-0 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ${
-                    profile.visibility === "public" ? "bg-teal-600" : "bg-slate-300 dark:bg-slate-600"
+                    profile.visibility === "public" ? "bg-teal-500" : "bg-slate-300 dark:bg-slate-600"
                   }`}
                 >
                   <span
@@ -695,14 +696,14 @@ const displayPath = [subCatName, catName].filter(Boolean).join(" · ");
                         href={profile[key]}
                         target="_blank"
                         rel="noreferrer"
-                        className="group flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-2.5 transition hover:border-teal-300 hover:bg-slate-50/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:border-white/10 dark:bg-[#0B1F33] dark:hover:border-[#13B89A]/40 dark:hover:bg-white/5"
+                        className="group flex items-center gap-3 rounded-lg border border-slate-200/60 bg-white p-2.5 transition hover:border-teal-300 hover:bg-slate-50/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:border-white/10 dark:bg-[#0B1F33] dark:hover:border-teal-500/40 dark:hover:bg-white/5"
                       >
                         <PlatformIcon platform={key} />
                         <span className="min-w-0 flex-1">
-                          <span className="block text-sm font-medium text-slate-800 dark:text-slate-200">{label}</span>
+                          <span className="block text-sm font-medium text-slate-700 dark:text-slate-200">{label}</span>
                           <span className="block truncate text-xs text-slate-400 dark:text-slate-500">{prettyUrl(profile[key])}</span>
                         </span>
-                        <span className="shrink-0 text-sm text-slate-300 transition group-hover:text-teal-600 dark:text-slate-600 dark:group-hover:text-emerald-400">→</span>
+                        <span className="shrink-0 text-sm text-slate-300 transition group-hover:text-teal-600 dark:text-slate-600 dark:group-hover:text-teal-400">→</span>
                       </a>
                     </li>
                   ))}
@@ -711,7 +712,7 @@ const displayPath = [subCatName, catName].filter(Boolean).join(" · ");
               <button
                 type="button"
                 onClick={() => openModal("info")}
-                className="mt-3 w-full rounded-lg border border-dashed border-slate-300 px-3 py-2.5 text-sm text-slate-600 transition hover:border-teal-400 hover:bg-teal-50/50 hover:text-teal-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:border-white/20 dark:text-slate-400 dark:hover:border-emerald-500/50 dark:hover:bg-white/5 dark:hover:text-emerald-400"
+                className="mt-3 w-full rounded-lg border border-dashed border-slate-200 px-3 py-2.5 text-sm text-slate-500 transition hover:border-teal-300 hover:bg-teal-50/50 hover:text-teal-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:border-white/20 dark:text-slate-400 dark:hover:border-teal-500/50 dark:hover:bg-white/5 dark:hover:text-teal-400"
               >
                 + {links.length === 0 ? "Ajouter un lien" : "Ajouter ou modifier un lien"}
               </button>
@@ -729,12 +730,12 @@ const displayPath = [subCatName, catName].filter(Boolean).join(" · ");
                     >
                       <span
                         className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${
-                          c.done ? "bg-teal-600" : "border border-slate-300 dark:border-slate-600"
+                          c.done ? "bg-teal-500" : "border border-slate-300 dark:border-slate-600"
                         }`}
                       >
                         {c.done && <Check size={10} className="text-white" strokeWidth={3} />}
                       </span>
-                      <span className={`text-sm ${c.done ? "text-slate-400 line-through dark:text-slate-600" : "text-slate-700 dark:text-slate-300"}`}>
+                      <span className={`text-sm ${c.done ? "text-slate-400 line-through dark:text-slate-600" : "text-slate-600 dark:text-slate-300"}`}>
                         {c.label}
                       </span>
                     </button>
@@ -743,7 +744,7 @@ const displayPath = [subCatName, catName].filter(Boolean).join(" · ");
               </ul>
               <Link
                 to="/job-offers"
-                className="mt-3 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50/70 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-teal-300 hover:text-teal-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:border-[#13B89A]/40 dark:hover:text-emerald-400"
+                className="mt-3 flex items-center justify-between rounded-lg border border-slate-200/60 bg-slate-50/70 px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:border-teal-300 hover:text-teal-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:border-teal-500/40 dark:hover:text-teal-400"
               >
                 Voir les opportunités <span>→</span>
               </Link>
@@ -764,14 +765,14 @@ const displayPath = [subCatName, catName].filter(Boolean).join(" · ");
                         title={theme.desc}
                         className={`rounded-lg border p-2 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ${
                           active
-                            ? "border-teal-600 bg-teal-50/60 ring-1 ring-teal-600 dark:border-emerald-500 dark:bg-emerald-500/10 dark:ring-emerald-500"
+                            ? "border-teal-500 bg-teal-50/60 ring-1 ring-teal-500 dark:border-teal-400 dark:bg-teal-500/10 dark:ring-teal-400"
                             : "border-slate-200 bg-white hover:border-slate-300 dark:border-white/10 dark:bg-[#0B1F33] dark:hover:border-white/20"
                         }`}
                       >
                         <span className={`block h-10 w-full rounded-md ${theme.preview}`} />
                         <span className="mt-2 flex items-center justify-between gap-1">
-                          <span className="text-xs font-medium text-slate-800 dark:text-slate-200">{theme.label}</span>
-                          {active && <span className="rounded bg-teal-600 px-1.5 py-0.5 text-[9px] font-medium uppercase text-white dark:bg-emerald-600">Actif</span>}
+                          <span className="text-xs font-medium text-slate-700 dark:text-slate-200">{theme.label}</span>
+                          {active && <span className="rounded bg-teal-500 px-1.5 py-0.5 text-[9px] font-medium uppercase text-white dark:bg-teal-400 dark:text-[#0B1F33]">Actif</span>}
                         </span>
                         <span className="block truncate text-[10px] text-slate-400 dark:text-slate-500">{theme.desc}</span>
                       </button>
@@ -785,12 +786,12 @@ const displayPath = [subCatName, catName].filter(Boolean).join(" · ");
               <Panel title="Conseils Young Talent">
                 <ol className="space-y-3 text-sm text-slate-500 dark:text-slate-400">
                   {[
-                    <>Ajoutez vos <span className="font-medium text-slate-800 dark:text-slate-200">projets universitaires</span> pour montrer vos compétences.</>,
-                    <>Précisez vos <span className="font-medium text-slate-800 dark:text-slate-200">disponibilités</span> (stage, alternance, premier emploi).</>,
-                    <>Mettez à jour votre <span className="font-medium text-slate-800 dark:text-slate-200">CV</span> et votre LinkedIn.</>,
+                    <>Ajoutez vos <span className="font-medium text-slate-700 dark:text-slate-200">projets universitaires</span> pour montrer vos compétences.</>,
+                    <>Précisez vos <span className="font-medium text-slate-700 dark:text-slate-200">disponibilités</span> (stage, alternance, premier emploi).</>,
+                    <>Mettez à jour votre <span className="font-medium text-slate-700 dark:text-slate-200">CV</span> et votre LinkedIn.</>,
                   ].map((tip, i) => (
                     <li key={i} className="flex gap-3">
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-slate-300 text-[11px] font-medium text-slate-600 dark:border-white/20 dark:text-slate-400">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-slate-200 text-[11px] font-medium text-slate-500 dark:border-white/20 dark:text-slate-400">
                         {i + 1}
                       </span>
                       <span className="leading-5">{tip}</span>
@@ -847,7 +848,7 @@ function Panel({ title, count, action, children, className = "" }) {
     <section className={`${CARD} ${className}`}>
       <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-3.5 dark:border-white/10">
         <div className="flex min-w-0 items-baseline gap-2">
-          <h2 className="truncate text-[15px] font-semibold tracking-tight text-slate-900 dark:text-white">{title}</h2>
+          <h2 className="truncate text-[15px] font-semibold tracking-tight text-slate-800 dark:text-white">{title}</h2>
           {typeof count === "number" && <span className="text-xs text-slate-400 dark:text-slate-500">{count}</span>}
         </div>
         {action}
@@ -862,7 +863,7 @@ function AddButton({ onClick, children }) {
     <button
       type="button"
       onClick={onClick}
-      className="shrink-0 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 transition hover:border-teal-300 hover:bg-teal-50/60 hover:text-teal-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:border-[#13B89A]/40 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-400"
+      className="shrink-0 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 transition hover:border-teal-300 hover:bg-teal-50/60 hover:text-teal-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:border-teal-500/40 dark:hover:bg-teal-500/10 dark:hover:text-teal-400"
     >
       + {children}
     </button>
@@ -871,12 +872,12 @@ function AddButton({ onClick, children }) {
 
 function Chip({ tone = "emerald", children }) {
   const tones = {
-    emerald: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400",
+    emerald: "border-teal-200 bg-teal-50 text-teal-700 dark:border-teal-500/20 dark:bg-teal-500/10 dark:text-teal-400",
     amber: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-400",
   };
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11px] font-medium ${tones[tone]}`}>
-      <span className={`h-1.5 w-1.5 rounded-full ${tone === "amber" ? "bg-amber-500" : "bg-emerald-500"}`} />
+      <span className={`h-1.5 w-1.5 rounded-full ${tone === "amber" ? "bg-amber-500" : "bg-teal-500"}`} />
       {children}
     </span>
   );
@@ -887,7 +888,7 @@ function LevelDots({ level }) {
   return (
     <span className="flex items-center gap-0.5" aria-label={LEVEL_LABEL[level] || "Intermédiaire"}>
       {[1, 2, 3, 4].map((n) => (
-        <span key={n} className={`h-1.5 w-3 rounded-sm ${n <= rank ? "bg-teal-600 dark:bg-emerald-500" : "bg-slate-200 dark:bg-slate-700"}`} />
+        <span key={n} className={`h-1.5 w-3 rounded-sm ${n <= rank ? "bg-teal-500" : "bg-slate-200 dark:bg-slate-700"}`} />
       ))}
     </span>
   );
@@ -895,13 +896,13 @@ function LevelDots({ level }) {
 
 function EmptyBlock({ text, actionLabel, onAction, compact = false }) {
   return (
-    <div className={`flex flex-col items-center rounded-lg border border-dashed border-slate-300 bg-slate-50/50 px-4 text-center dark:border-white/10 dark:bg-white/5 ${compact ? "py-5" : "py-8"}`}>
+    <div className={`flex flex-col items-center rounded-lg border border-dashed border-slate-200 bg-slate-50/50 px-4 text-center dark:border-white/10 dark:bg-white/5 ${compact ? "py-5" : "py-8"}`}>
       <p className="text-sm text-slate-500 dark:text-slate-400">{text}</p>
       {onAction && (
         <button
           type="button"
           onClick={onAction}
-          className="mt-3 rounded-md border border-slate-300 bg-white px-3.5 py-1.5 text-sm font-medium text-slate-700 transition hover:border-teal-400 hover:text-teal-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:border-white/20 dark:bg-transparent dark:text-slate-300 dark:hover:border-emerald-500/50 dark:hover:text-emerald-400"
+          className="mt-3 rounded-md border border-slate-200 bg-white px-3.5 py-1.5 text-sm font-medium text-slate-600 transition hover:border-teal-300 hover:text-teal-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:border-white/20 dark:bg-transparent dark:text-slate-300 dark:hover:border-teal-500/50 dark:hover:text-teal-400"
         >
           + {actionLabel}
         </button>
@@ -916,7 +917,7 @@ function TextAction({ onClick, danger = false, children }) {
       type="button"
       onClick={onClick}
       className={`rounded-md px-2 py-1 text-xs text-slate-500 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:text-slate-400 ${
-        danger ? "hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/20 dark:hover:text-rose-400" : "hover:bg-slate-100 hover:text-teal-700 dark:hover:bg-white/10 dark:hover:text-emerald-400"
+        danger ? "hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/20 dark:hover:text-rose-400" : "hover:bg-slate-100 hover:text-teal-600 dark:hover:bg-white/10 dark:hover:text-teal-400"
       }`}
     >
       {children}
@@ -937,7 +938,7 @@ function TimelineCard({ title, items = [], emptyText, onAdd, onEdit, onDelete, r
           <ol className="ml-1 space-y-5 border-l border-slate-200 pl-6 dark:border-white/10">
             {visible.map((item) => (
               <li key={item.id} className="relative">
-                <span className="absolute -left-[29px] top-1.5 h-2 w-2 rounded-full bg-teal-600 ring-4 ring-white dark:bg-emerald-500 dark:ring-[#112A3A]" />
+                <span className="absolute -left-[29px] top-1.5 h-2 w-2 rounded-full bg-teal-500 ring-4 ring-white dark:bg-teal-400 dark:ring-[#112A3A]" />
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">{render(item)}</div>
                   <div className="flex shrink-0 flex-col items-end sm:flex-row">
@@ -952,7 +953,7 @@ function TimelineCard({ title, items = [], emptyText, onAdd, onEdit, onDelete, r
             <button
               type="button"
               onClick={() => setShowAll((v) => !v)}
-              className="mt-4 text-xs font-medium text-teal-700 underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:text-emerald-400"
+              className="mt-4 text-xs font-medium text-teal-600 underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:text-teal-400"
             >
               {showAll ? "Voir moins" : `Voir tout (${items.length})`}
             </button>
@@ -982,7 +983,7 @@ function ProjectsPanel({ projects, onAdd, onEdit, onDelete }) {
             <button
               type="button"
               onClick={() => setShowAll((v) => !v)}
-              className="mt-5 text-xs font-medium text-teal-700 underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:text-emerald-400"
+              className="mt-5 text-xs font-medium text-teal-600 underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:text-teal-400"
             >
               {showAll ? "Voir moins" : `Voir tout (${projects.length})`}
             </button>
@@ -1005,7 +1006,7 @@ function ProjectCard({ project: p, onEdit, onDelete }) {
     (p.image_path ? `${STORAGE_URL}/${p.image_path}` : null);
 
   return (
-    <li className="group relative flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white transition duration-200 hover:border-teal-300 hover:shadow-[0_8px_24px_rgba(15,60,60,0.08)] dark:border-white/10 dark:bg-[#0B1F33] dark:hover:border-[#13B89A]/40 dark:hover:shadow-none">
+    <li className="group relative flex flex-col overflow-hidden rounded-xl border border-slate-200/60 bg-white transition duration-200 hover:border-slate-300 hover:shadow-sm dark:border-white/10 dark:bg-[#0B1F33] dark:hover:border-white/20 dark:hover:shadow-none">
       <div className="relative h-36 w-full overflow-hidden border-b border-slate-100 dark:border-white/5">
         {image ? (
           <img
@@ -1030,7 +1031,7 @@ function ProjectCard({ project: p, onEdit, onDelete }) {
           <button
             type="button"
             onClick={() => onEdit(p)}
-            className="rounded-md bg-white/95 px-2.5 py-1 text-[11px] font-medium text-slate-700 shadow-sm backdrop-blur transition hover:text-teal-700 dark:bg-black/80 dark:text-slate-200 dark:hover:text-emerald-400"
+            className="rounded-md bg-white/95 px-2.5 py-1 text-[11px] font-medium text-slate-700 shadow-sm backdrop-blur transition hover:text-teal-600 dark:bg-black/80 dark:text-slate-200 dark:hover:text-teal-400"
           >
             Modifier
           </button>
@@ -1045,19 +1046,19 @@ function ProjectCard({ project: p, onEdit, onDelete }) {
       </div>
 
       <div className="flex flex-1 flex-col p-4">
-        <h3 className="line-clamp-1 text-sm font-semibold text-slate-900 dark:text-white">{p.title}</h3>
+        <h3 className="line-clamp-1 text-sm font-semibold text-slate-800 dark:text-white">{p.title}</h3>
 
         {p.description && <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-slate-500 dark:text-slate-400">{p.description}</p>}
 
         {techs.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {techs.slice(0, 4).map((t, i) => (
-              <span key={i} className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-600 dark:bg-white/5 dark:text-slate-300">
+              <span key={i} className="rounded-md bg-slate-50 px-2 py-1 text-[10px] font-medium text-slate-600 dark:bg-white/5 dark:text-slate-300">
                 {t}
               </span>
             ))}
             {techs.length > 4 && (
-              <span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] text-slate-400 dark:bg-white/5 dark:text-slate-500">+{techs.length - 4}</span>
+              <span className="rounded-md bg-slate-50 px-2 py-1 text-[10px] text-slate-400 dark:bg-white/5 dark:text-slate-500">+{techs.length - 4}</span>
             )}
           </div>
         )}
@@ -1067,7 +1068,7 @@ function ProjectCard({ project: p, onEdit, onDelete }) {
             href={p.project_url}
             target="_blank"
             rel="noreferrer"
-            className="mt-4 inline-flex items-center gap-1.5 self-start text-xs font-medium text-teal-700 underline-offset-2 hover:underline dark:text-emerald-400"
+            className="mt-4 inline-flex items-center gap-1.5 self-start text-xs font-medium text-teal-600 underline-offset-2 hover:underline dark:text-teal-400"
           >
             Voir le projet <span>→</span>
           </a>
@@ -1124,8 +1125,8 @@ function EmptyProfileCreate({ onCreated, showToast }) {
 
   return (
     <div className={`mx-auto max-w-md p-7 ${CARD}`}>
-      <p className="text-xs font-medium text-teal-700 dark:text-emerald-400">Bienvenue</p>
-      <h1 className="mt-1 text-xl font-semibold tracking-tight text-slate-900 dark:text-white">Créons votre profil</h1>
+      <p className="text-xs font-medium text-teal-600 dark:text-teal-400">Bienvenue</p>
+      <h1 className="mt-1 text-xl font-semibold tracking-tight text-slate-800 dark:text-white">Créons votre profil</h1>
       <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Un titre professionnel suffit pour commencer.</p>
       <form onSubmit={submit} className="mt-6 space-y-3">
         <select
@@ -1168,10 +1169,10 @@ function ModalShell({ title, onClose, children }) {
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="relative z-10 flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-white shadow-[0_24px_60px_rgba(6,25,35,0.3)] dark:bg-[#112A3A] dark:shadow-none dark:ring-1 dark:ring-white/10"
+        className="relative z-10 flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-white shadow-xl dark:bg-[#112A3A] dark:ring-1 dark:ring-white/10"
       >
         <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-6 py-4 dark:border-white/10">
-          <h3 className="text-base font-semibold tracking-tight text-slate-900 dark:text-white">{title}</h3>
+          <h3 className="text-base font-semibold tracking-tight text-slate-800 dark:text-white">{title}</h3>
           <button
             type="button"
             onClick={onClose}
@@ -1201,7 +1202,7 @@ function MapButton({ onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="rounded-md border border-slate-200 px-2.5 py-1 text-[11px] font-medium text-teal-700 transition hover:bg-teal-50 dark:border-white/10 dark:text-emerald-400 dark:hover:bg-emerald-500/10"
+      className="rounded-md border border-slate-200 px-2.5 py-1 text-[11px] font-medium text-teal-600 transition hover:bg-teal-50 dark:border-white/10 dark:text-teal-400 dark:hover:bg-teal-500/10"
     >
       Choisir sur la carte
     </button>
@@ -1581,11 +1582,11 @@ function ModalSkill({ onSaved, onClose, flash }) {
   };
 
   const squareBtn =
-    "flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-600 transition hover:border-teal-500 hover:text-teal-700 dark:border-white/10 dark:bg-[#0B1F33] dark:text-slate-300 dark:hover:border-emerald-500/50 dark:hover:text-emerald-400";
+    "flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-teal-400 hover:text-teal-600 dark:border-white/10 dark:bg-[#0B1F33] dark:text-slate-300 dark:hover:border-teal-500/50 dark:hover:text-teal-400";
   const inlineAdd =
     "flex gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2 dark:border-white/10 dark:bg-white/5";
   const inlineAddBtn =
-    "rounded-lg bg-[#0B2A35] px-3.5 text-xs font-medium text-white transition hover:bg-[#0E3B3A] disabled:opacity-50 dark:bg-[#13B89A] dark:hover:bg-[#18C6A6]";
+    "rounded-lg bg-[#0B1F33] px-3.5 text-xs font-medium text-white transition hover:bg-[#16324F] disabled:opacity-50 dark:bg-[#16B8B1] dark:hover:bg-[#0F9691] dark:text-[#0B1F33]";
 
   return (
     <form onSubmit={submit} className="space-y-5">
@@ -1706,7 +1707,7 @@ function ModalSkill({ onSaved, onClose, flash }) {
               value={selectedSkill?.name || skillSearch}
               onChange={(e) => { setSelectedSkill(null); setSkillSearch(e.target.value); }}
               placeholder="Rechercher ou saisir une compétence"
-              className={`${SKILL_FIELD} pl-9 ${selectedSkill ? "border-teal-500 bg-teal-50/40 dark:border-emerald-500/50 dark:bg-emerald-500/10" : ""}`}
+              className={`${SKILL_FIELD} pl-9 ${selectedSkill ? "border-teal-500 bg-teal-50/40 dark:border-teal-500/50 dark:bg-teal-500/10" : ""}`}
             />
             {selectedSkill && (
               <button
@@ -1859,7 +1860,7 @@ function ModalExperience({ item, onSaved, onClose, flash }) {
         <label className="flex cursor-pointer items-center gap-2.5 text-sm text-slate-700 dark:text-slate-300">
           <input
             type="checkbox"
-            className="h-4 w-4 rounded border-slate-300 accent-teal-600 dark:border-white/20 dark:accent-emerald-500"
+            className="h-4 w-4 rounded border-slate-300 accent-teal-600 dark:border-white/20 dark:accent-teal-500"
             checked={form.is_current}
             onChange={(e) => setForm({ ...form, is_current: e.target.checked, end_date: e.target.checked ? "" : form.end_date })}
           />
@@ -1973,7 +1974,7 @@ function ModalEducation({ item, onSaved, onClose, flash }) {
       <label className="flex cursor-pointer items-center gap-2.5 text-sm text-slate-700 dark:text-slate-300">
         <input
           type="checkbox"
-          className="h-4 w-4 rounded border-slate-300 accent-teal-600 dark:border-white/20 dark:accent-emerald-500"
+          className="h-4 w-4 rounded border-slate-300 accent-teal-600 dark:border-white/20 dark:accent-teal-500"
           checked={form.is_current}
           onChange={(e) => setForm({ ...form, is_current: e.target.checked, end_date: e.target.checked ? "" : form.end_date })}
         />
@@ -2192,7 +2193,7 @@ function ModalAvailability({ item, onSaved, onClose, flash }) {
         <Label>Statut de disponibilité</Label>
         <div className="mt-2.5 flex flex-wrap gap-2">
           {[
-            { v: "available", label: "Disponible", dot: "bg-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-500/10", text: "text-emerald-700 dark:text-emerald-400", border: "border-emerald-400 dark:border-emerald-500/30" },
+            { v: "available", label: "Disponible", dot: "bg-teal-500", bg: "bg-teal-50 dark:bg-teal-500/10", text: "text-teal-700 dark:text-teal-400", border: "border-teal-400 dark:border-teal-500/30" },
             { v: "partially_available", label: "Partiel", dot: "bg-amber-500", bg: "bg-amber-50 dark:bg-amber-500/10", text: "text-amber-700 dark:text-amber-400", border: "border-amber-400 dark:border-amber-500/30" },
             { v: "unavailable", label: "Indisponible", dot: "bg-rose-500", bg: "bg-rose-50 dark:bg-rose-500/10", text: "text-rose-700 dark:text-rose-400", border: "border-rose-400 dark:border-rose-500/30" },
             { v: "on_mission", label: "En mission", dot: "bg-sky-500", bg: "bg-sky-50 dark:bg-sky-500/10", text: "text-sky-700 dark:text-sky-400", border: "border-sky-400 dark:border-sky-500/30" },
@@ -2205,7 +2206,7 @@ function ModalAvailability({ item, onSaved, onClose, flash }) {
                 onClick={() => setForm({ ...form, status: s.v })}
                 aria-pressed={active}
                 className={`inline-flex items-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ${
-                  active ? `${s.border} ${s.bg} ${s.text}` : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:bg-transparent dark:text-slate-400 dark:hover:bg-white/5"
+                  active ? `${s.border} ${s.bg} ${s.text}` : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:bg-transparent dark:text-slate-400 dark:hover:bg-white/5"
                 }`}
               >
                 <span className={`h-2 w-2 rounded-full ${s.dot}`} />
@@ -2229,7 +2230,7 @@ function ModalAvailability({ item, onSaved, onClose, flash }) {
           </div>
         </div>
         {days !== null && days > 0 && (
-          <p className="mt-3 inline-block rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs text-teal-700 dark:border-white/10 dark:bg-[#0B1F33] dark:text-emerald-400">
+          <p className="mt-3 inline-block rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs text-teal-600 dark:border-white/10 dark:bg-[#0B1F33] dark:text-teal-400">
             {days} jour{days > 1 ? "s" : ""} de disponibilité
           </p>
         )}
@@ -2306,9 +2307,9 @@ function ModalAvailability({ item, onSaved, onClose, flash }) {
         <textarea rows={3} className={`${FIELD_CLS} mt-2.5`} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Ex: Disponible pour un stage de 6 mois à partir de mars" />
       </section>
 
-      <section className="rounded-lg border border-dashed border-slate-300 p-4 dark:border-white/20">
+      <section className="rounded-lg border border-dashed border-slate-200 p-4 dark:border-white/20">
         <label className="flex cursor-pointer items-center gap-3">
-          <input type="checkbox" className="h-4 w-4 rounded border-slate-300 accent-teal-600 dark:border-white/20 dark:accent-emerald-500" checked={form.is_recurring} onChange={(e) => setForm({ ...form, is_recurring: e.target.checked })} />
+          <input type="checkbox" className="h-4 w-4 rounded border-slate-300 accent-teal-600 dark:border-white/20 dark:accent-teal-500" checked={form.is_recurring} onChange={(e) => setForm({ ...form, is_recurring: e.target.checked })} />
           <div>
             <p className="text-sm font-medium text-slate-800 dark:text-slate-200">Disponibilité récurrente</p>
             <p className="text-xs text-slate-500 dark:text-slate-400">Ex: tous les lundis, une semaine sur deux...</p>

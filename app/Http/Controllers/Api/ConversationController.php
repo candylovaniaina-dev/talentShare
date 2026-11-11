@@ -10,47 +10,53 @@ use Illuminate\Http\Request;
 
 class ConversationController extends Controller
 {
-public function index(Request $request)
-{
-    $userId = $request->user()->id;
+    public function index(Request $request)
+    {
+        $userId = $request->user()->id;
 
-    // ✅ 1. On récupère les conversations
-    $conversations = $request->user()->conversations()
-        ->wherePivot('is_archived', false)
-        ->with([
-            'participants:id,name,email,avatar_path,role',
-            'participants.professionalProfile:id,user_id,avatar_path,headline',
-        ])
-        ->latest('conversations.updated_at')
-        ->get();
-
-    // ✅ 2. Pour chaque conversation, on va chercher LE VRAI dernier message manuellement
-    $conversations->each(function ($conv) use ($userId) {
-        // On prend le tout dernier message envoyé
-        $lastMessage = \App\Models\Message::where('conversation_id', $conv->id)
+        // 1. On récupère les conversations
+        $conversations = $request->user()->conversations()
+            ->wherePivot('is_archived', false)
             ->with([
-                'sender:id,name,email,avatar_path,role',
-                'sender.professionalProfile:id,user_id,avatar_path',
+                'participants:id,name,email,avatar_path,role',
+                'participants.professionalProfile:id,user_id,avatar_path,headline',
             ])
-            ->orderBy('id', 'desc')
-            ->first();
+            ->latest('conversations.updated_at')
+            ->get();
 
-        // On l'attache à la conversation pour que React le lise dans conv.messages[0]
-        $conv->setRelation('messages', $lastMessage ? collect([$lastMessage]) : collect([]));
+        // 2. On filtre les conversations pour ne garder que celles avec au moins 1 message
+        $conversations = $conversations->filter(function ($conv) use ($userId) {
+            $lastMessage = \App\Models\Message::where('conversation_id', $conv->id)
+                ->with([
+                    'sender:id,name,email,avatar_path,role',
+                    'sender.professionalProfile:id,user_id,avatar_path',
+                ])
+                ->orderBy('id', 'desc')
+                ->first();
 
-        // Calcul des non-lus
-        $lastReadAt = $conv->pivot->last_read_at ?? null;
-        $conv->unread_count = \App\Models\Message::where('conversation_id', $conv->id)
-            ->where('sender_id', '!=', $userId)
-            ->when($lastReadAt, fn ($q) => $q->where('created_at', '>', $lastReadAt))
-            ->count();
+            // Si aucun message, on ignore cette conversation
+            if (!$lastMessage) {
+                return false;
+            }
 
-        $conv->is_group = $conv->participants->count() > 2 || !empty($conv->title);
-        $conv->group_title = $conv->title;
-    });
+            // On attache le dernier message
+            $conv->setRelation('messages', collect([$lastMessage]));
 
-    return $conversations;
-}
+            // Calcul des non-lus
+            $lastReadAt = $conv->pivot->last_read_at ?? null;
+            $conv->unread_count = \App\Models\Message::where('conversation_id', $conv->id)
+                ->where('sender_id', '!=', $userId)
+                ->when($lastReadAt, fn ($q) => $q->where('created_at', '>', $lastReadAt))
+                ->count();
+
+            $conv->is_group = $conv->participants->count() > 2 || !empty($conv->title);
+            $conv->group_title = $conv->title;
+
+            return true;
+        })->values();
+
+        return $conversations;
+    }
 
     public function show(Request $request, Conversation $conversation)
     {
@@ -149,6 +155,7 @@ public function index(Request $request)
         $payload = [
             'sender_id' => $request->user()->id,
             'body'      => $data['body'] ?? '',
+            'type'      => 'text', // ✅ Initialisation du type
         ];
 
         if ($request->hasFile('attachment')) {
@@ -225,6 +232,7 @@ public function index(Request $request)
         $payload = [
             'sender_id' => $request->user()->id,
             'body'      => $data['body'] ?? '',
+            'type'      => 'text', // ✅ Initialisation du type
         ];
 
         if ($request->hasFile('attachment')) {
@@ -310,7 +318,22 @@ public function index(Request $request)
             return response()->json(['message' => 'Déjà membre'], 409);
         }
 
+        // 1. Ajouter le participant
         $conversation->participants()->attach($data['user_id']);
+        
+        // 2. Récupérer les noms pour le message
+        $newUser = User::find($data['user_id']);
+        $adminName = $request->user()->name;
+
+        // 3. Créer un message SYSTÈME
+        $conversation->messages()->create([
+            'sender_id' => $request->user()->id,
+            'body' => "{$adminName} a ajouté {$newUser->name} au groupe.",
+            'type' => 'system', // ✅ Type système
+        ]);
+
+        // 4. Mettre à jour la date de la conversation pour qu'elle remonte en haut
+        $conversation->touch();
 
         return response()->json([
             'message' => 'Participant ajouté',
@@ -324,7 +347,21 @@ public function index(Request $request)
     public function removeParticipant(Request $request, Conversation $conversation, $userId)
     {
         abort_unless($conversation->participants()->where('users.id', $request->user()->id)->exists(), 403);
+        
+        $removedUser = User::find($userId);
+        $adminName = $request->user()->name;
+        
         $conversation->participants()->detach($userId);
+
+        // Créer un message système pour le retrait
+        if ($removedUser) {
+            $conversation->messages()->create([
+                'sender_id' => $request->user()->id,
+                'body' => "{$adminName} a retiré {$removedUser->name} du groupe.",
+                'type' => 'system',
+            ]);
+            $conversation->touch();
+        }
 
         return response()->json([
             'message' => 'Participant retiré',
@@ -338,6 +375,16 @@ public function index(Request $request)
     public function leave(Request $request, Conversation $conversation)
     {
         abort_unless($conversation->participants()->where('users.id', $request->user()->id)->exists(), 403);
+        
+        $userName = $request->user()->name;
+        
+        // Créer le message système avant de quitter
+        $conversation->messages()->create([
+            'sender_id' => $request->user()->id,
+            'body' => "{$userName} a quitté le groupe.",
+            'type' => 'system',
+        ]);
+        
         $conversation->participants()->detach($request->user()->id);
 
         if ($conversation->participants()->count() === 0) {
@@ -353,6 +400,14 @@ public function index(Request $request)
         abort_unless($conversation->participants()->where('users.id', $request->user()->id)->exists(), 403);
         $data = $request->validate(['title' => ['required', 'string', 'max:180']]);
         $conversation->update(['title' => $data['title']]);
+
+        // Optionnel : Créer un message système pour le changement de nom
+        $conversation->messages()->create([
+            'sender_id' => $request->user()->id,
+            'body' => "{$request->user()->name} a renommé le groupe en \"{$data['title']}\".",
+            'type' => 'system',
+        ]);
+        $conversation->touch();
 
         return response()->json([
             'message' => 'Titre mis à jour',

@@ -86,35 +86,57 @@ const bucketOf = (status) => {
   return "pending";
 };
 
-// ✅ PALETTE CLAIRE ET SOMBRE
-const COLORS = {
-  teal: { icon: "bg-[#16B8B1]/15 text-[#0F9691] dark:text-[#16B8B1]", hex: "#16B8B1" },
-  navy: { icon: "bg-[#0B1F33]/10 text-[#0B1F33] dark:bg-white/10 dark:text-white", hex: "#0B1F33" },
-  blue: { icon: "bg-[#0B1F33]/5 text-[#0B1F33] dark:bg-white/5 dark:text-white", hex: "#0B1F33" }, 
-  amber: { icon: "bg-[#F59E0B]/10 text-[#D97706] dark:bg-[#F59E0B]/20 dark:text-[#FBBF24]", hex: "#F59E0B" },
-  slate: { icon: "bg-slate-100 text-slate-500 dark:bg-white/5 dark:text-slate-400", hex: "#94A3B8" },
+// ✅ PALETTE DES CARTES (Couleurs identitaires + Fonds pastels)
+const CARD_PALETTES = {
+  navy: { 
+    bg: "bg-[#0B1F33] border-[#0B1F33] text-white", 
+    iconBg: "bg-white/10 text-white", 
+    textMain: "text-white", 
+    textSub: "text-white/70",
+    hover: "hover:shadow-[0_8px_30px_rgba(11,31,51,0.25)]"
+  },
+  teal: { 
+    bg: "bg-[#F0FDFA] border-[#CCFBF1] dark:bg-teal-500/10 dark:border-teal-500/20", 
+    iconBg: "bg-[#16B8B1] text-white", 
+    textMain: "text-[#0F766E] dark:text-teal-400", 
+    textSub: "text-[#0F766E]/70 dark:text-teal-400/70",
+    hover: "hover:border-[#16B8B1]/40 hover:shadow-sm"
+  },
+  amber: { 
+    bg: "bg-[#FFFBEB] border-[#FEF3C7] dark:bg-amber-500/10 dark:border-amber-500/20", 
+    iconBg: "bg-amber-400 text-white", 
+    textMain: "text-[#B45309] dark:text-amber-400", 
+    textSub: "text-[#B45309]/70 dark:text-amber-400/70",
+    hover: "hover:border-amber-400/40 hover:shadow-sm"
+  },
+  blue: { 
+    bg: "bg-[#EFF6FF] border-[#DBEAFE] dark:bg-blue-500/10 dark:border-blue-500/20", 
+    iconBg: "bg-[#3478E8] text-white", 
+    textMain: "text-[#1E40AF] dark:text-blue-400", 
+    textSub: "text-[#1E40AF]/70 dark:text-blue-400/70",
+    hover: "hover:border-blue-400/40 hover:shadow-sm"
+  },
 };
 
 const TONES = {
-  teal: "bg-[#16B8B1]/15 text-[#0F9691] dark:bg-[#16B8B1]/20 dark:text-[#16B8B1]",
-  navy: "bg-[#0B1F33]/10 text-[#0B1F33] dark:bg-white/10 dark:text-white",
-  blue: "bg-[#0B1F33]/5 text-[#0B1F33] dark:bg-white/5 dark:text-white",
-  amber: "bg-[#F59E0B]/10 text-[#D97706] dark:bg-[#F59E0B]/20 dark:text-[#FBBF24]",
-  slate: "bg-slate-100 text-slate-500 dark:bg-white/5 dark:text-slate-400",
+  teal: "bg-teal-50 text-teal-600 dark:bg-teal-500/10 dark:text-teal-400",
+  navy: "bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-300",
+  blue: "bg-blue-50 text-blue-500 dark:bg-blue-500/10 dark:text-blue-400",
+  amber: "bg-amber-50 text-amber-500 dark:bg-amber-500/10 dark:text-amber-400",
+  slate: "bg-slate-50 text-slate-400 dark:bg-white/5 dark:text-slate-500",
 };
 
 const STATUS_META = {
-  accepted: { label: "Acceptée", cls: "bg-[#16B8B1]/15 text-[#0F9691] ring-1 ring-[#16B8B1]/20 dark:text-[#16B8B1]", hex: "#16B8B1" },
-  pending: { label: "En cours", cls: "bg-[#0B1F33]/5 text-[#0B1F33] ring-1 ring-[#0B1F33]/10 dark:bg-white/5 dark:text-white", hex: "#0B1F33" },
-  rejected: { label: "Refusée", cls: "bg-slate-100 text-slate-600 ring-1 ring-slate-200 dark:bg-white/5 dark:text-slate-400 dark:ring-white/10", hex: "#94A3B8" },
+  accepted: { label: "Acceptée", cls: "bg-teal-50 text-teal-700 ring-1 ring-teal-200 dark:bg-teal-500/10 dark:text-teal-400 dark:ring-teal-500/20", hex: "#16B8B1" },
+  pending: { label: "En cours", cls: "bg-slate-100 text-slate-600 ring-1 ring-slate-200 dark:bg-white/10 dark:text-slate-300 dark:ring-white/20", hex: "#94A3B8" },
+  rejected: { label: "Refusée", cls: "bg-rose-50 text-rose-600 ring-1 ring-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:ring-rose-500/20", hex: "#F43F5E" },
 };
 
 const STATS_COLS = {
   2: "sm:grid-cols-2",
   3: "sm:grid-cols-3",
   4: "sm:grid-cols-2 lg:grid-cols-4",
-  5: "sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5",
-  8: "sm:grid-cols-2 lg:grid-cols-4",
+  5: "sm:grid-cols-2 lg:grid-cols-5",
 };
 
 const companyOf = (item) =>
@@ -186,8 +208,8 @@ function buildStats(role, s, x) {
       { key: "jobs", title: "Offres actives", value: s.job_offers_open, icon: FileText, to: "/my-publications", accent: "navy" },
       { key: "recv", title: "Candidatures reçues", value: x.applicationsReceived, icon: Inbox, to: "/my-publications", accent: "teal" },
       { key: "req", title: "Demandes ouvertes", value: s.resource_requests_open, icon: BriefcaseBusiness, to: "/my-publications", accent: "amber" },
-      { key: "prop", title: "Propositions reçues", value: s.proposals_received, icon: Handshake, to: "/my-activity", accent: "navy" },
-      { key: "mis", title: "Missions actives", value: s.active_missions, icon: Target, to: "/my-activity", accent: "amber" },
+      { key: "prop", title: "Propositions reçues", value: s.proposals_received, icon: Handshake, to: "/my-activity", accent: "blue" },
+      { key: "mis", title: "Missions actives", value: s.active_missions, icon: Target, to: "/my-activity", accent: "teal" },
     ];
   } else if (role === "university") {
     list = [
@@ -198,16 +220,16 @@ function buildStats(role, s, x) {
     list = [
       { key: "usr", title: "Utilisateurs", value: s.users_count, icon: Users, accent: "navy" },
       { key: "cmp", title: "Entreprises", value: s.companies_count, icon: Building2, accent: "teal" },
-      { key: "uni", title: "Universités", value: s.universities_count, icon: Building2, accent: "navy" },
-      { key: "mis", title: "Missions", value: s.missions_count, icon: Target, accent: "amber" },
+      { key: "uni", title: "Universités", value: s.universities_count, icon: Building2, accent: "amber" },
+      { key: "mis", title: "Missions", value: s.missions_count, icon: Target, accent: "blue" },
     ];
   } else {
     list = [
       { key: "app", title: "Candidatures envoyées", value: x.applicationsTotal ?? s.applications_count, icon: Send, to: "/my-activity", accent: "navy" },
       { key: "accp", title: "Candidatures acceptées", value: x.applicationsAccepted, icon: CheckCircle2, to: "/my-activity", accent: "teal" },
-      { key: "rate", title: "Taux d'acceptation", value: x.acceptanceRate, suffix: " %", icon: Percent, accent: "navy" },
-      { key: "mis", title: "Missions actives", value: s.active_missions, icon: Target, to: "/my-activity", accent: "teal" },
-      { key: "opp", title: "Opportunités disponibles", value: x.opportunities, icon: BriefcaseBusiness, to: "/job-offers", accent: "amber" },
+      { key: "rate", title: "Taux d'acceptation", value: x.acceptanceRate, suffix: " %", icon: Percent, accent: "blue" },
+      { key: "mis", title: "Missions actives", value: s.active_missions, icon: Target, to: "/my-activity", accent: "amber" },
+      { key: "opp", title: "Opportunités disponibles", value: x.opportunities, icon: BriefcaseBusiness, to: "/job-offers", accent: "teal" },
     ];
   }
 
@@ -258,108 +280,33 @@ function buildFeed({ appList, proposalList, myJobList, myRequestList, notifList,
   appList.forEach((a, i) => {
     const bucket = bucketOf(a.status);
     const title = applicationTitle(a);
-    let text = "";
+    let text = isCompany ? "Candidature reçue" : "Candidature envoyée";
     let detail = title;
 
-    if (isCompany) {
-      const talentName = a.user?.name || a.professional_profile?.user?.name || "Un talent";
-      if (bucket === "accepted") {
-        text = "Candidature acceptée";
-        detail = `Vous avez accepté la candidature de ${talentName} pour "${title}"`;
-      } else if (bucket === "rejected") {
-        text = "Candidature refusée";
-        detail = `Vous avez refusé la candidature de ${talentName} pour "${title}"`;
-      } else {
-        text = "Candidature reçue";
-        detail = `${talentName} a postulé à votre offre "${title}"`;
-      }
-    } else {
-      if (bucket === "accepted") text = "Candidature acceptée";
-      else if (bucket === "rejected") text = "Candidature refusée";
-      else text = "Candidature envoyée";
-    }
-
     events.push({
-      key: `app-${a.id ?? i}`,
-      icon: Send,
+      key: `app-${a.id ?? i}`, icon: Send,
       tone: bucket === "accepted" ? "teal" : bucket === "rejected" ? "slate" : "navy",
-      text,
-      detail,
-      date: dateOf(a),
-      to: "/my-activity",
-    });
-  });
-
-  proposalList.forEach((p, i) => {
-    const title = proposalTitle(p);
-    let text = "";
-    let detail = title;
-
-    if (isCompany) {
-      const talentName = p.profile?.user?.name || p.talent?.name || "Un talent";
-      if (bucketOf(p.status) === "accepted") {
-        text = "Proposition acceptée";
-        detail = `${talentName} a accepté votre proposition pour "${title}"`;
-      } else {
-        text = "Proposition envoyée";
-        detail = `Vous avez proposé une offre à ${talentName}`;
-      }
-    } else {
-      if (bucketOf(p.status) === "accepted") text = "Proposition acceptée";
-      else text = "Proposition reçue";
-    }
-
-    events.push({
-      key: `prop-${p.id ?? i}`,
-      icon: Handshake,
-      tone: "navy",
-      text,
-      detail,
-      date: dateOf(p),
-      to: "/my-activity",
+      text, detail, date: dateOf(a), to: "/my-activity",
     });
   });
 
   myJobList.forEach((o, i) => {
     events.push({
-      key: `job-${o.id ?? i}`,
-      icon: FileText,
-      tone: "navy",
-      text: "Offre publiée",
-      detail: o.title || "",
-      date: dateOf(o),
-      to: "/my-publications",
-    });
-  });
-
-  myRequestList.forEach((r, i) => {
-    events.push({
-      key: `req-${r.id ?? i}`,
-      icon: BriefcaseBusiness,
-      tone: "amber",
-      text: "Demande de ressources publiée",
-      detail: r.title || "",
-      date: dateOf(r),
-      to: "/my-publications",
+      key: `job-${o.id ?? i}`, icon: FileText, tone: "navy",
+      text: "Offre publiée", detail: o.title || "", date: dateOf(o), to: "/my-publications",
     });
   });
 
   notifList.forEach((n, i) => {
     const link = n?.url || n?.link || n?.data?.url || n?.data?.link;
     events.push({
-      key: `notif-${n.id ?? i}`,
-      icon: Bell,
-      tone: "slate",
-      text: n?.title || n?.message || n?.data?.title || n?.data?.message || "Nouvelle notification",
-      detail: n?.title && n?.message ? n.message : "",
-      date: dateOf(n),
-      to: typeof link === "string" && link.startsWith("/") ? link : null,
+      key: `notif-${n.id ?? i}`, icon: Bell, tone: "slate",
+      text: n?.title || n?.message || "Notification", detail: "",
+      date: dateOf(n), to: typeof link === "string" && link.startsWith("/") ? link : null,
     });
   });
 
-  return events
-    .sort((a, b) => (b.date?.getTime() || 0) - (a.date?.getTime() || 0))
-    .slice(0, 8);
+  return events.sort((a, b) => (b.date?.getTime() || 0) - (a.date?.getTime() || 0)).slice(0, 8);
 }
 
 /* ============================================================
@@ -407,10 +354,7 @@ function Dashboard() {
       }
     } catch (err) {
       console.error("Erreur de chargement du dashboard :", err);
-      setError(
-        err?.response?.data?.message ||
-          "Impossible de charger le tableau de bord. Réessaie dans un instant."
-      );
+      setError("Impossible de charger le tableau de bord. Réessaie dans un instant.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -513,7 +457,7 @@ function Dashboard() {
     return {
       title: "Part de chaque indicateur",
       description: "Poids dans l'activité totale.",
-      items: statCards.map((c) => ({ key: c.key, title: c.title, value: number(c.value), hex: (COLORS[c.accent] || COLORS.teal).hex })),
+      items: statCards.map((c) => ({ key: c.key, title: c.title, value: number(c.value), hex: (CARD_PALETTES[c.accent] || CARD_PALETTES.navy).hex || "#16B8B1" })),
     };
   }, [isTalent, isCompany, appList, proposalList, statCards]);
 
@@ -534,7 +478,7 @@ function Dashboard() {
         title: conversationName(c, authUser?.id),
         subtitle: conversationPreview(c),
         meta: timeAgo(dateOf(c.last_message ?? c) || dateOf(c)),
-        badge: count > 0 ? { label: String(count), cls: "bg-[#16B8B1] text-[#04201C]" } : null,
+        badge: count > 0 ? { label: String(count), cls: "bg-teal-50 text-teal-600 dark:bg-teal-500/10 dark:text-teal-400" } : null,
         to: "/messages",
       };
     },
@@ -629,12 +573,12 @@ function Dashboard() {
 
   return (
     <AppShell>
-      <div className="font-['Plus_Jakarta_Sans',sans-serif] text-[#0B1437] dark:text-white min-h-screen dark:bg-[#0A1230]">
-        <div className="mx-auto max-w-[1500px] space-y-5 p-4 sm:p-6 lg:p-8">
+      <div className="font-['Plus_Jakarta_Sans',sans-serif] text-slate-800 dark:text-slate-200 min-h-screen bg-[#F8FAFC] dark:bg-[#0A1230]">
+        <div className="mx-auto max-w-[1500px] space-y-6 p-4 sm:p-6 lg:p-8">
           {error && (
             <div
               role="alert"
-              className="flex flex-col gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-400 sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-400 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="flex items-start gap-2">
                 <Activity size={18} className="mt-0.5 shrink-0" />
@@ -644,9 +588,9 @@ function Dashboard() {
                 type="button"
                 onClick={() => loadDashboard(true)}
                 disabled={refreshing}
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-red-200 bg-white px-4 py-2 font-semibold transition hover:bg-red-100 disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-rose-200 bg-white px-4 py-2 font-medium transition hover:bg-rose-100 disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
               >
-                <RefreshCw size={15} className={refreshing ? "animate-spin motion-reduce:animate-none" : ""} />
+                <RefreshCw size={15} className={refreshing ? "animate-spin" : ""} />
                 Réessayer
               </button>
             </div>
@@ -656,24 +600,16 @@ function Dashboard() {
             <DashboardSkeleton />
           ) : (
             <>
-              <div className="flex items-end justify-between gap-3">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#0B1F33] dark:text-[#16B8B1]">Vue d'ensemble</p>
-                  <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-[#0B1F33] dark:text-white">Tableau de bord</h2>
-                </div>
-                {/* ✅ Bouton "Actualiser" : Bleu Marine en mode clair (et non noir) */}
-                <button
-                  type="button"
-                  onClick={() => loadDashboard(true)}
-                  disabled={refreshing}
-                  className="inline-flex items-center gap-2 rounded-full bg-[#0B1F33] px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-[#102A45] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16B8B1] disabled:opacity-60 dark:bg-[#16B8B1] dark:text-[#0B1F33] dark:hover:bg-[#0F9691]"
-                >
-                  <RefreshCw size={13} className={refreshing ? "animate-spin motion-reduce:animate-none" : ""} />
-                  Actualiser
-                </button>
-              </div>
+             
 
-              {statCards.length > 0 && <StatsGrid cards={statCards} />}
+              {/* ✅ GRILLE DES CARTES COLORÉES */}
+              {statCards.length > 0 && (
+                <section className={`grid grid-cols-1 gap-4 ${STATS_COLS[statCards.length] || "sm:grid-cols-2 lg:grid-cols-4"}`}>
+                  {statCards.map((c, i) => (
+                    <StatTile key={c.key} card={c} featured={i === 0} />
+                  ))}
+                </section>
+              )}
 
               {alerts.map((alert) => (
                 <AlertBanner key={alert.key} {...alert} />
@@ -731,12 +667,12 @@ function Dashboard() {
 ============================================================ */
 
 function DashboardSkeleton() {
-  const pulse = "animate-pulse motion-reduce:animate-none rounded-3xl bg-white/80 dark:bg-[#131E47]";
+  const pulse = "animate-pulse rounded-xl bg-white dark:bg-[#131E47]";
   return (
     <div className="space-y-5" role="status" aria-label="Chargement du tableau de bord">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className={`h-36 ${pulse}`} />
+          <div key={i} className={`h-32 ${pulse}`} />
         ))}
       </div>
       <div className="grid gap-5 lg:grid-cols-3">
@@ -754,12 +690,12 @@ function DashboardSkeleton() {
 function Panel({ title, description, action, children, className = "" }) {
   return (
     <div
-      className={`rounded-3xl border border-white bg-white/85 p-5 shadow-[0_10px_40px_rgba(15,60,60,0.06)] ring-1 ring-slate-900/[0.04] backdrop-blur sm:p-6 dark:border-white/10 dark:bg-[#131E47] dark:ring-white/5 ${className}`}
+      className={`rounded-2xl border border-slate-200/60 bg-white p-5 shadow-sm sm:p-6 dark:border-white/10 dark:bg-[#131E47] ${className}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-[15px] font-extrabold tracking-tight text-[#0B1F33] dark:text-white">{title}</h2>
-          {description && <p className="mt-0.5 text-xs text-[#64788C] dark:text-slate-400">{description}</p>}
+          <h2 className="text-sm font-semibold text-slate-800 dark:text-white">{title}</h2>
+          {description && <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{description}</p>}
         </div>
         {action}
       </div>
@@ -772,18 +708,18 @@ function AlertBanner({ label, count, to }) {
   return (
     <Link
       to={to}
-      className="flex items-center justify-between gap-3 rounded-3xl border border-amber-200 bg-gradient-to-r from-amber-50 to-white p-4 transition hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 dark:border-amber-500/20 dark:from-amber-500/10 dark:to-[#131E47]"
+      className="flex items-center justify-between gap-3 rounded-xl border border-amber-200/60 bg-amber-50/50 p-4 transition hover:bg-amber-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 dark:border-amber-500/20 dark:bg-amber-500/5 dark:hover:bg-amber-500/10"
     >
       <div className="flex items-center gap-3">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400">
-          <Target size={20} />
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-amber-500 shadow-sm dark:bg-amber-500/10">
+          <Target size={18} />
         </div>
         <div>
-          <p className="font-semibold text-amber-950 dark:text-amber-100">{label}</p>
-          <p className="text-sm text-amber-800 dark:text-amber-300/80">{count} élément(s) nécessitent ton attention.</p>
+          <p className="font-medium text-amber-900 dark:text-amber-100">{label}</p>
+          <p className="text-xs text-amber-700/80 dark:text-amber-300/80">{count} élément(s) nécessitent ton attention.</p>
         </div>
       </div>
-      <ArrowRight size={18} className="shrink-0 text-amber-900 dark:text-amber-400" />
+      <ArrowRight size={16} className="shrink-0 text-amber-500" />
     </Link>
   );
 }
@@ -791,15 +727,15 @@ function AlertBanner({ label, count, to }) {
 function EmptyState({ icon: Icon, title, text, compact = false }) {
   return (
     <div
-      className={`flex flex-col items-center rounded-2xl border border-dashed border-[#D5DFE8] bg-[#F7FAFB] px-4 text-center dark:border-white/10 dark:bg-[#0A1230] ${
+      className={`flex flex-col items-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 text-center dark:border-white/10 dark:bg-[#0A1230] ${
         compact ? "py-6" : "py-10"
       }`}
     >
-      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[#0B1F33] shadow-sm dark:bg-white/5 dark:text-white">
-        <Icon size={20} />
+      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-slate-400 shadow-sm dark:bg-white/5 dark:text-slate-500">
+        <Icon size={18} />
       </div>
-      {title && <p className="mt-3 text-sm font-semibold text-[#0B1F33] dark:text-white">{title}</p>}
-      <p className={`max-w-xs text-xs text-[#64788C] dark:text-slate-400 ${title ? "mt-1" : "mt-3"}`}>{text}</p>
+      {title && <p className="mt-3 text-sm font-medium text-slate-700 dark:text-slate-300">{title}</p>}
+      <p className={`max-w-xs text-xs text-slate-400 dark:text-slate-500 ${title ? "mt-1" : "mt-3"}`}>{text}</p>
     </div>
   );
 }
@@ -819,57 +755,43 @@ function StatsGrid({ cards }) {
   );
 }
 
+/* ✅ LA CARTE STATISTIQUE RE-DESIGNÉE AVEC COULEURS */
 function StatTile({ card, featured }) {
   const { title, value, suffix = "", icon: Icon, accent = "navy", to } = card;
-  const palette = COLORS[accent] || COLORS.navy;
+  // On récupère le thème de la carte
+  const theme = CARD_PALETTES[accent] || CARD_PALETTES.navy;
   const num = number(value);
+
+  // Si c'est la carte mise en avant (featured), elle utilise le thème "navy" (Bleu Marine foncé)
+  const activeTheme = featured ? CARD_PALETTES.navy : theme;
 
   const body = (
     <>
-      {featured && (
-        <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-[#16B8B1]/10 blur-2xl" />
-      )}
-      <div className="relative flex items-start justify-between">
-        <span
-          className={`flex h-11 w-11 items-center justify-center rounded-2xl ${
-            /* ✅ Carte Featured : Icône sur fond Bleu Marine transparent */
-            featured ? "bg-white/10 text-white" : palette.icon
-          }`}
-        >
-          <Icon size={20} strokeWidth={1.9} />
+      <div className="flex items-start justify-between">
+        <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${activeTheme.iconBg}`}>
+          <Icon size={18} strokeWidth={2} />
         </span>
         {to && (
-          <span
-            className={`flex h-8 w-8 items-center justify-center rounded-full transition group-hover:rotate-12 ${
-              featured ? "bg-white/10 text-white" : "bg-slate-100 text-slate-500 group-hover:bg-[#0B1F33]/10 group-hover:text-[#0B1F33] dark:bg-white/5 dark:text-slate-400 dark:group-hover:bg-white/10 dark:group-hover:text-white"
-            }`}
-          >
-            <ArrowUpRight size={15} />
+          <span className={`flex h-7 w-7 items-center justify-center rounded-full transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 ${featured ? "bg-white/10 text-white" : "bg-black/5 text-black/40 dark:bg-white/10 dark:text-white/50"}`}>
+            <ArrowUpRight size={14} />
           </span>
         )}
       </div>
 
-      <div className="relative mt-6">
-        <p className={`text-[34px] font-extrabold leading-none tracking-tight ${featured ? "text-white" : "text-[#0B1F33] dark:text-white"}`}>
+      <div className="relative mt-5">
+        <p className={`text-2xl font-semibold leading-none tracking-tight ${activeTheme.textMain}`}>
           {num.toLocaleString("fr-FR")}
-          {suffix && <span className={`ml-0.5 text-lg font-bold ${featured ? "text-[#16B8B1]" : "text-[#8A9BB0] dark:text-slate-400"}`}>{suffix}</span>}
+          {suffix && <span className="ml-1 text-sm font-medium opacity-60">{suffix}</span>}
         </p>
-        <p className={`mt-2 truncate text-[13px] font-semibold ${featured ? "text-white/70" : "text-[#52677C] dark:text-slate-400"}`}>{title}</p>
+        <p className={`mt-1.5 truncate text-xs font-medium ${activeTheme.textSub}`}>{title}</p>
       </div>
     </>
   );
 
-  /* ✅ Carte Featured : Bleu Marine pur (#0B1F33) au lieu d'un dégradé trop sombre/noir */
-  const cls = `group relative block overflow-hidden rounded-3xl p-5 transition duration-200 hover:-translate-y-0.5 ${
-    featured
-      ? "bg-[#0B1F33] shadow-[0_16px_40px_rgba(11,31,51,0.25)] border border-[#0B1F33]"
-      : "border border-white bg-white/85 shadow-[0_10px_40px_rgba(15,60,60,0.06)] ring-1 ring-slate-900/[0.04] hover:shadow-[0_16px_44px_rgba(15,60,60,0.12)] dark:bg-[#131E47] dark:border-white/10 dark:ring-white/5"
-  }`;
+  const cls = `group relative block overflow-hidden rounded-xl p-4 transition duration-200 border ${activeTheme.bg} ${activeTheme.hover}`;
 
   return to ? (
-    <Link to={to} className={`${cls} focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16B8B1]`}>
-      {body}
-    </Link>
+    <Link to={to} className={cls}>{body}</Link>
   ) : (
     <article className={cls}>{body}</article>
   );
@@ -930,8 +852,8 @@ function EvolutionChart({ series, className = "", isDark }) {
   const y = (v) => pt + (H - pt - pb) * (1 - v / maxY);
   const labelStep = weeks > 8 ? 2 : 1;
 
-  const axisColor = isDark ? "#94A3B8" : "#8A9BB0";
-  const gridColor = isDark ? "rgba(255,255,255,0.08)" : "#E8EEF3";
+  const axisColor = isDark ? "#64748B" : "#94A3B8";
+  const gridColor = isDark ? "rgba(255,255,255,0.05)" : "#F1F5F9";
 
   return (
     <Panel
@@ -939,16 +861,15 @@ function EvolutionChart({ series, className = "", isDark }) {
       description="Nombre d'éléments créés par semaine."
       className={className}
       action={
-        <div role="group" aria-label="Période" className="inline-flex rounded-full bg-[#EEF3F6] p-1 dark:bg-white/5">
+        <div role="group" aria-label="Période" className="inline-flex rounded-lg bg-slate-100 p-1 dark:bg-white/5">
           {[4, 8, 12].map((w) => (
             <button
               key={w}
               type="button"
               aria-pressed={weeks === w}
               onClick={() => setWeeks(w)}
-              className={`rounded-full px-3 py-1 text-xs font-bold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16B8B1] ${
-                /* ✅ Bouton Actif : Bleu Marine en clair, Teal en sombre */
-                weeks === w ? "bg-[#0B1F33] text-white shadow-sm dark:bg-[#16B8B1] dark:text-[#04201C]" : "text-[#64788C] hover:text-[#0B1F33] dark:text-slate-400 dark:hover:text-white"
+              className={`rounded-md px-3 py-1 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 ${
+                weeks === w ? "bg-white text-slate-800 shadow-sm dark:bg-white/10 dark:text-white" : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
               }`}
             >
               {w} sem.
@@ -959,10 +880,10 @@ function EvolutionChart({ series, className = "", isDark }) {
     >
       <ul className="mb-4 flex flex-wrap gap-x-5 gap-y-2">
         {lines.map((l) => (
-          <li key={l.key} className="flex items-center gap-2 rounded-full bg-[#F4F8FA] px-3 py-1 text-xs text-[#334B63] dark:bg-white/5 dark:text-slate-300">
-            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: l.hex }} />
+          <li key={l.key} className="flex items-center gap-2 rounded-full bg-slate-50 px-3 py-1 text-xs text-slate-600 dark:bg-white/5 dark:text-slate-300">
+            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: l.hex }} />
             {l.label}
-            <span className="font-extrabold text-[#0B1F33] dark:text-white">{l.values.reduce((a, b) => a + b, 0)}</span>
+            <span className="font-semibold text-slate-800 dark:text-white">{l.values.reduce((a, b) => a + b, 0)}</span>
           </li>
         ))}
       </ul>
@@ -979,7 +900,7 @@ function EvolutionChart({ series, className = "", isDark }) {
           <defs>
             {lines.map((l) => (
               <linearGradient key={l.key} id={`evo-${l.key}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={l.hex} stopOpacity="0.28" />
+                <stop offset="0%" stopColor={l.hex} stopOpacity="0.15" />
                 <stop offset="100%" stopColor={l.hex} stopOpacity="0" />
               </linearGradient>
             ))}
@@ -1012,7 +933,7 @@ function EvolutionChart({ series, className = "", isDark }) {
             return (
               <g key={l.key}>
                 <path d={area} fill={`url(#evo-${l.key})`} />
-                <path d={line} fill="none" stroke={l.hex} strokeWidth="2.75" strokeLinecap="round" />
+                <path d={line} fill="none" stroke={l.hex} strokeWidth="2" strokeLinecap="round" />
                 {l.values.map((v, i) => (
                   <circle key={i} cx={x(i)} cy={y(v)} r="3.5" fill={isDark ? "#131E47" : "#fff"} stroke={l.hex} strokeWidth="2">
                     <title>{`${l.label} — semaine du ${buckets[i].toLocaleDateString("fr-FR")} : ${v}`}</title>
@@ -1051,7 +972,7 @@ function StatusDonut({ title, description, items, isDark }) {
             aria-label={`Répartition : ${visible.map((i) => `${i.title} ${i.value}`).join(", ")}`}
           >
             <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
-              <circle cx="50" cy="50" r={radius} fill="none" stroke={isDark ? "rgba(255,255,255,0.08)" : "#EEF3F6"} strokeWidth="11" />
+              <circle cx="50" cy="50" r={radius} fill="none" stroke={isDark ? "rgba(255,255,255,0.05)" : "#F1F5F9"} strokeWidth="10" />
               {visible.map((item) => {
                 const len = (item.value / total) * circumference;
                 const dash = Math.max(len - gap, 0.5);
@@ -1063,7 +984,7 @@ function StatusDonut({ title, description, items, isDark }) {
                     r={radius}
                     fill="none"
                     stroke={item.hex}
-                    strokeWidth="11"
+                    strokeWidth="10"
                     strokeLinecap="round"
                     strokeDasharray={`${dash} ${circumference - dash}`}
                     strokeDashoffset={-acc}
@@ -1074,20 +995,20 @@ function StatusDonut({ title, description, items, isDark }) {
               })}
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className={`text-3xl font-extrabold ${isDark ? "text-white" : "text-[#0B1F33]"}`}>{total.toLocaleString("fr-FR")}</span>
-              <span className={`text-xs font-medium ${isDark ? "text-slate-400" : "text-[#64788C]"}`}>au total</span>
+              <span className={`text-2xl font-semibold ${isDark ? "text-white" : "text-slate-800"}`}>{total.toLocaleString("fr-FR")}</span>
+              <span className={`text-[10px] font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>au total</span>
             </div>
           </div>
 
           <ul className="mt-5 w-full space-y-2">
             {visible.map((item) => (
-              <li key={item.key} className={`flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-sm ${isDark ? "bg-[#0A1230]" : "bg-[#F6F9FB]"}`}>
-                <span className={`flex items-center gap-2 font-medium ${isDark ? "text-slate-300" : "text-[#334B63]"}`}>
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.hex }} />
+              <li key={item.key} className={`flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-xs ${isDark ? "bg-[#0A1230]" : "bg-slate-50"}`}>
+                <span className={`flex items-center gap-2 font-medium ${isDark ? "text-slate-300" : "text-slate-600"}`}>
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: item.hex }} />
                   {item.title}
                 </span>
-                <span className={`font-bold ${isDark ? "text-white" : "text-[#0B1F33]"}`}>
-                  {item.value} <span className={`font-medium ${isDark ? "text-slate-500" : "text-[#8A9BB0]"}`}>· {Math.round((item.value / total) * 100)} %</span>
+                <span className={`font-semibold ${isDark ? "text-white" : "text-slate-800"}`}>
+                  {item.value} <span className={`font-normal ${isDark ? "text-slate-500" : "text-slate-400"}`}>· {Math.round((item.value / total) * 100)} %</span>
                 </span>
               </li>
             ))}
@@ -1106,7 +1027,7 @@ function SkeletonRows() {
   return (
     <div className="space-y-3" role="status" aria-label="Chargement">
       {[1, 2, 3].map((i) => (
-        <div key={i} className="h-14 animate-pulse rounded-2xl bg-[#F1F6FA] motion-reduce:animate-none dark:bg-white/5" />
+        <div key={i} className="h-14 animate-pulse rounded-lg bg-slate-50 dark:bg-white/5" />
       ))}
     </div>
   );
@@ -1114,23 +1035,23 @@ function SkeletonRows() {
 
 function Row({ icon: Icon, tone = "slate", title, subtitle, meta, badge, to }) {
   const body = (
-    <div className="group flex items-center gap-3 rounded-2xl px-2.5 py-2.5 transition hover:bg-[#F2F8F7] dark:hover:bg-white/5">
-      <span className={`relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-4 ring-white dark:ring-[#131E47] ${TONES[tone]}`}>
-        <Icon size={17} strokeWidth={1.9} />
+    <div className="group flex items-center gap-3 rounded-xl px-2.5 py-2.5 transition hover:bg-slate-50 dark:hover:bg-white/5">
+      <span className={`relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ring-4 ring-white dark:ring-[#131E47] ${TONES[tone]}`}>
+        <Icon size={16} strokeWidth={1.8} />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-bold text-[#0B1F33] dark:text-slate-200">{title}</p>
-        {subtitle && <p className="truncate text-xs text-[#64788C] dark:text-slate-400">{subtitle}</p>}
+        <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">{title}</p>
+        {subtitle && <p className="truncate text-xs text-slate-500 dark:text-slate-400">{subtitle}</p>}
       </div>
       <div className="flex shrink-0 flex-col items-end gap-1">
-        {badge && <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${badge.cls}`}>{badge.label}</span>}
-        {meta && <span className="text-[11px] text-[#8A9BB0] dark:text-slate-500">{meta}</span>}
+        {badge && <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${badge.cls}`}>{badge.label}</span>}
+        {meta && <span className="text-[10px] text-slate-400 dark:text-slate-500">{meta}</span>}
       </div>
     </div>
   );
 
   return to ? (
-    <Link to={to} className="block rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16B8B1]">
+    <Link to={to} className="block rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400">
       {body}
     </Link>
   ) : (
@@ -1147,7 +1068,7 @@ function RecentActivity({ events, loading, className = "" }) {
         <EmptyState icon={Activity} title="Aucune activité récente" text="Tes candidatures, publications et notifications apparaîtront ici." />
       ) : (
         <ul className="relative">
-          <span className="absolute bottom-6 left-[30px] top-6 w-px bg-gradient-to-b from-[#0B1F33]/20 via-slate-200 to-transparent dark:from-white/10 dark:via-white/5" aria-hidden="true" />
+          <span className="absolute bottom-6 left-[28px] top-6 w-px bg-slate-100 dark:bg-white/5" aria-hidden="true" />
           {events.map((e) => (
             <li key={e.key}>
               <Row icon={e.icon} tone={e.tone} title={e.text} subtitle={e.detail} meta={timeAgo(e.date)} to={e.to} />
@@ -1167,9 +1088,9 @@ function ListPanel({ title, description, to, linkLabel, state, items, emptyIcon,
       action={
         <Link
           to={to}
-          className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#0B1F33]/5 px-3 py-1.5 text-xs font-bold text-[#0B1F33] transition hover:bg-[#0B1F33]/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16B8B1] dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
+          className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
         >
-          {linkLabel} <ChevronRight size={13} />
+          {linkLabel} <ChevronRight size={12} />
         </Link>
       }
     >
@@ -1203,17 +1124,15 @@ function ProfilePanel({ completion, nextStep, breakdown }) {
   const missing = Array.isArray(breakdown) ? breakdown.filter((item) => !item.done).slice(0, 4) : [];
 
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-[#0B1F33] p-5 text-white shadow-[0_16px_40px_rgba(11,31,51,0.25)] sm:p-6">
-      <div className="pointer-events-none absolute -right-10 -top-10 h-44 w-44 rounded-full bg-[#16B8B1]/20 blur-3xl" />
-
+    <div className="relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200/60 dark:bg-[#131E47] dark:ring-white/10 sm:p-6">
       <div className="relative">
-        <h2 className="text-[15px] font-extrabold tracking-tight">Complétion du profil</h2>
-        <p className="mt-0.5 text-xs text-white/55">Calculée à partir de ton profil.</p>
+        <h2 className="text-sm font-semibold text-slate-800 dark:text-white">Complétion du profil</h2>
+        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Calculée à partir de ton profil.</p>
       </div>
 
       <div className="relative mt-5 flex items-center gap-4">
         <div
-          className="relative h-24 w-24 shrink-0"
+          className="relative h-20 w-20 shrink-0"
           role="progressbar"
           aria-valuenow={completion}
           aria-valuemin={0}
@@ -1221,24 +1140,24 @@ function ProfilePanel({ completion, nextStep, breakdown }) {
           aria-label="Complétion du profil"
         >
           <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
-            <circle cx="50" cy="50" r={radius} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="10" />
+            <circle cx="50" cy="50" r={radius} fill="none" stroke="#F1F5F9" strokeWidth="8" className="dark:stroke-white/5" />
             <circle
               cx="50"
               cy="50"
               r={radius}
               fill="none"
               stroke="#16B8B1"
-              strokeWidth="10"
+              strokeWidth="8"
               strokeLinecap="round"
               strokeDasharray={circumference}
               strokeDashoffset={offset}
-              className="transition-all duration-700 motion-reduce:transition-none"
+              className="transition-all duration-700"
             />
           </svg>
-          <span className="absolute inset-0 flex items-center justify-center text-lg font-extrabold">{completion} %</span>
+          <span className="absolute inset-0 flex items-center justify-center text-base font-semibold text-slate-700 dark:text-slate-200">{completion} %</span>
         </div>
 
-        <p className="text-sm leading-6 text-white/70">
+        <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">
           {nextStep || "Un profil complet met en valeur tes compétences."}
         </p>
       </div>
@@ -1246,8 +1165,8 @@ function ProfilePanel({ completion, nextStep, breakdown }) {
       {missing.length > 0 && (
         <ul className="relative mt-5 space-y-2">
           {missing.map((item) => (
-            <li key={item.key} className="flex items-center gap-2.5 rounded-xl bg-white/[0.07] px-3 py-2 text-sm text-white/85">
-              <span className="h-4 w-4 shrink-0 rounded-full border-2 border-[#16B8B1]/60" />
+            <li key={item.key} className="flex items-center gap-2.5 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600 dark:bg-white/5 dark:text-slate-300">
+              <span className="h-3.5 w-3.5 shrink-0 rounded-full border-2 border-slate-300 dark:border-slate-600" />
               {item.label}
             </li>
           ))}
@@ -1256,10 +1175,10 @@ function ProfilePanel({ completion, nextStep, breakdown }) {
 
       <Link
         to="/profile"
-        className="relative mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#16B8B1] px-4 py-3 text-sm font-extrabold text-[#0B1F33] transition hover:bg-[#16B8B1]/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+        className="relative mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-teal-50 px-4 py-2.5 text-xs font-medium text-teal-700 transition hover:bg-teal-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 dark:bg-teal-500/10 dark:text-teal-400 dark:hover:bg-teal-500/20"
       >
         Compléter mon profil
-        <ChevronRight size={16} />
+        <ChevronRight size={14} />
       </Link>
     </div>
   );
@@ -1273,14 +1192,14 @@ function QuickLinksPanel({ links, wide = false, className = "" }) {
           <li key={to}>
             <Link
               to={to}
-              className="group flex h-full flex-col items-start gap-3 rounded-2xl bg-[#F4F8FA] p-4 transition hover:-translate-y-0.5 hover:bg-[#0B1F33]/5 hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16B8B1] dark:bg-[#0A1230] dark:hover:bg-white/5"
+              className="group flex h-full flex-col items-start gap-3 rounded-xl bg-slate-50 p-3.5 transition hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 dark:bg-white/5 dark:hover:bg-white/10"
             >
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#334B63] shadow-sm transition group-hover:bg-[#0B1F33] group-hover:text-white dark:bg-white/10 dark:text-white">
-                <Icon size={18} strokeWidth={1.9} />
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-slate-500 shadow-sm transition group-hover:text-teal-600 dark:bg-[#131E47] dark:text-slate-400 dark:group-hover:text-teal-400">
+                <Icon size={16} strokeWidth={1.8} />
               </span>
-              <span className="flex w-full items-center justify-between gap-2 text-[13px] font-bold leading-tight text-[#0B1F33] dark:text-slate-200">
+              <span className="flex w-full items-center justify-between gap-2 text-xs font-medium leading-tight text-slate-600 dark:text-slate-300">
                 {title}
-                <ArrowUpRight size={14} className="shrink-0 text-slate-300 transition group-hover:text-[#0B1F33] dark:text-slate-500 dark:group-hover:text-white" />
+                <ArrowUpRight size={13} className="shrink-0 text-slate-300 transition group-hover:text-teal-600 dark:text-slate-600 dark:group-hover:text-teal-400" />
               </span>
             </Link>
           </li>

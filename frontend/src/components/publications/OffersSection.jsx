@@ -141,7 +141,9 @@ export default function OffersSection({ mode = "jobs", onStats }) {
   const hasActiveFilters = query || statusFilter !== "all";
   const resetFilters = () => { setQuery(""); setStatusFilter("all"); };
   const statusOptions = isJobs ? STATUS_FILTERS.filter((s) => s.id !== "mission") : STATUS_FILTERS;
-  const canCreate = isCompany && (!isJobs || company);
+  
+  const canCreate = isCompany && (!isJobs || company); 
+  const createLabel = isJobs ? "Publier une offre" : "Proposer un talent";
 
   return (
     <div className="space-y-4 font-['Plus_Jakarta_Sans',sans-serif]">
@@ -155,7 +157,12 @@ export default function OffersSection({ mode = "jobs", onStats }) {
           <SelectField value={sort} onChange={setSort} options={SORT_OPTIONS} label="Trier" />
         </div>
         <p className="text-xs text-slate-500 lg:ml-2">{filtered.length} sur {offers.length}</p>
-        {/* ✅ Le bouton "Publier une offre" a été supprimé ici */}
+
+        {canCreate && !isJobs && (
+          <Button variant="primary" size="md" icon={Plus} onClick={openCreate} className="lg:ml-auto">
+            {createLabel}
+          </Button>
+        )}
       </div>
 
       {loading ? (
@@ -172,8 +179,13 @@ export default function OffersSection({ mode = "jobs", onStats }) {
             text={isJobs
               ? "Publiez un stage, une alternance ou un recrutement permanent : les talents pourront postuler."
               : "Proposez un de vos salariés disponibles aux autres entreprises du réseau."}
-          />
-          // ✅ Le bouton "Publier une offre" a été supprimé ici
+          >
+            {canCreate && !isJobs && (
+              <Button variant="primary" size="md" icon={Plus} onClick={openCreate}>
+                {createLabel}
+              </Button>
+            )}
+          </EmptyPanel>
         )
       ) : (
         <div className={view === "grid" ? "grid gap-3 md:grid-cols-2" : "space-y-2.5"}>
@@ -224,21 +236,32 @@ function OfferDetailModal({ offer, onClose }) {
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#06141F]/70 p-4 backdrop-blur-sm" onClick={onClose}>
       <div role="dialog" aria-modal="true" className="relative flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-white/10 dark:bg-[#131E47]" onClick={(e) => e.stopPropagation()}>
-        <div className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 dark:border-white/10 sm:px-6">
-          <div className="min-w-0">
+        
+        {/* ✅ EN-TÊTE BLEU MARINE */}
+        <div className="relative flex shrink-0 items-start justify-between gap-4 overflow-hidden bg-gradient-to-br from-[#0B1F33] to-[#142B49] px-5 py-4 text-white sm:px-6">
+          {/* Effets de lumière */}
+          <div className="pointer-events-none absolute -right-12 -top-16 h-52 w-52 rounded-full bg-[#16B8B1]/20 blur-3xl" />
+          
+          <div className="relative min-w-0 z-10">
             <div className="mb-2 flex flex-wrap items-center gap-2">
-              <StatusBadge status={statusKeyValue} config={isJob ? JOB_STATUS : RESOURCE_STATUS} />
-              <span className="text-xs text-slate-500 dark:text-slate-400">{isJob ? "Recrutement" : "Ressource partagée"}{typeLabel && ` · ${typeLabel}`}</span>
+              {/* On adapte la couleur du badge pour qu'il ressorte sur le bleu */}
+              <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold ${
+                statusKeyValue === 'published' ? 'bg-[#16B8B1] text-[#0B1F33]' : 'bg-white/20 text-white'
+              }`}>
+                {statusKeyValue === 'published' ? 'Publiée' : statusKeyValue}
+              </span>
+              <span className="text-xs text-white/70">{isJob ? "Recrutement" : "Ressource partagée"}{typeLabel && ` · ${typeLabel}`}</span>
             </div>
-            <h3 className="text-lg font-semibold leading-tight text-[#0B1F33] dark:text-white">{offer.title}</h3>
+            <h3 className="text-lg font-semibold leading-tight text-white">{offer.title}</h3>
             {isJob && offer.company?.name && (
-              <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400"><Building2 size={13} />{offer.company.name}</p>
+              <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-white/80"><Building2 size={13} />{offer.company.name}</p>
             )}
             {!isJob && offer.profile?.user?.name && (
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{offer.profile.user.name}{offer.profile.headline && <span className="text-slate-400"> · {offer.profile.headline}</span>}</p>
+              <p className="mt-1 text-xs text-white/80">{offer.profile.user.name}{offer.profile.headline && <span className="text-white/60"> · {offer.profile.headline}</span>}</p>
             )}
           </div>
-          <button type="button" onClick={onClose} aria-label="Fermer" className="shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-white"><X size={17} /></button>
+          
+          <button type="button" onClick={onClose} aria-label="Fermer" className="relative z-10 shrink-0 rounded-lg p-1.5 text-white/70 transition hover:bg-white/10 hover:text-white"><X size={17} /></button>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-6">

@@ -24,32 +24,32 @@ const STATUS = {
   sent: {
     label: "Envoyée", plural: "Envoyées", icon: Send, step: 1,
     dot: "bg-slate-400", bar: "bg-slate-300 dark:bg-slate-500",
-    pill: "bg-slate-100 text-slate-700 ring-slate-200 dark:bg-white/10 dark:text-slate-300 dark:ring-white/10",
+    pill: "bg-slate-100 text-slate-600 ring-slate-200 dark:bg-white/10 dark:text-slate-300 dark:ring-white/10",
   },
   viewed: {
     label: "Consultée", plural: "Consultées", icon: Eye, step: 2,
     dot: "bg-[#0F2340]", bar: "bg-[#0F2340]",
-    pill: "bg-[#0F2340]/10 text-[#0F2340] ring-[#0F2340]/20 dark:bg-white/10 dark:text-white dark:ring-white/20",
+    pill: "bg-slate-100 text-slate-700 ring-slate-200 dark:bg-white/10 dark:text-white dark:ring-white/20",
   },
   shortlisted: {
     label: "Présélectionnée", plural: "Présélectionnées", icon: UserCheck, step: 3,
-    dot: "bg-violet-500", bar: "bg-violet-400",
-    pill: "bg-violet-50 text-violet-800 ring-violet-200 dark:bg-violet-500/10 dark:text-violet-400 dark:ring-violet-500/20",
+    dot: "bg-violet-400", bar: "bg-violet-400",
+    pill: "bg-violet-50 text-violet-600 ring-violet-100 dark:bg-violet-500/10 dark:text-violet-400 dark:ring-violet-500/20",
   },
   interview: {
     label: "Entretien", plural: "Entretiens", icon: Video, step: 4,
-    dot: "bg-amber-500", bar: "bg-amber-400",
-    pill: "bg-amber-50 text-amber-800 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:ring-amber-500/20",
+    dot: "bg-amber-400", bar: "bg-amber-400",
+    pill: "bg-amber-50 text-amber-700 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:ring-amber-500/20",
   },
   accepted: {
     label: "Acceptée", plural: "Acceptées", icon: Check, step: 5,
     dot: "bg-[#16B8B1]", bar: "bg-[#16B8B1]",
-    pill: "bg-[#16B8B1]/10 text-[#0F9691] ring-[#16B8B1]/20 dark:bg-[#16B8B1]/20 dark:text-[#16B8B1] dark:ring-[#16B8B1]/30",
+    pill: "bg-teal-50 text-teal-600 ring-teal-100 dark:bg-teal-500/10 dark:text-teal-400 dark:ring-teal-500/20",
   },
   rejected: {
     label: "Refusée", plural: "Refusées", icon: X, step: 0,
-    dot: "bg-rose-500", bar: "bg-rose-400",
-    pill: "bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:ring-rose-500/20",
+    dot: "bg-rose-400", bar: "bg-rose-400",
+    pill: "bg-rose-50 text-rose-600 ring-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:ring-rose-500/20",
   },
 };
 
@@ -74,7 +74,7 @@ const ACTIONS = [
 ];
 
 const card =
-  "rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#131E47]";
+  "rounded-xl border border-slate-200/60 bg-white shadow-sm dark:border-white/10 dark:bg-[#131E47]";
 
 const focusRing =
   "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16B8B1]";
@@ -121,10 +121,10 @@ const getInitials = (name) =>
 const TONES = [
   "from-[#16B8B1] to-[#0F9691]",
   "from-[#0F2340] to-[#1A2F4A]",
-  "from-violet-500 to-purple-600",
-  "from-amber-500 to-orange-600",
-  "from-rose-500 to-pink-600",
-  "from-slate-600 to-slate-800",
+  "from-violet-400 to-purple-500",
+  "from-amber-400 to-orange-500",
+  "from-rose-400 to-pink-500",
+  "from-slate-400 to-slate-600",
 ];
 const toneOf = (s = "") => TONES[[...s].reduce((a, c) => a + c.charCodeAt(0), 0) % TONES.length];
 
@@ -157,7 +157,7 @@ function Avatar({ name, user, profile, size = "md" }) {
 
   return (
     <span
-      className={`${sizes[size]} relative flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br ${toneOf(name)} font-bold text-white ring-2 ring-white dark:ring-[#131E47]`}
+      className={`${sizes[size]} relative flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br ${toneOf(name)} font-medium text-white ring-2 ring-white dark:ring-[#131E47]`}
     >
       {photoSrc && !imageFailed ? (
         <img src={photoSrc} alt={name} className="h-full w-full object-cover" onError={() => setImageFailed(true)} />
@@ -172,7 +172,7 @@ function StatusPill({ status }) {
   const cfg = STATUS[status] || STATUS.sent;
   const Icon = cfg.icon;
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ring-1 ring-inset ${cfg.pill}`}>
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${cfg.pill}`}>
       <Icon size={12} /> {cfg.label}
     </span>
   );
@@ -181,8 +181,8 @@ function StatusPill({ status }) {
 function Stat({ label, value, accent = "" }) {
   return (
     <div>
-      <dt className="text-xs font-bold text-slate-500 dark:text-slate-400">{label}</dt>
-      <dd className={`mt-1 text-2xl font-extrabold tabular-nums text-[#0F2340] dark:text-white ${accent}`}>{value}</dd>
+      <dt className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</dt>
+      <dd className={`mt-1 text-2xl font-semibold tabular-nums text-slate-700 dark:text-white ${accent}`}>{value}</dd>
     </div>
   );
 }
@@ -190,7 +190,7 @@ function Stat({ label, value, accent = "" }) {
 function FunnelBar({ counts }) {
   return (
     <div className="mt-3">
-      <div className="flex h-3 w-full gap-1 overflow-hidden rounded-full bg-slate-100 dark:bg-white/5" aria-hidden="true">
+      <div className="flex h-2.5 w-full gap-1 overflow-hidden rounded-full bg-slate-100 dark:bg-white/5" aria-hidden="true">
         {counts.total > 0 &&
           ORDER.filter((s) => counts[s] > 0).map((s) => (
             <span
@@ -205,7 +205,7 @@ function FunnelBar({ counts }) {
           <li key={s} className="inline-flex items-center gap-1.5">
             <span className={`h-2 w-2 rounded-full ${STATUS[s].dot}`} />
             {STATUS[s].plural}
-            <span className="font-bold tabular-nums text-[#0F2340] dark:text-slate-100">{counts[s]}</span>
+            <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-200">{counts[s]}</span>
           </li>
         ))}
       </ul>
@@ -219,10 +219,10 @@ function ViewButton({ active, onClick, icon: Icon, label }) {
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-bold transition ${focusRing} ${
+      className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition ${focusRing} ${
         active
-          ? "bg-[#16B8B1] text-[#0F2340] shadow-sm"
-          : "text-slate-500 hover:text-[#0F2340] dark:text-slate-400 dark:hover:text-white"
+          ? "bg-white text-slate-800 shadow-sm dark:bg-white/10 dark:text-white"
+          : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
       }`}
     >
       <Icon size={15} /> {label}
@@ -237,7 +237,7 @@ function DocChip({ href, icon: Icon, children }) {
       target="_blank"
       rel="noreferrer"
       onClick={(e) => e.stopPropagation()}
-      className={`inline-flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 ring-1 ring-slate-200 transition hover:text-[#0F9691] hover:ring-[#16B8B1]/50 dark:bg-[#0A1230] dark:text-slate-300 dark:ring-white/10 dark:hover:text-[#16B8B1] ${focusRing}`}
+      className={`inline-flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 ring-1 ring-slate-200 transition hover:text-teal-600 hover:ring-teal-300 dark:bg-[#0A1230] dark:text-slate-300 dark:ring-white/10 dark:hover:text-teal-400 ${focusRing}`}
     >
       <Icon size={13} /> {children} <ExternalLink size={11} className="text-slate-400" />
     </a>
@@ -280,20 +280,20 @@ function Column({ status, items, dragApp, draggingId, isOver, onOver, onDropTo, 
         e.preventDefault();
         onDropTo(status);
       }}
-      className={`flex min-h-[220px] flex-col rounded-2xl p-2 transition ${
+      className={`flex min-h-[220px] flex-col rounded-xl p-2 transition ${
         isOver && allowed
-          ? "bg-[#16B8B1]/10 ring-2 ring-[#16B8B1]"
+          ? "bg-teal-50/50 ring-2 ring-teal-400 dark:bg-teal-500/10"
           : dragging && !allowed
-          ? "bg-slate-100/40 opacity-60 dark:bg-white/5"
-          : "bg-[#F3F6FC]/70 dark:bg-white/5"
+          ? "bg-slate-50/50 opacity-60 dark:bg-white/5"
+          : "bg-slate-50/50 dark:bg-white/5"
       }`}
     >
       <div className="flex items-center justify-between px-2 pb-2 pt-1.5">
-        <h2 className="inline-flex items-center gap-2 text-sm font-bold text-[#0F2340] dark:text-slate-100">
+        <h2 className="inline-flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
           <span className={`h-2.5 w-2.5 rounded-full ${cfg.dot}`} />
           {cfg.plural}
         </h2>
-        <span className="rounded-full bg-white px-2 py-0.5 text-xs font-bold tabular-nums text-slate-500 ring-1 ring-slate-200 dark:bg-[#0A1230] dark:text-slate-400 dark:ring-white/10">
+        <span className="rounded-full bg-white px-2 py-0.5 text-xs font-medium tabular-nums text-slate-500 ring-1 ring-slate-200 dark:bg-[#0A1230] dark:text-slate-400 dark:ring-white/10">
           {items.length}
         </span>
       </div>
@@ -310,7 +310,7 @@ function Column({ status, items, dragApp, draggingId, isOver, onOver, onDropTo, 
           />
         ))}
         {items.length === 0 && (
-          <div className="flex flex-1 items-center justify-center rounded-xl border border-dashed border-slate-300/80 p-6 text-center text-xs text-slate-400 dark:border-white/10">
+          <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed border-slate-200 p-6 text-center text-xs text-slate-400 dark:border-white/10">
             {dragging && allowed ? "Déposez ici" : "Aucun candidat"}
           </div>
         )}
@@ -342,14 +342,14 @@ function BoardCard({ app, onOpen, onDragStart, onDragEnd, isDragging }) {
           onOpen();
         }
       }}
-      className={`group rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm transition hover:border-[#16B8B1]/30 hover:shadow-md dark:border-white/10 dark:bg-[#131E47] dark:hover:border-[#16B8B1]/50 ${focusRing} ${
+      className={`group rounded-lg border border-slate-200/60 bg-white p-3.5 shadow-sm transition hover:border-slate-300 hover:shadow-md dark:border-white/10 dark:bg-[#131E47] dark:hover:border-white/20 ${focusRing} ${
         closed ? "cursor-pointer" : "cursor-grab active:cursor-grabbing"
       } ${isDragging ? "opacity-40" : ""}`}
     >
       <div className="flex items-start gap-3">
         <Avatar name={name} user={user} profile={app.profile} size="sm" />
         <div className="min-w-0 flex-1">
-          <h3 className="truncate text-sm font-bold text-[#0F2340] dark:text-slate-100">{name}</h3>
+          <h3 className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">{name}</h3>
           {headline && headline.toLowerCase() !== name.toLowerCase() ? (
             <p className="truncate text-xs text-slate-500 dark:text-slate-400">{headline}</p>
           ) : (
@@ -362,11 +362,11 @@ function BoardCard({ app, onOpen, onDragStart, onDragEnd, isDragging }) {
       </div>
 
       {app.status === "interview" && toDate(app.interview_at) && (
-        <div className="mt-3 flex items-center gap-2 rounded-lg bg-amber-50 px-2.5 py-2 text-xs text-amber-900 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:ring-amber-500/20">
-          <Calendar size={13} className="shrink-0 text-amber-600 dark:text-amber-400" />
+        <div className="mt-3 flex items-center gap-2 rounded-lg bg-amber-50 px-2.5 py-2 text-xs text-amber-800 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:ring-amber-500/20">
+          <Calendar size={13} className="shrink-0 text-amber-500" />
           <span>
-            Le <strong className="font-bold">{fmtLong(app.interview_at)}</strong> à{" "}
-            <strong className="font-bold">{fmtTime(app.interview_at)}</strong>
+            Le <strong className="font-semibold">{fmtLong(app.interview_at)}</strong> à{" "}
+            <strong className="font-semibold">{fmtTime(app.interview_at)}</strong>
           </span>
         </div>
       )}
@@ -376,7 +376,7 @@ function BoardCard({ app, onOpen, onDragStart, onDragEnd, isDragging }) {
         <span className="inline-flex items-center gap-2">
           {app.cover_letter && <FileText size={13} aria-label="Lettre de motivation" />}
           {app.cv_path && (
-            <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-bold text-slate-500 dark:bg-white/10 dark:text-slate-400">CV</span>
+            <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 dark:bg-white/10 dark:text-slate-400">CV</span>
           )}
           {app.portfolio && <Briefcase size={13} aria-label="Portfolio" />}
         </span>
@@ -395,11 +395,11 @@ function ListRow({ app, onOpen, onMove }) {
   const headline = app.profile?.headline;
 
   return (
-    <li className="grid items-center gap-3 px-5 py-4 transition hover:bg-[#F3F6FC]/70 dark:hover:bg-white/5 md:grid-cols-[2.4fr_1.2fr_1fr_1.2fr_auto] md:gap-4">
+    <li className="grid items-center gap-3 px-5 py-4 transition hover:bg-slate-50/80 dark:hover:bg-white/5 md:grid-cols-[2.4fr_1.2fr_1fr_1.2fr_auto] md:gap-4">
       <button type="button" onClick={onOpen} className={`flex min-w-0 items-center gap-3 rounded-lg text-left ${focusRing}`}>
         <Avatar name={name} user={user} profile={app.profile} />
         <span className="min-w-0">
-          <span className="block truncate text-sm font-bold text-[#0F2340] dark:text-slate-100">{name}</span>
+          <span className="block truncate text-sm font-medium text-slate-800 dark:text-slate-100">{name}</span>
           <span className="mt-0.5 block truncate text-xs text-slate-500 dark:text-slate-400">
             {headline && headline.toLowerCase() !== name.toLowerCase() ? headline : user?.email}
           </span>
@@ -409,7 +409,7 @@ function ListRow({ app, onOpen, onMove }) {
       <div className="flex flex-col items-start gap-1">
         <StatusPill status={app.status} />
         {app.status === "interview" && toDate(app.interview_at) && (
-          <span className="text-xs text-amber-700 dark:text-amber-400">
+          <span className="text-xs text-amber-600 dark:text-amber-400">
             {fmtLong(app.interview_at)}, {fmtTime(app.interview_at)}
           </span>
         )}
@@ -427,7 +427,7 @@ function ListRow({ app, onOpen, onMove }) {
               title="Accepter"
               aria-label="Accepter"
               onClick={() => onMove(app, "accepted")}
-              className={`inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white text-[#0F9691] ring-1 ring-[#16B8B1]/30 transition hover:bg-[#16B8B1]/10 dark:bg-[#0A1230] dark:text-[#16B8B1] dark:ring-[#16B8B1]/30 dark:hover:bg-[#16B8B1]/20 ${focusRing}`}
+              className={`inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white text-teal-600 ring-1 ring-slate-200 transition hover:bg-teal-50 dark:bg-[#0A1230] dark:text-teal-400 dark:ring-white/10 dark:hover:bg-teal-500/20 ${focusRing}`}
             >
               <Check size={15} />
             </button>
@@ -436,7 +436,7 @@ function ListRow({ app, onOpen, onMove }) {
               title="Refuser"
               aria-label="Refuser"
               onClick={() => onMove(app, "rejected")}
-              className={`inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white text-rose-600 ring-1 ring-rose-200 transition hover:bg-rose-50 dark:bg-[#0A1230] dark:text-rose-400 dark:ring-rose-500/20 dark:hover:bg-rose-500/10 ${focusRing}`}
+              className={`inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white text-rose-600 ring-1 ring-slate-200 transition hover:bg-rose-50 dark:bg-[#0A1230] dark:text-rose-400 dark:ring-white/10 dark:hover:bg-rose-500/20 ${focusRing}`}
             >
               <X size={15} />
             </button>
@@ -445,7 +445,7 @@ function ListRow({ app, onOpen, onMove }) {
         <button
           type="button"
           onClick={onOpen}
-          className={`inline-flex items-center gap-1 rounded-lg bg-[#0F2340] px-3 py-2 text-xs font-bold text-white transition hover:bg-[#1A2F4A] dark:bg-[#16B8B1] dark:text-[#0F2340] dark:hover:bg-[#0F9691] ${focusRing}`}
+          className={`inline-flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-2 text-xs font-medium text-slate-600 transition hover:bg-slate-200 dark:bg-white/10 dark:text-slate-300 dark:hover:bg-white/20 ${focusRing}`}
         >
           Dossier <ChevronRight size={13} />
         </button>
@@ -460,7 +460,7 @@ function ListRow({ app, onOpen, onMove }) {
 function Panel({ title, icon: Icon, children }) {
   return (
     <section>
-      <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-[#0F2340] dark:text-slate-100">
+      <h3 className="mb-3 flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
         {Icon && <Icon size={14} className="text-slate-400" />}
         {title}
       </h3>
@@ -473,9 +473,9 @@ function ContactLink({ href, icon: Icon, children }) {
   return (
     <a
       href={href}
-      className="flex items-center gap-2.5 rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-700 transition hover:border-[#16B8B1] hover:bg-[#16B8B1]/5 hover:text-[#0F9691] dark:border-white/10 dark:text-slate-300 dark:hover:bg-[#16B8B1]/10"
+      className="flex items-center gap-2.5 rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-600 transition hover:border-teal-300 hover:bg-teal-50/50 hover:text-teal-700 dark:border-white/10 dark:text-slate-300 dark:hover:bg-teal-500/10"
     >
-      <Icon size={14} className="shrink-0 text-[#16B8B1]" />
+      <Icon size={14} className="shrink-0 text-teal-500" />
       <span className="break-all">{children}</span>
     </a>
   );
@@ -487,18 +487,18 @@ function DocLink({ href, icon: Icon, title, subtitle, action }) {
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="group flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-3 transition hover:border-[#16B8B1]/50 hover:bg-[#16B8B1]/5 dark:border-white/10 dark:hover:bg-[#16B8B1]/10"
+      className="group flex items-center justify-between gap-3 rounded-lg border border-slate-200 p-3 transition hover:border-teal-300 hover:bg-teal-50/50 dark:border-white/10 dark:hover:bg-teal-500/10"
     >
       <div className="flex min-w-0 items-center gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#16B8B1]/10 text-[#0F9691] dark:bg-[#16B8B1]/20 dark:text-[#16B8B1]">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-600 dark:bg-teal-500/20 dark:text-teal-400">
           <Icon size={16} />
         </span>
         <div className="min-w-0">
-          <p className="text-sm font-bold text-[#0F2340] dark:text-slate-100">{title}</p>
+          <p className="text-sm font-medium text-slate-700 dark:text-slate-100">{title}</p>
           <p className="truncate text-xs text-slate-400">{subtitle}</p>
         </div>
       </div>
-      <span className="shrink-0 text-slate-300 transition group-hover:text-[#16B8B1]">{action}</span>
+      <span className="shrink-0 text-slate-300 transition group-hover:text-teal-500">{action}</span>
     </a>
   );
 }
@@ -548,14 +548,14 @@ function Drawer({ app, onClose, onMove, onNotesSaved, showToast }) {
 
   return (
     <div className="fixed inset-0 z-50 font-['Plus_Jakarta_Sans',sans-serif]" role="dialog" aria-modal="true" aria-label={`Dossier de ${name}`}>
-      <div className="oa-fade absolute inset-0 bg-[#0F2340]/50 backdrop-blur-[2px]" onClick={onClose} />
+      <div className="oa-fade absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]" onClick={onClose} />
 
-      <aside className="oa-slide absolute inset-y-0 right-0 flex w-full max-w-lg flex-col bg-white shadow-2xl dark:bg-[#131E47]">
+      <aside className="oa-slide absolute inset-y-0 right-0 flex w-full max-w-lg flex-col bg-white shadow-xl dark:bg-[#131E47]">
         {/* En-tête */}
         <div className="flex items-start gap-4 border-b border-slate-100 p-6 dark:border-white/10">
           <Avatar name={name} user={user} profile={app.profile} size="lg" />
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-lg font-bold text-[#0F2340] dark:text-white">{name}</h2>
+            <h2 className="truncate text-lg font-semibold text-slate-800 dark:text-white">{name}</h2>
             {app.profile?.headline && app.profile.headline.toLowerCase() !== name.toLowerCase() && (
               <p className="mt-0.5 truncate text-sm text-slate-500 dark:text-slate-400">{app.profile.headline}</p>
             )}
@@ -578,7 +578,7 @@ function Drawer({ app, onClose, onMove, onNotesSaved, showToast }) {
         <div className="flex-1 space-y-7 overflow-y-auto p-6">
           <Panel title="Progression">
             {rejected ? (
-              <p className="flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:ring-rose-500/20">
+              <p className="flex items-center gap-2 rounded-lg bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:ring-rose-500/20">
                 <X size={16} /> Cette candidature a été refusée.
               </p>
             ) : (
@@ -593,16 +593,16 @@ function Drawer({ app, onClose, onMove, onNotesSaved, showToast }) {
                       <div className="flex items-center">
                         <span
                           className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-                            done ? "bg-[#16B8B1] text-[#0F2340]" : "bg-slate-100 text-slate-400 dark:bg-white/5 dark:text-slate-500"
-                          } ${current ? "ring-4 ring-[#16B8B1]/20" : ""}`}
+                            done ? "bg-teal-100 text-teal-600 dark:bg-teal-500/20 dark:text-teal-400" : "bg-slate-100 text-slate-400 dark:bg-white/5 dark:text-slate-500"
+                          } ${current ? "ring-4 ring-teal-100 dark:ring-teal-500/10" : ""}`}
                         >
                           <Icon size={14} />
                         </span>
                         {i < STEPS.length - 1 && (
-                          <span className={`mx-1 h-0.5 flex-1 rounded ${st.step < cfg.step ? "bg-[#16B8B1]" : "bg-slate-200 dark:bg-white/10"}`} />
+                          <span className={`mx-1 h-0.5 flex-1 rounded ${st.step < cfg.step ? "bg-teal-200 dark:bg-teal-500/30" : "bg-slate-200 dark:bg-white/10"}`} />
                         )}
                       </div>
-                      <p className={`mt-1.5 truncate pr-1 text-[11px] ${current ? "font-bold text-[#0F2340] dark:text-white" : "text-slate-400"}`}>
+                      <p className={`mt-1.5 truncate pr-1 text-[11px] ${current ? "font-semibold text-slate-800 dark:text-white" : "text-slate-400"}`}>
                         {st.label}
                       </p>
                     </li>
@@ -613,13 +613,13 @@ function Drawer({ app, onClose, onMove, onNotesSaved, showToast }) {
           </Panel>
 
           {app.status === "interview" && interviewDate && (
-            <section className="flex items-start gap-3 rounded-xl bg-amber-50 px-4 py-3.5 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:ring-amber-500/20">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-amber-600 shadow-sm dark:bg-[#0A1230]">
+            <section className="flex items-start gap-3 rounded-lg bg-amber-50 px-4 py-3.5 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:ring-amber-500/20">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-amber-500 shadow-sm dark:bg-[#0A1230]">
                 <Calendar size={18} />
               </span>
               <div className="min-w-0">
-                <p className="text-xs font-bold text-amber-800 dark:text-amber-400">Entretien programmé</p>
-                <p className="mt-0.5 text-sm font-bold capitalize text-[#0F2340] dark:text-slate-100">
+                <p className="text-xs font-medium text-amber-800 dark:text-amber-400">Entretien programmé</p>
+                <p className="mt-0.5 text-sm font-semibold capitalize text-slate-800 dark:text-slate-100">
                   {interviewDate.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} à {fmtTime(app.interview_at)}
                 </p>
                 {app.interview_link && (
@@ -627,7 +627,7 @@ function Drawer({ app, onClose, onMove, onNotesSaved, showToast }) {
                     href={app.interview_link}
                     target="_blank"
                     rel="noreferrer"
-                    className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-amber-700"
+                    className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-amber-100 px-3 py-2 text-xs font-medium text-amber-700 transition hover:bg-amber-200 dark:bg-amber-500/20 dark:text-amber-300"
                   >
                     Rejoindre <ExternalLink size={12} />
                   </a>
@@ -673,7 +673,7 @@ function Drawer({ app, onClose, onMove, onNotesSaved, showToast }) {
           {letter && (
             <Panel title="Lettre de motivation">
               <p
-                className={`whitespace-pre-line rounded-xl bg-[#F3F6FC] p-4 text-sm leading-6 text-slate-600 dark:bg-white/5 dark:text-slate-300 ${
+                className={`whitespace-pre-line rounded-lg bg-slate-50 p-4 text-sm leading-6 text-slate-600 dark:bg-white/5 dark:text-slate-300 ${
                   longLetter && !fullLetter ? "max-h-40 overflow-hidden" : ""
                 }`}
               >
@@ -683,7 +683,7 @@ function Drawer({ app, onClose, onMove, onNotesSaved, showToast }) {
                 <button
                   type="button"
                   onClick={() => setFullLetter((v) => !v)}
-                  className="mt-2 text-xs font-bold text-[#0F9691] hover:underline dark:text-[#16B8B1]"
+                  className="mt-2 text-xs font-medium text-teal-600 hover:underline dark:text-teal-400"
                 >
                   {fullLetter ? "Réduire" : "Lire la suite"}
                 </button>
@@ -698,7 +698,7 @@ function Drawer({ app, onClose, onMove, onNotesSaved, showToast }) {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Ajoutez vos observations sur ce candidat…"
-              className="w-full resize-y rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm leading-6 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#16B8B1] focus:ring-4 focus:ring-[#16B8B1]/10 dark:border-white/10 dark:bg-[#0A1230] dark:text-slate-100"
+              className="w-full resize-y rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm leading-6 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 dark:border-white/10 dark:bg-[#0A1230] dark:text-slate-100 dark:focus:bg-[#0A1230]"
             />
             {notesError && <p className="mt-2 text-xs text-rose-600">{notesError}</p>}
             {notes !== (app.recruiter_notes || "") && (
@@ -706,7 +706,7 @@ function Drawer({ app, onClose, onMove, onNotesSaved, showToast }) {
                 type="button"
                 onClick={saveNotes}
                 disabled={saving}
-                className="mt-3 inline-flex items-center gap-2 rounded-xl bg-[#16B8B1] px-4 py-2.5 text-sm font-bold text-[#0F2340] transition hover:bg-[#0F9691] disabled:opacity-50"
+                className="mt-3 inline-flex items-center gap-2 rounded-lg bg-teal-50 px-4 py-2.5 text-sm font-medium text-teal-700 transition hover:bg-teal-100 disabled:opacity-50 dark:bg-teal-500/10 dark:text-teal-400 dark:hover:bg-teal-500/20"
               >
                 {saving ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
                 {saving ? "Enregistrement…" : "Enregistrer les notes"}
@@ -716,12 +716,12 @@ function Drawer({ app, onClose, onMove, onNotesSaved, showToast }) {
         </div>
 
         {/* Actions */}
-        <div className="space-y-2 border-t border-slate-100 bg-[#F3F6FC]/50 p-4 dark:border-white/10 dark:bg-white/5">
+        <div className="space-y-2 border-t border-slate-100 bg-slate-50/50 p-4 dark:border-white/10 dark:bg-white/5">
           {canSchedule && (
             <button
               type="button"
               onClick={() => onMove(app, "interview")}
-              className={`flex w-full items-center justify-center gap-2 rounded-xl bg-[#16B8B1] px-4 py-3 text-sm font-bold text-[#0F2340] shadow-sm transition hover:bg-[#0F9691] ${focusRing}`}
+              className={`flex w-full items-center justify-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10 ${focusRing}`}
             >
               <Video size={16} /> Proposer un entretien
             </button>
@@ -734,9 +734,9 @@ function Drawer({ app, onClose, onMove, onNotesSaved, showToast }) {
               if (hidden) return null;
               const disabled = app.status === key;
               const tones = {
-                ok: "text-[#0F9691] hover:bg-[#16B8B1]/10 dark:text-[#16B8B1] dark:hover:bg-[#16B8B1]/20",
-                no: "text-rose-700 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10",
-                undefined: "text-slate-700 hover:bg-white dark:text-slate-300 dark:hover:bg-white/10",
+                ok: "text-teal-600 hover:bg-teal-50 dark:text-teal-400 dark:hover:bg-teal-500/10",
+                no: "text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10",
+                undefined: "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/5",
               };
               return (
                 <button
@@ -744,7 +744,7 @@ function Drawer({ app, onClose, onMove, onNotesSaved, showToast }) {
                   type="button"
                   disabled={disabled}
                   onClick={() => onMove(app, key)}
-                  className={`inline-flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-bold ring-1 ring-slate-200 transition disabled:cursor-not-allowed disabled:opacity-40 dark:ring-white/10 ${tones[tone]} ${focusRing}`}
+                  className={`inline-flex items-center justify-center gap-1.5 rounded-lg bg-white px-3 py-2.5 text-sm font-medium ring-1 ring-slate-200 transition disabled:cursor-not-allowed disabled:opacity-40 dark:bg-white/5 dark:ring-white/10 ${tones[tone]} ${focusRing}`}
                 >
                   <Icon size={15} /> {label}
                 </button>
@@ -769,17 +769,17 @@ function RejectDialog({ name, busy, onCancel, onConfirm }) {
 
   return (
     <div
-      className="oa-fade fixed inset-0 z-[60] flex items-center justify-center bg-[#0F2340]/60 p-4 backdrop-blur-sm font-['Plus_Jakarta_Sans',sans-serif]"
+      className="oa-fade fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm font-['Plus_Jakarta_Sans',sans-serif]"
       role="alertdialog"
       aria-modal="true"
       aria-labelledby="reject-title"
       onMouseDown={(e) => e.target === e.currentTarget && !busy && onCancel()}
     >
-      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl dark:bg-[#131E47]">
-        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400">
+      <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl dark:bg-[#131E47]">
+        <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-rose-50 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400">
           <X size={20} />
         </span>
-        <h2 id="reject-title" className="mt-4 text-base font-bold text-[#0F2340] dark:text-white">
+        <h2 id="reject-title" className="mt-4 text-base font-semibold text-slate-800 dark:text-white">
           Refuser cette candidature ?
         </h2>
         <p className="mt-1.5 text-sm leading-6 text-slate-500 dark:text-slate-400">
@@ -790,7 +790,7 @@ function RejectDialog({ name, busy, onCancel, onConfirm }) {
             type="button"
             onClick={onCancel}
             disabled={busy}
-            className={`rounded-xl px-4 py-2.5 text-sm font-bold text-slate-600 transition hover:bg-slate-100 disabled:opacity-50 dark:text-slate-300 dark:hover:bg-white/10 ${focusRing}`}
+            className={`rounded-lg px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 disabled:opacity-50 dark:text-slate-300 dark:hover:bg-white/10 ${focusRing}`}
           >
             Annuler
           </button>
@@ -798,7 +798,7 @@ function RejectDialog({ name, busy, onCancel, onConfirm }) {
             type="button"
             onClick={onConfirm}
             disabled={busy}
-            className={`inline-flex items-center gap-2 rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-rose-700 disabled:opacity-60 ${focusRing}`}
+            className={`inline-flex items-center gap-2 rounded-lg bg-rose-100 px-4 py-2.5 text-sm font-medium text-rose-700 transition hover:bg-rose-200 disabled:opacity-60 dark:bg-rose-500/20 dark:text-rose-400 dark:hover:bg-rose-500/30 ${focusRing}`}
           >
             {busy ? <Loader2 size={15} className="animate-spin" /> : <X size={15} />} Refuser
           </button>
@@ -813,11 +813,11 @@ function RejectDialog({ name, busy, onCancel, onConfirm }) {
 ============================================ */
 function Empty({ icon: Icon, title, text }) {
   return (
-    <div className="flex flex-col items-center rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center dark:border-white/10 dark:bg-[#131E47]">
-      <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#16B8B1]/10 text-[#16B8B1] ring-8 ring-[#16B8B1]/5 dark:bg-[#16B8B1]/20 dark:ring-[#16B8B1]/10">
+    <div className="flex flex-col items-center rounded-xl border border-dashed border-slate-200 bg-white px-6 py-16 text-center dark:border-white/10 dark:bg-[#131E47]">
+      <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-slate-50 text-slate-400 ring-8 ring-slate-50/50 dark:bg-white/5 dark:ring-white/5">
         <Icon size={24} />
       </span>
-      <h3 className="mt-5 text-base font-bold text-[#0F2340] dark:text-white">{title}</h3>
+      <h3 className="mt-5 text-base font-semibold text-slate-700 dark:text-white">{title}</h3>
       <p className="mt-1.5 max-w-sm text-sm leading-6 text-slate-500 dark:text-slate-400">{text}</p>
     </div>
   );
@@ -828,13 +828,13 @@ function LoadingState() {
     <AppShell>
       <div className="mx-auto max-w-[1400px] space-y-5 py-2 font-['Plus_Jakarta_Sans',sans-serif]" aria-busy="true">
         <div className="h-16 w-80 animate-pulse rounded-xl bg-slate-200 dark:bg-white/10" />
-        <div className="h-36 animate-pulse rounded-2xl border border-slate-200 bg-white dark:border-white/10 dark:bg-[#131E47]" />
+        <div className="h-36 animate-pulse rounded-xl border border-slate-200 bg-white dark:border-white/10 dark:bg-[#131E47]" />
         <div className="grid auto-cols-[minmax(264px,1fr)] grid-flow-col gap-3 overflow-hidden">
           {[0, 1, 2, 3].map((c) => (
-            <div key={c} className="animate-pulse space-y-2 rounded-2xl bg-[#F3F6FC]/70 p-2 dark:bg-white/5">
+            <div key={c} className="animate-pulse space-y-2 rounded-xl bg-slate-50/50 p-2 dark:bg-white/5">
               <div className="h-5 w-28 rounded bg-slate-200 dark:bg-white/10" />
               {[0, 1].map((r) => (
-                <div key={r} className="space-y-3 rounded-xl bg-white p-3.5 dark:bg-[#131E47]">
+                <div key={r} className="space-y-3 rounded-lg bg-white p-3.5 dark:bg-[#131E47]">
                   <div className="flex gap-3">
                     <span className="h-9 w-9 rounded-full bg-slate-200 dark:bg-white/10" />
                     <span className="flex-1 space-y-2">
@@ -849,7 +849,7 @@ function LoadingState() {
           ))}
         </div>
         <div className="flex items-center justify-center gap-2 py-3 text-sm text-slate-400">
-          <Loader2 size={17} className="animate-spin text-[#16B8B1]" /> Chargement des candidatures…
+          <Loader2 size={17} className="animate-spin text-teal-500" /> Chargement des candidatures…
         </div>
       </div>
     </AppShell>
@@ -1008,10 +1008,10 @@ export default function OfferApplications() {
       <AppShell>
         <div className="mx-auto max-w-3xl py-10 font-['Plus_Jakarta_Sans',sans-serif]">
           <div className={`${card} p-10 text-center`}>
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 dark:bg-white/5">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-slate-50 text-slate-400 dark:bg-white/5">
               <Users size={26} />
             </div>
-            <h1 className="mt-4 text-lg font-bold text-[#0F2340] dark:text-slate-100">
+            <h1 className="mt-4 text-lg font-semibold text-slate-800 dark:text-slate-100">
               Impossible de charger les candidatures
             </h1>
             <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
@@ -1020,7 +1020,7 @@ export default function OfferApplications() {
             <button
               type="button"
               onClick={() => load()}
-              className={`mt-5 inline-flex items-center gap-2 rounded-xl bg-[#16B8B1] px-4 py-2.5 text-sm font-bold text-[#0F2340] transition hover:bg-[#0F9691] ${focusRing}`}
+              className={`mt-5 inline-flex items-center gap-2 rounded-lg bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-200 ${focusRing}`}
             >
               <RefreshCw size={15} /> Réessayer
             </button>
@@ -1045,12 +1045,12 @@ export default function OfferApplications() {
               type="button"
               onClick={() => navigate("/my-offers")}
               aria-label="Retour à mes offres"
-              className={`mt-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-[#16B8B1] hover:bg-[#16B8B1]/5 hover:text-[#0F9691] dark:border-white/10 dark:bg-[#131E47] dark:text-slate-300 dark:hover:bg-[#16B8B1]/10 ${focusRing}`}
+              className={`mt-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-700 dark:border-white/10 dark:bg-[#131E47] dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white ${focusRing}`}
             >
               <ArrowLeft size={17} />
             </button>
             <div className="min-w-0">
-              <h1 className="break-words text-2xl font-extrabold tracking-tight text-[#0F2340] dark:text-white sm:text-3xl">
+              <h1 className="break-words text-2xl font-semibold tracking-tight text-slate-800 dark:text-white sm:text-3xl">
                 {offer.title || "Candidatures de l’offre"}
               </h1>
               <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500 dark:text-slate-400">
@@ -1069,7 +1069,7 @@ export default function OfferApplications() {
 
           <div className="flex items-center gap-2">
             <div
-              className="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm dark:border-white/10 dark:bg-[#131E47]"
+              className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1 dark:border-white/10 dark:bg-white/5"
               role="group"
               aria-label="Affichage"
             >
@@ -1080,7 +1080,7 @@ export default function OfferApplications() {
               type="button"
               onClick={() => load(true)}
               disabled={refreshing}
-              className={`inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:border-[#16B8B1] hover:text-[#0F9691] disabled:opacity-50 dark:border-white/10 dark:bg-[#131E47] dark:text-slate-200 dark:hover:text-[#16B8B1] ${focusRing}`}
+              className={`inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-[#131E47] dark:text-slate-300 dark:hover:bg-white/5 ${focusRing}`}
             >
               <RefreshCw size={15} className={refreshing ? "animate-spin" : ""} /> Actualiser
             </button>
@@ -1091,11 +1091,11 @@ export default function OfferApplications() {
         <section className={`${card} p-5 sm:p-6`}>
           <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
             <div>
-              <p className="text-sm font-bold text-[#0F2340] dark:text-white">Où en sont vos candidats</p>
+              <p className="text-sm font-medium text-slate-700 dark:text-white">Où en sont vos candidats</p>
               <FunnelBar counts={counts} />
             </div>
             <dl className="grid grid-cols-2 gap-x-8 gap-y-4 sm:grid-cols-4 lg:min-w-[520px]">
-              <Stat label="À traiter" value={counts.todo} accent={counts.todo > 0 ? "!text-[#0F9691] dark:!text-[#16B8B1]" : ""} />
+              <Stat label="À traiter" value={counts.todo} accent={counts.todo > 0 ? "!text-teal-600 dark:!text-teal-400" : ""} />
               <Stat label="En cours" value={counts.progress} />
               <Stat label="Entretiens" value={counts.interview} />
               <Stat label="Taux d’acceptation" value={`${counts.rate} %`} />
@@ -1115,16 +1115,16 @@ export default function OfferApplications() {
                   role="tab"
                   aria-selected={active}
                   onClick={() => setFilter(t.id)}
-                  className={`inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-bold transition ${focusRing} ${
+                  className={`inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition ${focusRing} ${
                     active
-                      ? "bg-[#0F2340] text-white shadow-sm dark:bg-[#16B8B1] dark:text-[#0F2340]"
-                      : "bg-white text-slate-600 ring-1 ring-slate-200 hover:text-[#0F2340] hover:ring-[#16B8B1]/50 dark:bg-[#131E47] dark:text-slate-300 dark:ring-white/10 dark:hover:text-white"
+                      ? "bg-white text-slate-800 shadow-sm dark:bg-white/10 dark:text-white"
+                      : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
                   }`}
                 >
                   {t.label}
                   <span
                     className={`rounded-full px-1.5 text-xs tabular-nums ${
-                      active ? "bg-white/20 text-white dark:bg-[#0F2340]/10 dark:text-[#0F2340]" : "bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-slate-400"
+                      active ? "bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-300" : "bg-slate-100/50 text-slate-400 dark:bg-white/5 dark:text-slate-500"
                     }`}
                   >
                     {counts[t.id]}
@@ -1142,7 +1142,7 @@ export default function OfferApplications() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Rechercher un nom ou un e-mail"
-              className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-[#16B8B1] focus:outline-none focus:ring-4 focus:ring-[#16B8B1]/10 dark:border-white/10 dark:bg-[#0A1230] dark:text-slate-100 dark:placeholder:text-slate-500"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-3 text-sm text-slate-700 shadow-sm placeholder:text-slate-400 focus:border-teal-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-100 dark:border-white/10 dark:bg-[#0A1230] dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-[#0A1230]"
             />
           </label>
         </div>
@@ -1194,7 +1194,7 @@ export default function OfferApplications() {
           />
         ) : (
           <div className={`${card} overflow-hidden`}>
-            <div className="hidden grid-cols-[2.4fr_1.2fr_1fr_1.2fr_auto] gap-4 border-b border-slate-100 bg-[#F3F6FC]/70 px-5 py-3 text-xs font-bold text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400 md:grid">
+            <div className="hidden grid-cols-[2.4fr_1.2fr_1fr_1.2fr_auto] gap-4 border-b border-slate-100 bg-slate-50/50 px-5 py-3 text-xs font-medium text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400 md:grid">
               <span>Candidat</span>
               <span>Statut</span>
               <span>Reçue</span>

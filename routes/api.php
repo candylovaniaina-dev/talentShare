@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\ConversationController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\RatingController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\RadarController; // ✅ AJOUTÉ ICI
 use App\Http\Controllers\Api\VerificationRequestController;
 use App\Http\Controllers\Api\DocumentController;
 use App\Http\Controllers\Api\Admin\VerificationController as AdminVerificationController;
@@ -32,6 +33,7 @@ use App\Http\Controllers\Api\EducationController;
 use App\Http\Controllers\Api\SocialAuthController;
 use App\Http\Controllers\Api\ResourceSharingController;
 use App\Http\Controllers\Api\CompanyProposalController;
+use App\Http\Controllers\Api\EmployeeController;
 use Illuminate\Support\Facades\Route;
 
 // =============================================
@@ -303,6 +305,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // === Dashboard ===
     Route::get('/dashboard', [DashboardController::class, 'index']);
 
+    // === Radar d'opportunités (étudiant) ✅ AJOUTÉ ICI
+    Route::get('/radar', [RadarController::class, 'index']);
+    Route::get('/radar/count-new', [RadarController::class, 'countNew']);
+
     // === Messagerie ===
     Route::get   ('/conversations',                                       [ConversationController::class, 'index']);
     Route::get   ('/conversations/unread-count',                          [ConversationController::class, 'unreadCount']);
@@ -366,6 +372,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // === Educations (API Resource) ===
     Route::apiResource('educations', EducationController::class);
+
+    Route::get('companies/{company}/employees', [EmployeeController::class, 'index']);
+    Route::post('companies/{company}/employees', [EmployeeController::class, 'store']);
+    Route::patch('companies/{company}/employees/{employee}', [EmployeeController::class, 'update']);
+    Route::delete('companies/{company}/employees/{employee}', [EmployeeController::class, 'destroy']);
+    Route::post('companies/{company}/employees/{employee}/photo', [EmployeeController::class, 'uploadPhoto']);
 });
 
 // =============================================

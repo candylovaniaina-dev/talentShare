@@ -58,4 +58,47 @@ class ContractService
             'trial_ends_at'  => $trialEndsAt?->toDateString(),
         ];
     }
+    /** Type de contrat d'une demande de ressource (resource_requests.contract_type) */
+public static function typeFromRequestContract(?string $contractType): string
+{
+    return match (strtolower((string) $contractType)) {
+        'stage', 'internship'                              => 'internship',
+        'alternance', 'apprenticeship'                     => 'apprenticeship',
+        'emploi', 'job', 'cdi', 'permanent', 'first_job'   => 'permanent',
+        default                                            => 'fixed_term', // cdd, mission freelance...
+    };
+}
+
+/**
+ * Contrat d'une proposition : on respecte les dates prévues de la demande.
+ * - Stage / Alternance / CDD : fin = fin prévue (ou début + durée par défaut)
+ * - CDI : pas de fin, période d'essai d'1 mois
+ */
+public static function buildFromRequest(?string $contractType, $start = null, $end = null): array
+{
+    $type  = self::typeFromRequestContract($contractType);
+    $start = $start ? Carbon::parse($start)->startOfDay() : now()->startOfDay();
+
+    $endAt = null;
+    $isTrial = false;
+    $trialEndsAt = null;
+
+    if ($type === 'permanent') {
+        $isTrial = true;
+        $trialEndsAt = $start->copy()->addMonths(self::TRIAL_MONTHS);
+    } else {
+        $endAt = $end ? Carbon::parse($end)->startOfDay() : null;
+        if (!$endAt || $endAt->lt($start)) {
+            $endAt = $start->copy()->addMonths(self::DEFAULT_MONTHS[$type]);
+        }
+    }
+
+    return [
+        'contract_type' => $type,
+        'start_at'      => $start->toDateString(),
+        'end_at'        => $endAt?->toDateString(),
+        'is_trial'      => $isTrial,
+        'trial_ends_at' => $trialEndsAt?->toDateString(),
+    ];
+}
 }

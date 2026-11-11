@@ -36,7 +36,6 @@ import ResourceOffers from "./pages/ResourceOffers";
 import BrowseResourceOffers from "./pages/BrowseResourceOffers";
 import ResourceOfferDetail from "./pages/ResourceOfferDetail";
 import CreateProposal from "./pages/CreateProposal";
-// import ProposalDetail from "./pages/ProposalDetail"; // ❌ REMPLACÉ par ProposalRouter
 import Appearance from "./pages/Appearance";
 import OfferApplications from "./pages/dashboard/OfferApplications";
 import ApplicationDetail from "./pages/dashboard/ApplicationDetail";
@@ -54,6 +53,7 @@ import ResourceProposals from "./pages/ResourceProposals";
 import ProposalRouter from "./pages/ProposalRouter";
 import CompanyPublicProfile from "./pages/CompanyPublicProfile";
 import InterviewRoom from "./pages/InterviewRoom";
+import Collaborations from "./pages/Collaborations";
 
 /* ============================================================
     GUARDS
@@ -127,6 +127,9 @@ function App() {
         <Route path="/my-activity" element={<ProtectedRoute><MyActivity /></ProtectedRoute>} />
         <Route path="/interview/:roomId" element={<ProtectedRoute><InterviewRoom /></ProtectedRoute>} />
 
+        {/* ✅ NOUVELLE ROUTE COLLABORATIONS */}
+        <Route path="/collaborations" element={<ProtectedRoute><Collaborations /></ProtectedRoute>} />
+
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/profile/view" element={<Navigate to="/profile" replace />} />
         <Route path="/account-settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
@@ -181,7 +184,7 @@ function App() {
         <Route path="/job-offers/:id/applications" element={<ProtectedRoute><OfferApplications /></ProtectedRoute>} />
         <Route path="/applications/:id" element={<ProtectedRoute><ApplicationDetail /></ProtectedRoute>} />
 
-        <Route path="/missions" element={<ProtectedRoute><Missions /></ProtectedRoute>} />
+        {/* ⚠️ On garde /missions/:id pour le détail d'une mission */}
         <Route path="/missions/:id" element={<ProtectedRoute><MissionDetail /></ProtectedRoute>} />
 
         <Route path="/job-offers" element={<ProtectedRoute><JobOffers /></ProtectedRoute>} />
@@ -202,8 +205,11 @@ function App() {
         <Route path="/resource-offers/new" element={<ProtectedRoute><ResourceOfferForm /></ProtectedRoute>} />
         <Route path="/resource-offers/:id/edit" element={<ProtectedRoute><ResourceOfferForm /></ProtectedRoute>} />
 
-        {/* ✅ P0-11 : Liste des propositions entreprises */}
-        <Route path="/resource-proposals" element={<ProtectedRoute><RequireCompany><ResourceProposals /></RequireCompany></ProtectedRoute>} />
+        {/* ✅ P0-11 : Liste des propositions entreprises (redirection vers Collaborations) */}
+        <Route path="/resource-proposals" element={<Navigate to="/collaborations?tab=received" replace />} />
+
+        {/* ✅ Redirection : les anciennes URLs /missions ouvrent Collaborations */}
+        <Route path="/missions" element={<Navigate to="/collaborations?tab=missions" replace />} />
 
         <Route path="/appearance" element={<Appearance />} />
 

@@ -12,6 +12,7 @@ use App\Models\ResourceRequestComment;
 use App\Models\ResourceRequestLike;
 use App\Models\Notification;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class ResourceRequestController extends Controller
 {
@@ -115,7 +116,7 @@ class ResourceRequestController extends Controller
     }
 
     // ============================================
-    // SHOW
+    // SHOW (avec vue unique)
     // ============================================
     public function show(Request $request, ResourceRequest $resourceRequest)
     {
@@ -127,8 +128,23 @@ class ResourceRequestController extends Controller
             || $user->companies()->where('id', $resourceRequest->company_id)->exists()
         );
 
-        if (!$isOwner) {
-            $resourceRequest->increment('views_count');
+        // ✅ NOUVELLE LOGIQUE : On vérifie si l'utilisateur a déjà vu la demande
+        if (!$isOwner && $user) {
+            $alreadyViewed = DB::table('resource_request_views')
+                ->where('resource_request_id', $resourceRequest->id)
+                ->where('user_id', $user->id)
+                ->exists();
+
+            if (!$alreadyViewed) {
+                $resourceRequest->increment('views_count');
+                
+                DB::table('resource_request_views')->insert([
+                    'resource_request_id' => $resourceRequest->id,
+                    'user_id' => $user->id,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
         }
 
         $resourceRequest->load([
@@ -149,7 +165,7 @@ class ResourceRequestController extends Controller
     // ============================================
     // STORE
     // ============================================
-       public function store(ResourceRequestRequest $request, NotificationService $notifications)
+    public function store(ResourceRequestRequest $request, NotificationService $notifications)
     {
         $user = $request->user();
         $data = $request->validated();
@@ -188,16 +204,17 @@ class ResourceRequestController extends Controller
         if (empty($data['urgency'])) {
             $data['urgency'] = 'normal';
         }
+
         // ✅ SÉCURITÉ CDI
         if (isset($data['contract_type']) && in_array(strtolower($data['contract_type']), ['emploi', 'cdi'])) {
             $data['contract_type'] = 'emploi';
             $data['end_at'] = null;
         }
+
         $resourceRequest = ResourceRequest::create($data);
         $this->syncSkills($resourceRequest, $skills);
 
         if ($resourceRequest->status === 'published') {
-            // 1. ✅ Notification pour l'auteur (toi)
             try {
                 $notifications->notify(
                     $user,
@@ -215,7 +232,6 @@ class ResourceRequestController extends Controller
                 \Log::warning('Erreur notif self: ' . $e->getMessage());
             }
 
-            // 2. ✅ Notification pour les autres talents (matching)
             try {
                 $this->notifyMatchingTalents($resourceRequest, $notifications);
             } catch (\Exception $e) {
@@ -465,7 +481,7 @@ class ResourceRequestController extends Controller
                         'data' => [
                             'url' => "/resource-requests/{$resourceRequest->id}",
                             'request_id' => $resourceRequest->id,
-                            'actor_id' => $user->id, // ✅ Acteur ajouté
+                            'actor_id' => $user->id,
                         ],
                     ]);
                 } catch (\Exception $e) {
@@ -511,7 +527,7 @@ class ResourceRequestController extends Controller
                         'url' => "/resource-requests/{$resourceRequest->id}",
                         'request_id' => $resourceRequest->id,
                         'comment_id' => $comment->id,
-                        'actor_id' => $user->id, // ✅ Acteur ajouté
+                        'actor_id' => $user->id,
                     ],
                 ]);
             } catch (\Exception $e) {
@@ -525,19 +541,19 @@ class ResourceRequestController extends Controller
         ], 201);
     }
 
-   public function comments(Request $request, ResourceRequest $resourceRequest)
-{
-    $comments = ResourceRequestComment::where('resource_request_id', $resourceRequest->id)
-        ->with([
-            'user:id,name,avatar_path',
-            'user.professionalProfile:id,user_id,avatar_path' // ✅ AJOUTE CETTE LIGNE
-        ])
-        ->latest()
-        ->limit(50)
-        ->get();
+    public function comments(Request $request, ResourceRequest $resourceRequest)
+    {
+        $comments = ResourceRequestComment::where('resource_request_id', $resourceRequest->id)
+            ->with([
+                'user:id,name,avatar_path',
+                'user.professionalProfile:id,user_id,avatar_path'
+            ])
+            ->latest()
+            ->limit(50)
+            ->get();
 
-    return response()->json(['data' => $comments]);
-}
+        return response()->json(['data' => $comments]);
+    }
 
     public function share(Request $request, ResourceRequest $resourceRequest)
     {
@@ -595,7 +611,7 @@ class ResourceRequestController extends Controller
         return $r;
     }
 
-          private function notifyMatchingTalents(ResourceRequest $request, NotificationService $notifications): void
+    private function notifyMatchingTalents(ResourceRequest $request, NotificationService $notifications): void
     {
         try {
             $matcher = app(MatchingService::class);
@@ -613,8 +629,8 @@ class ResourceRequestController extends Controller
                 $notifications->notify(
                     $user,
                     'resource_request_published',
-                    'a publié une nouvelle demande', // ✅ Titre neutre
-                    $request->title, // ✅ Body = juste le titre
+                    'a publié une nouvelle demande',
+                    $request->title,
                     $request,
                     [
                         'url' => "/resource-requests/{$request->id}",
@@ -628,6 +644,7 @@ class ResourceRequestController extends Controller
             \Log::warning('notifyMatchingTalents failed: ' . $e->getMessage());
         }
     }
+
     private function syncSkills(ResourceRequest $resourceRequest, array $skills): void
     {
         if (empty($skills)) {

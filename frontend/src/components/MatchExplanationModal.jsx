@@ -1,48 +1,12 @@
-
 import React, { useEffect, useState } from "react";
-import {
-  X,
-  Loader2,
-  Sparkles,
-  TrendingUp,
-  Target,
-  CalendarDays,
-  MapPin,
-  House,
-  Lightbulb,
-  RefreshCw,
-} from "lucide-react";
+import { X, Loader2, Sparkles } from "lucide-react";
 import api from "../services/api";
 
 const BREAKDOWN_ITEMS = [
-  {
-    key: "skills",
-    label: "Compétences",
-    icon: Target,
-    color: "#12364D",
-    track: "bg-[#12364D]",
-  },
-  {
-    key: "availability",
-    label: "Disponibilité",
-    icon: CalendarDays,
-    color: "#0D9488",
-    track: "bg-teal-600",
-  },
-  {
-    key: "location",
-    label: "Localisation",
-    icon: MapPin,
-    color: "#3B82F6",
-    track: "bg-blue-500",
-  },
-  {
-    key: "remote",
-    label: "Télétravail",
-    icon: House,
-    color: "#8B5CF6",
-    track: "bg-violet-500",
-  },
+  { key: "skills", label: "Compétences", track: "bg-[#12364D]" },
+  { key: "availability", label: "Disponibilité", track: "bg-teal-600" },
+  { key: "location", label: "Localisation", track: "bg-blue-500" },
+  { key: "remote", label: "Télétravail", track: "bg-violet-500" },
 ];
 
 const MESSAGE_STYLES = {
@@ -85,10 +49,7 @@ export default function MatchExplanationModal({
 
       try {
         const response = await api.post("/match/explain", payload);
-
-        if (!cancelled) {
-          setData(response.data);
-        }
+        if (!cancelled) setData(response.data);
       } catch (err) {
         if (!cancelled) {
           setError(
@@ -97,9 +58,7 @@ export default function MatchExplanationModal({
           );
         }
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       }
     };
 
@@ -113,9 +72,7 @@ export default function MatchExplanationModal({
   if (!open) return null;
 
   const total = Number(data?.total);
-  const safeTotal = Number.isFinite(total)
-    ? Math.max(0, Math.min(100, total))
-    : 0;
+  const safeTotal = Number.isFinite(total) ? Math.max(0, Math.min(100, total)) : 0;
 
   const recommendation =
     safeTotal >= 80
@@ -148,44 +105,39 @@ export default function MatchExplanationModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="match-explanation-title"
-        className="flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-white/70 bg-white shadow-2xl"
+        className="flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-white/70 bg-white shadow-2xl dark:border-white/10 dark:bg-[#112A3A]"
         onClick={(event) => event.stopPropagation()}
       >
-        <header className="flex items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E8FBF5] text-[#087F70]">
-              <Sparkles size={20} />
-            </div>
-            <div>
-              <h2
-                id="match-explanation-title"
-                className="text-base font-bold text-[#12364D]"
-              >
-                Pourquoi ce score ?
-              </h2>
-              <p className="mt-0.5 text-xs text-slate-500">
-                Comprendre les critères de correspondance
-              </p>
-            </div>
+        {/* EN-TÊTE BLEU MARINE SANS ICÔNE */}
+        <header className="relative flex shrink-0 items-center justify-between overflow-hidden bg-gradient-to-br from-[#0B1F33] to-[#142B49] px-5 py-4 text-white sm:px-6">
+          <div className="pointer-events-none absolute -right-12 -top-16 h-40 w-40 rounded-full bg-[#16B8B1]/20 blur-3xl" />
+          
+          <div className="relative z-10">
+            <h2 id="match-explanation-title" className="text-base font-bold text-white">
+              Pourquoi ce score ?
+            </h2>
+            <p className="mt-1 text-[11px] text-white/60">
+              Comprendre les critères de correspondance
+            </p>
           </div>
 
           <button
             type="button"
             onClick={onClose}
             aria-label="Fermer"
-            className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-[#12364D]"
+            className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-white/70 transition hover:bg-white/20 hover:text-white"
           >
-            <X size={19} />
+            <X size={16} />
           </button>
         </header>
 
-        <div className="overflow-y-auto p-5 sm:p-6">
+        <div className="min-h-0 flex-1 overflow-y-auto p-5 font-['Plus_Jakarta_Sans',sans-serif] sm:p-6">
           {loading && (
             <div className="flex flex-col items-center justify-center py-14">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E8FBF5]">
                 <Loader2 size={27} className="animate-spin text-[#087F70]" />
               </div>
-              <p className="mt-4 text-sm font-semibold text-[#12364D]">
+              <p className="mt-4 text-sm font-semibold text-[#12364D] dark:text-white">
                 Analyse de la correspondance…
               </p>
               <p className="mt-1 text-xs text-slate-500">
@@ -200,31 +152,18 @@ export default function MatchExplanationModal({
                 Une erreur est survenue
               </p>
               <p className="mt-1 text-sm leading-5 text-rose-700">{error}</p>
-              <button
-                type="button"
-                onClick={() => {
-                  setData(null);
-                  setError(null);
-                  setLoading(false);
-                  // Le chargement peut être relancé en fermant puis rouvrant la fenêtre.
-                }}
-                className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-rose-800"
-              >
-                <RefreshCw size={13} />
-                Fermez puis rouvrez la fenêtre pour réessayer
-              </button>
             </div>
           )}
 
           {!loading && !error && data && (
             <div className="space-y-6">
-              <div className="relative overflow-hidden rounded-2xl bg-[#12364D] p-5 text-white sm:p-6">
+              {/* SCORE GLOBAL */}
+              <div className="relative overflow-hidden rounded-2xl bg-[#0B1F33] p-5 text-white sm:p-6">
                 <div className="pointer-events-none absolute -right-8 -top-10 h-36 w-36 rounded-full bg-[#6EE7C8]/10 blur-2xl" />
-                <div className="pointer-events-none absolute -bottom-12 -left-8 h-32 w-32 rounded-full bg-blue-400/10 blur-2xl" />
-
+                
                 <div className="relative text-center">
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[#6EE7C8]">
-                    <Sparkles size={12} />
+                    
                     Score global
                   </span>
 
@@ -250,102 +189,83 @@ export default function MatchExplanationModal({
                 </div>
               </div>
 
-              {data.breakdown &&
-                Object.keys(data.breakdown).length > 0 && (
-                  <section>
-                    <div className="mb-4">
-                      <h3 className="text-sm font-bold text-[#12364D]">
-                        Détail du calcul
-                      </h3>
-                      <p className="mt-1 text-xs text-slate-500">
-                        Contribution de chaque critère au score
-                      </p>
-                    </div>
-
-                    <div className="space-y-4">
-                      {BREAKDOWN_ITEMS.map(
-                        ({ key, label, icon: Icon, track }) => {
-                          const rawValue = Number(data.breakdown[key] ?? 0);
-                          const value = Number.isFinite(rawValue)
-                            ? Math.max(0, Math.min(100, rawValue))
-                            : 0;
-
-                          return (
-                            <div key={key}>
-                              <div className="mb-2 flex items-center justify-between gap-3">
-                                <div className="flex items-center gap-2.5">
-                                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-[#12364D]">
-                                    <Icon size={15} />
-                                  </div>
-                                  <span className="text-sm font-medium text-slate-700">
-                                    {label}
-                                  </span>
-                                </div>
-
-                                <span className="text-sm font-bold tabular-nums text-[#12364D]">
-                                  {value}%
-                                </span>
-                              </div>
-
-                              <div className="ml-10 h-2 overflow-hidden rounded-full bg-slate-100">
-                                <div
-                                  className={`h-full rounded-full ${track} transition-all duration-500`}
-                                  style={{ width: `${value}%` }}
-                                />
-                              </div>
-                            </div>
-                          );
-                        }
-                      )}
-                    </div>
-                  </section>
-                )}
-
-              {Array.isArray(data.explanation) &&
-                data.explanation.length > 0 && (
-                  <section>
-                    <h3 className="mb-3 text-sm font-bold text-[#12364D]">
-                      Analyse détaillée
+              {/* DÉTAIL DU CALCUL */}
+              {data.breakdown && Object.keys(data.breakdown).length > 0 && (
+                <section>
+                  <div className="mb-4">
+                    <h3 className="text-sm font-bold text-[#12364D] dark:text-white">
+                      Détail du calcul
                     </h3>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Contribution de chaque critère au score
+                    </p>
+                  </div>
 
-                    <div className="space-y-2.5">
-                      {data.explanation.map((item, index) => (
-                        <div
-                          key={`${item.type || "info"}-${index}`}
-                          className={`flex items-start gap-3 rounded-xl border p-3 text-sm leading-5 ${
-                            MESSAGE_STYLES[item.type] ||
-                            "border-slate-200 bg-slate-50 text-slate-700"
-                          }`}
-                        >
-                          <span className="shrink-0 text-base">
-                            {item.icon || "•"}
-                          </span>
-                          <span>{item.label}</span>
+                  <div className="space-y-4">
+                    {BREAKDOWN_ITEMS.map(({ key, label, track }) => {
+                      const rawValue = Number(data.breakdown[key] ?? 0);
+                      const value = Number.isFinite(rawValue) ? Math.max(0, Math.min(100, rawValue)) : 0;
+
+                      return (
+                        <div key={key}>
+                          <div className="mb-2 flex items-center justify-between gap-3">
+                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                              {label}
+                            </span>
+                            <span className="text-sm font-bold tabular-nums text-[#12364D] dark:text-white">
+                              {value}%
+                            </span>
+                          </div>
+
+                          <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-white/10">
+                            <div
+                              className={`h-full rounded-full ${track} transition-all duration-500`}
+                              style={{ width: `${value}%` }}
+                            />
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  </section>
-                )}
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
 
-              <section
-                className={`rounded-2xl border p-4 ${recommendation.style}`}
-              >
+              {/* ANALYSE DÉTAILLÉE */}
+              {Array.isArray(data.explanation) && data.explanation.length > 0 && (
+                <section>
+                  <h3 className="mb-3 text-sm font-bold text-[#12364D] dark:text-white">
+                    Analyse détaillée
+                  </h3>
+
+                  <div className="space-y-2.5">
+                    {data.explanation.map((item, index) => (
+                      <div
+                        key={`${item.type || "info"}-${index}`}
+                        className={`flex items-start gap-3 rounded-xl border p-3 text-sm leading-5 ${
+                          MESSAGE_STYLES[item.type] || "border-slate-200 bg-slate-50 text-slate-700"
+                        }`}
+                      >
+                        <span className="shrink-0 text-base">{item.icon || "•"}</span>
+                        <span>{item.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* RECOMMANDATION */}
+              <section className={`rounded-2xl border p-4 ${recommendation.style}`}>
                 <div className="flex items-start gap-3">
                   <span className="text-xl">{recommendation.icon}</span>
                   <div>
-                    <h3 className="flex items-center gap-2 text-sm font-bold">
-                      <TrendingUp size={16} />
-                      {recommendation.title}
-                    </h3>
-                    <p className="mt-1 text-sm leading-5">
-                      {recommendation.message}
-                    </p>
+                    <h3 className="text-sm font-bold">{recommendation.title}</h3>
+                    <p className="mt-1 text-sm leading-5">{recommendation.message}</p>
                   </div>
                 </div>
               </section>
 
-              <div className="flex items-start gap-2 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-500">
-                <Lightbulb size={15} className="mt-0.5 shrink-0" />
+              {/* NOTE */}
+              <div className="flex items-start gap-2 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-500 dark:bg-white/5">
                 <p>
                   Le score est une aide à la décision. Pensez à consulter le profil
                   complet avant de prendre une décision.
@@ -355,11 +275,12 @@ export default function MatchExplanationModal({
           )}
         </div>
 
-        <footer className="flex justify-end border-t border-slate-100 px-5 py-3 sm:px-6">
+        {/* FOOTER */}
+        <footer className="flex justify-end border-t border-slate-100 px-5 py-3 dark:border-white/10 sm:px-6">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl bg-[#12364D] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#172B5B] focus:outline-none focus:ring-4 focus:ring-[#12364D]/15"
+            className="rounded-xl bg-[#0B1F33] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#16324F] focus:outline-none focus:ring-4 focus:ring-[#0B1F33]/15 dark:bg-[#16B8B1] dark:text-[#0B1F33] dark:hover:bg-[#0F9691]"
           >
             Fermer
           </button>
