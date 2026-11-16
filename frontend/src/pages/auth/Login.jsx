@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   Sparkles,
   Users,
+    Star,
   X,
   LoaderCircle,
   RotateCcw,
@@ -533,7 +534,7 @@ export default function Login() {
               <div className={`flex h-20 w-20 items-center justify-center rounded-[24px] ${MINT_GRADIENT} text-[#0A1230] shadow-[0_0_40px_rgba(94,220,196,.35)]`}>
                 <Layers size={32} strokeWidth={1.8} />
               </div>
-              <div className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-xl border border-white/15 bg-[#131E47] text-[#7BE9D3]"><Sparkles size={15} /></div>
+             <div className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-xl border border-white/15 bg-[#131E47] text-[#7BE9D3]"><Star size={15} /></div>
               <div className="absolute -bottom-2 -left-2 flex h-8 w-8 items-center justify-center rounded-xl border border-white/15 bg-[#131E47] text-[#7BE9D3]"><Check size={15} /></div>
             </div>
             <div className="mt-6 flex items-center gap-1.5 text-sm font-extrabold tracking-tight">

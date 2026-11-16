@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { useNavigate } from "react-router-dom"; // ✅ AJOUTÉ
 import {
   Plus, BriefcaseBusiness, Users, MapPin, CalendarDays, Laptop,
-  Pencil, Trash2, FileText, Building2, X,
+  Pencil, Trash2, FileText, Building2, X, Clock, Banknote,
 } from "lucide-react";
 import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
@@ -65,6 +66,7 @@ const SORT_OPTIONS = [
 
 export default function OffersSection({ mode = "jobs", onStats }) {
   const { user } = useAuth();
+  const navigate = useNavigate(); // ✅ AJOUTÉ
   const isCompany = user?.role === "company";
   const isJobs = mode === "jobs";
 
@@ -134,7 +136,16 @@ export default function OffersSection({ mode = "jobs", onStats }) {
     load();
   };
 
-  const openCreate = () => { setEditOfferId(null); setShowModal(true); };
+  // ✅ MODIFICATION 1 : Redirection vers le vivier pour les ressources
+  const openCreate = () => {
+    if (!isJobs) { 
+      navigate("/resource-offers/browse?tab=pool"); 
+      return; 
+    }
+    setEditOfferId(null);
+    setShowModal(true);
+  };
+
   const openEdit = (id) => { setEditOfferId(id); setShowModal(true); };
   const closeModal = () => { setShowModal(false); setEditOfferId(null); };
 
@@ -143,20 +154,21 @@ export default function OffersSection({ mode = "jobs", onStats }) {
   const statusOptions = isJobs ? STATUS_FILTERS.filter((s) => s.id !== "mission") : STATUS_FILTERS;
   
   const canCreate = isCompany && (!isJobs || company); 
-  const createLabel = isJobs ? "Publier une offre" : "Proposer un talent";
+  // ✅ MODIFICATION 2 : Nouveau libellé
+  const createLabel = isJobs ? "Publier une offre" : "Gérer mon vivier";
 
   return (
-    <div className="space-y-4 font-['Plus_Jakarta_Sans',sans-serif]">
-      <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
-        <div className="flex items-center gap-2">
+    <div className="space-y-5 font-['Plus_Jakarta_Sans',sans-serif]">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+        <div className="flex items-center gap-2.5">
           <ViewToggle value={view} onChange={setView} />
           <SearchInput value={query} onChange={setQuery} placeholder={isJobs ? "Rechercher un recrutement…" : "Rechercher une ressource…"} />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <SelectField value={statusFilter} onChange={setStatusFilter} options={statusOptions} label="Filtrer par statut" />
           <SelectField value={sort} onChange={setSort} options={SORT_OPTIONS} label="Trier" />
         </div>
-        <p className="text-xs text-slate-500 lg:ml-2">{filtered.length} sur {offers.length}</p>
+        <p className="text-sm font-medium text-slate-500 lg:ml-2">{filtered.length} sur {offers.length}</p>
 
         {canCreate && !isJobs && (
           <Button variant="primary" size="md" icon={Plus} onClick={openCreate} className="lg:ml-auto">
@@ -188,7 +200,7 @@ export default function OffersSection({ mode = "jobs", onStats }) {
           </EmptyPanel>
         )
       ) : (
-        <div className={view === "grid" ? "grid gap-3 md:grid-cols-2" : "space-y-2.5"}>
+        <div className={view === "grid" ? "grid gap-4 md:grid-cols-2" : "space-y-3"}>
           {filtered.map((offer) =>
             isJobs ? (
               <JobOfferCard key={`job-${offer.id}`} offer={offer} grid={view === "grid"} isCompany={isCompany} onOpen={() => setSelectedOffer(offer)} onDelete={() => setPending({ id: offer.id, title: offer.title })} />
@@ -221,65 +233,128 @@ export default function OffersSection({ mode = "jobs", onStats }) {
 
 function InfoCell({ label, children }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-[#F3F6FC]/60 px-3 py-2.5 dark:border-white/10 dark:bg-[#0A1230]">
-      <p className="text-[11px] text-slate-400">{label}</p>
-      <p className="mt-0.5 break-words text-[13px] font-medium text-slate-800 dark:text-white">{children}</p>
+    <div className="rounded-xl border border-slate-200 bg-[#F8FAFC] px-4 py-3 dark:border-white/10 dark:bg-[#0A1230]">
+      <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</p>
+      <p className="mt-1 break-words text-sm font-semibold text-[#0B1F33] dark:text-white">{children}</p>
     </div>
   );
 }
 
 function OfferDetailModal({ offer, onClose }) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const isJob = offer.__type === "job";
   const statusKeyValue = isJob ? offer.status : offer.display_status || offer.status;
   const typeLabel = isJob ? OFFER_TYPES[offer.offer_type] || offer.offer_type : MISSION_TYPES[offer.mission_type] || offer.mission_type;
 
+  const infoItems = [];
+  
+  if (isJob && offer.duration_text) {
+    infoItems.push({ label: "Durée du contrat", value: offer.duration_text, icon: Clock });
+  }
+  if (offer.city || offer.location_city) {
+    infoItems.push({ label: "Localisation", value: offer.city || offer.location_city, icon: MapPin });
+  }
+  if (isJob && offer.salary_min && offer.salary_max) {
+    const min = parseInt(offer.salary_min, 10);
+    const max = parseInt(offer.salary_max, 10);
+    infoItems.push({ 
+      label: "Rémunération", 
+      value: `${isNaN(min) ? offer.salary_min : min.toLocaleString("fr-FR")} – ${isNaN(max) ? offer.salary_max : max.toLocaleString("fr-FR")} Ar/mois`, 
+      icon: Banknote
+    });
+  } else if (!isJob && offer.daily_rate) {
+    const rate = parseInt(offer.daily_rate, 10);
+    infoItems.push({ label: "Tarif", value: `${isNaN(rate) ? offer.daily_rate : rate.toLocaleString("fr-FR")} € / jour`, icon: Banknote });
+  }
+  if (isJob && typeof offer.applications_count === "number") {
+    infoItems.push({ label: "Candidatures", value: offer.applications_count, icon: Users });
+  }
+
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#06141F]/70 p-4 backdrop-blur-sm" onClick={onClose}>
-      <div role="dialog" aria-modal="true" className="relative flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-white/10 dark:bg-[#131E47]" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#06141F]/70 p-4 backdrop-blur-sm font-['Plus_Jakarta_Sans',sans-serif]" onClick={onClose}>
+      <div role="dialog" aria-modal="true" className="relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-white/10 dark:bg-[#131E47]" onClick={(e) => e.stopPropagation()}>
         
-        {/* ✅ EN-TÊTE BLEU MARINE */}
-        <div className="relative flex shrink-0 items-start justify-between gap-4 overflow-hidden bg-gradient-to-br from-[#0B1F33] to-[#142B49] px-5 py-4 text-white sm:px-6">
-          {/* Effets de lumière */}
+        <div className="relative flex shrink-0 items-start justify-between gap-4 overflow-hidden bg-gradient-to-br from-[#0B1F33] to-[#142B49] px-6 py-6 text-white">
           <div className="pointer-events-none absolute -right-12 -top-16 h-52 w-52 rounded-full bg-[#16B8B1]/20 blur-3xl" />
           
-          <div className="relative min-w-0 z-10">
-            <div className="mb-2 flex flex-wrap items-center gap-2">
-              {/* On adapte la couleur du badge pour qu'il ressorte sur le bleu */}
-              <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold ${
-                statusKeyValue === 'published' ? 'bg-[#16B8B1] text-[#0B1F33]' : 'bg-white/20 text-white'
-              }`}>
-                {statusKeyValue === 'published' ? 'Publiée' : statusKeyValue}
-              </span>
-              <span className="text-xs text-white/70">{isJob ? "Recrutement" : "Ressource partagée"}{typeLabel && ` · ${typeLabel}`}</span>
+          <div className="relative z-10 flex min-w-0 items-start gap-4">
+         <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white p-1">
+   {offer.company?.logo_url || offer.company?.logo_path ? (
+     <img 
+       src={
+         (offer.company.logo_url || offer.company.logo_path).startsWith('http')
+           ? (offer.company.logo_url || offer.company.logo_path)
+           : `http://localhost:8001/storage/${(offer.company.logo_url || offer.company.logo_path).replace(/^storage\//, '')}`
+       } 
+       alt={offer.company.name} 
+       className="h-full w-full object-contain" 
+     />
+   ) : (
+     <span className="text-lg font-bold text-[#0B1F33]">{offer.company?.name?.charAt(0) || "E"}</span>
+   )}
+</div>
+
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#16B8B1] mb-1">
+                {offer.company?.name || "Entreprise"}
+              </p>
+              <h3 className="text-xl font-bold leading-tight text-white">{offer.title}</h3>
+              
+              <div className="mt-3 flex flex-wrap gap-2">
+                 <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-bold ${
+                    statusKeyValue === 'published' ? 'bg-[#16B8B1] text-[#0B1F33]' : 'bg-white/20 text-white'
+                  }`}>
+                    {statusKeyValue === 'published' ? 'Publiée' : statusKeyValue}
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-md bg-white/10 px-2 py-1 text-[11px] font-medium text-white">
+                    {typeLabel}
+                  </span>
+              </div>
             </div>
-            <h3 className="text-lg font-semibold leading-tight text-white">{offer.title}</h3>
-            {isJob && offer.company?.name && (
-              <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-white/80"><Building2 size={13} />{offer.company.name}</p>
-            )}
-            {!isJob && offer.profile?.user?.name && (
-              <p className="mt-1 text-xs text-white/80">{offer.profile.user.name}{offer.profile.headline && <span className="text-white/60"> · {offer.profile.headline}</span>}</p>
-            )}
           </div>
           
-          <button type="button" onClick={onClose} aria-label="Fermer" className="relative z-10 shrink-0 rounded-lg p-1.5 text-white/70 transition hover:bg-white/10 hover:text-white"><X size={17} /></button>
+          <button type="button" onClick={onClose} aria-label="Fermer" className="relative z-10 shrink-0 rounded-lg p-2 text-white/70 transition hover:bg-white/10 hover:text-white"><X size={20} /></button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-6">
-          <div className="mb-5 grid gap-2.5 sm:grid-cols-2">
-            {(offer.city || offer.location_city) && <InfoCell label="Lieu">{offer.city || offer.location_city}</InfoCell>}
-            {offer.start_at && <InfoCell label="Période">{fmtDate(offer.start_at)}{offer.end_at && ` – ${fmtDate(offer.end_at)}`}</InfoCell>}
-            {isJob && offer.duration_text && <InfoCell label="Durée">{offer.duration_text}</InfoCell>}
-            {isJob && typeof offer.applications_count === "number" && <InfoCell label="Candidatures">{offer.applications_count}</InfoCell>}
-            {!isJob && offer.daily_rate && <InfoCell label="Tarif">{offer.daily_rate} € / jour</InfoCell>}
-          </div>
+        <div className="min-h-0 flex-1 overflow-y-auto p-6 font-['Plus_Jakarta_Sans',sans-serif]">
+          
+          {infoItems.length > 0 && (
+            <div className="mb-8 grid gap-4 sm:grid-cols-2">
+              {infoItems.map((item, idx) => {
+                const Icon = item.icon;
+                return (
+                  <div key={idx} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/50 p-3.5 dark:border-white/10 dark:bg-white/5">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-[#0F9691] shadow-sm dark:bg-[#0A1230] dark:text-[#16B8B1]">
+                      <Icon size={18} />
+                    </span>
+                    <div>
+                      <p className="text-[11px] font-medium text-slate-400">{item.label}</p>
+                      <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{item.value}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
-          <h4 className="mb-2 text-[13px] font-bold text-[#0B1F33] dark:text-white">Description complète</h4>
-          <div className="rounded-xl border border-slate-200 bg-[#F3F6FC]/60 p-4 dark:border-white/10 dark:bg-[#0A1230]">
-            <p className="whitespace-pre-line text-sm leading-7 text-slate-700 dark:text-slate-300">{offer.description || "Aucune description fournie."}</p>
+          <h4 className="mb-3 text-sm font-bold text-[#0B1F33] dark:text-white">Description complète</h4>
+          <div className="rounded-xl border border-slate-200 bg-[#F8FAFC] p-5 dark:border-white/10 dark:bg-[#0A1230]">
+            <p className={`whitespace-pre-line text-sm leading-relaxed text-slate-600 dark:text-slate-300 ${isExpanded ? "" : "line-clamp-4"}`}>
+              {offer.description || "Aucune description fournie."}
+            </p>
+            
+            {offer.description && offer.description.length > 150 && (
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="mt-3 text-sm font-semibold text-[#16B8B1] hover:underline"
+              >
+                {isExpanded ? "Voir moins" : "Voir plus"}
+              </button>
+            )}
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center justify-end border-t border-slate-200 px-5 py-3 dark:border-white/10 sm:px-6">
+        <div className="flex shrink-0 items-center justify-end border-t border-slate-200 px-6 py-4 dark:border-white/10">
           <Button variant="secondary" size="md" onClick={onClose}>Fermer</Button>
         </div>
       </div>
@@ -287,39 +362,38 @@ function OfferDetailModal({ offer, onClose }) {
     document.body
   );
 }
-
 const stopClick = (e) => e.stopPropagation();
 const openOnKey = (onOpen) => (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } };
 
 function JobOfferCard({ offer, grid, isCompany, onDelete, onOpen }) {
   const count = offer.applications_count || 0;
   return (
-    <article onClick={onOpen} role="button" tabIndex={0} onKeyDown={openOnKey(onOpen)} className="flex cursor-pointer flex-col overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:border-[#16B8B1]/40 hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16B8B1] dark:border-white/10 dark:bg-[#131E47]">
-      <div className={`flex flex-1 flex-col gap-4 p-4 ${grid ? "" : "lg:flex-row lg:items-start lg:justify-between lg:gap-8"}`}>
+    <article onClick={onOpen} role="button" tabIndex={0} onKeyDown={openOnKey(onOpen)} className="flex cursor-pointer flex-col overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:border-[#16B8B1]/50 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16B8B1] dark:border-white/10 dark:bg-[#131E47]">
+      <div className={`flex flex-1 flex-col gap-5 p-5 ${grid ? "" : "lg:flex-row lg:items-start lg:justify-between lg:gap-8"}`}>
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-2">
             <StatusBadge status={offer.status} config={JOB_STATUS} />
-            <span className="rounded-md bg-[#0B1F33] px-2 py-0.5 text-[11px] font-semibold text-white">Recrutement</span>
-            <span className="text-xs text-slate-500">{OFFER_TYPES[offer.offer_type] || offer.offer_type}</span>
+            <span className="rounded-md bg-[#0B1F33] px-2.5 py-1 text-[11px] font-bold tracking-wide text-white">Recrutement</span>
+            <span className="text-xs font-medium text-slate-500">{OFFER_TYPES[offer.offer_type] || offer.offer_type}</span>
           </div>
-          <h3 className="mt-2.5 text-[15px] font-bold text-[#0B1F33] dark:text-white">{offer.title}</h3>
-          {offer.company && <p className="mt-1 inline-flex items-center gap-1.5 text-[13px] text-slate-500"><Building2 size={13} className="text-slate-400" />{offer.company.name}</p>}
-          {offer.description && <p className="mt-1.5 line-clamp-2 text-[13px] leading-6 text-slate-500">{offer.description}</p>}
+          <h3 className="mt-3 text-base font-bold text-[#0B1F33] dark:text-white">{offer.title}</h3>
+          {offer.company && <p className="mt-1.5 inline-flex items-center gap-1.5 text-sm text-slate-500"><Building2 size={14} className="text-slate-400" />{offer.company.name}</p>}
+          {offer.description && <p className="mt-2.5 line-clamp-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">{offer.description}</p>}
           {(offer.city || offer.remote) && (
-            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
+            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
               {offer.city && <MetaItem icon={MapPin}>{offer.city}</MetaItem>}
               {offer.remote && <MetaItem icon={Laptop}>Télétravail possible</MetaItem>}
             </div>
           )}
         </div>
         {isCompany && (
-          <div className={`flex shrink-0 gap-6 ${grid ? "border-t border-slate-100 pt-3 dark:border-white/10" : "border-t border-slate-100 pt-3 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0 dark:border-white/10"}`}>
+          <div className={`flex shrink-0 gap-6 ${grid ? "border-t border-slate-100 pt-4 dark:border-white/10" : "border-t border-slate-100 pt-4 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0 dark:border-white/10"}`}>
             <Figure value={count} label={`Candidature${count > 1 ? "s" : ""}`} accent={count > 0} />
           </div>
         )}
       </div>
       {isCompany && (
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-[#F3F6FC]/60 px-3 py-2 dark:border-white/10 dark:bg-white/5" onClick={stopClick}>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 bg-[#F8FAFC]/80 px-4 py-3 dark:border-white/10 dark:bg-white/5" onClick={stopClick}>
           <Button to={`/job-offers/${offer.id}/applications`} variant={count > 0 ? "soft" : "ghost"} icon={Users}>Voir les candidatures</Button>
           <Button variant="danger" icon={Trash2} onClick={onDelete} aria-label="Supprimer cette offre">Supprimer</Button>
         </div>
@@ -333,35 +407,35 @@ function ResourceOfferCard({ offer, grid, onDelete, onEdit, onOpen }) {
   const step = LIFECYCLE.findIndex((s) => s.id === displayKey);
   const name = offer.profile?.user?.name;
   return (
-    <article onClick={onOpen} role="button" tabIndex={0} onKeyDown={openOnKey(onOpen)} className="flex cursor-pointer flex-col overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:border-[#16B8B1]/40 hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16B8B1] dark:border-white/10 dark:bg-[#131E47]">
-      <div className={`flex flex-1 flex-col gap-4 p-4 ${grid ? "" : "lg:flex-row lg:items-start lg:justify-between lg:gap-8"}`}>
+    <article onClick={onOpen} role="button" tabIndex={0} onKeyDown={openOnKey(onOpen)} className="flex cursor-pointer flex-col overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:border-[#16B8B1]/50 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16B8B1] dark:border-white/10 dark:bg-[#131E47]">
+      <div className={`flex flex-1 flex-col gap-5 p-5 ${grid ? "" : "lg:flex-row lg:items-start lg:justify-between lg:gap-8"}`}>
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-2">
             <StatusBadge status={displayKey} config={RESOURCE_STATUS} />
-            <span className="rounded-md bg-[#16B8B1]/15 px-2 py-0.5 text-[11px] font-semibold text-[#0F9691]">Ressource partagée</span>
-            <span className="text-xs text-slate-500">{MISSION_TYPES[offer.mission_type] || offer.mission_type}</span>
+            <span className="rounded-md bg-[#16B8B1]/15 px-2.5 py-1 text-[11px] font-bold tracking-wide text-[#0F9691]">Ressource partagée</span>
+            <span className="text-xs font-medium text-slate-500">{MISSION_TYPES[offer.mission_type] || offer.mission_type}</span>
           </div>
-          <h3 className="mt-2.5 text-[15px] font-bold text-[#0B1F33] dark:text-white">{offer.title}</h3>
-          {name && <p className="mt-1 text-[13px] text-slate-500">{name}{offer.profile.headline && <span className="text-slate-400"> · {offer.profile.headline}</span>}</p>}
-          {offer.description && <p className="mt-1.5 line-clamp-2 text-[13px] leading-6 text-slate-500">{offer.description}</p>}
+          <h3 className="mt-3 text-base font-bold text-[#0B1F33] dark:text-white">{offer.title}</h3>
+          {name && <p className="mt-1.5 text-sm text-slate-500">{name}{offer.profile.headline && <span className="text-slate-400"> · {offer.profile.headline}</span>}</p>}
+          {offer.description && <p className="mt-2.5 line-clamp-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">{offer.description}</p>}
           {(offer.start_at || offer.location_city) && (
-            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
+            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
               {offer.start_at && offer.end_at && <MetaItem icon={CalendarDays}>{fmtDate(offer.start_at)} – {fmtDate(offer.end_at)}</MetaItem>}
               {offer.location_city && <MetaItem icon={MapPin}>{offer.location_city}</MetaItem>}
             </div>
           )}
         </div>
         {offer.daily_rate && (
-          <div className={`shrink-0 ${grid ? "border-t border-slate-100 pt-3 dark:border-white/10" : "border-t border-slate-100 pt-3 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0 dark:border-white/10"}`}>
+          <div className={`shrink-0 ${grid ? "border-t border-slate-100 pt-4 dark:border-white/10" : "border-t border-slate-100 pt-4 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0 dark:border-white/10"}`}>
             <Figure value={`${offer.daily_rate} €`} label="par jour" accent />
           </div>
         )}
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 bg-[#F3F6FC]/60 px-4 py-2.5 dark:border-white/10 dark:bg-white/5" onClick={stopClick}>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 bg-[#F8FAFC]/80 px-4 py-3 dark:border-white/10 dark:bg-white/5" onClick={stopClick}>
         <div className="min-w-0 flex-1" title="Progression">
           {step >= 0 ? <Pipeline steps={LIFECYCLE} current={step} /> : null}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           <Button variant="ghost" icon={Pencil} onClick={() => onEdit(offer.id)}>Modifier</Button>
           <Button variant="danger" icon={Trash2} onClick={onDelete} aria-label="Supprimer cette ressource">Supprimer</Button>
         </div>

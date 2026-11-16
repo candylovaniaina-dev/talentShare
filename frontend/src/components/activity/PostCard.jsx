@@ -101,9 +101,17 @@ export default function PostCard({
   const shown = isLong && !expanded ? `${description.slice(0, 300)}…` : description;
   const actionBtn = "flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-medium text-slate-500 transition hover:bg-slate-50 active:scale-[.98] dark:text-slate-400 dark:hover:bg-white/5";
 
+  // ✅ FORMATAGE DU BUDGET EN ARIARY
+  const budgetLabel = (() => {
+    if (!post.budget_min && !post.budget_max) return null;
+    if (post.budget_min && post.budget_max) return `${post.budget_min} - ${post.budget_max} Ar / jour`;
+    if (post.budget_min) return `Dès ${post.budget_min} Ar / jour`;
+    return `Jusqu'à ${post.budget_max} Ar / jour`;
+  })();
+
   return (
     <article className={`${card} relative overflow-hidden transition duration-300 hover:shadow-[0_14px_36px_-16px_rgba(16,42,67,0.18)]`}>
-      <span className={`absolute bottom-5 left-0 top-5 w-[3px] rounded-r-full ${isJobOffer ? "bg-violet-300" : "bg-teal-300"}`} />
+      <span className={`absolute bottom-5 left-0 top-5 w-[3px] rounded-r-full ${isJobOffer ? "bg-[#0B1F33] dark:bg-[#16B8B1]" : "bg-[#16B8B1]"}`} />
 
       <div className="flex items-start justify-between px-6 pb-2 pt-5">
         <div className="flex min-w-0 items-center gap-3">
@@ -117,7 +125,7 @@ export default function PostCard({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className={`hidden rounded-full px-3 py-1 text-[10px] font-medium sm:inline-block ${isJobOffer ? "bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300" : "bg-teal-50 text-teal-600 dark:bg-teal-500/10 dark:text-teal-300"}`}>
+          <span className={`hidden rounded-full px-3 py-1 text-[10px] font-medium sm:inline-block ${isJobOffer ? "bg-[#0B1F33]/10 text-[#0B1F33] dark:bg-[#16B8B1]/20 dark:text-[#16B8B1]" : "bg-[#16B8B1]/10 text-[#0F9691] dark:bg-[#16B8B1]/20 dark:text-[#16B8B1]"}`}>
             {isJobOffer ? "Recrutement" : "Demande de talent"}
           </span>
           <div className="relative" ref={menuRef}>
@@ -141,18 +149,22 @@ export default function PostCard({
       <div className="px-6 pb-4">
         <h3 className="mb-2 text-[17px] font-semibold leading-snug text-slate-800 dark:text-white">{post.title}</h3>
         <p className="whitespace-pre-line text-[14px] leading-relaxed text-slate-600 dark:text-slate-300">{shown}</p>
-        {isLong && <button onClick={() => setExpanded((e) => !e)} className="mt-1 text-xs font-medium text-teal-600 hover:underline dark:text-teal-400">{expanded ? "Voir moins" : "Voir plus"}</button>}
+        {isLong && <button onClick={() => setExpanded((e) => !e)} className="mt-1 text-xs font-medium text-[#0F9691] hover:underline dark:text-[#16B8B1]">{expanded ? "Voir moins" : "Voir plus"}</button>}
 
+        {/* ✅ BADGES (Lieu, Télétravail, Budget corrigé) */}
         <div className="mt-4 flex flex-wrap items-center gap-2">
           {(post.city || post.country) && <Chip icon={MapPin}>{[post.city, post.country].filter(Boolean).join(", ")}</Chip>}
           {post.remote && <Chip icon={Home}>Télétravail</Chip>}
-          {(post.budget_min || post.budget_max) && <Chip icon={Banknote}>{post.budget_min || 0} - {post.budget_max || 0} € / jour</Chip>}
+          {budgetLabel && <Chip icon={Banknote}>{budgetLabel}</Chip>}
         </div>
 
+        {/* ✅ ÉTIQUETTES DES COMPÉTENCES */}
         {post.skills?.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {post.skills.slice(0, 6).map((s, i) => (
-              <span key={s.id ?? i} className="rounded-lg bg-slate-50 px-2.5 py-1 text-[11px] text-slate-600 dark:bg-white/5 dark:text-slate-300">{s.name || s}</span>
+              <span key={s.id ?? i} className="rounded-md border border-slate-100 bg-slate-100/80 px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-white/10 dark:bg-white/10 dark:text-slate-300">
+                {s.name || s}
+              </span>
             ))}
             {post.skills.length > 6 && <span className="px-2 py-1 text-[11px] text-slate-400">+{post.skills.length - 6}</span>}
           </div>
@@ -161,7 +173,7 @@ export default function PostCard({
 
       <div className="flex items-center justify-between px-6 pb-3 text-[11px] text-slate-500 dark:text-slate-400">
         <span className="flex items-center gap-1.5">
-          {localReaction === "love" ? <span className="text-sm">❤️</span> : localReaction === "like" ? <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#3478E8] text-white"><ThumbsUp size={10} fill="currentColor" /></span> : null}
+          {localReaction === "love" ? <span className="text-sm">❤️</span> : localReaction === "like" ? <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#0B1F33] text-white dark:bg-[#16B8B1] dark:text-[#0B1F33]"><ThumbsUp size={10} fill="currentColor" /></span> : null}
           <span>{localLikesCount}</span>
         </span>
         <span>{post.comments_count || 0} commentaire(s) · {post.shares_count || 0} partage(s)</span>
@@ -169,12 +181,12 @@ export default function PostCard({
 
       <div className="flex items-center gap-1 border-t border-slate-100 px-3 py-2 dark:border-white/5">
         <div className="relative flex-1" onMouseEnter={() => { clearTimeout(reactionTimeoutRef.current); setShowReactions(true); }} onMouseLeave={() => { reactionTimeoutRef.current = setTimeout(() => setShowReactions(false), 500); }}>
-          <button onClick={() => handleReactionClick(localReaction === "like" ? null : "like")} className={`${actionBtn} w-full ${localReaction ? "!text-[#3478E8] dark:!text-blue-400" : ""}`}>
+          <button onClick={() => handleReactionClick(localReaction === "like" ? null : "like")} className={`${actionBtn} w-full ${localReaction ? "!text-[#0B1F33] dark:!text-[#16B8B1]" : ""}`}>
             {localReaction === "love" ? <span>❤️ J'adore</span> : <><ThumbsUp size={16} fill={localReaction === "like" ? "currentColor" : "none"} /> J'aime</>}
           </button>
           {showReactions && (
             <div className="ts-pop absolute bottom-full left-0 z-30 mb-1 flex gap-1 rounded-full bg-white p-1.5 shadow-xl ring-1 ring-slate-900/5 dark:bg-[#142B49] dark:ring-white/10">
-              <button onClick={() => handleReactionClick("like")} className="flex h-10 w-10 items-center justify-center rounded-full transition hover:scale-110"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#3478E8] text-white"><ThumbsUp size={14} fill="currentColor" /></span></button>
+              <button onClick={() => handleReactionClick("like")} className="flex h-10 w-10 items-center justify-center rounded-full transition hover:scale-110"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#0B1F33] text-white dark:bg-[#16B8B1] dark:text-[#0B1F33]"><ThumbsUp size={14} fill="currentColor" /></span></button>
               <button onClick={() => handleReactionClick("love")} className="flex h-10 w-10 items-center justify-center rounded-full transition hover:scale-110"><span className="text-2xl">❤️</span></button>
             </div>
           )}
@@ -183,13 +195,13 @@ export default function PostCard({
         <button onClick={() => onShare(post)} className={actionBtn}><Share2 size={16} /> <span className="hidden sm:inline">Partager</span></button>
 
         {!mine && (hasApplied ? (
-          <span className="inline-flex items-center gap-1.5 rounded-xl bg-teal-50 px-4 py-2.5 text-[13px] font-medium text-teal-700 dark:bg-teal-500/10 dark:text-teal-300">
+          <span className="inline-flex items-center gap-1.5 rounded-xl bg-[#16B8B1]/10 px-4 py-2.5 text-[13px] font-medium text-[#0F9691] dark:bg-[#16B8B1]/20 dark:text-[#16B8B1]">
             <CheckCircle size={15} /> {isJobOffer ? "Candidature envoyée" : "Proposition envoyée"}
           </span>
         ) : (
           <button
             onClick={() => (isJobOffer ? onOpenOffer?.(String(post.real_id || post.id).replace(/^job-/, "")) : onApply(post))}
-            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-medium transition active:scale-[.98] ${isJobOffer ? "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-white/10 dark:text-white" : "bg-teal-50 text-teal-700 hover:bg-teal-100 dark:bg-teal-500/10 dark:text-teal-300"}`}
+            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-medium transition active:scale-[.98] ${isJobOffer ? "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-white/10 dark:text-white" : "bg-[#16B8B1]/10 text-[#0F9691] hover:bg-[#16B8B1]/20 dark:bg-[#16B8B1]/20 dark:text-[#16B8B1]"}`}
           >
             <Send size={14} /> {isJobOffer ? "Voir l'offre" : "Proposer"}
           </button>
@@ -201,13 +213,13 @@ export default function PostCard({
           <form onSubmit={sendComment} className="flex items-center gap-3">
             <Avatar src={avatarUrl} name="Moi" size={34} />
             <input value={newComment} onChange={(e) => setNewComment(e.target.value)} maxLength={2000} placeholder="Écrire un commentaire…"
-              className="flex-1 rounded-full border-0 bg-white px-4 py-2.5 text-sm outline-none ring-1 ring-slate-900/10 focus:ring-2 focus:ring-teal-300 dark:bg-[#142B49] dark:text-white dark:ring-white/10" />
-            <button type="submit" disabled={!newComment.trim() || sending} className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-50 text-teal-600 transition disabled:opacity-50 dark:bg-teal-500/20 dark:text-teal-300">
+              className="flex-1 rounded-full border-0 bg-white px-4 py-2.5 text-sm outline-none ring-1 ring-slate-900/10 focus:ring-2 focus:ring-[#16B8B1] dark:bg-[#142B49] dark:text-white dark:ring-white/10" />
+            <button type="submit" disabled={!newComment.trim() || sending} className="flex h-10 w-10 items-center justify-center rounded-full bg-[#16B8B1]/10 text-[#0F9691] transition disabled:opacity-50 dark:bg-[#16B8B1]/20 dark:text-[#16B8B1]">
               {sending ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
             </button>
           </form>
           {loadingComments ? (
-            <div className="flex justify-center py-3"><Loader2 size={20} className="animate-spin text-teal-500" /></div>
+            <div className="flex justify-center py-3"><Loader2 size={20} className="animate-spin text-[#16B8B1]" /></div>
           ) : comments?.length === 0 ? (
             <p className="text-center text-xs text-slate-500 dark:text-slate-400">Soyez le premier à commenter.</p>
           ) : (

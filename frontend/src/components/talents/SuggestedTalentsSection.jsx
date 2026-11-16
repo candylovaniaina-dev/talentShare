@@ -121,10 +121,7 @@ export default function SuggestedTalentsSection() {
         <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-50 text-teal-700">
-                <Sparkles size={17} />
-              </span>
-
+            
               <div>
                 <h3 className="text-sm font-bold text-slate-900">
                   Talents suggérés

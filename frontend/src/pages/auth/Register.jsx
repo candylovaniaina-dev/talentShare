@@ -4,6 +4,7 @@ import {
   Building2, Users, GraduationCap, Sparkles, Eye, EyeOff, ArrowLeft, ArrowRight, X, Mail, UserRound, LockKeyhole, CheckCircle2, BriefcaseBusiness, ShieldCheck, Check, Layers,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { useTheme } from "../../context/ThemeContext"; // ✅ Ajout
 
 const MINT_GRADIENT = "bg-gradient-to-br from-[#8DF0DC] to-[#5EDCC4]";
 
@@ -39,6 +40,7 @@ const eyeBtn =
 
 export default function Register() {
   const [params] = useSearchParams();
+  const { updatePreference } = useTheme(); // ✅ Ajout
 
   const [role, setRole] = useState(() => {
     const requestedRole = params.get("role");
@@ -72,6 +74,14 @@ export default function Register() {
 
     setError(null);
 
+    // ✅ VÉRIFICATION STRICTE DU DOMAINE GMAIL
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+    if (!emailRegex.test(form.email)) {
+      setError("L'adresse e-mail doit obligatoirement être une adresse @gmail.com.");
+      showTemporaryError();
+      return;
+    }
+
     if (form.password !== form.password_confirmation) {
       setError("Les deux mots de passe ne correspondent pas.");
       showTemporaryError();
@@ -82,7 +92,22 @@ export default function Register() {
 
     try {
       await register({ ...form, role });
-      navigate("/dashboard");
+      
+      // ✅ On force le mode clair en local
+      localStorage.setItem("theme", "light");
+      document.documentElement.classList.remove("dark");
+      document.documentElement.classList.add("light");
+      document.documentElement.setAttribute("data-theme", "light");
+      
+      // ✅ On met à jour le contexte
+      await updatePreference("theme_preference", "light");
+
+      // ✅ On force le rechargement complet pour être sûr
+      if (role === "company") {
+        window.location.href = "/company"; 
+      } else {
+        window.location.href = "/dashboard";
+      }
     } catch (err) {
       const errors = err.response?.data?.errors;
       const firstValidationError = errors ? Object.values(errors).flat()[0] : null;
@@ -301,7 +326,17 @@ export default function Register() {
                 <label htmlFor="register-email" className={labelClass}>Adresse e-mail</label>
                 <div className="relative">
                   <Mail size={16} className={iconLeft} />
-                  <input id="register-email" type="email" required placeholder="vous@exemple.com" className={inputClass} value={form.email} onChange={(e) => updateField("email", e.target.value)} />
+                  <input 
+                    id="register-email" 
+                    type="email" 
+                    required 
+                    pattern="[a-zA-Z0-9._%+-]+@gmail\.com"
+                    title="L'adresse doit se terminer par @gmail.com"
+                    placeholder="vous@gmail.com" 
+                    className={inputClass} 
+                    value={form.email} 
+                    onChange={(e) => updateField("email", e.target.value)} 
+                  />
                 </div>
               </div>
 
@@ -367,7 +402,7 @@ export default function Register() {
                 type="submit"
                 disabled={loading}
                 onClick={(e) => {
-                  if (loading) e.preventDefault(); // Bloque les clics suivants
+                  if (loading) e.preventDefault();
                 }}
                 className={`group flex w-full items-center justify-center gap-2 rounded-xl ${MINT_GRADIENT} px-4 py-3 text-sm font-bold text-[#0A1230] shadow-[0_8px_24px_-8px_rgba(94,220,196,0.55)] transition hover:-translate-y-0.5 hover:brightness-105 disabled:opacity-60`}
               >

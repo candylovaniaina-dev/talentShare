@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\SkillController;
 use App\Http\Controllers\Api\AvailabilityController;
 use App\Http\Controllers\Api\PortfolioController;
 use App\Http\Controllers\Api\ResourceOfferController;
+use App\Http\Controllers\Api\TalentMarketController;
 use App\Http\Controllers\Api\ResourceRequestController;
 use App\Http\Controllers\Api\ProposalController;
 use App\Http\Controllers\Api\MissionController;
@@ -17,7 +18,7 @@ use App\Http\Controllers\Api\ConversationController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\RatingController;
 use App\Http\Controllers\Api\DashboardController;
-use App\Http\Controllers\Api\RadarController; // ✅ AJOUTÉ ICI
+use App\Http\Controllers\Api\RadarController;
 use App\Http\Controllers\Api\VerificationRequestController;
 use App\Http\Controllers\Api\DocumentController;
 use App\Http\Controllers\Api\Admin\VerificationController as AdminVerificationController;
@@ -135,10 +136,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post  ('/companies/{company}/verify',                      [CompanyController::class, 'requestVerification']);
 
-    Route::get   ('/companies/{company}/employees',                   [CompanyController::class, 'employees']);
-    Route::post  ('/companies/{company}/employees',                   [CompanyController::class, 'addEmployee']);
-    Route::post  ('/companies/{company}/employees/{employee}/photo',  [CompanyController::class, 'uploadEmployeePhoto']);
-    Route::delete('/companies/{company}/employees/{employee}',        [CompanyController::class, 'removeEmployee']);
+    // ⚠️ ATTENTION : Les routes avec des noms spécifiques doivent être AVANT celle avec {employee}
+    Route::get   ('/companies/{company}/employees/borrowed',          [EmployeeController::class, 'borrowed']); 
+    Route::get   ('/companies/{company}/employees',                   [EmployeeController::class, 'index']);
+    Route::post  ('/companies/{company}/employees',                   [EmployeeController::class, 'store']);
+    Route::patch ('/companies/{company}/employees/{employee}',        [EmployeeController::class, 'update']);
+    Route::delete('/companies/{company}/employees/{employee}',        [EmployeeController::class, 'destroy']);
+    Route::post  ('/companies/{company}/employees/{employee}/photo',  [EmployeeController::class, 'uploadPhoto']);
 
     // === Universités ===
     Route::post('/universities', [UniversityController::class, 'store']);
@@ -152,7 +156,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/profile/avatar', [ProfessionalProfileController::class, 'uploadAvatar']);
     Route::post('/profile/cv', [ProfessionalProfileController::class, 'uploadCv']);
     Route::post('/profile/cover', [ProfessionalProfileController::class, 'uploadCover']);
-
+Route::get('/companies/{company}/borrowed', [CompanyController::class, 'borrowed']);
     // === Expériences / Formations / Certifs / Langues ===
     Route::post('/experiences', [ProfileSectionController::class, 'storeExperience']);
     Route::patch('/experiences/{experience}', [ProfileSectionController::class, 'updateExperience']);
@@ -196,6 +200,21 @@ Route::middleware('auth:sanctum')->group(function () {
         ->where('resourceOffer', '[0-9]+');
     Route::delete('/resource-offers/{resourceOffer}', [ResourceOfferController::class, 'destroy'])
         ->where('resourceOffer', '[0-9]+');
+
+    // ✅ MARCHÉ DES TALENTS
+    Route::prefix('talent-market')->group(function () {
+        Route::get('/',                      [TalentMarketController::class, 'index']);
+        Route::get('/pool',                  [TalentMarketController::class, 'pool']);
+        Route::get('/suggest',               [TalentMarketController::class, 'suggest']);
+        Route::get('/waitlist/mine',         [TalentMarketController::class, 'myWaitlist']);
+        Route::post('/publish',              [TalentMarketController::class, 'publish']);
+        Route::post('/unpublish',            [TalentMarketController::class, 'unpublish']);
+        Route::get('/{offer}',               [TalentMarketController::class, 'show'])->whereNumber('offer');
+        Route::get('/{offer}/alternatives',  [TalentMarketController::class, 'alternatives'])->whereNumber('offer');
+        Route::get('/{offer}/waitlist',      [TalentMarketController::class, 'offerWaitlist'])->whereNumber('offer');
+        Route::post('/{offer}/waitlist',     [TalentMarketController::class, 'joinWaitlist'])->whereNumber('offer');
+        Route::delete('/{offer}/waitlist',   [TalentMarketController::class, 'leaveWaitlist'])->whereNumber('offer');
+    });
 
     // ✅ P0-7 : Resource Sharing (Routes protégées)
     Route::get('/resource-sharing/mine', [ResourceSharingController::class, 'mine']);
@@ -277,7 +296,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post  ('/missions/{mission}/validate-trial', [MissionController::class, 'validateTrial']);
     Route::post  ('/missions/{mission}/reject-trial',   [MissionController::class, 'rejectTrial']);
 
-    // ✅ ÉVALUATIONS (NOUVEAU)
+    // ✅ ÉVALUATIONS
     Route::post('/missions/{mission}/ratings', [RatingController::class, 'store']);
     Route::get('/missions/{mission}/ratings', [RatingController::class, 'index']);
 
@@ -305,7 +324,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // === Dashboard ===
     Route::get('/dashboard', [DashboardController::class, 'index']);
 
-    // === Radar d'opportunités (étudiant) ✅ AJOUTÉ ICI
+    // === Radar d'opportunités (étudiant)
     Route::get('/radar', [RadarController::class, 'index']);
     Route::get('/radar/count-new', [RadarController::class, 'countNew']);
 
@@ -372,12 +391,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // === Educations (API Resource) ===
     Route::apiResource('educations', EducationController::class);
-
-    Route::get('companies/{company}/employees', [EmployeeController::class, 'index']);
-    Route::post('companies/{company}/employees', [EmployeeController::class, 'store']);
-    Route::patch('companies/{company}/employees/{employee}', [EmployeeController::class, 'update']);
-    Route::delete('companies/{company}/employees/{employee}', [EmployeeController::class, 'destroy']);
-    Route::post('companies/{company}/employees/{employee}/photo', [EmployeeController::class, 'uploadPhoto']);
 });
 
 // =============================================

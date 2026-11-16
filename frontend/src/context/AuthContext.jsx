@@ -19,33 +19,33 @@ export const AuthProvider = ({ children }) => {
   const { syncFromUser } = useTheme();
 
   const saveLastUser = useCallback((currentUser, email) => {
-  if (!currentUser) return;
+    if (!currentUser) return;
 
-  try {
-   const avatarOrLogo = 
-  currentUser.avatar_path ||
-  currentUser.professional_profile?.avatar_path ||
-  currentUser.company?.logo_url ||          // 1. On cherche dans 'company' (singulier)
-  currentUser.company?.logo_path ||
-  currentUser.companies?.[0]?.logo_url ||   // 2. Si pas trouvé, on cherche dans le tableau 'companies'
-  currentUser.companies?.[0]?.logo_path ||
-  null;
+    try {
+      const avatarOrLogo =
+        currentUser.avatar_path ||
+        currentUser.professional_profile?.avatar_path ||
+        currentUser.company?.logo_url ||
+        currentUser.company?.logo_path ||
+        currentUser.companies?.[0]?.logo_url ||
+        currentUser.companies?.[0]?.logo_path ||
+        null;
 
-    localStorage.setItem(
-      "last_user",
-      JSON.stringify({
-        id: currentUser.id,
-        email: email || currentUser.email,
-        name: currentUser.name,
-        avatar_path: avatarOrLogo, // 👈 On sauvegarde le bon chemin
-        role: currentUser.role,
-        timestamp: Date.now(),
-      })
-    );
-  } catch (error) {
-    console.error("Erreur saveLastUser:", error);
-  }
-}, []);
+      localStorage.setItem(
+        "last_user",
+        JSON.stringify({
+          id: currentUser.id,
+          email: email || currentUser.email,
+          name: currentUser.name,
+          avatar_path: avatarOrLogo,
+          role: currentUser.role,
+          timestamp: Date.now(),
+        })
+      );
+    } catch (error) {
+      console.error("Erreur saveLastUser:", error);
+    }
+  }, []);
 
   const fetchUser = useCallback(async () => {
     const currentRequest = ++requestId.current;
@@ -61,12 +61,10 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       if (currentRequest === requestId.current) {
         console.error("Erreur fetch user:", error);
-
         localStorage.removeItem("token");
         setToken(null);
         setUser(null);
       }
-
       return null;
     } finally {
       if (currentRequest === requestId.current) {
@@ -113,21 +111,33 @@ export const AuthProvider = ({ children }) => {
       throw new Error("Réponse d'inscription invalide.");
     }
 
+    // ✅ 1. ON FORCE LE THÈME CLAIR DANS L'OBJET UTILISATEUR
+    const userWithLightTheme = {
+      ...registeredUser,
+      theme_preference: "light",
+    };
+
+    // ✅ 2. ON FORCE LE THÈME CLAIR DANS LE STORAGE
+    localStorage.setItem("theme", "light");
+
+    // ✅ 3. ON FORCE LE THÈME CLAIR DANS LE DOM
+    document.documentElement.classList.remove("dark");
+    document.documentElement.classList.add("light");
+    document.documentElement.setAttribute("data-theme", "light");
+
     requestId.current += 1;
     localStorage.setItem("token", newToken);
     setToken(newToken);
-    setUser(registeredUser);
+    setUser(userWithLightTheme);
     setLoading(false);
-    syncFromUser(registeredUser);
-    saveLastUser(registeredUser, userData.email);
+    
+    // ✅ 4. ON SYNCHRONISE LE CONTEXTE AVEC LA VALEUR FORCÉE
+    syncFromUser(userWithLightTheme);
+    saveLastUser(userWithLightTheme, userData.email);
 
-    return registeredUser;
+    return userWithLightTheme;
   };
 
-  /**
-   * ✅ NOUVEAU : Auth depuis OAuth (Google / LinkedIn / Facebook)
-   * Appelé par OAuthCallback.jsx
-   */
   const setAuthFromOAuth = useCallback((newToken, oauthUser) => {
     if (!newToken || !oauthUser) {
       console.error("setAuthFromOAuth: payload invalide");
@@ -206,7 +216,7 @@ export const AuthProvider = ({ children }) => {
         refreshUser,
         getLastUser,
         clearLastUser,
-        setAuthFromOAuth,   // ✅ AJOUT
+        setAuthFromOAuth,
       }}
     >
       {children}

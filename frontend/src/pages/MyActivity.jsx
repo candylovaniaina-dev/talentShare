@@ -27,9 +27,9 @@ import {
   HistoryModal, CreateRequestModal, EditPostModal, FavoritesModal, SavedOffersModal, CONTRACT_CHOICES,
 } from "../components/activity/Modals";
 
-/* ============================================================
-   CONFIG
-============================================================ */
+// ============================================================================
+// CONFIGURATION
+// ============================================================================
 const TABS = [
   { id: "home", label: "Accueil" },
   { id: "profile", label: "Mon espace" },
@@ -73,34 +73,6 @@ function KindIcon({ kind, size = 14 }) {
   return <I size={size} />;
 }
 
-function MiniStat({ value, label }) {
-  const n = useCountUp(value, 600);
-  return (
-    <div>
-      <p className="text-lg font-semibold tabular-nums text-slate-800 dark:text-white">{n}</p>
-      <p className="text-[10px] text-slate-500 dark:text-slate-400">{label}</p>
-    </div>
-  );
-}
-
-function StatTile({ icon: Icon, value, label, tone, onClick }) {
-  const n = useCountUp(value, 700);
-  const tones = {
-    blue: "bg-blue-50 text-blue-500 dark:bg-blue-500/10 dark:text-blue-300",
-    violet: "bg-violet-50 text-violet-500 dark:bg-violet-500/10 dark:text-violet-300",
-    teal: "bg-teal-50 text-teal-600 dark:bg-teal-500/10 dark:text-teal-300",
-    amber: "bg-amber-50 text-amber-500 dark:bg-amber-500/10 dark:text-amber-300",
-  };
-  return (
-    <button onClick={onClick} className={`${card} p-4 text-left transition hover:-translate-y-0.5 hover:shadow-[0_14px_36px_-16px_rgba(16,42,67,0.2)]`}>
-      <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${tones[tone]}`}><Icon size={17} /></span>
-      <p className="mt-3 text-2xl font-semibold leading-none tabular-nums text-slate-800 dark:text-white">{n}</p>
-      <p className="mt-1.5 text-[11px] text-slate-500 dark:text-slate-400">{label}</p>
-    </button>
-  );
-}
-
-/* ---------- Suivi d'activité (timeline) ---------- */
 function ActivityOverview({ items, filter, onFilter, limit = 8, showFilters = true }) {
   const filters = [
     { id: "all", label: "Tout" }, { id: "applications", label: "Candidatures" }, { id: "proposals", label: "Propositions" },
@@ -180,9 +152,6 @@ function FeedSkeleton() {
   );
 }
 
-/* ============================================================
-   PAGE PRINCIPALE
-============================================================ */
 export default function MyActivity() {
   const { showToast } = useToast();
   const { user } = useAuth();
@@ -251,25 +220,23 @@ export default function MyActivity() {
 
   const avatarUrl = fileUrl(user?.avatar_path || user?.professional_profile?.avatar_path);
 
-  /* ---------- URL <-> onglets ---------- */
   useEffect(() => {
     const next = { tab };
     if (tab === "profile" && isStudent) next.section = section;
     setSearchParams(next, { replace: true, state: location.state });
-  }, [tab, section, isStudent, setSearchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [tab, section, isStudent, setSearchParams]);
 
   useEffect(() => {
     const urlTab = searchParams.get("tab");
     if (TABS.some((t) => t.id === urlTab) && urlTab !== tab) setTab(urlTab);
     const urlSection = searchParams.get("section");
     if (SECTIONS.some((s) => s.id === urlSection) && urlSection !== section) setSection(urlSection);
-  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   useEffect(() => { if (uid) localStorage.setItem(`talentshare_favorites_${uid}`, JSON.stringify(favorites)); }, [favorites, uid]);
   useEffect(() => { if (uid) localStorage.setItem(`talentshare_saved_offers_${uid}`, JSON.stringify(savedOffers)); }, [savedOffers, uid]);
   useEffect(() => { if (uid) localStorage.setItem(skillsKey, JSON.stringify({ week: weekId(), ids: skillsAdded })); }, [skillsAdded, skillsKey, uid]);
 
-  /* ---------- Chargement ---------- */
   const loadData = useCallback(async (silent = false) => {
     if (!user) return;
     if (!silent) setLoading(true);
@@ -313,7 +280,7 @@ export default function MyActivity() {
     } finally {
       setLoading(false);
     }
-  }, [user?.id, isStudent]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user?.id, isStudent]);
 
   useEffect(() => {
     loadData();
@@ -338,7 +305,6 @@ export default function MyActivity() {
     }
   };
 
-  /* ---------- Actions sur les publications ---------- */
   const patchPost = (id, patch) => {
     const upd = (l) => l.map((r) => (r.id === id ? { ...r, ...patch } : r));
     setFeed(upd); setStories(upd);
@@ -429,7 +395,7 @@ export default function MyActivity() {
       await api.post("/skills/attach", { skill_id: gap.id, level });
       setSkillsAdded((p) => (p.includes(gap.id) ? p : [...p, gap.id]));
       showToast(`« ${gap.name} » ajoutée à votre profil`, "success");
-      loadData(true); // le radar recalcule les compatibilités
+      loadData(true);
     } catch (err) {
       const errors = err.response?.data?.errors;
       showToast(errors ? Object.values(errors).flat().join(" · ") : err.response?.data?.message || "Ajout impossible", "error");
@@ -446,7 +412,6 @@ export default function MyActivity() {
   const isMine = (post) =>
     post.created_by === user?.id || (post.company_id && (user?.companies || []).some((c) => c.id === post.company_id));
 
-  /* ---------- Données dérivées ---------- */
   const visibleFeed = useMemo(() => {
     const q = feedSearch.trim().toLowerCase();
     return feed
@@ -454,12 +419,12 @@ export default function MyActivity() {
       .filter((p) => (feedFilter === "all" ? true : feedFilter === "offers" ? p.is_job_offer : !p.is_job_offer))
       .filter((p) => !q || p.title?.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q) ||
         getAuthor(p).name.toLowerCase().includes(q) || (p.skills || []).some((s) => (s.name || s).toLowerCase().includes(q)));
-  }, [feed, hiddenIds, feedSearch, feedFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [feed, hiddenIds, feedSearch, feedFilter]);
 
   const visibleMine = useMemo(() => myRequests.filter((p) => !hiddenIds.includes(`req-${p.id}`)), [myRequests, hiddenIds]);
   const visibleStories = useMemo(() => stories.filter((p) => !hiddenIds.includes(p.id)), [stories, hiddenIds]);
 
-  const dismissed = useMemo(() => readJson(`talentshare_radar_dismissed_${uid}`, []), [radar, uid]); // eslint-disable-line react-hooks/exhaustive-deps
+  const dismissed = useMemo(() => readJson(`talentshare_radar_dismissed_${uid}`, []), [radar, uid]);
   const radarItems = useMemo(() => (radar?.data || []).filter((i) => !dismissed.includes(i.key)), [radar, dismissed]);
 
   const incoming = useMemo(() => splitProposals(sent, received).incoming, [sent, received]);
@@ -531,7 +496,6 @@ export default function MyActivity() {
 
   const firstName = (user?.name || "").split(" ")[0] || "vous";
 
-  /* ---------- Scroll vers une publication (notifications) ---------- */
   useEffect(() => {
     const hashId = location.hash?.startsWith("#request-") ? location.hash.replace("#request-", "") : null;
     const target = location.state?.scrollToRequestId ?? hashId;
@@ -564,7 +528,6 @@ export default function MyActivity() {
     return () => cancelAnimationFrame(frame);
   }, [pendingTarget, tab, loading, visibleMine, loadData]);
 
-  /* ---------- Rail de stories (non-étudiants) ---------- */
   const StoriesRail = () => (
     <div className="ts-noscroll flex gap-3 overflow-x-auto pb-1">
       {visibleStories.slice(0, 12).map((story) => {
@@ -598,7 +561,6 @@ export default function MyActivity() {
     </div>
   );
 
-  /* ---------- Sections réutilisables ---------- */
   const publicationsSection = (
     <section id="my-posts" className={`${card} overflow-hidden`}>
       <div className="flex items-center justify-between px-5 py-4">
@@ -607,7 +569,7 @@ export default function MyActivity() {
       </div>
       <div className="px-4 pb-5 sm:px-5">
         {visibleMine.length === 0 ? (
-          <Empty icon={Send} compact text={isStudent ? "Vos candidatures et propositions apparaissent dans le suivi d'activité." : "Vous n'avez pas encore publié de besoin."} />
+          <Empty  compact text={isStudent ? "Vos candidatures et propositions apparaissent dans le suivi d'activité." : "Vous n'avez pas encore publié de besoin."} />
         ) : (
           <div className="space-y-5">
             {visibleMine.map((post) => (
@@ -643,18 +605,6 @@ export default function MyActivity() {
     </section>
   );
 
-  const statTiles = (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <StatTile icon={Target} value={visibleMine.length} label="Besoins publiés" tone="blue" onClick={() => document.getElementById("my-posts")?.scrollIntoView({ behavior: "smooth" })} />
-      <StatTile icon={Send} value={sent.length} label="Envoyées" tone="violet" onClick={() => setHistoryModalType("sent")} />
-      <StatTile icon={Handshake} value={receivedForModal.length} label="Reçues" tone="teal" onClick={() => setHistoryModalType("received")} />
-      <StatTile icon={Briefcase} value={activeMissions} label="Missions en cours" tone="amber" onClick={() => setHistoryModalType("missions")} />
-    </div>
-  );
-
-  /* ============================================================
-     RENDU
-  ============================================================ */
   return (
     <AppShell>
       <style>{STYLES}</style>
@@ -666,7 +616,6 @@ export default function MyActivity() {
             <FeedSkeleton />
           ) : (
             <div key={tab} className="ts-fade">
-              {/* ================= ACCUEIL ================= */}
               {tab === "home" && (
                 <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_330px]">
                   <div className="min-w-0 space-y-5">
@@ -727,14 +676,12 @@ export default function MyActivity() {
                     )}
 
                     <section className={`${card} p-6 text-center`}>
-                      <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-50 text-teal-600 dark:bg-teal-500/10 dark:text-teal-300"><Building2 size={22} /></span>
                       <h2 className="mt-4 text-base font-semibold text-slate-800 dark:text-white">Découvrez les entreprises du réseau</h2>
                       <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500 dark:text-slate-400">Explorez les organisations partenaires, trouvez de nouvelles opportunités et connectez-vous avec les recruteurs.</p>
                       <button onClick={() => setTab("companies")} className={`${btnPrimary} mt-5`}><Globe size={15} /> Découvrir le réseau</button>
                     </section>
                   </div>
 
-                  {/* Colonne latérale */}
                   <aside className="hidden lg:block">
                     <div className="sticky top-24 space-y-5">
                       <section className={`${card} overflow-hidden`}>
@@ -743,24 +690,6 @@ export default function MyActivity() {
                           <Avatar src={avatarUrl} name={user?.name} size={68} className="mx-auto ring-4 ring-white dark:ring-[#112A3A]" />
                           <p className="mt-2 truncate text-base font-semibold text-slate-800 dark:text-white">{user?.name}</p>
                           <p className="text-[11px] text-teal-600 dark:text-teal-300">{isCompany ? "Entreprise" : "Talent"}</p>
-                          <div className="mt-4 grid grid-cols-3 divide-x divide-slate-100 rounded-2xl bg-slate-50/80 py-3 dark:divide-white/10 dark:bg-white/5">
-                            {isStudent ? (
-                              <>
-                                <MiniStat value={report.totals.applications} label="Candidatures" />
-                                <MiniStat value={upcomingInterviews} label="Entretiens" />
-                                <MiniStat value={activeMissions} label="Missions" />
-                              </>
-                            ) : (
-                              <>
-                                <MiniStat value={visibleMine.length} label="Besoins" />
-                                <MiniStat value={sent.length} label="Envoyées" />
-                                <MiniStat value={activeMissions} label="Missions" />
-                              </>
-                            )}
-                          </div>
-                          {isStudent && (
-                            <Link to="/opportunites" className={`${btnPrimary} mt-4 w-full`}><Target size={15} /> Ouvrir mon radar</Link>
-                          )}
                         </div>
                       </section>
 
@@ -805,7 +734,6 @@ export default function MyActivity() {
                 </div>
               )}
 
-              {/* ================= MON ESPACE ================= */}
               {tab === "profile" && isStudent && (
                 <div className="mx-auto max-w-5xl space-y-5">
                   <nav className="ts-noscroll flex gap-1 overflow-x-auto rounded-2xl bg-white/70 p-1.5 shadow-sm ring-1 ring-slate-900/[0.04] dark:bg-white/5 dark:ring-white/5" aria-label="Sections">
@@ -840,7 +768,6 @@ export default function MyActivity() {
                     {section === "skills" && <SkillGaps gaps={gaps} onAdd={handleAddSkill} addingId={addingSkill} />}
                     {section === "activity" && (
                       <>
-                        {statTiles}
                         <ActivityOverview items={activityItems} filter={activityFilter} onFilter={setActivityFilter} limit={12} />
                         {companiesSection}
                         {publicationsSection}
@@ -870,14 +797,12 @@ export default function MyActivity() {
                       ))}
                     </div>
                   </section>
-                  {statTiles}
                   <ActivityOverview items={activityItems} filter={activityFilter} onFilter={setActivityFilter} />
                   {companiesSection}
                   {publicationsSection}
                 </div>
               )}
 
-              {/* ================= RÉSEAU ================= */}
               {tab === "companies" && (
                 <div className="mx-auto max-w-6xl space-y-5">
                   <button onClick={() => setTab("home")} className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm ring-1 ring-slate-900/5 transition hover:bg-slate-50 dark:bg-white/5 dark:text-slate-300 dark:ring-white/10">

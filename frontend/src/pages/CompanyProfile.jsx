@@ -16,9 +16,9 @@ import {
   Building2, MapPin, Globe, Phone, Users, Edit, Camera, X, Plus,
   Trash2, CheckCircle, AlertCircle, Loader2, Save, Building,
   Link2, Briefcase, ShieldCheck, TrendingUp, Search, Mail, ArrowRight, ArrowUpRight,
-  Layers, Star, Calendar, FileText, Home, Clock, Heart,
+  Layers, Star, Calendar, FileText, Home, Clock, Heart, Badge,
   MessageCircle, Send, Zap, Euro, Quote, UserPlus, BadgeCheck, RefreshCw,
-  LayoutGrid, Flame, GraduationCap, RotateCcw, Rocket,
+  LayoutGrid, Flame, GraduationCap, RotateCcw, Rocket, Repeat,
 } from "lucide-react";
 
 /* -------------------------------------------------------------------------- */
@@ -38,27 +38,24 @@ const OFFER_TYPE_OPTIONS = [
   { value: "internship", label: "Stage", hint: "Durée déterminée", icon: GraduationCap, color: "bg-[#0B1F33]" },
   { value: "apprenticeship", label: "Alternance", hint: "Rythme école / entreprise", icon: RotateCcw, color: "bg-[#16324F]" },
   { value: "fixed_term", label: "CDD", hint: "Durée déterminée", icon: Calendar, color: "bg-[#0F9691]" },
-  { value: "permanent", label: "Recrutement permanent", hint: "CDI · sans date de fin", icon: Briefcase, color: "bg-[#16B8B1]" },
+  { value: "permanent", label: "Recrutement permanent", hint: "CDI · sans date de fin", icon: ShieldCheck, color: "bg-[#16B8B1]" },
 ];
 
-// Libellés (inclut les anciens types pour les offres déjà publiées)
 const OFFER_TYPE_LABELS = {
   internship: "Stage", apprenticeship: "Alternance", fixed_term: "CDD",
   permanent: "Recrutement permanent", first_job: "Recrutement permanent",
   junior_mission: "Mission junior", freelance: "Freelance", student_project: "Projet étudiant",
 };
 
-// ✅ Groupes de collaborateurs selon le type de contrat
 const CONTRACT_GROUPS = [
-  { id: "interns", label: "Stagiaires", types: ["internship", "apprenticeship"], icon: GraduationCap },
+  { id: "interns", label: "Stagiaires", types: ["internship"], icon: GraduationCap },
+  { id: "apprentices", label: "Alternants", types: ["apprenticeship"], icon: RotateCcw },
   { id: "fixed", label: "Salariés CDD", types: ["fixed_term"], icon: Calendar },
-  { id: "permanent", label: "Salariés permanents (CDI)", types: ["permanent"], icon: Briefcase },
+  { id: "permanent", label: "Salariés permanents (CDI)", types: ["permanent"], icon: ShieldCheck }, 
 ];
 
-// Durée par défaut (mois) pour calculer automatiquement la date de fin
 const DEFAULT_MONTHS = { internship: 3, apprenticeship: 12, fixed_term: 6 };
 
-// Un salarié ajouté à la main sans type est considéré comme permanent
 const employeeContract = (e) => e.contract_type || "permanent";
 
 const employeesOfGroup = (list, groupId) =>
@@ -68,12 +65,56 @@ const employeesOfGroup = (list, groupId) =>
         CONTRACT_GROUPS.find((g) => g.id === groupId)?.types.includes(employeeContract(e))
       );
 
+const toBorrowedPerson = (m) => ({
+  id: `b-${m.id}`, is_borrowed: true, has_account: true, raw: m,
+  user: { name: m.talent?.name }, first_name: m.talent?.name,
+  position: m.talent?.headline, photo_path: m.talent?.avatar_url,
+  contract_type: "temporary", start_date: m.start_at, end_date: m.end_at, lender: m.lender,
+});
+
+const peopleOfGroup = (employees, borrowed, g) => (g === "borrowed" ? borrowed : employeesOfGroup(employees, g));
+
 const addMonthsISO = (iso, n) => {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
   d.setMonth(d.getMonth() + n);
   return d.toISOString().slice(0, 10);
+};
+
+const dayDiff = (iso) => {
+  if (!iso) return null;
+  const d = new Date(`${String(iso).slice(0, 10)}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return null;
+  const t = new Date(); t.setHours(0, 0, 0, 0);
+  return Math.round((d - t) / 86400000);
+};
+
+const returnLabel = (iso) => {
+  const n = dayDiff(iso);
+  if (n === null) return "";
+  if (n < 0) return "terminé";
+  if (n === 0) return "aujourd'hui";
+  if (n === 1) return "demain";
+  if (n < 30) return `dans ${n} jours`;
+  return `dans ${Math.round(n / 30.4)} mois`;
+};
+
+const elapsedPct = (start, end) => {
+  const s = start ? new Date(`${String(start).slice(0, 10)}T00:00:00`) : null;
+  const e = end ? new Date(`${String(end).slice(0, 10)}T00:00:00`) : null;
+  if (!s || !e || e <= s) return null;
+  return Math.min(100, Math.max(0, Math.round(((Date.now() - s) / (e - s)) * 100)));
+};
+
+const workDays = (a, b) => {
+  if (!a || !b) return 0;
+  const s = new Date(`${String(a).slice(0, 10)}T00:00:00`);
+  const e = new Date(`${String(b).slice(0, 10)}T00:00:00`);
+  if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime()) || e < s) return 0;
+  let n = 0;
+  for (const c = new Date(s); c <= e; c.setDate(c.getDate() + 1)) { const w = c.getDay(); if (w !== 0 && w !== 6) n++; }
+  return n;
 };
 
 const TABS = [
@@ -102,10 +143,8 @@ function buildImageUrl(pathOrUrl, fallback = null) {
   if (!pathOrUrl) return fallback;
   if (pathOrUrl.startsWith("http")) return pathOrUrl;
   
-  // Nettoie le chemin pour éviter les doubles slashes
   const cleanPath = pathOrUrl.startsWith("/") ? pathOrUrl.slice(1) : pathOrUrl;
   
-  // Si le chemin commence déjà par "storage/", on ne le rajoute pas
   if (cleanPath.startsWith("storage/")) {
     return `${API_BASE}/${cleanPath}`;
   }
@@ -222,7 +261,6 @@ function Avatar({ path, name, size = "md", rounded = "full" }) {
   const roundedCls = rounded === "full" ? "rounded-full" : "rounded-xl";
   const initials = (name || "?").split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
   
-  // ✅ On réinitialise l'erreur si le chemin change
   const [error, setError] = useState(false);
   useEffect(() => setError(false), [path]);
 
@@ -668,6 +706,154 @@ function AddTestimonialModal({ onClose, onSuccess }) {
 }
 
 /* -------------------------------------------------------------------------- */
+/*                     TALENTS EMPRUNTÉS (NOUVEAU)                            */
+/* -------------------------------------------------------------------------- */
+
+function BorrowedSection({ items, onOpen }) {
+  return (
+    <section className={`${card} p-5 sm:p-7`}>
+      <div className="mb-5 flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-base font-semibold text-slate-800 dark:text-white">Talents empruntés</h3>
+          <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+            Des talents d'autres entreprises qui travaillent temporairement pour vous, puis retournent chez leur employeur.
+          </p>
+        </div>
+        <Link to="/resource-offers/browse" className="ts-company-btn ts-company-secondary">Trouver un talent</Link>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/50 px-5 py-9 text-center dark:border-white/10 dark:bg-white/5">
+          <p className="text-sm font-medium text-slate-600 dark:text-slate-300">Aucun talent emprunté pour le moment</p>
+          <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-slate-500 dark:text-slate-400">
+            Parcourez le marché des talents pour renforcer votre équipe le temps d'une mission.
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-3 md:grid-cols-2">
+          {items.map((p) => {
+            const m = p.raw;
+            const pct = elapsedPct(m.start_at, m.end_at);
+            return (
+              <button key={p.id} type="button" onClick={() => onOpen(m)}
+                className="ts-lift flex w-full flex-col gap-3 rounded-lg border border-slate-100 bg-slate-50/50 p-4 text-left dark:border-white/10 dark:bg-white/5">
+                <div className="flex items-start gap-3">
+                  <Avatar path={m.talent?.avatar_url} name={m.talent?.name} size="md" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-slate-800 dark:text-white">{m.talent?.name}</p>
+                    <p className="truncate text-xs text-teal-600 dark:text-teal-400">{m.talent?.headline || m.title || "Poste non précisé"}</p>
+                    <p className="mt-0.5 truncate text-[11px] text-slate-500">Emprunté à {m.lender || "une autre entreprise"}</p>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-violet-50 px-2.5 py-1 text-[10px] font-semibold text-violet-700 dark:bg-violet-500/10 dark:text-violet-300">Temporaire</span>
+                </div>
+
+                {pct != null && (
+                  <div>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-slate-200/70 dark:bg-white/10">
+                      <div className="h-full rounded-full bg-violet-400" style={{ width: `${pct}%` }} />
+                    </div>
+                    <div className="mt-1.5 flex justify-between text-[10px] text-slate-500 dark:text-slate-400">
+                      <span>{formatDate(m.start_at)}</span>
+                      <span>Retour {returnLabel(m.end_at)}</span>
+                    </div>
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function BorrowedDetailModal({ item: m, onClose }) {
+  const navigate = useNavigate();
+  const pct = elapsedPct(m.start_at, m.end_at);
+  const left = dayDiff(m.end_at);
+  const days = workDays(m.start_at, m.end_at);
+  const factor = Math.min(Number(m.workload_percent) || 100, 100) / 100;
+  const budget = m.daily_rate ? m.daily_rate * days * factor : null;
+  const lender = m.lender_company || {};
+  
+  // ✅ CORRECTION ICI : On utilise portfolio.slug au lieu de portfolio_slug
+  const slug = m.talent?.portfolio?.slug || m.talent?.portfolio_slug;
+
+  const statusLabel = { active: "Mission en cours", planned: "Mission planifiée", pending_employee: "En attente d'accord du talent", trial: "Période d'essai" }[m.status] || m.status;
+
+  return (
+    <ModalShell
+      icon={Repeat}
+      title="Talent emprunté"
+      subtitle={m.talent?.headline || m.title}
+      size="max-w-xl"
+      onClose={onClose}
+      footer={
+        <>
+          <ModalFooter onClose={onClose} cancelLabel="Fermer" />
+          {lender.owner_user_id && (
+            <button type="button" onClick={() => navigate(`/messages?to=${lender.owner_user_id}`)} className="ts-company-btn ts-company-secondary">
+              Contacter {lender.name || "l'employeur"}
+            </button>
+          )}
+          <button type="button" onClick={() => navigate(`/missions/${m.id}`)} className="ts-company-btn ts-company-primary">Voir la mission</button>
+        </>
+      }
+    >
+      <div className="flex flex-col items-center text-center">
+        <Avatar path={m.talent?.avatar_url} name={m.talent?.name} size="xl" />
+        <h3 className="mt-3 text-base font-semibold text-slate-800 dark:text-white">{m.talent?.name}</h3>
+        {m.talent?.headline && <p className="mt-1 text-sm font-medium text-teal-600">{m.talent.headline}</p>}
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+          <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-medium text-violet-600 dark:bg-violet-500/10 dark:text-violet-300">Salarié temporaire</span>
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 dark:bg-white/10 dark:text-slate-300">{statusLabel}</span>
+        </div>
+      </div>
+
+      {pct != null && (
+        <div className="mt-5 rounded-lg border border-slate-100 bg-slate-50/70 p-4 dark:border-white/10 dark:bg-white/5">
+          <div className="flex items-end justify-between">
+            <p className="text-xs font-medium text-slate-400">Avancement de la mission</p>
+            <p className="text-sm font-semibold text-slate-700 dark:text-white">{pct}%</p>
+          </div>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200/70 dark:bg-white/10">
+            <div className="h-full rounded-full bg-violet-400" style={{ width: `${pct}%` }} />
+          </div>
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+            {left != null && left >= 0 ? `Le talent retourne chez son employeur ${returnLabel(m.end_at)} (${formatDate(m.end_at)}).` : "La mission est terminée."}
+          </p>
+        </div>
+      )}
+
+      <div className="mt-4 space-y-2.5">
+        <DetailRow icon={Building2} label="Employeur d'origine" value={`${lender.name || m.lender || "—"}${lender.city ? `, ${lender.city}` : ""}`} />
+        <DetailRow icon={Briefcase} label="Mission" value={m.title || "Mission de mise à disposition"} />
+        <DetailRow icon={Calendar} label="Période" value={`${formatDate(m.start_at)} au ${formatDate(m.end_at)}`} />
+        <DetailRow icon={Clock} label="Charge de travail" value={`${m.workload_percent || 100} % du temps`} />
+        <DetailRow icon={MapPin} label="Lieu" value={[m.location_type === "remote" ? "Télétravail" : m.location_type === "hybrid" ? "Hybride" : m.location_type === "onsite" ? "Sur site" : (m.remote ? "À distance" : null), m.location_city].filter(Boolean).join(", ") || "Non précisé"} />
+        <DetailRow icon={Euro} label="Tarif" value={m.daily_rate ? `${m.daily_rate} € / jour` : "À convenir avec l'employeur"} />
+        {budget != null && budget > 0 && <DetailRow icon={Euro} label="Budget estimé sur la période" value={`≈ ${new Intl.NumberFormat("fr-FR").format(Math.round(budget))} € (${days} jours ouvrés)`} />}
+      </div>
+
+      {m.conditions && (
+        <div className="mt-4 rounded-lg border border-slate-100 bg-slate-50/70 p-3.5 dark:border-white/10 dark:bg-white/5">
+          <p className="text-xs font-medium text-slate-400">Conditions</p>
+          <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-slate-600 dark:text-slate-300">{m.conditions}</p>
+        </div>
+      )}
+
+      {slug && (
+        <a href={`/portfolio/${slug}`} target="_blank" rel="noreferrer"
+          className="mt-4 flex items-center justify-between rounded-lg border border-teal-100 bg-teal-50 p-3.5 text-sm font-medium text-teal-700 transition hover:bg-teal-100 dark:border-teal-500/20 dark:bg-teal-500/10 dark:text-teal-300">
+          Voir le portfolio de {m.talent?.name}
+          <ArrowUpRight size={16} />
+        </a>
+      )}
+    </ModalShell>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
 /*                                PAGE PRINCIPALE                             */
 /* -------------------------------------------------------------------------- */
 
@@ -704,11 +890,13 @@ export default function CompanyProfile() {
   const [showFormModal, setShowFormModal] = useState(false);
   const [members, setMembers] = useState([]);
   const [employees, setEmployees] = useState([]);
+  const [borrowed, setBorrowed] = useState([]); // ✅ NOUVEAU STATE
   const [showAddMember, setShowAddMember] = useState(false);
   const [showAddEmployee, setShowAddEmployee] = useState(false);
   const [showAllMembers, setShowAllMembers] = useState(false);
   const [employeesGroup, setEmployeesGroup] = useState(null);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [selectedBorrowed, setSelectedBorrowed] = useState(null); // ✅ NOUVEAU STATE POUR LA MODALE
   const [selectedMember, setSelectedMember] = useState(null);
   const [showCreateOffer, setShowCreateOffer] = useState(false);
   const [createPreset, setCreatePreset] = useState("internship");
@@ -728,6 +916,8 @@ export default function CompanyProfile() {
   const [loadingFeed, setLoadingFeed] = useState(false);
   const [offerSuccess, setOfferSuccess] = useState(false);
   const [pendingHighlight, setPendingHighlight] = useState(null);
+  const [showCreationSuccess, setShowCreationSuccess] = useState(false);
+  const [showEmployeeSuccess, setShowEmployeeSuccess] = useState(false);
 
   /* ----------------------------- CHARGEMENTS ----------------------------- */
 
@@ -801,6 +991,14 @@ export default function CompanyProfile() {
         setEmployees([]);
       }
 
+      // ✅ CHARGEMENT DES SALARIÉS EMPRUNTÉS
+      try {
+        const r = await api.get(`/companies/${data.id}/borrowed`);
+        setBorrowed((r.data.data || []).map(toBorrowedPerson));
+      } catch { 
+        setBorrowed([]); 
+      }
+
     } catch (err) {
       if (err.response?.status === 404) setCompany(null);
       else showToast("Erreur de chargement", "error");
@@ -809,7 +1007,26 @@ export default function CompanyProfile() {
     }
   };
 
-  useEffect(() => { loadCompany(); }, []);
+   useEffect(() => {
+    loadCompany();
+
+    // ✅ Recharger les données quand la fenêtre reprend le focus (retour d'un autre onglet/page)
+    const handleFocus = () => {
+      if (company) loadCompany();
+    };
+    window.addEventListener("focus", handleFocus);
+
+    // ✅ Recharger quand la page redevient visible
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && company) loadCompany();
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [company?.id]);
 
   useEffect(() => {
     if (!company) return;
@@ -935,7 +1152,7 @@ export default function CompanyProfile() {
         <CompanyOnboarding
           onCreated={() => {
             loadCompany();
-            navigate("/company?tab=profile");
+            setShowCreationSuccess(true);
           }}
         />
       </AppShell>
@@ -1026,9 +1243,9 @@ export default function CompanyProfile() {
     }`;
 
   const groupModalTitle =
-    employeesGroup === "all"
-      ? "Toute l'équipe salariée"
-      : CONTRACT_GROUPS.find((g) => g.id === employeesGroup)?.label;
+    employeesGroup === "all" ? "Toute l'équipe salariée"
+    : employeesGroup === "borrowed" ? "Talents empruntés"
+    : CONTRACT_GROUPS.find((g) => g.id === employeesGroup)?.label;
 
   return (
     <AppShell>
@@ -1064,13 +1281,16 @@ export default function CompanyProfile() {
                   </section>
 
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    <StatTile icon={Briefcase} value={myOffers.length} label="Offres publiées" tone="navy" onClick={() => document.getElementById("my-posts")?.scrollIntoView({ behavior: "smooth" })} />
+                   <StatTile icon={Rocket} value={myOffers.length} label="Offres publiées" tone="navy" onClick={() => document.getElementById("my-posts")?.scrollIntoView({ behavior: "smooth" })} />
                     <StatTile icon={Users} value={members.length} label="Membres" tone="teal" onClick={() => setShowAllMembers(true)} />
                     <StatTile icon={UserPlus} value={employees.length} label="Équipe salariée" tone="blue" onClick={() => setEmployeesGroup("all")} />
                     <StatTile icon={TrendingUp} value={completion} suffix="%" label="Profil complété" tone="amber" onClick={() => setShowFormModal(true)} />
                   </div>
 
                   <CompanyActivityTracker activities={activities} onOpen={openActivity} />
+
+                  {/* ✅ AJOUT DE LA SECTION TALENTS EMPRUNTÉS */}
+                  <BorrowedSection items={borrowed} onOpen={setSelectedBorrowed} />
 
                   <section className={`${card} p-5 sm:p-7`}>
                     <div className="mb-5 flex items-start justify-between gap-3">
@@ -1189,6 +1409,14 @@ export default function CompanyProfile() {
                           </button>
                         );
                       })}
+                      {/* ✅ BOUTON SALARIÉS TEMPORAIRES (TOUJOURS VISIBLE) */}
+                      <button onClick={() => setEmployeesGroup("borrowed")} className="ts-lift flex w-full items-center justify-between rounded-lg border border-violet-100 bg-violet-50/60 p-3.5 text-left dark:border-violet-500/20 dark:bg-violet-500/10">
+                        <span className="flex items-center gap-3">
+                          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-500/20"><Repeat size={16} /></span>
+                          <span className="text-xs font-medium text-slate-700 dark:text-slate-200">Talents empruntés</span>
+                        </span>
+                        <span className="text-lg font-semibold text-slate-700 dark:text-white">{borrowed.length}</span>
+                      </button>
                     </div>
 
                     <div className="mt-4 flex flex-wrap gap-2">
@@ -1356,19 +1584,26 @@ export default function CompanyProfile() {
         />
       )}
 
-      {employeesGroup && (
-        <AllPeopleModal
-          title={groupModalTitle}
-          subtitle={`${employeesOfGroup(employees, employeesGroup).length} personne${employeesOfGroup(employees, employeesGroup).length > 1 ? "s" : ""}`}
-          icon={Briefcase}
-          people={employeesOfGroup(employees, employeesGroup)}
-          type="employee"
-          onClose={() => setEmployeesGroup(null)}
-          onRemove={handleRemoveEmployee}
-          onClick={(emp) => { setEmployeesGroup(null); setSelectedEmployee(emp); }}
-          onAdd={() => { setEmployeesGroup(null); setShowAddEmployee(true); }}
-        />
-      )}
+           {/* ✅ MODALE ALLPEOPLE MISE À JOUR POUR GÉRER LES EMPRUNTÉS */}
+      {employeesGroup && (() => {
+        const list = peopleOfGroup(employees, borrowed, employeesGroup);
+        return (
+          <AllPeopleModal
+            title={groupModalTitle}
+            subtitle={`${list.length} personne${list.length > 1 ? "s" : ""}`}
+            icon={employeesGroup === "all" ? Users : employeesGroup === "borrowed" ? Repeat : CONTRACT_GROUPS.find((g) => g.id === employeesGroup)?.icon || Briefcase}
+            people={list} type="employee"
+            onClose={() => setEmployeesGroup(null)}
+            onRemove={handleRemoveEmployee}
+            onClick={(emp) => {
+              setEmployeesGroup(null);
+              if (emp.is_borrowed) setSelectedBorrowed(emp.raw);
+              else setSelectedEmployee(emp);
+            }}
+            onAdd={() => { setEmployeesGroup(null); setShowAddEmployee(true); }}
+          />
+        );
+      })()}
 
       {showFormModal && (
         <CompanyFormModal
@@ -1377,41 +1612,109 @@ export default function CompanyProfile() {
         />
       )}
       {showAddMember && <AddMemberModal companyId={company.id} onClose={() => setShowAddMember(false)} onSuccess={() => { setShowAddMember(false); loadCompany(); }} />}
-      {showAddEmployee && <AddEmployeeModal companyId={company.id} onClose={() => setShowAddEmployee(false)} onSuccess={() => { setShowAddEmployee(false); loadCompany(); }} />}
+     {showAddEmployee && (
+  <AddEmployeeModal 
+    companyId={company.id} 
+    onClose={() => setShowAddEmployee(false)} 
+    onSuccess={() => { 
+      setShowAddEmployee(false); 
+      loadCompany(); 
+      setShowEmployeeSuccess(true); 
+      
+      // ✅ AJOUT : Ferme l'écran de succès après 3 secondes
+      setTimeout(() => {
+        setShowEmployeeSuccess(false);
+      }, 3000); 
+    }} 
+  />
+)}
       {selectedEmployee && <EmployeeDetailModal employee={selectedEmployee} onClose={() => setSelectedEmployee(null)} />}
+      {selectedBorrowed && <BorrowedDetailModal item={selectedBorrowed} onClose={() => setSelectedBorrowed(null)} />} {/* ✅ AJOUT MODALE DÉTAIL EMPRUNTÉ */}
       {selectedMember && (
         <MemberDetailModal
           member={selectedMember} companyId={company.id} onClose={() => setSelectedMember(null)} companyLogo={company.logo_url || company.logo_path}
           onPhotoUpdated={() => { setSelectedMember(null); loadCompany(); }}
         />
       )}
-
       {showCreateOffer && (
         <CreateOfferModal
           company={company}
           presetType={createPreset}
           onClose={() => setShowCreateOffer(false)}
-          onSuccess={() => { setShowCreateOffer(false); setOfferSuccess(true); loadHome(); }}
+          onSuccess={() => { 
+            setShowCreateOffer(false); 
+            setOfferSuccess(true); 
+            
+            setTimeout(() => {
+              setOfferSuccess(false);
+              navigate("/my-publications"); 
+            }, 2500); 
+          }}
         />
       )}
 
-      {offerSuccess && (
-        <div className="ts-fade fixed inset-0 z-[10000] flex flex-col items-center justify-center bg-slate-900/80 p-6 backdrop-blur-md">
-          <div className="relative flex w-full max-w-md flex-col items-center text-center">
-            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-teal-50 shadow-sm dark:bg-teal-500/20">
-              <CheckCircle size={48} className="text-teal-500" />
+      {/* ✅ ÉCRAN DE SUCCÈS PLEIN ÉCRAN APRÈS CRÉATION DE L'ENTREPRISE */}
+      {showCreationSuccess && (
+        <div className="ts-fade fixed inset-0 z-[10000] flex flex-col items-center justify-center bg-slate-900/90 p-6 backdrop-blur-md font-['Plus_Jakarta_Sans',sans-serif]">
+          <div className="relative flex w-full max-w-md flex-col items-center text-center animate-in zoom-in duration-500">
+            <div className="flex h-28 w-28 items-center justify-center rounded-full bg-[#16B8B1]/20 shadow-[0_0_50px_rgba(22,184,177,0.3)]">
+              <CheckCircle size={64} className="text-[#16B8B1] animate-bounce" />
             </div>
-            <h2 className="mt-8 text-2xl font-semibold text-white">Offre publiée !</h2>
-            <p className="mt-3 text-sm font-medium leading-6 text-slate-300">
-              Votre offre a bien été publiée. Elle est maintenant visible par tous les talents du réseau.
+            <h2 className="mt-8 text-3xl font-extrabold text-white">
+              Félicitations ! 🎉
+            </h2>
+            <p className="mt-4 text-base leading-7 text-slate-300">
+              Votre entreprise <strong className="text-white">{company?.name}</strong> a été créée avec succès.
+              <br />
+              Votre espace professionnel est maintenant prêt.
             </p>
-            <button onClick={() => setOfferSuccess(false)} className="mt-8 rounded-lg bg-teal-50 px-8 py-3 text-sm font-medium text-teal-700 transition hover:bg-teal-100">
-              Fermer
+            <button 
+              onClick={() => setShowCreationSuccess(false)} 
+              className="group mt-10 flex w-full items-center justify-center gap-2 rounded-xl bg-[#16B8B1] px-6 py-4 text-sm font-bold text-[#0B1F33] shadow-lg transition hover:-translate-y-1 hover:bg-[#0F9691] active:scale-95"
+            >
+              Accéder à mon espace
+              <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
             </button>
           </div>
         </div>
       )}
 
+      {/* ✅ ÉCRAN DE SUCCÈS PLEIN ÉCRAN APRÈS AJOUT D'UN SALARIÉ (NOUVEAU) */}
+      {showEmployeeSuccess && (
+        <div className="ts-fade fixed inset-0 z-[10000] flex flex-col items-center justify-center bg-slate-900/90 p-6 backdrop-blur-md font-['Plus_Jakarta_Sans',sans-serif]">
+          <div className="relative flex w-full max-w-md flex-col items-center text-center animate-in zoom-in duration-300">
+            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-teal-50 shadow-sm dark:bg-teal-500/20">
+              <UserPlus size={48} className="text-teal-500 animate-bounce" />
+            </div>
+            <h2 className="mt-8 text-2xl font-bold text-white">Salarié ajouté !</h2>
+            <p className="mt-3 text-sm font-medium leading-6 text-slate-300">
+              Le collaborateur a bien été ajouté à votre équipe. Vous pouvez maintenant lui proposer des missions ou gérer son profil.
+            </p>
+            <div className="mt-8 flex items-center gap-2 text-sm text-teal-400">
+              <Loader2 size={16} className="animate-spin" />
+              Mise à jour de votre équipe...
+            </div>
+          </div>
+        </div>
+      )}
+
+          {offerSuccess && (
+        <div className="ts-fade fixed inset-0 z-[10000] flex flex-col items-center justify-center bg-slate-900/80 p-6 backdrop-blur-md">
+          <div className="relative flex w-full max-w-md flex-col items-center text-center animate-in zoom-in duration-300">
+            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-teal-50 shadow-sm dark:bg-teal-500/20">
+              <CheckCircle size={48} className="text-teal-500 animate-bounce" />
+            </div>
+            <h2 className="mt-8 text-2xl font-bold text-white">Offre publiée !</h2>
+            <p className="mt-3 text-sm font-medium leading-6 text-slate-300">
+              Votre offre a bien été publiée. Elle est maintenant visible par tous les talents du réseau.
+            </p>
+            <div className="mt-8 flex items-center gap-2 text-sm text-teal-400">
+              <Loader2 size={16} className="animate-spin" />
+              Redirection vers votre espace...
+            </div>
+          </div>
+        </div>
+      )}
       {applyOffer && (
         <ApplyOfferModal
           offer={applyOffer}
@@ -2017,16 +2320,23 @@ function RecruiterProposalModal({ request, company, onClose, onSuccess }) {
     </ModalShell>
   );
 }
-
 function EmployeeDetailModal({ employee, onClose }) {
   const name = employee.user?.name || `${employee.first_name || ""} ${employee.last_name || ""}`.trim() || "Salarié";
   const email = employee.user?.email || employee.email;
   const phone = employee.user?.phone || employee.phone;
-  const position = employee.position;
+  
+// ✅ On donne la priorité absolue au champ 'position' de la table employees
+const rawPosition = 
+  employee.position || 
+  employee.headline || 
+  employee.user?.professional_profile?.headline || 
+  employee.user?.professionalProfile?.headline;
+
+// On affiche le poste s'il existe, peu importe s'il est égal au nom
+const position = rawPosition || "Poste non spécifié";
+
   const profile = employee.user?.professional_profile || employee.user?.professionalProfile;
   const bio = profile?.bio;
-  const headline = profile?.headline;
-  const displayPosition = position || headline;
   const avatar = employee.photo_path || profile?.avatar_path;
 
   const contractType = employeeContract(employee);
@@ -2034,23 +2344,29 @@ function EmployeeDetailModal({ employee, onClose }) {
   const isTrialEmployee = employee.status === "trial";
   const hasEnded = employee.status === "ended";
 
+  const group = CONTRACT_GROUPS.find((g) => g.types.includes(contractType));
+  const HeaderIcon = group?.icon || Briefcase;
+
   return (
     <ModalShell
-      icon={Briefcase}
+      icon={HeaderIcon}
       title="Détails du salarié"
-      subtitle={displayPosition || "Membre de l'équipe"}
+      subtitle={position}
       onClose={onClose}
       footer={<ModalFooter onClose={onClose} cancelLabel="Fermer" />}
     >
       <div className="flex flex-col items-center text-center">
         <Avatar path={avatar} name={name} size="xl" />
+        
         <h3 className="mt-3 text-base font-semibold text-slate-800 dark:text-white">{name}</h3>
-        {position && <p className="text-sm font-medium text-teal-600">{position}</p>}
-        {headline && <p className="mt-1 text-xs text-slate-500">{headline}</p>}
+        
+        {position && (
+          <p className="text-sm font-medium text-teal-600 mt-1">{position}</p>
+        )}
 
         <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
           <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 dark:bg-white/10 dark:text-slate-300">
-            {contract?.short || "Salarié"}
+            {employee.is_borrowed ? "Salarié temporaire" : contract?.short || "Salarié"} {/* ✅ MODIFICATION */}
           </span>
           {isTrialEmployee && (
             <span className="inline-flex items-center rounded-full bg-violet-50 px-3 py-1 text-xs font-medium text-violet-600 dark:bg-violet-500/10 dark:text-violet-400">Période d'essai</span>
@@ -2062,6 +2378,13 @@ function EmployeeDetailModal({ employee, onClose }) {
             <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-3 py-1 text-xs font-medium text-teal-600 dark:bg-teal-500/10 dark:text-teal-400"><CheckCircle size={12} /> Compte actif</span>
           ) : (
             <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-500 dark:bg-white/10 dark:text-slate-400"><AlertCircle size={12} /> Sans compte</span>
+          )}
+
+          {/* ✅ NOUVEAU : BADGE SI PRÊTÉ */}
+          {employee.on_loan_to && (
+            <span className="inline-flex items-center rounded-full bg-violet-50 px-3 py-1 text-xs font-medium text-violet-600 dark:bg-violet-500/10 dark:text-violet-300">
+              Prêté à {employee.on_loan_to}
+            </span>
           )}
         </div>
       </div>
@@ -2076,8 +2399,14 @@ function EmployeeDetailModal({ employee, onClose }) {
       <div className="mt-4 space-y-2.5">
         {email && <DetailRow icon={Mail} label="Email" value={email} />}
         {phone && <DetailRow icon={Phone} label="Téléphone" value={phone} />}
-        {displayPosition && <DetailRow icon={Briefcase} label="Poste" value={displayPosition} />}
-        <DetailRow icon={FileText} label="Contrat" value={contract?.label || "CDI"} />
+        
+        {position && (
+          <DetailRow icon={Badge} label="Poste" value={position} />
+        )}
+        
+        {/* ✅ MODIFICATION : EMPRUNTEUR */}
+        <DetailRow icon={FileText} label="Contrat" value={employee.is_borrowed ? `Prêté par ${employee.lender}` : (contract?.label || "CDI")} />
+        
         {employee.start_date && <DetailRow icon={Calendar} label="Début" value={formatDate(employee.start_date)} />}
         <DetailRow
           icon={Calendar}
@@ -2088,7 +2417,6 @@ function EmployeeDetailModal({ employee, onClose }) {
     </ModalShell>
   );
 }
-
 function MemberDetailModal({ member, companyId, companyLogo, onClose, onPhotoUpdated }) {
   const { showToast } = useToast();
   const [uploading, setUploading] = useState(false);
@@ -2100,7 +2428,6 @@ function MemberDetailModal({ member, companyId, companyLogo, onClose, onPhotoUpd
   const profile = member.user?.professional_profile || member.user?.professionalProfile;
   const headline = profile?.headline;
   
-  // ✅ LOGIQUE : Si pas de photo perso ET c'est l'owner, on affiche le logo de l'entreprise
   const avatar = profile?.avatar_path || member.user?.avatar_path || (role === "owner" ? companyLogo : null) || member.photo_path || null;
 
   const handlePhotoUpload = async (e) => {
@@ -2203,28 +2530,35 @@ function AllPeopleModal({ title, subtitle, icon, people, type, onClose, onAdd, o
             
             const isOwner = isMember && p.role === "owner";
 
-            // ✅ LOGIQUE : Si pas de photo perso ET c'est l'owner, on affiche le logo de l'entreprise
-            let avatar = null;
-            if (isOwner && !p.user?.avatar_path && !p.user?.professional_profile?.avatar_path && companyLogo) {
-                avatar = companyLogo;
-            } else {
-                avatar = isMember
-                  ? (p.user?.avatar_path || p.user?.professional_profile?.avatar_path || p.user?.professionalProfile?.avatar_path || p.photo_path)
-                  : (p.photo_path || p.user?.avatar_path || p.user?.professional_profile?.avatar_path || p.user?.professionalProfile?.avatar_path);
-            }
+            const avatar = 
+                p.user?.avatar_path ||
+                p.photo_path ||
+                p.user?.professional_profile?.avatar_path || 
+                p.user?.professionalProfile?.avatar_path || 
+                (isOwner ? companyLogo : null);
 
             const contractType = employeeContract(p);
-            const sub = isMember
-              ? p.role
-              : [p.position, CONTRACTS[contractType]?.short].filter(Boolean).join(" · ");
+           // ✅ Recherche approfondie du poste (y compris le headline injecté par le backend)
+const realPosition = 
+  p.position || 
+  p.headline || 
+  p.user?.employee?.position || 
+  p.user?.professional_profile?.headline || 
+  p.user?.professionalProfile?.headline;
+
+const cleanPosition = realPosition; 
+const sub = isMember
+  ? p.role
+  : [cleanPosition, CONTRACTS[contractType]?.short].filter(Boolean).join(" · ");
             
-            return (
+                      return (
               <div
                 key={p.id}
                 onClick={() => onClick?.(p)}
                 className={`group relative rounded-lg border border-slate-100 bg-slate-50/50 p-4 transition dark:border-white/10 dark:bg-white/5 ${onClick ? "cursor-pointer hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white hover:shadow-sm dark:hover:bg-white/10" : ""}`}
               >
-                {onRemove && !isOwner && (
+                {/* ✅ On empêche la suppression d'un emprunté ou du propriétaire */}
+                {onRemove && !isOwner && !p.is_borrowed && (
                   <button
                     onClick={(e) => { e.stopPropagation(); onRemove(p.id); }}
                     className="absolute right-2 top-2 z-10 hidden rounded-md bg-white p-1.5 text-slate-400 shadow-sm transition hover:bg-rose-50 hover:text-rose-500 group-hover:block dark:bg-[#0A1230]"
@@ -2239,6 +2573,20 @@ function AllPeopleModal({ title, subtitle, icon, people, type, onClose, onAdd, o
                   <p className="mt-3 line-clamp-1 text-sm font-medium text-slate-800 dark:text-white">{name}</p>
                   {sub && <p className="mt-0.5 line-clamp-1 text-xs font-medium text-teal-600 dark:text-teal-400">{sub}</p>}
                   {email && <p className="mt-0.5 line-clamp-1 text-xs text-slate-400">{email}</p>}
+
+                  {/* ✅ BADGE PRÊTÉ À */}
+                  {p.on_loan_to && (
+                    <span className="mt-2 inline-flex rounded-full bg-violet-50 px-2.5 py-1 text-[10px] font-semibold text-violet-700 dark:bg-violet-500/10 dark:text-violet-300">
+                      Prêté à {p.on_loan_to}{p.on_loan_until ? ` · jusqu'au ${formatDate(p.on_loan_until)}` : ""}
+                    </span>
+                  )}
+                  {/* ✅ BADGE SALARIÉ TEMPORAIRE */}
+                  {p.is_borrowed && (
+                    <span className="mt-2 inline-flex rounded-full bg-violet-50 px-2.5 py-1 text-[10px] font-semibold text-violet-700 dark:bg-violet-500/10 dark:text-violet-300">
+                      Salarié temporaire · prêté par {p.lender}
+                    </span>
+                  )}
+
                   {!isMember && (p.end_date || contractType === "permanent") && (
                     <p className="mt-1.5 text-[10px] font-medium text-slate-500 dark:text-slate-400">
                       {p.end_date ? `Fin prévue : ${formatDate(p.end_date)}` : "Sans date de fin (CDI)"}
@@ -2253,7 +2601,6 @@ function AllPeopleModal({ title, subtitle, icon, people, type, onClose, onAdd, o
     </ModalShell>
   );
 }
-
 function CompanyFormModal({ company, onClose, onSuccess }) {
   const { showToast } = useToast();
   const isEditing = !!company;
@@ -2456,7 +2803,18 @@ function AddEmployeeModal({ companyId, onClose, onSuccess }) {
       return next;
     });
 
-  useEffect(() => {
+  const formatPhoneNumber = (value) => {
+    if (!value) return value;
+    const phoneNumber = value.replace(/[^\d]/g, "");
+    
+    if (phoneNumber.length <= 3) return phoneNumber;
+    if (phoneNumber.length <= 5) return `${phoneNumber.slice(0, 3)} ${phoneNumber.slice(3)}`;
+    if (phoneNumber.length <= 8) return `${phoneNumber.slice(0, 3)} ${phoneNumber.slice(3, 5)} ${phoneNumber.slice(5)}`;
+    
+    return `${phoneNumber.slice(0, 3)} ${phoneNumber.slice(3, 5)} ${phoneNumber.slice(5, 8)} ${phoneNumber.slice(8, 10)}`;
+  };
+
+   useEffect(() => {
     const email = form.email.trim();
     if (!email || !email.includes("@") || email.length < 5) { setSuggestedUser(null); return; }
     setSearching(true);
@@ -2469,8 +2827,8 @@ function AddEmployeeModal({ companyId, onClose, onSuccess }) {
             ...prev,
             first_name: prev.first_name || u.first_name || "",
             last_name: prev.last_name || u.last_name || "",
-            phone: prev.phone || u.phone || "",
-            position: prev.position || u.headline || "",
+            phone: prev.phone || (u.phone ? formatPhoneNumber(u.phone) : ""),
+           position: prev.position || "",
           }));
           if (u.avatar_path) setAvatarPreview(`/storage/${u.avatar_path}`);
         })
@@ -2479,7 +2837,6 @@ function AddEmployeeModal({ companyId, onClose, onSuccess }) {
     }, 500);
     return () => clearTimeout(timeout);
   }, [form.email]);
-
   const handlePhotoSelect = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -2490,6 +2847,12 @@ function AddEmployeeModal({ companyId, onClose, onSuccess }) {
 
   const submit = async (e) => {
     e.preventDefault();
+    
+    if (!form.email.endsWith("@gmail.com")) {
+      showToast("L'adresse email doit se terminer par @gmail.com", "error");
+      return;
+    }
+
     setSaving(true);
     try {
       const payload = { ...form };
@@ -2514,8 +2877,13 @@ function AddEmployeeModal({ companyId, onClose, onSuccess }) {
 
       showToast("Salarié ajouté", "success");
       onSuccess();
-    } catch (err) {
-      showToast(err.response?.data?.message || "Erreur", "error");
+      } catch (err) {
+      const msg = err.response?.data?.message || "";
+      if (err.response?.status === 409 || err.response?.status === 500 || msg.includes('existe déjà') || msg.includes('dupliquée')) {
+        showToast("Cette personne est déjà enregistrée dans l'entreprise.", "error");
+      } else {
+        showToast(msg || "Erreur", "error");
+      }
     } finally {
       setSaving(false);
     }
@@ -2532,9 +2900,18 @@ function AddEmployeeModal({ companyId, onClose, onSuccess }) {
       <form id="employee-form" onSubmit={submit} className="space-y-5">
         <PhotoPicker preview={avatarPreview} onPick={handlePhotoSelect} label="Photo du salarié" />
 
-        <Field icon={Mail} label="Email *">
+        <Field icon={Mail} label="Email ">
           <div className="relative">
-            <input type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="email@exemple.com" className={inputCls} />
+            <input 
+              type="email" 
+              required 
+            pattern="^[a-zA-Z0-9._%+\-]+@gmail\.com$"
+              title="L'adresse doit être une adresse @gmail.com"
+              value={form.email} 
+              onChange={(e) => setForm({ ...form, email: e.target.value })} 
+              placeholder="exemple@gmail.com" 
+              className={inputCls} 
+            />
             {searching && <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-teal-500" />}
           </div>
           <AccountFound user={suggestedUser} />
@@ -2549,7 +2926,7 @@ function AddEmployeeModal({ companyId, onClose, onSuccess }) {
           </Field>
         </div>
 
-        <Field icon={Briefcase} label="Poste">
+        <Field icon={Badge} label="Poste">
           <input type="text" value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} placeholder="Ex: Développeur" className={inputCls} />
         </Field>
 
@@ -2580,7 +2957,14 @@ function AddEmployeeModal({ companyId, onClose, onSuccess }) {
         )}
 
         <Field icon={Phone} label="Téléphone">
-          <input type="text" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputCls} />
+          <input 
+            type="text" 
+            value={form.phone} 
+            onChange={(e) => setForm({ ...form, phone: formatPhoneNumber(e.target.value) })} 
+            placeholder="034 56 789 99" 
+            maxLength={14}
+            className={inputCls} 
+          />
         </Field>
       </form>
     </ModalShell>

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   X, Loader2, Clock, Eye, Check, UserCheck, Video, FileText, ExternalLink,
-  Calendar, AlertCircle, Download, MapPin, Briefcase, Building2,
+  Calendar, AlertCircle, Download, MapPin, Briefcase, Building2,  FolderOpen
 } from "lucide-react";
 import api from "../services/api";
 
@@ -231,16 +231,15 @@ export default function ApplicationDetailModal({ applicationId, onClose, embedde
     application ? (
       <Card title="Documents joints">
         <div className="space-y-2">
-          {/* Portfolio */}
-          {application.portfolio && (
-            <DocLink
-              href={`/portfolio/${application.portfolio.public_slug}`}
-              icon={Briefcase}
-              title={application.portfolio.title || "Mon portfolio"}
-              subtitle="Portfolio"
-              action={<ExternalLink size={14} />}
-            />
-          )}
+         {application.portfolio && (
+  <DocLink
+    href={`/portfolio/${application.portfolio.public_slug}`}
+    icon={FolderOpen} // ✅ Nouvelle icône
+    title={application.portfolio.title || "Mon portfolio"}
+    subtitle="Portfolio"
+    action={<ExternalLink size={14} />}
+  />
+)}
 
           {/* ✅ CV : On prend celui de la candidature, sinon celui du profil */}
           {(application.cv_path || application.profile?.cv_path) ? (

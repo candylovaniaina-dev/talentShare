@@ -2,23 +2,25 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft, Loader2, Clock, Check, Calendar, Building2, FileText,
-  Briefcase, Video, MapPin, ExternalLink, AlertCircle, Trash2,
-  Download, ShieldCheck, ChevronRight, Circle, X,
-  CheckCircle2, MessageCircle, ArrowRight // ✅ Icône ajoutée
+  MapPin, AlertCircle, Trash2, Download, ShieldCheck, ChevronRight,
+  ArrowRight, X, ChevronDown, ChevronUp
 } from "lucide-react";
+
 import AppShell from "../../components/layout/AppShell";
 import api from "../../services/api";
-import { useTheme } from "../../context/ThemeContext";
-
 import PublicPortfolio from "../PublicPortfolio";
 
+// ======================================================
+// THEME & CONFIG
+// ======================================================
+
 const STATUS_CFG = {
-  sent: { label: "Envoyée", step: 1, tone: "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700", dot: "bg-slate-400" },
-  viewed: { label: "Consultée", step: 2, tone: "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/50 dark:text-sky-300 dark:border-sky-800", dot: "bg-sky-500" },
-  shortlisted: { label: "Présélectionnée", step: 3, tone: "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800", dot: "bg-violet-500" },
-  interview: { label: "Entretien", step: 4, tone: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800", dot: "bg-amber-500" },
-  accepted: { label: "Acceptée", step: 5, tone: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800", dot: "bg-emerald-500" },
-  rejected: { label: "Refusée", step: 0, tone: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800", dot: "bg-rose-500" },
+  sent: { label: "Envoyée", step: 1, color: "bg-slate-100 text-slate-700 border-slate-200", dot: "bg-slate-400" },
+  viewed: { label: "Consultée", step: 2, color: "bg-sky-50 text-sky-700 border-sky-100", dot: "bg-sky-500" },
+  shortlisted: { label: "Présélectionnée", step: 3, color: "bg-violet-50 text-violet-700 border-violet-100", dot: "bg-violet-500" },
+  interview: { label: "Entretien", step: 4, color: "bg-amber-50 text-amber-700 border-amber-100", dot: "bg-amber-500" },
+  accepted: { label: "Acceptée", step: 5, color: "bg-[#0B2235] text-white border-[#0B2235]", dot: "bg-[#16B8B1]" },
+  rejected: { label: "Refusée", step: 0, color: "bg-rose-50 text-rose-700 border-rose-100", dot: "bg-rose-500" },
 };
 
 const STEPS = [
@@ -28,6 +30,10 @@ const STEPS = [
   { key: "interview", label: "Entretien" },
   { key: "accepted", label: "Décision" },
 ];
+
+// ======================================================
+// HELPERS
+// ======================================================
 
 function formatDate(value, options = {}) {
   if (!value) return "—";
@@ -49,76 +55,127 @@ function getDocumentUrl(path) {
 }
 
 function getPortfolioSlug(portfolio) {
-  return portfolio?.public_slug || portfolio?.slug || portfolio?.portfolio?.public_slug || portfolio?.portfolio?.slug || "";
+  return (
+    portfolio?.public_slug || portfolio?.slug ||
+    portfolio?.portfolio?.public_slug || portfolio?.portfolio?.slug || ""
+  );
 }
+
+// ======================================================
+// UI COMPONENTS
+// ======================================================
 
 function Card({ children, className = "" }) {
-  return <section className={`rounded-2xl border border-slate-200 bg-white shadow-sm transition-colors dark:border-slate-700 dark:bg-slate-900 ${className}`}>{children}</section>;
+  return (
+    <section className={`overflow-hidden rounded-3xl border border-[#EBF1F6] bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 ${className}`}>
+      {children}
+    </section>
+  );
 }
 
-function CardHeader({ icon: Icon, title, subtitle, tone = "emerald" }) {
-  const tones = {
-    emerald: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400",
-    amber: "bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400",
-    blue: "bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400",
-    slate: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
-    violet: "bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-400",
-  };
+function SectionHeader({ title, subtitle, right }) {
   return (
-    <div className="flex items-start gap-3 border-b border-slate-100 px-5 py-4 dark:border-slate-800">
-      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${tones[tone]}`}><Icon size={16} strokeWidth={2} /></span>
-      <div className="min-w-0">
-        <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">{title}</h2>
-        {subtitle && <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{subtitle}</p>}
+    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#F0F4F8] bg-white/50 px-6 py-5">
+      <div>
+        <h2 className="text-sm font-extrabold tracking-tight text-[#0B2235]">{title}</h2>
+        {subtitle && <p className="mt-1 text-[11px] font-medium text-[#8796A6]">{subtitle}</p>}
       </div>
+      {right}
     </div>
   );
 }
 
 function InfoItem({ label, children }) {
   return (
-    <div>
-      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">{label}</p>
-      <p className="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">{children}</p>
+    <div className="min-w-0">
+      <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#94A3B2]">{label}</p>
+      <p className="mt-1.5 break-words text-[13px] font-semibold leading-relaxed text-[#263C4D]">{children}</p>
     </div>
   );
 }
 
-function DocumentLink({ href, title, subtitle, icon: Icon, tone = "emerald", download = false }) {
+function DocumentLink({ href, title, subtitle, download = false }) {
   if (!href) return null;
-  const styles = {
-    emerald: { icon: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400", hover: "hover:border-emerald-300 hover:bg-emerald-50/50 dark:hover:border-emerald-700 dark:hover:bg-emerald-950/30" },
-    blue: { icon: "bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400", hover: "hover:border-blue-300 hover:bg-blue-50/50 dark:hover:border-blue-700 dark:hover:bg-blue-950/30" },
-  };
-  const style = styles[tone];
   return (
-    <a href={href} target="_blank" rel="noopener noreferrer" {...(download ? { download: true } : {})} className={`group flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 transition dark:border-slate-700 dark:bg-slate-950 ${style.hover}`}>
-      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${style.icon}`}><Icon size={17} /></span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</span>
-        <span className="mt-0.5 block truncate text-xs text-slate-500 dark:text-slate-400">{subtitle}</span>
-      </span>
-      <Download size={15} className="shrink-0 text-slate-400 transition group-hover:text-emerald-500" />
+    <a href={href} target="_blank" rel="noopener noreferrer" {...(download ? { download: true } : {})}
+      className="group flex min-w-0 items-center gap-3 rounded-2xl border border-[#EBF1F6] bg-white p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#16B8B1]/40 hover:shadow-md">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E8F8F7] text-[#109E98]"><FileText size={18} /></div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[13px] font-bold text-[#0B2235]">{title}</p>
+        <p className="mt-0.5 truncate text-[11px] text-[#8493A3]">{subtitle}</p>
+      </div>
+      <Download size={16} className="shrink-0 text-[#94A3B2] transition group-hover:text-[#16A9A3]" />
     </a>
   );
 }
 
+function StatusBadge({ status }) {
+  const cfg = STATUS_CFG[status] || STATUS_CFG.sent;
+  return (
+    <span className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-[11px] font-bold shadow-sm ${cfg.color}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
+      {cfg.label}
+    </span>
+  );
+}
+
+function ApplicationTimeline({ currentStep }) {
+  return (
+    <div className="px-6 py-7">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-[13px] font-extrabold text-[#0B2235]">Suivi de votre candidature</h3>
+        <span className="rounded-full bg-[#E9F8F7] px-3 py-1 text-[10px] font-bold text-[#109E98]">
+          {currentStep} / {STEPS.length}
+        </span>
+      </div>
+      <div className="relative">
+        <div className="absolute left-[10%] right-[10%] top-[13px] h-[3px] rounded-full bg-[#E8EDF2]" />
+        <div
+          className="absolute left-[10%] top-[13px] h-[3px] rounded-full bg-[#16B8B1] transition-all duration-700 ease-in-out"
+          style={{ width: `${(Math.max(0, currentStep - 1) / (STEPS.length - 1)) * 80}%` }}
+        />
+        <div className="relative grid grid-cols-5">
+          {STEPS.map((step, index) => {
+            const stepNumber = index + 1;
+            const done = stepNumber <= currentStep;
+            const current = stepNumber === currentStep;
+            return (
+              <div key={step.key} className="flex min-w-0 flex-col items-center text-center">
+                <div className={`relative z-10 flex h-7 w-7 items-center justify-center rounded-full border-[3px] transition-all duration-300 ${
+                  done ? "border-[#16B8B1] bg-[#16B8B1] text-white" : "border-[#E2EAF0] bg-white text-[#BCC7D1]"
+                } ${current ? "ring-4 ring-[#16B8B1]/20" : ""}`}>
+                  {done ? <Check size={12} strokeWidth={3} /> : <span className="text-[9px] font-bold">{stepNumber}</span>}
+                </div>
+                <span className={`mt-2.5 max-w-full text-[9.5px] font-bold leading-3 ${done ? "text-[#0B2235]" : "text-[#9BA8B5]"}`}>
+                  {step.label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ======================================================
+// PAGE PRINCIPALE
+// ======================================================
+
 export default function ApplicationDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { theme } = useTheme();
-  const isDark = theme === "dark";
 
   const [application, setApplication] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [withdrawing, setWithdrawing] = useState(false);
-  
-  // ✅ Nouveau state pour stocker l'ID de la mission
-  const [missionId, setMissionId] = useState(null);
 
+  const [missionId, setMissionId] = useState(null);
+  const [linkedMission, setLinkedMission] = useState(null);
   const [portfolioData, setPortfolioData] = useState(null);
   const [showPortfolioModal, setShowPortfolioModal] = useState(false);
+  const [isLetterExpanded, setIsLetterExpanded] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -131,15 +188,14 @@ export default function ApplicationDetail() {
         const appData = res?.data?.data ?? res?.data;
         setApplication(appData);
 
-        // ✅ Si la candidature est acceptée, on cherche la mission associée
         if (appData.status === "accepted" && appData.job_offer_id) {
           try {
-            // On récupère les missions de l'utilisateur pour trouver celle liée à cette offre
             const missionsRes = await api.get("/missions");
             const missions = Array.isArray(missionsRes.data) ? missionsRes.data : missionsRes.data?.data || [];
-            const linkedMission = missions.find(m => m.job_offer_id === appData.job_offer_id);
-            if (linkedMission) {
-              setMissionId(linkedMission.id);
+            const linked = missions.find((m) => m.job_offer_id === appData.job_offer_id);
+            if (active && linked) {
+              setMissionId(linked.id);
+              setLinkedMission(linked);
             }
           } catch (err) {
             console.error("Impossible de trouver la mission liée", err);
@@ -148,29 +204,24 @@ export default function ApplicationDetail() {
 
         const portfolio = appData.portfolio || appData.portfolio_data;
         const slug = getPortfolioSlug(portfolio);
-        
         if (slug) {
           try {
             const portfolioRes = await api.get(`/portfolio/${encodeURIComponent(slug)}`);
-            if (active) {
-              setPortfolioData(portfolioRes?.data?.data ?? portfolioRes?.data);
-            }
+            if (active) setPortfolioData(portfolioRes?.data?.data ?? portfolioRes?.data);
           } catch (err) {
-            console.error("Erreur de chargement du portfolio :", err);
+            console.error("Erreur portfolio :", err);
           }
         }
       })
       .catch((err) => {
         if (!active) return;
         if (err.response?.status === 404) {
-           navigate(`/proposals/${id}`, { replace: true });
-           return;
+          navigate(`/proposals/${id}`, { replace: true });
+          return;
         }
         setError(err.response?.status === 403 ? "forbidden" : "not_found");
       })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+      .finally(() => { if (active) setLoading(false); });
 
     return () => { active = false; };
   }, [id, navigate]);
@@ -179,17 +230,10 @@ export default function ApplicationDetail() {
     if (!application) return {};
     const portfolio = application.portfolio || application.portfolio_data || null;
     const slug = getPortfolioSlug(portfolio);
-    
-    const cvPath = 
-      application.cv_path || 
-      application.cv?.path || 
-      application.cv?.url || 
-      application.profile?.cv_path || 
-      application.candidate?.cv_path || 
-      application.user?.cv_path ||
-      application.profile_data?.cv_path ||
-      "";
-
+    const cvPath =
+      application.cv_path || application.cv?.path || application.cv?.url ||
+      application.profile?.cv_path || application.candidate?.cv_path ||
+      application.user?.cv_path || application.profile_data?.cv_path || "";
     return {
       portfolio,
       portfolioSlug: slug,
@@ -211,14 +255,15 @@ export default function ApplicationDetail() {
     }
   };
 
-  const pageClass = isDark ? "bg-[#071521] text-slate-100" : "bg-[#F5F8FA] text-slate-800";
-
   if (loading) {
     return (
       <AppShell>
-        <main className={`flex min-h-[65vh] items-center justify-center ${pageClass}`}>
-          <div className="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
-            <Loader2 className="animate-spin text-emerald-500" size={25} /> Chargement de ta candidature...
+        <main className="flex min-h-[70vh] items-center justify-center bg-[#F3F6FA] px-4">
+          <div className="text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm">
+              <Loader2 size={26} className="animate-spin text-[#16B8B1]" />
+            </div>
+            <p className="mt-4 text-sm font-semibold text-[#0B2235]">Chargement de votre candidature</p>
           </div>
         </main>
       </AppShell>
@@ -228,12 +273,17 @@ export default function ApplicationDetail() {
   if (error || !application) {
     return (
       <AppShell>
-        <main className={`flex min-h-[70vh] items-center justify-center px-4 ${pageClass}`}>
-          <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900">
-            <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 text-rose-500 dark:bg-rose-950/50 dark:text-rose-400"><AlertCircle size={28} /></span>
-            <h1 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">{error === "forbidden" ? "Accès refusé" : "Candidature introuvable"}</h1>
-            <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">{error === "forbidden" ? "Tu n'as pas les autorisations nécessaires." : "Cette candidature n'existe pas ou n'est plus accessible."}</p>
-            <Link to="/applications" className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#0B1F33] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#16354E] dark:bg-emerald-400 dark:text-[#071521] dark:hover:bg-emerald-300"><ArrowLeft size={15} /> Retour à mes candidatures</Link>
+        <main className="flex min-h-[70vh] items-center justify-center bg-[#F3F6FA] px-4">
+          <div className="w-full max-w-md rounded-3xl border border-[#E2EAF1] bg-white p-8 text-center shadow-sm">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 text-rose-500">
+              <AlertCircle size={27} />
+            </div>
+            <h1 className="mt-5 text-xl font-bold text-[#0B2235]">
+              {error === "forbidden" ? "Accès refusé" : "Candidature introuvable"}
+            </h1>
+            <Link to="/applications" className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#0B2235] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#153C53]">
+              <ArrowLeft size={16} /> Retour
+            </Link>
           </div>
         </main>
       </AppShell>
@@ -247,116 +297,250 @@ export default function ApplicationDetail() {
   const company = offer.company || {};
   const hasDocuments = Boolean(documents.portfolioUrl || documents.cvUrl);
 
+  const getContractText = () => {
+    const type = (offer.offer_type || offer.employment_type || "").toLowerCase();
+    const title = offer.title || "ce poste";
+    const companyName = company.name || "L'entreprise";
+    if (type.includes("intern") || type.includes("stage")) return `${companyName} a accepté votre candidature pour le stage de ${title}.`;
+    if (type.includes("apprenti") || type.includes("alternance")) return `${companyName} a accepté votre candidature pour l'alternance de ${title}.`;
+    if (type.includes("cdd")) return `${companyName} a accepté votre candidature pour le CDD de ${title}.`;
+    if (type.includes("cdi") || type.includes("permanent")) return `${companyName} a accepté votre candidature pour le CDI de ${title}.`;
+    return `${companyName} a accepté votre candidature pour le poste de ${title}.`;
+  };
+
+  const letterText = application.cover_letter || "";
+  const isLetterLong = letterText.length > 200;
+  const displayedLetter = isLetterExpanded ? letterText : letterText.slice(0, 200) + (isLetterLong ? "..." : "");
+  const isTrial = linkedMission?.status === "trial";
+
   return (
     <AppShell>
-      <main className={`min-h-screen px-4 py-6 transition-colors duration-300 sm:px-6 sm:py-8 lg:px-8 ${pageClass}`}>
-        <div className="mx-auto max-w-6xl space-y-5">
-          
-          <Card className="overflow-hidden">
-            <div className="border-b border-slate-100 px-5 py-6 dark:border-slate-800 sm:px-7">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0">
-                  <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.15em] text-emerald-600 dark:text-emerald-400">Suivi de candidature</p>
-                  <h1 className="break-words text-2xl font-bold leading-tight tracking-tight text-slate-900 dark:text-white sm:text-3xl">{offer.title || "Candidature"}</h1>
-                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-500 dark:text-slate-400">
-                    {company.name && <span className="flex items-center gap-1.5"><Building2 size={14} /> {company.name}</span>}
-                    {offer.city && <span className="flex items-center gap-1.5"><MapPin size={14} /> {offer.city}{offer.country ? `, ${offer.country}` : ""}</span>}
-                  </div>
+      <main translate="no" className="min-h-screen bg-[#F3F6FA] px-4 py-8 font-['Plus_Jakarta_Sans',sans-serif] sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl space-y-6">
+
+          {isTrial && (
+            <div className="rounded-3xl border border-violet-200 bg-violet-50 p-5 shadow-sm">
+              <div className="flex items-start gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
+                  <ShieldCheck size={18} />
                 </div>
-                <span className={`inline-flex w-fit shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold ${cfg.tone}`}>
-                  <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} /> {cfg.label}
-                </span>
+                <div>
+                  <h2 className="text-sm font-bold text-violet-900">
+                    Période d'essai en cours
+                    {linkedMission.trial_ends_at && ` · jusqu'au ${formatDate(linkedMission.trial_ends_at)}`}
+                  </h2>
+                  <p className="mt-1 text-xs font-medium text-violet-800/80">
+                    À l'issue de l'essai, l'entreprise confirmera (ou non) votre embauche en CDI.
+                  </p>
+                </div>
               </div>
             </div>
+          )}
 
-            {application.status !== "rejected" ? (
-              <div className="px-5 py-6 sm:px-7">
-                <div className="mb-5 flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Progression du dossier</p>
-                  <span className="text-xs text-slate-400 dark:text-slate-500">Étape {currentStep} / {STEPS.length}</span>
-                </div>
-                <div className="flex items-start justify-between gap-1">
-                  {STEPS.map((step, index) => {
-                    const stepNum = index + 1;
-                    const isDone = stepNum <= currentStep;
-                    const isCurrent = stepNum === currentStep;
-                    return (
-                      <React.Fragment key={step.key}>
-                        <div className="flex min-w-0 flex-1 flex-col items-center text-center">
-                          <div className={`flex h-8 w-8 items-center justify-center rounded-full border-2 transition ${isDone ? "border-emerald-500 bg-emerald-500 text-white" : "border-slate-200 bg-white text-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-600"} ${isCurrent ? "ring-4 ring-emerald-100 dark:ring-emerald-900/50" : ""}`}>
-                            {isDone ? <Check size={13} strokeWidth={3} /> : <Circle size={7} fill="currentColor" />}
-                          </div>
-                          <span className={`mt-2 max-w-full truncate text-[10px] font-medium sm:text-xs ${isDone ? "text-slate-900 dark:text-slate-100" : "text-slate-400 dark:text-slate-500"}`}>{step.label}</span>
+          <div className="grid gap-6 lg:grid-cols-3">
+            
+            {/* ======================================================== */}
+            {/* COLONNE 1 : ESPACE PRO + ACCEPTATION + DOCUMENTS         */}
+            {/* ======================================================== */}
+            <div className="space-y-6">
+              
+              {/* BLOC ESPACE PRO */}
+              <Card className="border-none ring-1 ring-[#0B2235]/5 shadow-lg shadow-[#0B2235]/5">
+                <div className="relative overflow-hidden bg-[#0B2235] p-6 text-white">
+                  <div className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full border border-white/[0.06]" />
+                  <div className="relative">
+                    <div className="mb-4 flex items-center gap-2">
+                      <span className="text-[9.5px] font-extrabold uppercase tracking-[0.2em] text-[#16B8B1]">Espace professionnel</span>
+                      <span className="h-1 w-1 rounded-full bg-white/30" />
+                      <span className="text-[9.5px] font-medium text-white/50">Suivi</span>
+                    </div>
+                    <h1 className="break-words text-xl font-bold leading-tight tracking-tight">
+                      {offer.title || "Ma candidature"}
+                    </h1>
+                    <div className="mt-4 space-y-2.5 text-[13px] text-white/75">
+                      {company.name && (
+                        <div className="flex items-center gap-2.5"><Building2 size={15} className="text-[#16B8B1]" />{company.name}</div>
+                      )}
+                      {offer.city && (
+                        <div className="flex items-center gap-2.5"><MapPin size={15} className="text-[#16B8B1]" />{offer.city}{offer.country ? `, ${offer.country}` : ""}</div>
+                      )}
+                    </div>
+                    <div className="mt-6 border-t border-white/10 pt-5 space-y-4">
+                      <div>
+                        <p className="text-[10px] font-medium text-white/40 uppercase tracking-wider mb-2">Statut actuel</p>
+                        <StatusBadge status={application.status} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Date</p>
+                          <p className="mt-1 text-[12px] font-semibold text-white/90">
+                            {formatDate(application.created_at, { day: "numeric", month: "short", year: "numeric" })}
+                          </p>
                         </div>
-                        {index < STEPS.length - 1 && (
-                          <div className="mt-4 h-0.5 flex-1 rounded-full bg-slate-100 dark:bg-slate-800">
-                            <div className={`h-full rounded-full transition-all duration-500 ${stepNum < currentStep ? "bg-emerald-500" : "bg-transparent"}`} />
-                          </div>
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : (
-              <div className="p-5 sm:px-7">
-                <div className="flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 dark:border-rose-900 dark:bg-rose-950/30">
-                  <AlertCircle size={18} className="mt-0.5 shrink-0 text-rose-500" />
-                  <div>
-                    <p className="text-sm font-bold text-rose-900 dark:text-rose-200">Candidature refusée</p>
-                    <p className="mt-1 text-sm leading-relaxed text-rose-700 dark:text-rose-300">Cette candidature n'a pas été retenue. Tu peux continuer à explorer les opportunités.</p>
+                        <div>
+                          <p className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Contrat</p>
+                          <p className="mt-1 text-[12px] font-semibold text-white/90">
+                            {offer.offer_type || offer.employment_type || "—"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </Card>
+              </Card>
 
-          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-            <div className="space-y-5">
-              <Card>
-                <CardHeader icon={Calendar} title="Informations générales" subtitle="Récapitulatif de ta candidature" tone="blue" />
-                <div className="grid gap-5 p-5 sm:grid-cols-2">
-                  <InfoItem label="Date de candidature">{formatDate(application.created_at, { day: "numeric", month: "long", year: "numeric" })}</InfoItem>
-                  <InfoItem label="Statut actuel">{cfg.label}</InfoItem>
-                  {offer.city && <InfoItem label="Localisation">{offer.city}{offer.country ? `, ${offer.country}` : ""}</InfoItem>}
-                  {(offer.offer_type || offer.employment_type) && <InfoItem label="Type d'offre">{offer.offer_type || offer.employment_type}</InfoItem>}
+              {/* BLOC ACCEPTÉ */}
+              {application.status === "accepted" && (
+                <div className="overflow-hidden rounded-3xl border border-[#0B2235] bg-[#0B2235] shadow-xl shadow-[#0B2235]/10">
+                  <div className="border-b border-white/10 p-6">
+                    <div className="mb-3 inline-flex rounded-full border border-[#16B8B1]/30 bg-[#16B8B1]/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-[#54DCD4]">
+                      Candidature acceptée
+                    </div>
+                    <h3 className="text-lg font-bold text-white">Félicitations !</h3>
+                    <p className="mt-1.5 text-[12px] font-medium leading-relaxed text-white/65">Vous faites désormais partie de l'équipe.</p>
+                  </div>
+                  <div className="p-6">
+                    <p className="text-[13px] font-medium leading-6 text-white/75">{getContractText()}</p>
+                    {missionId && (
+                      <Link to={`/missions/${missionId}`}
+                        className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#16B8B1] px-4 py-3 text-[13px] font-bold text-[#0B2235] transition-all hover:bg-[#40D2CB] hover:shadow-lg hover:shadow-[#16B8B1]/20">
+                        Accéder à ma mission <ArrowRight size={16} />
+                      </Link>
+                    )}
+                  </div>
                 </div>
+              )}
+
+              {/* BLOC MES DOCUMENTS */}
+              {hasDocuments && (
+                <Card>
+                  <SectionHeader title="Mes documents" subtitle="Pièces jointes" />
+                  <div className="space-y-3 p-5">
+                    {documents.portfolioUrl ? (
+                      <button type="button" onClick={() => setShowPortfolioModal(true)}
+                        className="group flex w-full items-center gap-3 rounded-2xl border border-[#EBF1F6] bg-white p-3.5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-[#16B8B1]/40 hover:shadow-md">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E8F8F7] text-[#109E98]"><FileText size={18} /></div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[13px] font-bold text-[#0B2235]">{documents.portfolio?.title || "Mon portfolio public"}</p>
+                          <p className="mt-0.5 text-[11px] font-medium text-[#8796A6]">Consulter mon portfolio</p>
+                        </div>
+                        <ChevronRight size={16} className="shrink-0 text-[#9BA9B6] transition group-hover:translate-x-1 group-hover:text-[#16B8B1]" />
+                      </button>
+                    ) : documents.portfolio ? (
+                      <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-[11px] font-medium text-amber-800">
+                        Le portfolio est associé, mais son slug public est absent.
+                      </div>
+                    ) : null}
+                    {documents.cvUrl && (
+                      <DocumentLink href={documents.cvUrl} title="Curriculum Vitæ" subtitle="Ouvrir ou télécharger" download />
+                    )}
+                  </div>
+                </Card>
+              )}
+            </div>
+
+            {/* ======================================================== */}
+            {/* COLONNE 2 : SUIVI + LETTRE DE MOTIVATION                 */}
+            {/* ======================================================== */}
+            <div className="space-y-6">
+              <Card>
+                {application.status !== "rejected" ? (
+                  <ApplicationTimeline currentStep={currentStep} />
+                ) : (
+                  <div className="p-6">
+                    <div className="flex items-start gap-4 rounded-2xl border border-rose-100 bg-rose-50/70 p-5">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-rose-500 shadow-sm"><AlertCircle size={18} /></div>
+                      <div>
+                        <h3 className="text-sm font-bold text-rose-900">Candidature non retenue</h3>
+                        <p className="mt-1 text-xs font-medium leading-relaxed text-rose-700/80">Cette candidature n'a pas été retenue.</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </Card>
 
               {application.cover_letter && (
                 <Card>
-                  <CardHeader icon={FileText} title="Lettre de motivation" subtitle="Le message transmis avec ta candidature" tone="slate" />
+                  <SectionHeader title="Lettre de motivation" subtitle="Message transmis à l'entreprise" />
                   <div className="p-5">
-                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-[#0B1F33] sm:p-5">
-                      <p className="whitespace-pre-wrap break-words text-sm leading-7 text-slate-700 dark:text-slate-200">{application.cover_letter}</p>
-                    </div>
-                  </div>
-                </Card>
-              )}
-
-              {application.recruiter_notes && (
-                <Card>
-                  <CardHeader icon={ShieldCheck} title="Notes du recruteur" subtitle="Retour communiqué" tone="blue" />
-                  <div className="p-5">
-                    <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-4 dark:border-blue-900 dark:bg-blue-950/30 sm:p-5">
-                      <p className="whitespace-pre-wrap break-words text-sm leading-7 text-slate-700 dark:text-slate-200">{application.recruiter_notes}</p>
+                    <div className="relative rounded-2xl border border-[#E7EDF2] bg-[#F8FAFC] p-5">
+                      <div className="absolute left-0 top-5 bottom-5 w-[3px] rounded-full bg-[#16B8B1]" />
+                      <p className="whitespace-pre-wrap break-words pl-4 text-[13px] font-medium leading-7 text-[#536577]">
+                        {displayedLetter}
+                      </p>
+                      
+                      {isLetterLong && (
+                        <div className="mt-4 pl-4">
+                          <button 
+                            type="button" 
+                            onClick={() => setIsLetterExpanded(!isLetterExpanded)}
+                            className="inline-flex items-center gap-1.5 rounded-full bg-[#16B8B1]/10 px-3 py-1.5 text-[11px] font-bold text-[#109E98] transition-all duration-200 hover:bg-[#16B8B1]/20 hover:text-[#0B2235]"
+                          >
+                            {isLetterExpanded ? (
+                              <><ChevronUp size={14} /> Voir moins</>
+                            ) : (
+                              <><ChevronDown size={14} /> Voir plus</>
+                            )}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </Card>
               )}
             </div>
 
-            <div className="space-y-5">
+            {/* ======================================================== */}
+            {/* COLONNE 3 : INFOS GÉNÉRALES + EXTRAS                     */}
+            {/* ======================================================== */}
+            <div className="space-y-6">
+              <Card>
+                <SectionHeader title="Informations générales" subtitle="Récapitulatif de votre candidature" />
+                <div className="grid gap-5 p-6 sm:grid-cols-2">
+                  <InfoItem label="Date">{formatDate(application.created_at, { day: "numeric", month: "long", year: "numeric" })}</InfoItem>
+                  <InfoItem label="Statut">
+                    <span className="inline-flex items-center gap-1.5"><span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />{cfg.label}</span>
+                  </InfoItem>
+                  <InfoItem label="Entreprise">{company.name || "—"}</InfoItem>
+                  <InfoItem label="Localisation">
+                    {offer.city ? `${offer.city}${offer.country ? `, ${offer.country}` : ""}` : "—"}
+                  </InfoItem>
+                  <InfoItem label="Contrat">{offer.offer_type || offer.employment_type || "—"}</InfoItem>
+                  <InfoItem label="Poste">{offer.title || "—"}</InfoItem>
+                </div>
+              </Card>
+
+              {application.recruiter_notes && (
+                <Card>
+                  <SectionHeader title="Retour du recruteur" subtitle="Informations communiquées" />
+                  <div className="p-5">
+                    <div className="rounded-2xl border border-[#D8EEEC] bg-[#F0FAF9] p-4">
+                      <div className="mb-3 flex items-center gap-2">
+                        <span className="h-1 w-4 rounded-full bg-[#16B8B1]" />
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#128D87]">Message</span>
+                      </div>
+                      <p className="whitespace-pre-wrap break-words text-[13px] font-medium leading-6 text-[#405968]">{application.recruiter_notes}</p>
+                    </div>
+                  </div>
+                </Card>
+              )}
+
               {application.status === "interview" && application.interview_at && (
                 <Card>
-                  <CardHeader icon={Video} title="Entretien programmé" subtitle="Détails de ton entretien" tone="amber" />
+                  <SectionHeader title="Entretien programmé" subtitle="Votre rendez-vous" />
                   <div className="p-5">
-                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30">
-                      <p className="text-sm font-bold capitalize leading-snug text-amber-900 dark:text-amber-200">{formatDate(application.interview_at, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
-                      <p className="mt-2 flex items-center gap-1.5 text-sm text-amber-700 dark:text-amber-300"><Clock size={14} /> À {new Date(application.interview_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</p>
+                    <div className="rounded-2xl border border-[#F1E6C9] bg-[#FFFBF1] p-4">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-[#A58A4C]">Date</p>
+                      <p className="mt-1.5 text-sm font-bold capitalize leading-5 text-[#624D22]">
+                        {formatDate(application.interview_at, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                      </p>
+                      <div className="mt-2.5 flex items-center gap-2 text-[13px] font-semibold text-[#927437]">
+                        <Clock size={15} /> À {new Date(application.interview_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+                      </div>
                       {application.interview_link && (
-                        <a href={application.interview_link} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#0B1F33] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#16354E] dark:bg-emerald-400 dark:text-[#071521] dark:hover:bg-emerald-300">
-                          <Video size={15} /> Rejoindre l'entretien <ExternalLink size={13} />
+                        <a href={application.interview_link} target="_blank" rel="noopener noreferrer"
+                          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#0B2235] px-4 py-2.5 text-[13px] font-bold text-white transition hover:bg-[#153C53]">
+                          Rejoindre l'entretien
                         </a>
                       )}
                     </div>
@@ -364,92 +548,30 @@ export default function ApplicationDetail() {
                 </Card>
               )}
 
-              {hasDocuments && (
-                <Card>
-                  <CardHeader icon={FileText} title="Documents joints" subtitle="Pièces de ta candidature" tone="slate" />
-                  <div className="space-y-3 p-5">
-                    {documents.portfolioUrl ? (
-                      <button
-                        type="button"
-                        onClick={() => setShowPortfolioModal(true)}
-                        className="group flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 text-left transition hover:border-emerald-300 hover:bg-emerald-50/50 dark:border-slate-700 dark:bg-slate-950 dark:hover:border-emerald-700 dark:hover:bg-emerald-950/30"
-                      >
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{documents.portfolio?.title || "Mon portfolio public"}</span>
-                          <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Ouvrir le vrai portfolio</span>
-                        </span>
-                        <ChevronRight size={16} className="shrink-0 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-emerald-500" />
-                      </button>
-                    ) : documents.portfolio ? (
-                      <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
-                        Le portfolio est associé à cette candidature, mais son slug public n'est pas présent dans les données reçues.
-                      </div>
-                    ) : null}
-
-                    {documents.cvUrl && <DocumentLink href={documents.cvUrl} title="Curriculum Vitæ" subtitle="Ouvrir ou télécharger le CV joint" icon={FileText} tone="blue" download />}
-                  </div>
-                </Card>
-              )}
-
               {isWithdrawable && (
                 <Card>
                   <div className="p-5">
-                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Retirer ma candidature</p>
-                    <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Action irréversible. Cette candidature sera supprimée définitivement.</p>
-                    <button type="button" onClick={withdraw} disabled={withdrawing} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-4 py-3 text-sm font-semibold text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-rose-900 dark:bg-slate-950 dark:text-rose-300 dark:hover:bg-rose-950/30">
-                      {withdrawing ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
+                    <p className="text-[13px] font-bold text-[#0B2235]">Gérer ma candidature</p>
+                    <p className="mt-1.5 text-[11px] font-medium leading-relaxed text-[#8796A6]">Vous pouvez retirer votre candidature.</p>
+                    <button type="button" onClick={withdraw} disabled={withdrawing}
+                      className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-4 py-3 text-[13px] font-bold text-rose-600 transition-all hover:-translate-y-0.5 hover:border-rose-300 hover:bg-rose-50 hover:shadow-sm disabled:opacity-50">
+                      {withdrawing ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                       {withdrawing ? "Retrait..." : "Retirer ma candidature"}
                     </button>
                   </div>
                 </Card>
               )}
-
-              {/* ✅ BLOC FÉLICITATIONS ACCEPTÉ + BOUTON VERS LA MISSION */}
-              {application.status === "accepted" && (
-                <Card className="border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/30 overflow-hidden">
-                  <div className="p-5">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-400">
-                        <CheckCircle2 size={20} />
-                      </div>
-                      <h3 className="text-sm font-bold text-emerald-900 dark:text-emerald-200">
-                        Félicitations, vous faites partie de l'équipe !
-                      </h3>
-                    </div>
-                    <p className="mt-3 text-sm text-emerald-800 dark:text-emerald-300">
-                      L'entreprise <strong>{company.name}</strong> a accepté votre candidature pour le poste de <strong>{offer.title}</strong>.
-                      Un message de bienvenue vous a été envoyé dans la messagerie.
-                    </p>
-
-                    {/* ✅ NOUVEAU BOUTON VERS LA MISSION */}
-                    {missionId && (
-                      <div className="mt-5">
-                        <Link
-                          to={`/missions/${missionId}`}
-                          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-500 dark:bg-emerald-500 dark:text-[#06251F] dark:hover:bg-emerald-400"
-                        >
-                       
-                          Accéder à ma mission
-                          <ArrowRight size={16} />
-                        </Link>
-                      </div>
-                    )}
-                  </div>
-                </Card>
-              )}
             </div>
+          </div>
+
+          <div className="flex items-center justify-between border-t border-[#E2EAF1] pt-6 pb-2">
+            <p className="text-[11px] font-medium text-[#96A3B0]">TalentShare · Connecter les talents</p>
           </div>
         </div>
 
-        {/* ✅ MODALE DU PORTFOLIO */}
         {showPortfolioModal && portfolioData && (
-          <PublicPortfolio
-            asModal={true}
-            onClose={() => setShowPortfolioModal(false)}
-            data={portfolioData}
-          />
+          <PublicPortfolio asModal={true} onClose={() => setShowPortfolioModal(false)} data={portfolioData} />
         )}
-
       </main>
     </AppShell>
   );

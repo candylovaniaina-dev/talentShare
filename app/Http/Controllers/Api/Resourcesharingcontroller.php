@@ -209,13 +209,21 @@ class ResourceSharingController extends Controller
                 $profile = $e->user?->professionalProfile;
                 $name = trim(($e->first_name ?? '') . ' ' . ($e->last_name ?? ''));
 
+                // ✅ CORRIGÉ : On ignore un "poste" qui est en fait le nom
+                $clean = fn ($v) => ($v = trim((string) $v)) !== ''
+                    && strcasecmp($v, $name) !== 0
+                    && strcasecmp($v, (string) $e->user?->name) !== 0
+                    && $v !== 'Professionnel' ? $v : null;
+
+                $position = $clean($e->position) ?? $clean($profile?->headline);
+
                 return [
                     'id'                      => $e->id,
                     'name'                    => $name ?: ($e->user?->name ?? 'Salarié'),
-                    'position'                => $e->position,
+                    'position'                => $position,
                     'professional_profile_id' => $profile?->id,
                     'avatar_path'             => $profile?->avatar_path,
-                    'headline'                => $profile?->headline,
+                    'headline'                => $position,
                     'shareable'               => (bool) $profile,
                     'skills'                  => $profile
                         ? $profile->skills->map(fn ($s) => [
@@ -397,8 +405,11 @@ class ResourceSharingController extends Controller
         $start = $d['start_at'];
         $end = $d['end_at'];
 
+        // ✅ CORRECTION ICI : Ajout de whereNotNull('supplying_company_id')
+        // Seules les missions d'emprunt bloquent la publication d'une offre
         $mission = Mission::where('professional_profile_id', $profileId)
             ->whereIn('status', ['pending_employee', 'planned', 'active', 'trial'])
+            ->whereNotNull('supplying_company_id') 
             ->where('start_at', '<=', $end)
             ->where(fn ($q) => $q->whereNull('end_at')->orWhere('end_at', '>=', $start))
             ->exists();

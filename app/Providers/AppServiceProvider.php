@@ -23,5 +23,6 @@ class AppServiceProvider extends ServiceProvider
 {
     // ✅ Active la surveillance de la création des utilisateurs
     User::observe(UserObserver::class);
+    \App\Models\Mission::observe(\App\Observers\MissionObserver::class);
 }
 }

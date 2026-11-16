@@ -49,9 +49,15 @@ class CompanyController extends Controller
 
     public function myCompanies(Request $request)
     {
-        return $request->user()->companies()
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $user = $request->user();
+        
+        $owned = $user->ownedCompanies()->get();
+        $member = $user->memberCompanies()->get();
+        
+        // Fusionner sans doublons
+        $all = $owned->merge($member)->unique('id')->values();
+        
+        return response()->json($all);
     }
 
     public function myEmployees(Request $request)
@@ -142,9 +148,6 @@ class CompanyController extends Controller
         ]);
     }
 
-    /**
-     * ✅ Lister les membres avec leur avatar (profil pro + photo salarié)
-     */
     public function members(Company $company)
     {
         $members = $company->members()
@@ -154,7 +157,6 @@ class CompanyController extends Controller
             ])
             ->get();
 
-        // ✅ Enrichir chaque membre avec la photo salarié si dispo
         $employeePhotos = \App\Models\Employee::where('company_id', $company->id)
             ->whereNotNull('user_id')
             ->whereNotNull('photo_path')
@@ -192,13 +194,12 @@ class CompanyController extends Controller
             'status'  => 'active',
         ]);
 
-        // ✅ Créer le profil pro s'il n'existe pas
         $user = User::find($request->user_id);
         if ($user && !$user->professionalProfile) {
             \App\Models\ProfessionalProfile::create([
                 'user_id'      => $user->id,
                 'profile_type' => 'employee',
-                'headline'     => $user->name ?? 'Professionnel',
+                'headline'     => null, // ✅ CORRIGÉ : On ne met plus le nom par défaut
                 'visibility'   => 'network',
             ]);
         }
@@ -257,40 +258,55 @@ class CompanyController extends Controller
         ]);
     }
 
-      public function employees(Company $company)
+    public function employees(Company $company)
     {
         $employees = $company->employees()
             ->with(['user.professionalProfile'])
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // ✅ On s'assure que chaque salarié a un profil pro et est marqué comme "shareable"
         $employees->transform(function ($emp) {
             $profile = $emp->user?->professionalProfile;
+            $name = $emp->user?->name ?? trim(($emp->first_name ?? '') . ' ' . ($emp->last_name ?? ''));
             
-            // Si le salarié a un compte utilisateur mais pas de profil pro, on le crée
-            if ($emp->user_id && !$profile) {
-                $profile = \App\Models\ProfessionalProfile::create([
-                    'user_id'      => $emp->user_id,
-                    'profile_type' => 'employee',
-                    'headline'     => $emp->position ?? 'Professionnel',
-                    'visibility'   => 'network',
-                ]);
+            // ✅ CORRIGÉ : On donne la priorité absolue au poste de la table employees
+            $currentPosition = $emp->position ?: $profile?->headline;
+
+            // On ignore la valeur si elle est identique au nom ou si c'est "Professionnel"
+            if (!$currentPosition || trim($currentPosition) === trim($name) || $currentPosition === 'Professionnel') {
+                $currentPosition = null;
             }
 
-            // On injecte les données attendues par ta modale React
-            $emp->setAttribute('shareable', true); // 👈 On force à true pour qu'il s'affiche
+            // Si pas de poste valide, on va chercher le titre de la mission
+            if (!$currentPosition && $emp->user_id) {
+                $mission = \App\Models\Mission::where('requesting_company_id', $emp->company_id)
+                    ->whereHas('profile', function($q) use ($emp) {
+                        $q->where('user_id', $emp->user_id);
+                    })
+                    ->latest()
+                    ->first();
+                    
+                $currentPosition = $mission?->title ?? 'Poste non spécifié';
+            }
+
+            // ✅ CORRIGÉ : On n'écrase plus la base de données ici
+            
+            $emp->setAttribute('shareable', true);
             $emp->setAttribute('professional_profile_id', $profile?->id ?? $emp->professional_profile_id);
-            $emp->setAttribute('name', $emp->user?->name ?? trim(($emp->first_name ?? '') . ' ' . ($emp->last_name ?? '')) ?: 'Salarié');
+            $emp->setAttribute('name', $name ?: 'Salarié');
             $emp->setAttribute('avatar_path', $emp->photo_path ?? $profile?->avatar_path);
-            $emp->setAttribute('headline', $profile?->headline ?? $emp->position);
+            
+            // ✅ CORRIGÉ : On force les deux champs pour que le frontend trouve la donnée
+            $emp->setAttribute('headline', $currentPosition);
+            $emp->setAttribute('position', $currentPosition);
 
             return $emp;
         });
 
         return response()->json(['data' => $employees]);
     }
-       public function addEmployee(Request $request, Company $company)
+
+    public function addEmployee(Request $request, Company $company)
     {
         $this->authorize('update', $company);
 
@@ -306,14 +322,13 @@ class CompanyController extends Controller
         $hasAccount = (bool) $user;
         $profileId = null;
 
-        // ✅ Si l'utilisateur existe, on récupère ou crée son profil pro
         if ($user) {
             $profile = \App\Models\ProfessionalProfile::where('user_id', $user->id)->first();
             if (!$profile) {
                 $profile = \App\Models\ProfessionalProfile::create([
                     'user_id'      => $user->id,
                     'profile_type' => 'employee',
-                    'headline'     => $request->position ?? 'Professionnel',
+                    'headline'     => $request->position, // ✅ CORRIGÉ : On met le poste saisi, ou null
                     'visibility'   => 'network',
                 ]);
             }
@@ -344,7 +359,7 @@ class CompanyController extends Controller
             'phone'                   => $request->phone,
             'has_account'             => $hasAccount,
             'user_id'                 => $user?->id,
-            'professional_profile_id' => $profileId, // ✅ On lie l'ID du profil ici
+            'professional_profile_id' => $profileId,
         ]);
 
         if ($user) {
@@ -410,9 +425,6 @@ class CompanyController extends Controller
         ]);
     }
 
-    /**
-     * ✅ Upload photo salarié + synchro auto dans profil pro
-     */
     public function uploadEmployeePhoto(Request $request, Company $company, $employeeId)
     {
         $this->authorize('update', $company);
@@ -445,7 +457,7 @@ class CompanyController extends Controller
                 \App\Models\ProfessionalProfile::create([
                     'user_id'      => $employee->user_id,
                     'profile_type' => 'employee',
-                    'headline'     => $employee->position ?? 'Professionnel',
+                    'headline'     => $employee->position, // ✅ CORRIGÉ : Pas de 'Professionnel' par défaut
                     'visibility'   => 'network',
                     'avatar_path'  => $path,
                 ]);
@@ -458,10 +470,6 @@ class CompanyController extends Controller
         ]);
     }
 
-    /**
-     * ✅ Upload photo membre + synchro profil pro ET photo salarié
-     * Route : POST /companies/{company}/members/{member}/photo
-     */
     public function uploadMemberPhoto(Request $request, Company $company, $memberId)
     {
         $this->authorize('update', $company);
@@ -480,10 +488,8 @@ class CompanyController extends Controller
             return response()->json(['message' => 'Ce membre n\'a pas de compte utilisateur'], 422);
         }
 
-        // ✅ Stocker dans avatars/
         $path = $request->file('photo')->store('avatars', 'public');
 
-        // 1) Mettre à jour le profil pro
         $profile = \App\Models\ProfessionalProfile::where('user_id', $member->user_id)->first();
 
         if ($profile) {
@@ -495,13 +501,12 @@ class CompanyController extends Controller
             \App\Models\ProfessionalProfile::create([
                 'user_id'      => $member->user_id,
                 'profile_type' => 'employee',
-                'headline'     => $member->user->name ?? 'Professionnel',
+                'headline'     => null, // ✅ CORRIGÉ : On ne met plus le nom par défaut
                 'visibility'   => 'network',
                 'avatar_path'  => $path,
             ]);
         }
 
-        // 2) Synchroniser aussi avec employees.photo_path si la personne est salariée
         $employee = \App\Models\Employee::where('company_id', $company->id)
             ->where('user_id', $member->user_id)
             ->first();
@@ -519,5 +524,10 @@ class CompanyController extends Controller
                 'user.professionalProfile',
             ]),
         ]);
+    }
+
+    public function borrowed(Request $request, Company $company)
+    {
+        return app(\App\Http\Controllers\Api\EmployeeController::class)->borrowed($request, $company);
     }
 }

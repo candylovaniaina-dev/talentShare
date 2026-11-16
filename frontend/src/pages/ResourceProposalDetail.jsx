@@ -1,473 +1,439 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
-import {
-  ArrowLeft, Building2, FileText, Paperclip, Trash2, Check, X, Send, Edit3, Loader2,
-  Briefcase, Ban, CalendarDays, Clock3, Users, RefreshCw, History, ChevronRight, Timer,
-} from "lucide-react";
-
+import React, { useCallback, useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import AppShell from "../components/layout/AppShell";
 import Toast from "../components/ui/Toast";
 import { useToast } from "../hooks/useToast";
-import api from "../services/api";
 import ProposalFormModal from "../components/resource-sharing/ProposalFormModal";
-import { Modal, MISSION_TYPES, apiError } from "../components/resource-sharing/shared";
+import api from "../services/api";
 import {
-  PROPOSAL_STATUS, TONES, Avatar, card, fmt, durationText,
-  btnPrimary, btnGhost, btnDanger, heroPrimary, heroGhost,
-} from "../components/collab/ui";
+  Avatar, SkillChips, Skeleton, Empty, SuccessScreen, ConfirmDialog,
+  fmtDate, apiError, btnPrimary, btnGhost, btnDanger, cardCls,
+} from "../components/talent-market/ui";
 
-const STEPS = ["Brouillon", "Envoyée", "Consultée", "Réponse"];
-const ORDER = { draft: 0, sent: 1, viewed: 2 };
-const FINAL = ["accepted", "declined", "expired", "cancelled"];
+const FONT = "font-['Plus_Jakarta_Sans',sans-serif]";
 
-function Stepper({ status }) {
-  const isFinal = FINAL.includes(status);
-  const idx = isFinal ? 3 : ORDER[status] ?? 0;
-  const finalTone = PROPOSAL_STATUS[status]?.tone;
+const STEPS = [["draft", "Brouillon"], ["sent", "Envoyée"], ["viewed", "Consultée"], ["accepted", "Acceptée"]];
+const TERMINAL = { declined: "Refusée", expired: "Expirée", cancelled: "Annulée" };
+const PILL = {
+  draft: "bg-white/15 text-white", sent: "bg-amber-400 text-[#0B1F33]", viewed: "bg-sky-400 text-[#0B1F33]",
+  accepted: "bg-[#16B8B1] text-[#0B1F33]", declined: "bg-rose-500 text-white",
+  expired: "bg-slate-400 text-[#0B1F33]", cancelled: "bg-slate-400 text-[#0B1F33]",
+};
+const TABS = [["overview", "Aperçu"], ["message", "Message et conditions"], ["docs", "Documents"], ["history", "Historique"]];
 
+const DAY = 86400000;
+const toMs = (d) => (d ? new Date(d).getTime() : NaN);
+const clamp = (n) => Math.max(0, Math.min(100, n));
+const fmtDT = (d) => d ? new Date(d).toLocaleString("fr-FR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
+const span = (a, b) => {
+  const d = Math.round((toMs(b) - toMs(a)) / DAY) + 1;
+  if (!(d > 0)) return "—";
+  if (d < 60) return `${d} jour${d > 1 ? "s" : ""}`;
+  const m = Math.round(d / 30.4);
+  return m >= 12 && m % 12 === 0 ? `${m / 12} an${m > 12 ? "s" : ""}` : `${m} mois`;
+};
+
+function Collapsible({ text, limit = 280 }) {
+  const [open, setOpen] = useState(false);
+  if (!text) return <p className="text-sm text-slate-400">Non renseigné.</p>;
+  const long = text.length > limit;
   return (
-    <ol className="flex items-center">
-      {STEPS.map((label, i) => {
-        const reached = i <= idx;
-        const current = i === idx;
-        const dot = i === 3 && isFinal ? TONES[finalTone]?.dot || "bg-[#16B8B1]" : reached ? "bg-[#16B8B1]" : "bg-slate-200 dark:bg-white/15";
-        const text = i === 3 && isFinal ? PROPOSAL_STATUS[status]?.label || label : label;
-        return (
-          <li key={label} className="flex flex-1 items-center last:flex-none">
-            <div className="flex items-center gap-2">
-              <span className={`flex h-6 w-6 items-center justify-center rounded-full text-white ${dot} ${current ? "ring-4 ring-[#16B8B1]/20" : ""}`}>
-                {reached && !current ? <Check size={13} strokeWidth={3} /> : <span className="text-[10px] font-bold">{i + 1}</span>}
-              </span>
-              <span className={`whitespace-nowrap text-xs ${current ? "font-bold text-[#0B1F33] dark:text-white" : reached ? "font-medium text-slate-600 dark:text-slate-300" : "text-slate-400"}`}>
-                {text}
-              </span>
-            </div>
-            {i < STEPS.length - 1 && <span className={`mx-3 h-px flex-1 ${i < idx ? "bg-[#16B8B1]" : "bg-slate-200 dark:bg-white/10"}`} />}
-          </li>
-        );
-      })}
-    </ol>
+    <div>
+      <p className="whitespace-pre-line break-words text-sm leading-7 text-slate-700 dark:text-slate-300">{open || !long ? text : `${text.slice(0, limit)}…`}</p>
+      {long && <button type="button" onClick={() => setOpen(!open)} className="mt-1.5 text-xs font-bold text-[#0F9691] hover:underline">{open ? "Voir moins" : "Voir plus"}</button>}
+    </div>
   );
 }
 
-function Panel({ icon: Icon, title, detail, action, children }) {
+function Block({ title, hint, children }) {
   return (
-    <section className={`${card} overflow-hidden`}>
-      <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 dark:border-white/10">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#16B8B1]/12 text-teal-700 dark:text-[#16B8B1]">
-            <Icon size={17} />
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-sm font-bold text-[#0B1F33] dark:text-white">{title}</h2>
-            {detail && <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">{detail}</p>}
-          </div>
-        </div>
-        {action}
-      </div>
-      {children}
+    <section className={`${cardCls} rounded-2xl p-5`}>
+      <h3 className="text-[15px] font-bold text-[#0B1F33] dark:text-white">{title}</h3>
+      {hint && <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{hint}</p>}
+      <div className="mt-4">{children}</div>
     </section>
   );
 }
 
-function Fact({ icon: Icon, label, children }) {
-  return (
-    <div className="rounded-xl bg-slate-50 p-4 dark:bg-[#0A1230]">
-      <div className="mb-2 flex items-center gap-1.5 text-slate-400">
-        <Icon size={13} />
-        <p className="text-[10px] font-bold uppercase tracking-wider">{label}</p>
-      </div>
-      <div className="text-sm font-bold text-[#0B1F33] dark:text-white">{children}</div>
-    </div>
-  );
-}
-
-function TextBlock({ label, text }) {
-  if (!text) return null;
-  return (
-    <div className="px-5 py-5">
-      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{label}</p>
-      <p className="mt-2 whitespace-pre-line text-sm leading-7 text-slate-700 dark:text-slate-300">{text}</p>
-    </div>
-  );
-}
-
-export default function ResourceProposalDetail({ initial }) {
+export default function ResourceProposalDetail() {
+  const { id } = useParams();
+  const navigate = useNavigate();
   const { toast, show, close } = useToast();
 
-  const [p, setP] = useState(initial);
-  const [myCompanyIds, setMyCompanyIds] = useState(null);
+  const [p, setP] = useState(null);
+  const [companies, setCompanies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState(null);
+  const [tab, setTab] = useState("overview");
+  const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState(null);
-  const [acting, setActing] = useState(false);
+  const [done, setDone] = useState(null);
   const [editing, setEditing] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  const [now, setNow] = useState(Date.now());
 
-  const fileRef = useRef(null);
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    try {
+      const r = await api.get(`/proposals/${id}`);
+      setP(r.data?.data || r.data); setErr(null);
+    } catch (e) { setErr(e.response?.status === 403 ? "forbidden" : "notfound"); }
+    finally { setLoading(false); }
+  }, [id]);
 
+  useEffect(() => { load(); }, [load]);
   useEffect(() => {
     api.get("/companies/my/all")
-      .then((r) => setMyCompanyIds((Array.isArray(r.data) ? r.data : r.data?.data || []).map((c) => Number(c.id))))
-      .catch(() => setMyCompanyIds([]));
+      .then((r) => setCompanies(Array.isArray(r.data) ? r.data : r.data?.data || []))
+      .catch(() => setCompanies([]));
   }, []);
+  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 60000); return () => clearInterval(t); }, []);
 
-  const refresh = async () => {
-    try {
-      const r = await api.get(`/proposals/${p.id}`);
-      setP(r.data);
-    } catch {
-      // On garde les informations actuelles en cas d'erreur.
-    }
-  };
+  const pending = p && ["sent", "viewed"].includes(p.status);
+  useEffect(() => {
+    if (!pending) return;
+    const t = setInterval(() => load(true), 30000); // synchro automatique
+    return () => clearInterval(t);
+  }, [pending, load]);
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    try { await refresh(); } finally { setRefreshing(false); }
-  };
-
-  const status = p.display_status || p.status;
-  const statusCfg = PROPOSAL_STATUS[status] || PROPOSAL_STATUS.sent;
-  const isSender = myCompanyIds?.includes(Number(p.proposed_by_company_id));
-  const isRecipient = myCompanyIds?.includes(Number(p.to_company_id));
-
-  const offer = p.resource_offer || {};
-  const talent = p.profile?.user || {};
-  const other = isSender ? p.to_company : p.proposing_company;
-  const pending = ["sent", "viewed"].includes(status);
-  const otherIsLender = (isSender && !!p.resource_offer_id) || (!isSender && !p.resource_offer_id);
-  const title = offer.title || p.resource_request?.title || "Proposition directe";
-  const canEditDocs = isSender && ["draft", "sent"].includes(p.status);
-
-  const events = useMemo(() => {
-    const e = [];
-    if (p.created_at) e.push({ at: p.created_at, label: "Brouillon créé" });
-    if (p.sent_at) e.push({ at: p.sent_at, label: "Envoyée" });
-    if (p.viewed_at) e.push({ at: p.viewed_at, label: "Consultée" });
-    if (p.responded_at) e.push({ at: p.responded_at, label: p.status === "accepted" ? "Acceptée" : "Refusée" });
-    if (p.cancelled_at) e.push({ at: p.cancelled_at, label: "Annulée" });
-    if (status === "expired" && p.expires_at) e.push({ at: p.expires_at, label: "Expirée" });
-    return e.sort((a, b) => new Date(a.at) - new Date(b.at));
-  }, [p, status]);
-
-  const run = async () => {
-    setActing(true);
-    try {
-      let msg = "";
-      if (confirm === "accept") {
-        const r = await api.post(`/proposals/${p.id}/accept`);
-        msg = "Proposition acceptée — en attente de l'accord du salarié";
-        if (r.data?.proposal) setP((old) => ({ ...old, ...r.data.proposal, mission: r.data.mission }));
-      } else if (confirm === "decline") {
-        await api.post(`/proposals/${p.id}/decline`);
-        msg = "Proposition refusée";
-      } else if (confirm === "cancel") {
-        await api.post(`/proposals/${p.id}/cancel`);
-        msg = "Proposition annulée";
-      } else if (confirm === "submit") {
-        await api.post(`/proposals/${p.id}/submit`);
-        msg = "Proposition envoyée";
-      }
-      setConfirm(null);
-      show(msg, "success");
-      await refresh();
-    } catch (e) {
-      show(apiError(e), "error");
-      setConfirm(null);
-    } finally {
-      setActing(false);
-    }
-  };
-
-  const upload = async (file) => {
-    if (!file) return;
-    setUploading(true);
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      await api.post(`/proposals/${p.id}/documents`, fd, { headers: { "Content-Type": "multipart/form-data" } });
-      await refresh();
-      show("Document ajouté avec succès", "success");
-    } catch (e) {
-      show(apiError(e), "error");
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const removeDoc = async (d) => {
-    try {
-      await api.delete(`/proposals/${p.id}/documents/${d.id}`);
-      await refresh();
-      show("Document supprimé", "success");
-    } catch (e) {
-      show(apiError(e), "error");
-    }
-  };
-
-  if (myCompanyIds === null) {
+  if (loading) return <AppShell><main className={`mx-auto max-w-6xl p-6 ${FONT}`}><Skeleton rows={3} /></main></AppShell>;
+  if (err || !p) {
     return (
       <AppShell>
-        <div className="flex min-h-[70vh] items-center justify-center">
-          <Loader2 className="animate-spin text-[#16B8B1]" size={30} />
-        </div>
+        <main className={`mx-auto max-w-lg p-6 ${FONT}`}>
+          <Empty title={err === "forbidden" ? "Accès refusé" : "Proposition introuvable"} text="Vous n'avez pas accès à cette proposition ou elle n'existe plus.">
+            <Link to="/collaborations" className={btnPrimary}>Retour aux collaborations</Link>
+          </Empty>
+        </main>
       </AppShell>
     );
   }
 
-  const confirmCfg = {
-    accept: { title: "Accepter la proposition ?", text: "Une mission sera créée et le salarié devra confirmer sa participation.", btn: btnPrimary, ok: "Accepter" },
-    decline: { title: "Refuser la proposition ?", text: "L'entreprise sera prévenue. Cette action est définitive.", btn: btnDanger, ok: "Refuser" },
-    cancel: { title: "Annuler la proposition ?", text: "Le destinataire ne pourra plus y répondre.", btn: btnDanger, ok: "Annuler la proposition" },
-    submit: { title: "Envoyer la proposition ?", text: "Le destinataire sera notifié et pourra répondre jusqu'à la date limite.", btn: btnPrimary, ok: "Envoyer" },
-  }[confirm];
+  /* ---------- Données dérivées ---------- */
+  const offer = p.resource_offer || p.resourceOffer || p.offer || {};
+  const profile = offer.profile || {};
+  const talentName = profile.user?.name || offer.talent?.name || "Salarié";
+  const headline = profile.headline || offer.talent?.headline || offer.title;
+  const avatar = profile.avatar_path ? `/storage/${profile.avatar_path}` : offer.talent?.avatar_url || null;
+  const skills = (offer.skills || profile.skills || []).map((s) => ({ name: s.name, level: s.pivot?.level || s.level }));
+  const offerCompany = offer.company || {};
+  const proposing = p.proposing_company || p.proposingCompany || {};
 
-  const backTab = isSender ? "sent" : "received";
+  const myIds = companies.map((c) => Number(c.id));
+  const isSender = myIds.includes(Number(p.proposed_by_company_id));
+  const isReceiver = myIds.includes(Number(offer.company_id ?? offerCompany.id));
+  const other = isSender ? offerCompany : proposing;
+  const otherLabel = isSender ? "Envoyée à" : "Reçue de";
+
+  const terminal = TERMINAL[p.status];
+  const idx = terminal ? 2 : Math.max(0, STEPS.findIndex(([k]) => k === p.status));
+  const stepDates = {
+    draft: p.created_at, sent: p.sent_at, viewed: p.viewed_at,
+    accepted: p.responded_at || p.accepted_at,
+    end: p.responded_at || p.declined_at || p.cancelled_at || p.updated_at,
+  };
+
+  const expMs = toMs(p.expires_at);
+  const daysLeft = Number.isNaN(expMs) ? null : Math.ceil((expMs - now) / DAY);
+  const urgent = pending && daysLeft !== null && daysLeft <= 3;
+
+  const oS = toMs(offer.start_at), oE = toMs(offer.end_at), pS = toMs(p.start_at), pE = toMs(p.end_at);
+  const barOk = [oS, oE, pS, pE].every((n) => !Number.isNaN(n)) && oE > oS;
+  const left = barOk ? clamp(((pS - oS) / (oE - oS)) * 100) : 0;
+  const width = barOk ? clamp(((pE - pS) / (oE - oS)) * 100) : 0;
+
+  const workload = p.workload_percent ?? 100;
+  const docs = p.documents || [];
+  const mission = p.mission;
+
+  const facts = [
+    ["Période", p.start_at ? `${fmtDate(p.start_at)} → ${fmtDate(p.end_at)}` : "À définir"],
+    ["Durée", p.start_at && p.end_at ? span(p.start_at, p.end_at) : "—"],
+    ["Charge", `${workload} %`],
+    ["Réponse avant le", p.expires_at ? fmtDate(p.expires_at) : "—"],
+  ];
+
+  const nextStep = (() => {
+    if (mission) return ["Collaboration lancée", "La mission a été créée. Retrouvez-la dans vos collaborations."];
+    if (p.status === "draft") return ["Brouillon", "Votre proposition n'est pas encore envoyée. Complétez-la puis envoyez-la."];
+    if (pending && isReceiver) return ["Votre réponse est attendue", `Acceptez pour lancer la mission de ${talentName}, ou refusez la proposition.`];
+    if (pending && isSender) return ["En attente de réponse", `${offerCompany.name || "L'entreprise"} n'a pas encore répondu. Vous serez notifié dès sa décision.`];
+    if (p.status === "declined") return ["Proposition refusée", "Le dossier est clôturé."];
+    if (p.status === "expired") return ["Proposition expirée", "Le délai de réponse est dépassé."];
+    if (p.status === "cancelled") return ["Proposition annulée", "Le dossier est clôturé."];
+    return null;
+  })();
+
+  /* ---------- Actions ---------- */
+  const act = async (path, title, text) => {
+    setBusy(true);
+    try {
+      const r = await api.post(`/proposals/${id}/${path}`);
+      setConfirm(null);
+      await load(true);
+      setDone({ title, text, missionId: r.data?.mission?.id });
+    } catch (e) { setConfirm(null); show(apiError(e), "error"); }
+    finally { setBusy(false); }
+  };
+
+  const ask = (kind) => {
+    const cfg = {
+      accept: { title: "Accepter la proposition ?", text: `${talentName} sera mis à disposition de ${proposing.name || "l'entreprise"} sur la période indiquée. Une mission sera créée.`, label: "Accepter", run: () => act("accept", "Proposition acceptée !", "La mission est créée. Les deux entreprises ont été notifiées.") },
+      decline: { title: "Refuser la proposition ?", text: "Le processus s'arrêtera ici pour ce dossier.", label: "Refuser", danger: true, run: () => act("decline", "Proposition refusée", "L'entreprise a été informée de votre décision.") },
+      cancel: { title: "Annuler la proposition ?", text: "Elle sera retirée définitivement.", label: "Annuler la proposition", danger: true, run: () => act("cancel", "Proposition annulée", "L'autre entreprise en a été informée.") },
+    }[kind];
+    setConfirm(cfg);
+  };
+
+  const history = [
+    ["Brouillon créé", stepDates.draft],
+    ["Proposition envoyée", stepDates.sent],
+    ["Consultée par le destinataire", stepDates.viewed],
+    [p.status === "accepted" ? "Proposition acceptée" : terminal ? `Proposition ${terminal.toLowerCase()}` : null, p.status === "accepted" ? stepDates.accepted : terminal ? stepDates.end : null],
+  ].filter(([l, d]) => l && d);
 
   return (
     <AppShell>
-      <main className="px-3 pb-12 pt-5 font-['Plus_Jakarta_Sans',sans-serif] sm:px-5 lg:px-8">
-        <div className="mx-auto max-w-[1180px] space-y-5">
-          <div className="flex items-center justify-between gap-3">
-            <Link to={`/collaborations?tab=${backTab}`} className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 transition hover:text-[#16B8B1] dark:text-slate-400">
-              <ArrowLeft size={15} /> Collaborations · Propositions
-            </Link>
-            <button type="button" onClick={handleRefresh} disabled={refreshing} className={btnGhost}>
-              <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} /> Actualiser
-            </button>
+      <main className={`mx-auto max-w-6xl space-y-5 px-1 py-1 pb-12 ${FONT} sm:px-2`}>
+        {/* ---------- Bandeau ---------- */}
+        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0B1F33] via-[#0B2A40] to-[#0F3B4A] text-white shadow-lg">
+          <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-[#16B8B1]/25 blur-3xl" />
+          <div className="relative px-6 pb-6 pt-5 sm:px-8">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <Link to="/collaborations" className="text-[13px] font-medium text-white/60 hover:text-white">← Collaborations · Propositions</Link>
+              <div className="flex items-center gap-2">
+                <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold">Proposition #{p.id}</span>
+                <span className={`rounded-full px-3 py-1 text-xs font-bold ${PILL[p.status] || PILL.draft}`}>{terminal || STEPS[idx][1]}</span>
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-col gap-5 lg:flex-row lg:items-center">
+              <Avatar name={talentName} src={avatar} size={84} />
+              <div className="min-w-0 flex-1">
+                <h1 className="truncate text-3xl font-bold tracking-tight">{talentName}</h1>
+                <p className="mt-1 truncate text-[15px] text-white/75">{headline}</p>
+                <p className="mt-2 text-sm text-white/60">
+                  {otherLabel} <strong className="font-semibold text-white">{other.name || "—"}</strong>
+                  {" · "}Talent de <strong className="font-semibold text-white">{offerCompany.name || "—"}</strong>
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {mission && <Link to={`/missions/${mission.id}`} className="rounded-lg bg-[#16B8B1] px-5 py-2.5 text-[13px] font-bold text-[#0B1F33] transition hover:bg-white">Voir la mission</Link>}
+                {offer.id && <Link to={`/resource-offers/${offer.id}`} className="rounded-lg border border-white/25 px-5 py-2.5 text-[13px] font-semibold text-white transition hover:bg-white/10">Voir l'offre</Link>}
+              </div>
+            </div>
           </div>
+          <dl className="relative grid grid-cols-2 gap-px border-t border-white/10 bg-white/10 lg:grid-cols-4">
+            {facts.map(([k, v]) => (
+              <div key={k} className="bg-[#0B1F33]/80 px-6 py-4 sm:px-8">
+                <dt className="text-[11px] font-medium uppercase tracking-wider text-white/50">{k}</dt>
+                <dd className="mt-1 text-sm font-semibold">{v}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
 
-          {/* HERO */}
-          <section className="relative overflow-hidden rounded-3xl bg-[#0B1F33] p-6 text-white shadow-xl shadow-[#0B1F33]/20 sm:p-7">
-            <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-[#16B8B1]/25 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-24 left-10 h-56 w-56 rounded-full bg-[#16B8B1]/10 blur-3xl" />
+        {/* ---------- Suivi ---------- */}
+        <section className={`${cardCls} rounded-2xl px-5 py-5 sm:px-8`}>
+          <ol className="flex items-start">
+            {STEPS.map(([key, label], i) => {
+              const last = i === STEPS.length - 1;
+              const failed = last && terminal;
+              const reached = failed || i <= idx;
+              const current = !failed && i === idx && !["accepted"].includes(p.status);
+              const date = failed ? stepDates.end : stepDates[key];
+              return (
+                <li key={key} className="relative flex flex-1 flex-col items-center text-center">
+                  {i > 0 && <span className={`absolute right-1/2 top-4 h-0.5 w-full -translate-y-1/2 transition-all duration-700 ${reached ? (failed ? "bg-rose-400" : "bg-[#16B8B1]") : "bg-slate-200 dark:bg-white/10"}`} />}
+                  <span className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition ${
+                    failed ? "bg-rose-500 text-white" : reached ? "bg-[#16B8B1] text-[#0B1F33]" : "bg-slate-200 text-slate-500 dark:bg-white/10"} ${current ? "ring-4 ring-[#16B8B1]/30" : ""}`}>
+                    {failed ? "✕" : reached && !current ? "✓" : i + 1}
+                  </span>
+                  <span className={`mt-2 text-xs font-bold ${reached ? "text-[#0B1F33] dark:text-white" : "text-slate-400"}`}>{failed ? terminal : label}</span>
+                  <span className="mt-0.5 h-4 text-[10px] text-slate-400">{date ? fmtDate(date) : ""}</span>
+                </li>
+              );
+            })}
+          </ol>
+        </section>
 
-            <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex min-w-0 items-center gap-4">
-                <Avatar name={talent.name} path={p.profile?.avatar_path} size={60} className="!rounded-2xl" />
-                <div className="min-w-0">
-                  <div className="mb-2 flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-white/5 px-3 py-1.5 text-[11px] font-semibold text-white/70 ring-1 ring-white/10">Proposition #{p.id}</span>
-                    <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-bold ring-1 ring-white/20">
-                      <span className={`h-2 w-2 rounded-full ${TONES[statusCfg.tone]?.dot}`} />
-                      {statusCfg.label}
-                    </span>
-                  </div>
-                  <h1 className="truncate text-2xl font-extrabold tracking-tight">{talent.name || "Salarié"}</h1>
-                  <p className="mt-1 truncate text-sm text-white/65">{title}</p>
-                  <p className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-white/55">
-                    <Building2 size={13} />
-                    {isSender ? "Envoyée à" : "Reçue de"}
-                    <span className="font-semibold text-white">{other?.name || "—"}</span>
-                  </p>
-                </div>
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
+          {/* ================= Colonne principale ================= */}
+          <div className="min-w-0 space-y-5">
+            <div className={`${cardCls} rounded-2xl`}>
+              <div className="flex gap-1 overflow-x-auto border-b border-slate-100 px-3 dark:border-white/10" role="tablist">
+                {TABS.map(([k, l]) => (
+                  <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
+                    className={`relative whitespace-nowrap px-4 py-3.5 text-[13px] font-semibold transition ${tab === k ? "text-[#0F9691]" : "text-slate-500 hover:text-slate-700 dark:text-slate-400"}`}>
+                    {l}{k === "docs" && docs.length > 0 ? ` (${docs.length})` : ""}
+                    {tab === k && <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-[#16B8B1]" />}
+                  </button>
+                ))}
               </div>
 
-              <div className="flex flex-wrap items-center gap-2 lg:max-w-[380px] lg:justify-end">
-                {isRecipient && pending && (
+              <div className="space-y-5 p-5">
+                {tab === "overview" && (
                   <>
-                    <button onClick={() => setConfirm("accept")} className={heroPrimary}><Check size={15} /> Accepter</button>
-                    <button onClick={() => setConfirm("decline")} className={heroGhost}><X size={15} /> Refuser</button>
+                    <Block title="Période proposée" hint="Positionnée dans la période de disponibilité de l'offre.">
+                      {barOk ? (
+                        <>
+                          <div className="relative h-10 overflow-hidden rounded-xl bg-slate-100 dark:bg-white/10">
+                            <div className="absolute inset-y-1 rounded-lg bg-gradient-to-r from-[#16B8B1] to-[#0F9691] shadow transition-all duration-700"
+                              style={{ left: `${left}%`, width: `${Math.max(width, 3)}%` }} />
+                          </div>
+                          <div className="mt-2 flex justify-between text-[11px] text-slate-500">
+                            <span>Offre : {fmtDate(offer.start_at)}</span>
+                            <span className="font-semibold text-[#0F9691]">Proposition : {fmtDate(p.start_at)} → {fmtDate(p.end_at)}</span>
+                            <span>{fmtDate(offer.end_at)}</span>
+                          </div>
+                        </>
+                      ) : <p className="text-sm text-slate-500">Période non précisée.</p>}
+                    </Block>
+
+                    <Block title="Modalités">
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="rounded-xl bg-slate-50 p-4 dark:bg-[#0A1230]">
+                          <p className="text-[11px] text-slate-400">Charge de travail</p>
+                          <p className="mt-1 text-xl font-bold text-[#0B1F33] dark:text-white">{workload} %</p>
+                          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10"><div className="h-full rounded-full bg-[#16B8B1] transition-all duration-700" style={{ width: `${workload}%` }} /></div>
+                        </div>
+                        <div className="rounded-xl bg-slate-50 p-4 dark:bg-[#0A1230]">
+                          <p className="text-[11px] text-slate-400">Lieu de travail</p>
+                          <p className="mt-1 text-sm font-bold text-[#0B1F33] dark:text-white">{p.remote ? "Télétravail possible" : "Sur site"}</p>
+                          <p className="mt-1 text-[11px] text-slate-500">{offer.location_city || offer.city || "—"}</p>
+                        </div>
+                        <div className="rounded-xl bg-slate-50 p-4 dark:bg-[#0A1230]">
+                          <p className="text-[11px] text-slate-400">Tarif de l'offre</p>
+                          <p className="mt-1 text-sm font-bold text-[#0B1F33] dark:text-white">{offer.daily_rate ? `${offer.daily_rate} € / jour` : "À discuter"}</p>
+                        </div>
+                      </div>
+                    </Block>
+
+                    {p.description && <Block title="Contexte du besoin"><Collapsible text={p.description} /></Block>}
                   </>
                 )}
 
-                {isSender && p.status === "draft" && (
+                {tab === "message" && (
                   <>
-                    <button onClick={() => setConfirm("submit")} className={heroPrimary}><Send size={14} /> Envoyer</button>
-                    {p.resource_offer_id && (
-                      <button onClick={() => setEditing(true)} className={heroGhost}><Edit3 size={14} /> Modifier</button>
-                    )}
+                    <Block title="Message d'accompagnement" hint={`Rédigé par ${proposing.name || "l'entreprise"}`}>
+                      <div className="rounded-xl bg-slate-50 p-4 dark:bg-[#0A1230]"><Collapsible text={p.message} /></div>
+                    </Block>
+                    <Block title="Conditions particulières"><Collapsible text={p.conditions} /></Block>
+                    {offer.conditions && <Block title="Conditions de l'offre d'origine"><Collapsible text={offer.conditions} /></Block>}
                   </>
                 )}
 
-                {isSender && ["draft", "sent", "viewed"].includes(p.status) && status !== "expired" && (
-                  <button onClick={() => setConfirm("cancel")} className={heroGhost}><Ban size={14} /> Annuler</button>
-                )}
-
-                {p.mission?.id && (
-                  <Link to={`/missions/${p.mission.id}`} className={heroPrimary}><Briefcase size={14} /> Voir la mission</Link>
-                )}
-
-                {offer.id && (
-                  <Link to={`/resource-offers/${offer.id}`} className={heroGhost}>Voir l'offre <ChevronRight size={14} /></Link>
-                )}
-
-                {!isSender && !isRecipient && <span className="text-xs text-white/50">Lecture seule</span>}
-              </div>
-            </div>
-          </section>
-
-          {/* Suivi */}
-          <section className={`${card} overflow-x-auto px-5 py-5 sm:px-6`}>
-            <div className="min-w-[480px]">
-              <Stepper status={status} />
-            </div>
-          </section>
-
-          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="min-w-0 space-y-5">
-              <Panel icon={CalendarDays} title="Conditions de la mission" detail="Période, durée et modalités prévues">
-                <div className="grid grid-cols-2 gap-3 p-5 sm:grid-cols-4">
-                  <Fact icon={CalendarDays} label="Période">
-                    <span className="block">{fmt(p.start_at)}</span>
-                    <span className="block text-xs font-medium text-slate-500 dark:text-slate-400">au {fmt(p.end_at)}</span>
-                  </Fact>
-                  <Fact icon={Clock3} label="Durée">{durationText(p.start_at, p.end_at) || "—"}</Fact>
-                  <Fact icon={Users} label="Charge">
-                    {p.workload_percent || 100}%
-                    {p.remote && <span className="block text-xs font-medium text-slate-500 dark:text-slate-400">À distance</span>}
-                  </Fact>
-                  <Fact icon={Timer} label="Réponse avant le">
-                    {p.expires_at ? fmt(p.expires_at) : "—"}
-                    {pending && p.days_until_expiry != null && (
-                      <span className={`block text-xs font-medium ${p.days_until_expiry <= 3 ? "text-amber-600" : "text-slate-400"}`}>({p.days_until_expiry} j)</span>
-                    )}
-                  </Fact>
-                </div>
-              </Panel>
-
-              <Panel icon={FileText} title="Détails de la proposition" detail="Contexte et conditions communiqués">
-                {p.description ? (
-                  <TextBlock label="Contexte du besoin" text={p.description} />
-                ) : (
-                  <p className="px-5 py-5 text-sm text-slate-400">Aucun contexte renseigné.</p>
-                )}
-                {p.message && <div className="border-t border-slate-100 dark:border-white/10"><TextBlock label="Message" text={p.message} /></div>}
-                {p.conditions && <div className="border-t border-slate-100 dark:border-white/10"><TextBlock label="Conditions" text={p.conditions} /></div>}
-              </Panel>
-
-              <Panel
-                icon={Paperclip}
-                title="Documents joints"
-                detail={`${p.documents?.length || 0} document(s)`}
-                action={
-                  canEditDocs && (
-                    <>
-                      <button onClick={() => fileRef.current?.click()} disabled={uploading} className={btnGhost}>
-                        {uploading ? <Loader2 size={14} className="animate-spin" /> : <Paperclip size={14} />} Ajouter
-                      </button>
-                      <input ref={fileRef} type="file" hidden onChange={(e) => { upload(e.target.files[0]); e.target.value = ""; }} />
-                    </>
+                {tab === "docs" && (
+                  docs.length === 0 ? <Empty title="Aucun document" text="Aucun fichier n'a été joint à cette proposition." /> : (
+                    <div className="space-y-2">
+                      {docs.map((d) => (
+                        <a key={d.id} href={`/storage/${d.file_path}`} target="_blank" rel="noreferrer"
+                          className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-3.5 transition hover:border-[#16B8B1] dark:border-white/10">
+                          <span className="min-w-0 truncate text-sm font-semibold text-slate-700 dark:text-slate-100">{d.original_name || d.name || d.file_path?.split("/").pop()}</span>
+                          <span className="shrink-0 text-xs font-bold text-[#0F9691]">Ouvrir</span>
+                        </a>
+                      ))}
+                    </div>
                   )
-                }
-              >
-                {!p.documents?.length ? (
-                  <div className="flex flex-col items-center px-6 py-10 text-center">
-                    <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 dark:bg-white/5">
-                      <FileText size={24} />
-                    </div>
-                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Aucun document joint</p>
-                    <p className="mt-1 text-xs text-slate-400">Les documents associés apparaîtront ici.</p>
-                  </div>
-                ) : (
-                  <ul className="divide-y divide-slate-100 dark:divide-white/10">
-                    {p.documents.map((d) => (
-                      <li key={d.id} className="flex items-center gap-3 px-5 py-3.5">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#16B8B1]/12 text-teal-700 dark:text-[#16B8B1]">
-                          <FileText size={18} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <a href={`/storage/${d.file_path}`} target="_blank" rel="noreferrer" className="block truncate text-sm font-semibold text-slate-700 hover:text-teal-700 hover:underline dark:text-slate-200">
-                            {d.original_name || d.name || d.file_path.split("/").pop()}
-                          </a>
-                          {d.uploader?.name && <p className="mt-0.5 text-[11px] text-slate-400">{d.uploader.name}</p>}
-                        </div>
-                        {canEditDocs && (
-                          <button onClick={() => removeDoc(d)} className="rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10" title="Supprimer le document">
-                            <Trash2 size={16} />
-                          </button>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
                 )}
-              </Panel>
+
+                {tab === "history" && (
+                  history.length === 0 ? <Empty title="Pas encore d'historique" /> : (
+                    <ol className="relative space-y-5 pl-6">
+                      <span className="absolute bottom-2 left-[7px] top-2 w-px bg-slate-200 dark:bg-white/10" />
+                      {history.map(([l, d], i) => (
+                        <li key={l} className="relative">
+                          <span className={`absolute -left-6 top-1 h-3.5 w-3.5 rounded-full border-2 border-white dark:border-[#131E47] ${i === history.length - 1 ? "bg-[#16B8B1]" : "bg-slate-300"}`} />
+                          <p className="text-sm font-semibold text-[#0B1F33] dark:text-white">{l}</p>
+                          <p className="text-xs text-slate-500">{fmtDT(d)}</p>
+                        </li>
+                      ))}
+                    </ol>
+                  )
+                )}
+              </div>
             </div>
-
-            <aside className="min-w-0 space-y-5">
-              <Panel icon={Users} title="Salarié" detail="Profil du talent">
-                <div className="p-5">
-                  <div className="flex items-center gap-3">
-                    <Avatar name={talent.name} path={p.profile?.avatar_path} size={48} />
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-bold text-[#0B1F33] dark:text-white">{talent.name || "Salarié"}</p>
-                      {p.profile?.headline && <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{p.profile.headline}</p>}
-                    </div>
-                  </div>
-                  {offer.mission_type && (
-                    <div className="mt-4 border-t border-slate-100 pt-4 dark:border-white/10">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Type de mission</p>
-                      <p className="mt-1.5 text-sm font-semibold text-slate-700 dark:text-slate-200">{MISSION_TYPES[offer.mission_type]}</p>
-                    </div>
-                  )}
-                </div>
-              </Panel>
-
-              <Panel icon={Building2} title="Entreprise">
-                <div className="p-5">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    {otherIsLender ? "Entreprise prêteuse" : "Entreprise demandeuse"}
-                  </p>
-                  <div className="mt-3 flex items-center gap-3">
-                    <Avatar name={other?.name} path={other?.logo_path} size={44} className="!bg-[#0B1F33] !text-white" />
-                    <p className="break-words text-sm font-bold text-[#0B1F33] dark:text-white">{other?.name || "—"}</p>
-                  </div>
-                </div>
-              </Panel>
-
-              <Panel icon={History} title="Historique" detail="Activité de la proposition">
-                {events.length === 0 ? (
-                  <p className="px-5 py-5 text-sm text-slate-400">Aucun événement enregistré.</p>
-                ) : (
-                  <ol className="relative m-5 ml-7 space-y-4 border-l border-slate-200 pl-5 dark:border-white/10">
-                    {events.map((e, i) => (
-                      <li key={i} className="relative">
-                        <span className={`absolute -left-[27px] top-1.5 h-3 w-3 rounded-full ring-4 ring-white dark:ring-[#131E47] ${i === events.length - 1 ? "bg-[#16B8B1]" : "bg-slate-300 dark:bg-slate-600"}`} />
-                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{e.label}</p>
-                        <p className="mt-0.5 text-[11px] text-slate-400">
-                          {new Date(e.at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}
-                        </p>
-                      </li>
-                    ))}
-                  </ol>
-                )}
-              </Panel>
-            </aside>
           </div>
+
+          {/* ================= Colonne latérale ================= */}
+          <aside className="space-y-5">
+            {nextStep && (
+              <section className={`rounded-2xl border p-5 ${urgent ? "border-amber-300 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/10" : "border-[#16B8B1]/30 bg-[#16B8B1]/5"}`}>
+                <h3 className="text-sm font-bold text-[#0B1F33] dark:text-white">{nextStep[0]}</h3>
+                <p className="mt-1.5 text-sm leading-6 text-slate-600 dark:text-slate-300">{nextStep[1]}</p>
+
+                {pending && daysLeft !== null && (
+                  <div className="mt-4">
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-[11px] font-medium text-slate-500">Délai de réponse</span>
+                      <span className={`text-sm font-bold ${urgent ? "text-amber-700" : "text-[#0F9691]"}`}>{daysLeft > 0 ? `${daysLeft} jour${daysLeft > 1 ? "s" : ""} restant${daysLeft > 1 ? "s" : ""}` : "Expire aujourd'hui"}</span>
+                    </div>
+                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/70 dark:bg-white/10">
+                      <div className={`h-full rounded-full transition-all duration-700 ${urgent ? "bg-amber-500" : "bg-[#16B8B1]"}`} style={{ width: `${clamp((daysLeft / 30) * 100)}%` }} />
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-4 flex flex-col gap-2">
+                  {pending && isReceiver && (
+                    <>
+                      <button disabled={busy} onClick={() => ask("accept")} className={btnPrimary}>Accepter la proposition</button>
+                      <button disabled={busy} onClick={() => ask("decline")} className={btnGhost}>Refuser</button>
+                    </>
+                  )}
+                  {pending && isSender && <button disabled={busy} onClick={() => ask("cancel")} className={btnGhost}>Annuler la proposition</button>}
+                  {p.status === "draft" && isSender && (
+                    <>
+                      <button disabled={busy} onClick={() => act("submit", "Proposition envoyée !", `${offerCompany.name || "L'entreprise"} a été notifiée.`)} className={btnPrimary}>Envoyer la proposition</button>
+                      <button onClick={() => setEditing(true)} className={btnGhost}>Modifier le brouillon</button>
+                    </>
+                  )}
+                  {mission && <Link to={`/missions/${mission.id}`} className={`${btnPrimary} w-full`}>Voir la mission</Link>}
+                </div>
+              </section>
+            )}
+
+            <section className={`${cardCls} rounded-2xl p-5`}>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Talent</p>
+              <div className="mt-3 flex items-center gap-3">
+                <Avatar name={talentName} src={avatar} size={52} />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold text-[#0B1F33] dark:text-white">{talentName}</p>
+                  <p className="truncate text-xs text-slate-500">{headline}</p>
+                </div>
+              </div>
+              {skills.length > 0 && <div className="mt-4"><SkillChips skills={skills} max={8} /></div>}
+              {profile.id && <Link to={`/talents/${profile.id}`} className="mt-4 block text-xs font-bold text-[#0F9691] hover:underline">Voir le profil complet</Link>}
+            </section>
+
+            <section className={`${cardCls} rounded-2xl p-5`}>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{isSender ? "Entreprise prêteuse" : "Entreprise demandeuse"}</p>
+              <div className="mt-3 flex items-center gap-3">
+                <Avatar name={other.name} src={other.logo_url} size={52} square />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold text-[#0B1F33] dark:text-white">{other.name || "—"}</p>
+                  <p className="truncate text-xs text-slate-500">{[other.city, other.country].filter(Boolean).join(", ")}{other.is_verified ? " · vérifiée" : ""}</p>
+                </div>
+              </div>
+              {other.owner_user_id && (
+                <Link to={{ pathname: "/messages", search: `?to=${other.owner_user_id}&name=${encodeURIComponent(other.name || "")}` }} className={`${btnGhost} mt-4 w-full`}>Envoyer un message</Link>
+              )}
+            </section>
+          </aside>
         </div>
       </main>
 
-      {editing && offer.id && (
-        <ProposalFormModal
-          offer={{ ...offer, company: offer.company }}
-          proposal={p}
-          onClose={() => setEditing(false)}
-          onSaved={async (msg) => {
-            setEditing(false);
-            show(msg, "success");
-            await refresh();
-          }}
-        />
+      {editing && (
+        <ProposalFormModal offer={offer} companies={[]} proposal={p} onClose={() => setEditing(false)}
+          onSaved={(msg) => { setEditing(false); load(true); setDone({ title: msg.replace(/^✅\s*/, ""), text: "Vos modifications sont enregistrées." }); }} />
       )}
-
-      {confirm && confirmCfg && (
-        <Modal
-          title={confirmCfg.title}
-          subtitle={other?.name}
-          onClose={() => setConfirm(null)}
-          footer={
-            <>
-              <button onClick={run} disabled={acting} className={`${confirmCfg.btn} flex-1`}>
-                {acting && <Loader2 size={14} className="animate-spin" />}
-                {confirmCfg.ok}
-              </button>
-              <button onClick={() => setConfirm(null)} className={btnGhost}>Retour</button>
-            </>
-          }
-        >
-          <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">{confirmCfg.text}</p>
-        </Modal>
+      {confirm && (
+        <ConfirmDialog title={confirm.title} text={confirm.text} confirmLabel={confirm.label} danger={confirm.danger} busy={busy} onConfirm={confirm.run} onCancel={() => setConfirm(null)} />
       )}
-
+      {done && (
+        <SuccessScreen title={done.title} text={done.text}
+          actionLabel={done.missionId ? "Voir la mission" : "Continuer"}
+          onClose={() => { const m = done.missionId; setDone(null); if (m) navigate(`/missions/${m}`); }} />
+      )}
       {toast && <Toast message={toast.message} type={toast.type} onClose={close} />}
     </AppShell>
   );

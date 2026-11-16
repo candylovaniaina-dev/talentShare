@@ -1,5 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Search, X, RotateCcw, Building2, MapPin, CheckCircle, ArrowUpRight, Globe, Loader2, Briefcase, UserRound, ShieldCheck, TrendingUp, Home } from "lucide-react";
+import { 
+  Search, X, RotateCcw, Building2, MapPin, CheckCircle, ArrowUpRight, 
+  Globe, Loader2, Briefcase, UserRound, ShieldCheck, TrendingUp, Home 
+} from "lucide-react";
 import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import { card, asArray, fileUrl, OFFER_TYPES } from "./shared";
@@ -12,7 +15,9 @@ function Toggle({ active, onClick, icon: Icon, children }) {
       type="button"
       onClick={onClick}
       className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-medium transition ${
-        active ? "bg-teal-50 text-teal-700 ring-1 ring-teal-200 dark:bg-teal-500/15 dark:text-teal-300 dark:ring-teal-500/30" : "bg-slate-50 text-slate-600 hover:bg-slate-100 dark:bg-white/5 dark:text-slate-300"
+        active 
+          ? "bg-[#16B8B1]/15 text-[#0F9691] ring-1 ring-[#16B8B1]/30 dark:bg-[#16B8B1]/20 dark:text-[#16B8B1]" 
+          : "bg-slate-50 text-slate-600 hover:bg-slate-100 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
       }`}
     >
       <Icon size={14} /> {children}
@@ -24,6 +29,7 @@ function CompanyCard({ company, index, onSelect }) {
   const [failed, setFailed] = useState(false);
   const logo = !failed ? company.logo_url || fileUrl(company.logo_path) : null;
   const location = [company.city, company.country].filter(Boolean).join(", ");
+  
   return (
     <button
       type="button"
@@ -33,23 +39,36 @@ function CompanyCard({ company, index, onSelect }) {
     >
       <div className="flex items-start gap-4">
         <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-50 p-1.5 dark:bg-white/5">
-          {logo ? <img src={logo} alt="" onError={() => setFailed(true)} className="h-full w-full object-contain" />
-            : <span className="flex h-full w-full items-center justify-center rounded-xl bg-[#0B1F33] text-xl font-semibold text-white">{(company.name || "?").charAt(0).toUpperCase()}</span>}
+          {logo ? (
+            <img src={logo} alt="" onError={() => setFailed(true)} className="h-full w-full object-contain" />
+          ) : (
+            <span className="flex h-full w-full items-center justify-center rounded-xl bg-[#0B1F33] text-xl font-semibold text-white">
+              {(company.name || "?").charAt(0).toUpperCase()}
+            </span>
+          )}
         </div>
         <div className="min-w-0 flex-1 pt-0.5">
-          <h4 className="line-clamp-2 text-[15px] font-semibold leading-tight text-slate-800 group-hover:text-teal-600 dark:text-white">{company.name || "Entreprise"}</h4>
+          <h4 className="line-clamp-2 text-[15px] font-semibold leading-tight text-slate-800 group-hover:text-[#0F9691] dark:text-white dark:group-hover:text-[#16B8B1]">
+            {company.name || "Entreprise"}
+          </h4>
           {sectorOf(company) && <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">{sectorOf(company)}</p>}
         </div>
         {company.is_verified && (
-          <span className="mt-1 flex shrink-0 items-center gap-1 rounded-full bg-teal-50 px-2 py-1 text-[10px] font-medium text-teal-600 dark:bg-teal-500/10 dark:text-teal-300"><CheckCircle size={10} /> Vérifiée</span>
+          <span className="mt-1 flex shrink-0 items-center gap-1 rounded-full bg-[#16B8B1]/10 px-2 py-1 text-[10px] font-medium text-[#0F9691] dark:bg-[#16B8B1]/20 dark:text-[#16B8B1]">
+            <CheckCircle size={10} /> Vérifiée
+          </span>
         )}
       </div>
       <p className="mt-4 line-clamp-3 min-h-[58px] text-[13px] leading-5 text-slate-500 dark:text-slate-400">
         {company.description || "Découvrez cette organisation et les opportunités qu'elle propose sur TalentShare."}
       </p>
       <div className="mt-auto flex items-center justify-between gap-3 pt-4">
-        <span className="flex min-w-0 items-center gap-1.5 truncate text-[11px] text-slate-500 dark:text-slate-400"><MapPin size={12} className="shrink-0" />{location || "Localisation non renseignée"}</span>
-        <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-teal-600 dark:text-teal-400">Voir le profil <ArrowUpRight size={14} /></span>
+        <span className="flex min-w-0 items-center gap-1.5 truncate text-[11px] text-slate-500 dark:text-slate-400">
+          <MapPin size={12} className="shrink-0" />{location || "Localisation non renseignée"}
+        </span>
+        <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-[#0F9691] dark:text-[#16B8B1]">
+          Voir le profil <ArrowUpRight size={14} />
+        </span>
       </div>
     </button>
   );
@@ -89,7 +108,7 @@ export function CompaniesTab({ companies = [], onSelect }) {
   return (
     <div className="space-y-5">
       <section className={`${card} p-6`}>
-        <p className="text-[11px] font-medium text-teal-600 dark:text-teal-400">Écosystème TalentShare</p>
+        <p className="text-[11px] font-medium text-[#0F9691] dark:text-[#16B8B1]">Écosystème TalentShare</p>
         <div className="mt-1 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
             <h2 className="text-2xl font-semibold tracking-tight text-slate-800 dark:text-white">Le réseau des entreprises</h2>
@@ -107,9 +126,19 @@ export function CompaniesTab({ companies = [], onSelect }) {
 
         <label className="relative mt-5 block">
           <Search size={17} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input ref={searchRef} type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Rechercher par nom, secteur ou localisation…"
-            className="w-full rounded-2xl border-0 bg-slate-50/80 py-3.5 pl-11 pr-11 text-sm text-slate-700 outline-none ring-1 ring-slate-900/5 transition placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-teal-300 dark:bg-white/5 dark:text-white dark:ring-white/10" />
-          {search && <button type="button" onClick={() => setSearch("")} aria-label="Effacer" className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-slate-400 hover:bg-slate-200 dark:hover:bg-white/10"><X size={14} /></button>}
+          <input 
+            ref={searchRef} 
+            type="search" 
+            value={search} 
+            onChange={(e) => setSearch(e.target.value)} 
+            placeholder="Rechercher par nom, secteur ou localisation…"
+            className="w-full rounded-2xl border-0 bg-slate-50/80 py-3.5 pl-11 pr-11 text-sm text-slate-700 outline-none ring-1 ring-slate-900/5 transition placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-[#16B8B1] dark:bg-white/5 dark:text-white dark:ring-white/10 dark:focus:ring-[#16B8B1]" 
+          />
+          {search && (
+            <button type="button" onClick={() => setSearch("")} aria-label="Effacer" className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-slate-400 hover:bg-slate-200 dark:hover:bg-white/10">
+              <X size={14} />
+            </button>
+          )}
         </label>
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -117,7 +146,13 @@ export function CompaniesTab({ companies = [], onSelect }) {
           <Toggle active={onlyHiring} onClick={() => setOnlyHiring((v) => !v)} icon={TrendingUp}>Recrute</Toggle>
           <Toggle active={onlyRemote} onClick={() => setOnlyRemote((v) => !v)} icon={Home}>Télétravail</Toggle>
           {hasFilters && (
-            <button type="button" onClick={reset} className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-3.5 py-2 text-xs font-medium text-rose-600 hover:bg-rose-100 dark:bg-rose-500/10 dark:text-rose-300"><RotateCcw size={13} /> Réinitialiser</button>
+            <button 
+              type="button" 
+              onClick={reset} 
+              className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3.5 py-2 text-xs font-medium text-slate-600 hover:bg-slate-200 dark:bg-white/10 dark:text-slate-300 dark:hover:bg-white/20"
+            >
+              <RotateCcw size={13} /> Réinitialiser
+            </button>
           )}
         </div>
       </section>
@@ -128,7 +163,9 @@ export function CompaniesTab({ companies = [], onSelect }) {
 
       {filtered.length === 0 ? (
         <div className={`${card} px-6 py-14 text-center`}>
-          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 text-slate-400 dark:bg-white/5"><Building2 size={26} /></span>
+          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 text-slate-400 dark:bg-white/5">
+            <Building2 size={26} />
+          </span>
           <p className="mt-4 text-base font-semibold text-slate-800 dark:text-white">Aucune entreprise trouvée</p>
           <p className="mx-auto mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">Modifiez votre recherche ou retirez des filtres.</p>
         </div>
@@ -147,6 +184,7 @@ export function CompanyModal({ company, onClose, showJobs = true, onSelectOffer 
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("about");
+  const [showMore, setShowMore] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -170,9 +208,19 @@ export function CompanyModal({ company, onClose, showJobs = true, onSelectOffer 
   const location = [data.city, data.country].filter(Boolean).join(", ");
   const tabs = [["about", "À propos"], ...(showJobs ? [["jobs", `Offres (${jobs.length})`]] : [])];
 
+  const description = data.description || "Aucune description n'a été renseignée pour le moment.";
+  const isLongDesc = description.length > 250;
+  const displayedDesc = showMore ? description : `${description.slice(0, 250)}${isLongDesc ? "..." : ""}`;
+
   return (
     <div className="ts-root fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-3 backdrop-blur-sm sm:p-6" onClick={onClose}>
-      <section role="dialog" aria-modal="true" className="ts-pop flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-[#112A3A]" onClick={(e) => e.stopPropagation()}>
+      <section 
+        role="dialog" 
+        aria-modal="true" 
+        className="ts-pop flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-[#112A3A]" 
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* HEADER */}
         <header className="relative shrink-0 bg-gradient-to-br from-[#0B1F33] to-[#16324F] px-6 py-6 text-white">
           <div className="flex items-start gap-4">
             <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white/10 p-2">
@@ -195,32 +243,70 @@ export function CompanyModal({ company, onClose, showJobs = true, onSelectOffer 
                 )}
               </div>
             </div>
-            <button type="button" onClick={onClose} aria-label="Fermer" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 hover:bg-white/20"><X size={17} /></button>
+            <button type="button" onClick={onClose} aria-label="Fermer" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 hover:bg-white/20">
+              <X size={17} />
+            </button>
           </div>
         </header>
 
+        {/* TABS */}
         <nav className="flex shrink-0 gap-1 border-b border-slate-100 px-5 dark:border-white/10">
           {tabs.map(([id, label]) => (
-            <button key={id} type="button" onClick={() => setTab(id)} className={`border-b-2 px-3 py-3.5 text-sm font-medium transition ${tab === id ? "border-teal-400 text-teal-600 dark:text-teal-300" : "border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400"}`}>
+            <button key={id} type="button" onClick={() => setTab(id)} className={`border-b-2 px-3 py-3.5 text-sm font-medium transition ${tab === id ? "border-[#16B8B1] text-[#0F9691] dark:text-[#16B8B1]" : "border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400"}`}>
               {label}
             </button>
           ))}
         </nav>
 
+        {/* MAIN CONTENT */}
         <main className="min-h-0 flex-1 overflow-y-auto p-6">
           {loading ? (
-            <div className="flex min-h-48 items-center justify-center"><Loader2 className="animate-spin text-teal-500" size={28} /></div>
+            <div className="flex min-h-48 items-center justify-center"><Loader2 className="animate-spin text-[#16B8B1]" size={28} /></div>
           ) : tab === "about" ? (
-            <div className="space-y-4">
+            
+            /* ✅ SECTION A PROPOS & LOCALISATION EN DEUX COLONNES */
+            <div className="grid gap-5 lg:grid-cols-[1fr_280px]">
+              
+              {/* COLONNE GAUCHE : Description */}
               <div className="rounded-2xl bg-slate-50/80 p-5 dark:bg-white/5">
-                <h4 className="mb-2 text-sm font-semibold text-slate-800 dark:text-white">À propos de {data.name || "l'entreprise"}</h4>
-                <p className="whitespace-pre-line break-words text-sm leading-7 text-slate-600 dark:text-slate-300">{data.description || "Aucune description n'a été renseignée pour le moment."}</p>
+                <h4 className="mb-2 text-sm font-semibold text-slate-800 dark:text-white">
+                  À propos de {data.name || "l'entreprise"}
+                </h4>
+                <p className="whitespace-pre-line break-words text-sm leading-7 text-slate-600 dark:text-slate-300">
+                  {displayedDesc}
+                </p>
+                {isLongDesc && (
+                  <button onClick={() => setShowMore(!showMore)} className="mt-3 text-sm font-bold text-[#0B1F33] hover:underline dark:text-[#16B8B1]">
+                    {showMore ? "Voir moins" : "Voir plus"}
+                  </button>
+                )}
               </div>
-              <div className="flex items-start gap-3 rounded-2xl bg-slate-50/80 p-4 dark:bg-white/5">
-                <MapPin size={17} className="mt-0.5 shrink-0 text-teal-500" />
-                <div><p className="text-xs text-slate-500">Localisation</p><p className="mt-0.5 text-sm font-medium text-slate-700 dark:text-slate-200">{location || "Non renseignée"}</p></div>
+
+              {/* COLONNE DROITE : Secteur & Localisation */}
+              <div className="space-y-4">
+                <div className="rounded-2xl bg-slate-50/80 p-5 dark:bg-white/5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Building2 size={16} className="text-[#0B1F33] dark:text-[#16B8B1]" />
+                    <p className="text-sm font-bold text-slate-800 dark:text-white">Secteur</p>
+                  </div>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                    {data.sector || data.industry || "Secteur d'activité non précisé"}
+                  </p>
+                </div>
+                
+                <div className="rounded-2xl bg-slate-50/80 p-5 dark:bg-white/5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MapPin size={16} className="text-[#0B1F33] dark:text-[#16B8B1]" />
+                    <p className="text-sm font-bold text-slate-800 dark:text-white">Localisation</p>
+                  </div>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                    {location || "Localisation non renseignée"}
+                  </p>
+                </div>
               </div>
+
             </div>
+
           ) : jobs.length === 0 ? (
             <div className="flex flex-col items-center rounded-2xl bg-slate-50/80 px-5 py-12 text-center dark:bg-white/5">
               <Briefcase size={22} className="text-slate-400" />
@@ -229,15 +315,24 @@ export function CompanyModal({ company, onClose, showJobs = true, onSelectOffer 
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
               {jobs.map((job) => (
-                <button key={job.id} type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onSelectOffer?.(job.id); }}
-                  className="group flex min-h-36 flex-col justify-between rounded-2xl bg-slate-50/80 p-4 text-left transition hover:bg-white hover:shadow-md dark:bg-white/5 dark:hover:bg-white/10">
+                <button 
+                  key={job.id} 
+                  type="button" 
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); onSelectOffer?.(job.id); }}
+                  className="group flex min-h-36 flex-col justify-between rounded-2xl bg-slate-50/80 p-4 text-left transition hover:bg-white hover:shadow-md dark:bg-white/5 dark:hover:bg-white/10"
+                >
                   <div>
-                    <span className="inline-flex rounded-full bg-teal-50 px-2.5 py-1 text-[10px] font-medium text-teal-600 dark:bg-teal-500/10 dark:text-teal-300">{OFFER_TYPES[job.offer_type] || "Emploi"}</span>
-                    <h4 className="mt-3 break-words text-sm font-medium leading-6 text-slate-800 group-hover:text-teal-600 dark:text-white">{job.title || "Offre sans titre"}</h4>
+                    <span className="inline-flex rounded-full bg-[#16B8B1]/10 px-2.5 py-1 text-[10px] font-medium text-[#0F9691] dark:bg-[#16B8B1]/20 dark:text-[#16B8B1]">
+                      {OFFER_TYPES[job.offer_type] || "Emploi"}
+                    </span>
+                    <h4 className="mt-3 break-words text-sm font-medium leading-6 text-slate-800 group-hover:text-[#0F9691] dark:text-white">
+                      {job.title || "Offre sans titre"}
+                    </h4>
                   </div>
                   <div className="mt-3 flex items-center gap-1.5 text-xs text-slate-500">
-                    <MapPin size={12} className="text-teal-500" /><span className="truncate">{job.city || "Localisation non précisée"}</span>
-                    <span className="ml-auto font-medium text-teal-600 dark:text-teal-300">Voir l'offre</span>
+                    <MapPin size={12} className="text-[#16B8B1]" />
+                    <span className="truncate">{job.city || "Localisation non précisée"}</span>
+                    <span className="ml-auto font-medium text-[#0F9691] dark:text-[#16B8B1]">Voir l'offre</span>
                   </div>
                 </button>
               ))}

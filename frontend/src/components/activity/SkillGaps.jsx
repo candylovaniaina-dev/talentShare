@@ -16,7 +16,7 @@ function GapRow({ gap, onAdd, adding }) {
           <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-300">
             Demandée dans <b className="font-semibold">{gap.offers}</b> offre{gap.offers > 1 ? "s" : ""} compatible{gap.offers > 1 ? "s" : ""}
             {gap.unlocks > 0 && (
-              <> · vous rend pleinement compatible (compétences) avec <b className="font-semibold text-teal-600 dark:text-teal-400">{gap.unlocks}</b></>
+              <> · vous rend pleinement compatible (compétences) avec <b className="font-semibold text-[#0F9691] dark:text-[#16B8B1]">{gap.unlocks}</b></>
             )}
           </p>
           {gap.samples.length > 0 && (
@@ -36,7 +36,7 @@ function GapRow({ gap, onAdd, adding }) {
             type="button"
             disabled={adding}
             onClick={() => onAdd(gap, level)}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-[#0B1F33] px-3.5 py-2 text-xs font-medium text-white transition hover:bg-[#16324F] disabled:opacity-60 dark:bg-[#16B8B1] dark:text-[#0B1F33]"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-[#0B1F33] px-3.5 py-2 text-xs font-medium text-white transition hover:bg-[#16324F] disabled:opacity-60 dark:bg-[#16B8B1] dark:text-[#0B1F33] dark:hover:bg-[#0F9691]"
           >
             {adding ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />} Ajouter
           </button>
@@ -54,7 +54,7 @@ export default function SkillGaps({ gaps = [], onAdd, addingId, limit = 10, titl
         <div className="mb-4">
           <h3 className="text-sm font-semibold text-slate-800 dark:text-white">Compétences à développer</h3>
           <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-            Les compétences les plus demandées dans les offres compatibles, que vous n'avez pas encore sur votre profil.
+            Ces compétences sont très demandées pour des postes correspondant à votre profil. Les maîtriser augmenterait vos chances d'être recruté.
           </p>
         </div>
       )}
@@ -86,7 +86,7 @@ export function SkillGapMini({ gaps = [], onSeeAll }) {
           ))}
         </ul>
       )}
-      <button onClick={onSeeAll} className="mt-3 w-full rounded-xl py-2 text-xs font-medium text-teal-600 transition hover:bg-teal-50 dark:text-teal-400 dark:hover:bg-teal-500/10">
+      <button onClick={onSeeAll} className="mt-3 w-full rounded-xl py-2 text-xs font-medium text-[#0F9691] transition hover:bg-[#16B8B1]/10 dark:text-[#16B8B1] dark:hover:bg-[#16B8B1]/10">
         Voir et ajouter →
       </button>
     </section>

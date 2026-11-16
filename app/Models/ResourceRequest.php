@@ -116,12 +116,14 @@ class ResourceRequest extends Model
     /**
      * ✅ Calcul du nombre de postes restants
      */
-    public function getRemainingPositionsAttribute()
-    {
-        $filled = \App\Models\Mission::whereHas('proposal', function ($q) {
-            $q->where('resource_request_id', $this->id);
-        })->whereIn('status', ['pending_employee', 'planned', 'active', 'trial'])->count();
-
-        return max(0, $this->positions_count - $filled);
-    }
+   /**
+ * ✅ Calcul du nombre de postes restants
+ */
+public function getRemainingPositionsAttribute()
+{
+    // On compte les propositions avec le statut "accepted"
+    $accepted = $this->proposals()->where('status', 'accepted')->count();
+    
+    return max(0, ($this->positions_count ?? 1) - $accepted);
+}
 }

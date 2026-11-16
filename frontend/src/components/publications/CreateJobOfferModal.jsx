@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   X, Plus, Loader2, AlertCircle, GraduationCap, RotateCcw, Briefcase,
-  MapPin, Globe, Calendar, Laptop, Banknote, Clock, FileText, Check, ShieldCheck,
+  MapPin, Globe, Calendar, Laptop, Banknote, Clock, FileText, Check, ShieldCheck, Rocket, Tag,
 } from "lucide-react";
 import api from "../../services/api";
 
@@ -9,10 +9,9 @@ export const JOB_OFFER_TYPES = [
   { value: "internship", label: "Stage", hint: "Durée déterminée", icon: GraduationCap },
   { value: "apprenticeship", label: "Alternance", hint: "Rythme école / entreprise", icon: RotateCcw },
   { value: "fixed_term", label: "CDD", hint: "Contrat à durée déterminée", icon: Calendar },
-  { value: "permanent", label: "Recrutement permanent", hint: "CDI · sans date de fin", icon: Briefcase },
+  { value: "permanent", label: "Recrutement permanent", hint: "CDI · sans date de fin", icon: ShieldCheck },
 ];
 
-// Durée proposée par défaut selon le type (en mois) — la date de fin est calculée automatiquement à l'embauche
 const DEFAULT_MONTHS = { internship: 3, apprenticeship: 12, fixed_term: 6 };
 const DURATION_CHOICES = {
   internship: [2, 3, 4, 6],
@@ -23,6 +22,22 @@ const DURATION_CHOICES = {
 const inputCls =
   "w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 outline-none transition " +
   "focus:border-[#16B8B1] focus:bg-white focus:ring-2 focus:ring-[#16B8B1]/20 dark:border-white/10 dark:bg-[#0A1230] dark:text-white dark:focus:bg-[#0A1230]";
+
+// ✅ Fonction pour formater les nombres (ex: 400000 -> 400 000)
+const formatNumber = (value) => {
+  if (value === "" || value === null || value === undefined) return "";
+  // On enlève tous les espaces existants et on ne garde que les chiffres
+  const num = String(value).replace(/\s/g, "").replace(/\D/g, "");
+  if (!num) return "";
+  // On ajoute un espace tous les 3 chiffres en partant de la fin
+  return num.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+};
+
+// ✅ Fonction pour nettoyer la valeur avant l'envoi
+const cleanNumber = (value) => {
+  if (!value) return "";
+  return String(value).replace(/\s/g, "");
+};
 
 function Field({ label, icon: Icon, children }) {
   return (
@@ -56,6 +71,12 @@ export default function CreateJobOfferModal({ company, presetType = "internship"
   const [error, setError] = useState(null);
 
   const update = (key, value) => setForm((c) => ({ ...c, [key]: value }));
+
+  // ✅ Mise à jour spéciale pour les salaires avec formatage
+  const updateSalary = (key, value) => {
+    const formatted = formatNumber(value);
+    setForm((c) => ({ ...c, [key]: formatted }));
+  };
 
   const isPermanent = ["permanent", "first_job"].includes(form.offer_type);
   const needsDuration = !isPermanent;
@@ -91,8 +112,10 @@ export default function CreateJobOfferModal({ company, presetType = "internship"
       return setError("Indiquez une durée entre 1 et 60 mois.");
     }
 
-    const min = form.salary_min === "" ? null : Number(form.salary_min);
-    const max = form.salary_max === "" ? null : Number(form.salary_max);
+    // ✅ On nettoie les espaces avant de convertir en nombre
+    const min = cleanNumber(form.salary_min) === "" ? null : Number(cleanNumber(form.salary_min));
+    const max = cleanNumber(form.salary_max) === "" ? null : Number(cleanNumber(form.salary_max));
+    
     if (min !== null && max !== null && max < min) {
       return setError("La rémunération maximale doit être supérieure au minimum.");
     }
@@ -149,7 +172,7 @@ export default function CreateJobOfferModal({ company, presetType = "internship"
           <span className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-[#16B8B1]/20 blur-3xl" />
           <div className="relative flex items-center gap-3.5">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 text-[#16B8B1]">
-              <Briefcase size={20} />
+              <Rocket size={20} />
             </span>
             <div className="min-w-0 flex-1">
               <h2 id="job-offer-title" className="truncate text-lg font-semibold tracking-tight">
@@ -216,7 +239,7 @@ export default function CreateJobOfferModal({ company, presetType = "internship"
               </div>
             </div>
 
-            <Field label="Intitulé du poste *" icon={Briefcase}>
+            <Field label="Intitulé du poste *" icon={Tag}>
               <input
                 required
                 value={form.title}
@@ -318,10 +341,24 @@ export default function CreateJobOfferModal({ company, presetType = "internship"
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Rémunération minimum (Ar / mois)" icon={Banknote}>
-                <input type="number" min="0" value={form.salary_min} onChange={(e) => update("salary_min", e.target.value)} placeholder="Optionnel" className={inputCls} />
+                <input 
+                  type="text" 
+                  inputMode="numeric"
+                  value={form.salary_min} 
+                  onChange={(e) => updateSalary("salary_min", e.target.value)} 
+                  placeholder="Ex: 400 000" 
+                  className={inputCls} 
+                />
               </Field>
               <Field label="Rémunération maximum (Ar / mois)" icon={Banknote}>
-                <input type="number" min="0" value={form.salary_max} onChange={(e) => update("salary_max", e.target.value)} placeholder="Optionnel" className={inputCls} />
+                <input 
+                  type="text" 
+                  inputMode="numeric"
+                  value={form.salary_max} 
+                  onChange={(e) => updateSalary("salary_max", e.target.value)} 
+                  placeholder="Ex: 600 000" 
+                  className={inputCls} 
+                />
               </Field>
             </div>
 

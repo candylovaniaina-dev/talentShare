@@ -9,6 +9,7 @@ use App\Jobs\RenewRecurringAvailabilities;
 use App\Jobs\ExpireResourceRequests;
 use App\Jobs\ExpireProposals;
 
+
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
@@ -31,3 +32,5 @@ Schedule::command('interviews:send-reminders')->everyFiveMinutes();
 
 Schedule::command('missions:close-expired')->dailyAt('00:00');
 Schedule::command('contracts:close-expired')->dailyAt('00:10')->timezone('Indian/Antananarivo');
+
+Schedule::command('talent-market:sync')->hourly();

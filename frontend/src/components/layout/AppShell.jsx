@@ -4,7 +4,7 @@ import {
   LayoutDashboard, UserRound, BriefcaseBusiness, MessageSquareText,
   Building2, Layers3, Menu, X, Settings, ChevronDown, LogOut,
   Home, Compass, Contact, Users, ShieldCheck, LifeBuoy,
-  Globe, Briefcase, Target, // ✅ AJOUTÉ ICI
+  Globe, Briefcase, Target,
   ClipboardList, 
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
@@ -14,7 +14,6 @@ import ActivityHistory from "./ActivityHistory";
 
 const COLLAB_MATCH = ["/collaborations", "/missions", "/proposals", "/resource-proposals"];
 
-// ✅ AJOUT DES BADGES DANS LA CONFIGURATION DES MENUS
 const navByRole = {
   company: [
     { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
@@ -24,13 +23,12 @@ const navByRole = {
   ],
   employee: [
     { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-    { to: "/profile", label: "Mon Portfolio", icon: Contact }, { to: "/opportunites", label: "Mon radar", icon: Target, badge: "newRadar" }, // ✅ AJOUTÉ
+    { to: "/profile", label: "Mon Portfolio", icon: Contact }, 
     { to: "/explorer", label: "Explorer", icon: Compass, badge: "newExplorer" },
   ],
   student: [
     { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
     { to: "/profile", label: "Mon Portfolio", icon: Contact },
-
     { to: "/explorer", label: "Explorer", icon: Compass, badge: "newExplorer" },
   ],
   university: [{ to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard }],
@@ -54,13 +52,14 @@ const getTabs = (role) => [
     to: role === "company" ? "/company?tab=profile" : "/my-activity?tab=profile" 
   }
 ];
+
 const EXTRA_LABELS = [
   ["/messages", "Messagerie"],
   ["/account-settings", "Paramètres du compte"],
   ["/help", "Aide"],
   ["/guide", "Guide"],
   ["/history", "Historique"],
-  ["/opportunites", "Mon radar"], // ✅ AJOUTÉ
+  ["/opportunites", "Mon radar"],
   ["/job-offers", "Recrutement"],
   ["/browse-requests", "Demandes de ressources"],
   ["/resource-requests", "Demandes de ressources"],
@@ -102,6 +101,12 @@ function UserAvatar({ user, size = 40 }) {
   const [err, setErr] = useState(false);
   
   const rawPath = 
+    (user?.role === "company" && (
+      user?.company?.logo_url || 
+      user?.company?.logo_path ||
+      user?.companies?.[0]?.logo_url ||  
+      user?.companies?.[0]?.logo_path
+    )) ||
     user?.professional_profile?.avatar_path || 
     user?.professionalProfile?.avatar_path ||
     user?.company?.logo_url ||   
@@ -114,7 +119,14 @@ function UserAvatar({ user, size = 40 }) {
 
   const src = fileUrl(rawPath);
   
-  const initials = (user?.name || user?.company?.name || "?")
+  const displayName = 
+    (user?.role === "company" && (
+      user?.company?.name || user?.companies?.[0]?.name
+    )) ||
+    user?.name || 
+    "?";
+
+  const initials = displayName
     .split(/\s+/)
     .slice(0, 2)
     .map((w) => w.charAt(0).toUpperCase())
@@ -123,6 +135,8 @@ function UserAvatar({ user, size = 40 }) {
   useEffect(() => {
     setErr(false);
   }, [src]);
+
+  // ✅ SUPPRESSION DES CONSOLE.LOG DE DEBUG ICI
 
   return (
     <span
@@ -133,7 +147,7 @@ function UserAvatar({ user, size = 40 }) {
         <img
           key={src}
           src={src}
-          alt=""
+          alt={displayName}
           onError={() => setErr(true)}
           className="h-full w-full object-cover"
         />
@@ -166,7 +180,7 @@ export default function AppShell({ children }) {
   const [newOffersCount, setNewOffersCount] = useState(0);
   const [newRequestsCount, setNewRequestsCount] = useState(0);
   const [newProposalsCount, setNewProposalsCount] = useState(0);
-  const [newRadarCount, setNewRadarCount] = useState(0); // ✅ AJOUTÉ
+  const [newRadarCount, setNewRadarCount] = useState(0); 
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(() => {
@@ -178,6 +192,13 @@ export default function AppShell({ children }) {
 
   const isMyActivity = location.pathname.startsWith("/my-activity") || location.pathname.startsWith("/company");
   const currentTab = searchParams.get("tab") || "home";
+
+  const displayName = 
+    (user?.role === "company" && (
+      user?.company?.name || user?.companies?.[0]?.name
+    )) ||
+    user?.name || 
+    "Mon espace";
 
   useEffect(() => {
     try { localStorage.setItem("talentshare_sidebar_collapsed", collapsed ? "1" : "0"); } catch { /* ignore */ }
@@ -275,7 +296,6 @@ export default function AppShell({ children }) {
     api.post("/proposals/mark-seen").then(() => setNewProposalsCount(0)).catch(() => setNewProposalsCount(0));
   }, [location.pathname, user?.id]);
 
-  // ✅ NOUVEL EFFET POUR LE RADAR
   useEffect(() => {
     if (!user?.id || !["student", "employee"].includes(user?.role)) return;
     if (location.pathname.startsWith("/opportunites")) { setNewRadarCount(0); return; }
@@ -377,7 +397,7 @@ export default function AppShell({ children }) {
           <div className="mt-2 flex items-center gap-3">
             <UserAvatar user={user} size={40} />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-bold text-white">{user?.name || "Mon espace"}</p>
+              <p className="truncate text-sm font-bold text-white">{displayName}</p>
               <span className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-[#16B8B1]/15 px-2 py-0.5 text-[10px] font-bold text-[#16B8B1]">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#16B8B1]" />
                 {roleLabel(user?.role)}
@@ -519,7 +539,6 @@ export default function AppShell({ children }) {
                   title="Messagerie"
                   className={`${headerBtn} relative`}
                 >
-                  {/* ✅ ICÔNE MESSENGER / BULLE DE CHAT ICI */}
                   <MessageSquareText size={19} strokeWidth={2.2} />
                   
                  {unreadMessages > 0 && (
@@ -547,40 +566,47 @@ export default function AppShell({ children }) {
                   <ChevronDown size={14} className={`text-slate-400 transition dark:text-slate-500 ${profileMenuOpen ? "rotate-180" : ""}`} />
                 </button>
 
-                {profileMenuOpen && (
-                  <>
-                    <div className="fixed inset-0 z-10" onClick={() => setProfileMenuOpen(false)} />
-                    <div role="menu" className="absolute right-0 top-full z-20 mt-2 w-64 overflow-hidden rounded-2xl border border-slate-200 bg-white py-2 shadow-xl dark:border-white/10 dark:bg-[#131E47]">
-                      <div className="mb-1 flex items-center gap-3 border-b border-slate-100 px-4 pb-3 pt-2 dark:border-white/10">
-                        <UserAvatar user={user} size={40} />
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{user?.name}</p>
-                          <p className="truncate text-xs text-slate-500 dark:text-slate-400">{user?.email}</p>
-                        </div>
-                      </div>
+              {profileMenuOpen && (
+  <>
+    <div className="fixed inset-0 z-10" onClick={() => setProfileMenuOpen(false)} />
+    <div role="menu" className="absolute right-0 top-full z-20 mt-2 w-64 overflow-hidden rounded-2xl border border-slate-200 bg-white py-2 shadow-xl dark:border-white/10 dark:bg-[#131E47]">
+      
+      {/* En-tête du menu (Avatar + Nom) */}
+      <div className="mb-1 flex items-center gap-3 border-b border-slate-100 px-4 pb-3 pt-2 dark:border-white/10">
+        <UserAvatar user={user} size={40} />
+        <div className="min-w-0">
+          <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{displayName}</p>
+          <p className="truncate text-xs text-slate-500 dark:text-slate-400">{user?.email}</p>
+        </div>
+      </div>
 
-                      <Link role="menuitem" to="/profile" onClick={() => setProfileMenuOpen(false)} className={menuLink}>
-                        <Contact size={16} strokeWidth={1.9} /> {user?.role === "company" ? "Mon Espace Entreprise" : "Mon Portfolio"}
-                      </Link>
-                      <Link role="menuitem" to="/account-settings" onClick={() => setProfileMenuOpen(false)} className={menuLink}>
-                        <Settings size={16} strokeWidth={1.9} /> Paramètres du compte
-                      </Link>
-                      <Link role="menuitem" to="/help" onClick={() => setProfileMenuOpen(false)} className={menuLink}>
-                        <LifeBuoy size={16} strokeWidth={1.9} /> Aide et guide
-                      </Link>
+      {user?.role !== "company" && (
+        <Link role="menuitem" to="/profile" onClick={() => setProfileMenuOpen(false)} className={menuLink}>
+          <Contact size={16} strokeWidth={1.9} /> Mon Portfolio
+        </Link>
+      )}
 
-                      <div className="my-1 border-t border-slate-100 dark:border-white/10" />
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => { setProfileMenuOpen(false); if (logout) logout(); }}
-                        className="flex w-full items-center gap-3 px-4 py-2.5 text-sm font-bold text-rose-600 transition hover:bg-rose-50 dark:hover:bg-rose-500/10"
-                      >
-                        <LogOut size={16} strokeWidth={1.9} /> Se déconnecter
-                      </button>
-                    </div>
-                  </>
-                )}
+      <Link role="menuitem" to="/account-settings" onClick={() => setProfileMenuOpen(false)} className={menuLink}>
+        <Settings size={16} strokeWidth={1.9} /> Paramètres du compte
+      </Link>
+      
+      <Link role="menuitem" to="/help" onClick={() => setProfileMenuOpen(false)} className={menuLink}>
+        <LifeBuoy size={16} strokeWidth={1.9} /> Aide et guide
+      </Link>
+
+      <div className="my-1 border-t border-slate-100 dark:border-white/10" />
+      
+      <button
+        type="button"
+        role="menuitem"
+        onClick={() => { setProfileMenuOpen(false); if (logout) logout(); }}
+        className="flex w-full items-center gap-3 px-4 py-2.5 text-sm font-bold text-rose-600 transition hover:bg-rose-50 dark:hover:bg-rose-500/10"
+      >
+        <LogOut size={16} strokeWidth={1.9} /> Se déconnecter
+      </button>
+    </div>
+  </>
+)}
               </div>
             </div>
           </div>

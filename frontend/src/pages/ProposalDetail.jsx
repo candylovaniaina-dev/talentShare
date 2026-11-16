@@ -626,7 +626,7 @@ export default function ProposalDetail() {
         logo: proposal.profile?.avatar_path,
         line: proposal.profile?.headline,
         desc: null,
-        messageTo: proposal.profile?.user?.id,
+     messageTo: proposal.profile?.user_id || proposal.profile?.user?.id || proposal.user_id,
       };
 
   const steps = [
@@ -862,7 +862,7 @@ export default function ProposalDetail() {
                           )}
                           {joinUrl && (
                             <Btn as="a" href={joinUrl} target="_blank" rel="noreferrer" variant="dark" className="mt-4">
-                              <Eye size={16} /> Rejoindre l'entretien
+                               Rejoindre l'entretien
                             </Btn>
                           )}
                         </div>
@@ -1153,11 +1153,19 @@ export default function ProposalDetail() {
                         <User size={16} /> Voir le profil
                       </Btn>
                     )}
-                    {sideCard.messageTo && (
-                      <Btn as={Link} to={`/messages?to=${sideCard.messageTo}`} variant="outline" className="flex-1">
-                        <MessageSquare size={16} /> Envoyer un message
-                      </Btn>
-                    )}
+                   {sideCard.messageTo && (
+ <Btn 
+  as={Link} 
+  to={{
+    pathname: "/messages",
+    search: `?to=${sideCard.messageTo}&name=${encodeURIComponent(sideCard.name)}`
+  }} 
+  variant="outline" 
+  className="flex-1"
+>
+  <MessageSquare size={16} /> Envoyer un message
+</Btn>
+)}
                   </div>
                 </div>
               </Section>
@@ -1173,7 +1181,7 @@ export default function ProposalDetail() {
                 <div className="flex flex-col gap-3">
                   {joinUrl && !showTracker && (
                     <Btn as="a" href={joinUrl} target="_blank" rel="noreferrer" variant="dark">
-                      <Eye size={16} /> Rejoindre l'entretien
+                      Rejoindre l'entretien
                     </Btn>
                   )}
 

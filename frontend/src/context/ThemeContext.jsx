@@ -19,18 +19,15 @@ const getStoredValue = (key, fallback) => {
 
 const getStoredBoolean = (key) => getStoredValue(key, "false") === "true";
 
-// Thème du système (si aucun choix n'a encore été enregistré)
-const getSystemTheme = () =>
-  typeof window !== "undefined" &&
-  window.matchMedia?.("(prefers-color-scheme: light)").matches
-    ? "light"
-    : "dark";
-
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
     const stored = getStoredValue("theme", null);
-    return stored === "dark" || stored === "light" ? stored : getSystemTheme();
+    if (stored === "dark" || stored === "light") {
+      return stored;
+    }
+    return "light"; // ✅ Par défaut, on force le mode clair
   });
+
   const [fontSize, setFontSize] = useState(() =>
     getStoredValue("font_size", "normal")
   );
@@ -46,7 +43,6 @@ export const ThemeProvider = ({ children }) => {
 
     root.classList.toggle("dark", theme === "dark");
     root.classList.toggle("light", theme === "light");
-    // Barres de défilement, champs et menus natifs suivent le thème
     root.style.colorScheme = theme;
 
     root.classList.remove("font-small", "font-normal", "font-large");
@@ -70,6 +66,8 @@ export const ThemeProvider = ({ children }) => {
 
     if (user.theme_preference === "dark" || user.theme_preference === "light") {
       setTheme(user.theme_preference);
+    } else {
+      setTheme("light"); // ✅ Si pas de préférence, on force le mode clair
     }
 
     if (["small", "normal", "large"].includes(user.font_size)) {
@@ -105,14 +103,8 @@ export const ThemeProvider = ({ children }) => {
       return;
     }
 
-    // Applique immédiatement la préférence à l'interface.
-    if (key === "theme_preference" && value === "system") {
-      setTheme(getSystemTheme());
-    } else {
-      setters[key](value);
-    }
+    setters[key](value);
 
-    // Sauvegarde sur le serveur uniquement si l'utilisateur est connecté
     let token = null;
     try {
       token = localStorage.getItem("token");

@@ -55,7 +55,7 @@ function EventRow({ ev, now }) {
           <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${meta.chip}`}>{meta.label}</span>
           <span className="text-[11px] text-slate-500 dark:text-slate-400">{timeLabel(ev)}</span>
         </div>
-        <Link to={ev.to} className="mt-1 block truncate text-[13px] font-medium text-slate-800 hover:text-teal-600 dark:text-white dark:hover:text-teal-400">
+        <Link to={ev.to} className="mt-1 block truncate text-[13px] font-medium text-slate-800 hover:text-[#0F9691] dark:text-white dark:hover:text-[#16B8B1]">
           {ev.title}
         </Link>
         {ev.subtitle && <p className="truncate text-xs text-slate-500 dark:text-slate-400">{ev.subtitle}</p>}
@@ -76,7 +76,7 @@ export function ReminderBanner({ ev, now }) {
   const live = canJoin(ev, now);
   const started = diff <= 0;
   return (
-    <div className="flex flex-col gap-3 rounded-2xl bg-gradient-to-r from-rose-50 to-amber-50 p-4 ring-1 ring-rose-100 dark:from-rose-500/10 dark:to-amber-500/10 dark:ring-rose-500/20 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-3 rounded-2xl bg-gradient-to-r from-slate-50 to-blue-50 p-4 ring-1 ring-slate-200 dark:from-white/5 dark:to-[#16B8B1]/5 dark:ring-white/10 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
         <p className="text-sm font-medium text-slate-800 dark:text-white">
           {started ? "Votre entretien est en cours" : live ? "Votre entretien commence bientôt" : `Entretien dans ${countdown(diff)}`}
@@ -97,14 +97,14 @@ export function NextEvent({ ev, now }) {
   return (
     <section className={`${card} flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between`}>
       <div className="flex items-center gap-4">
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-rose-50 text-rose-500 dark:bg-rose-500/10">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#16B8B1]/10 text-[#0F9691] dark:bg-[#16B8B1]/20 dark:text-[#16B8B1]">
           <CalendarDays size={21} />
         </span>
         <div className="min-w-0">
-          <p className="text-[11px] font-medium text-rose-500 dark:text-rose-300">
+          <p className="text-[11px] font-medium text-[#0F9691] dark:text-[#16B8B1]">
             Prochain entretien · {diff > 0 ? `dans ${countdown(diff)}` : "en cours"}
           </p>
-          <Link to={ev.to} className="block truncate text-[15px] font-semibold text-slate-800 hover:text-teal-600 dark:text-white">{ev.title}</Link>
+          <Link to={ev.to} className="block truncate text-[15px] font-semibold text-slate-800 hover:text-[#0F9691] dark:text-white dark:hover:text-[#16B8B1]">{ev.title}</Link>
           <p className="truncate text-xs text-slate-500 dark:text-slate-400">
             {ev.subtitle}{ev.subtitle ? " · " : ""}
             {ev.start.toLocaleString("fr-FR", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}
@@ -141,7 +141,7 @@ export function AgendaMini({ events, now, onSeeAll }) {
           ))}
         </ul>
       )}
-      <button onClick={onSeeAll} className="mt-3 w-full rounded-xl py-2 text-xs font-medium text-teal-600 transition hover:bg-teal-50 dark:text-teal-400 dark:hover:bg-teal-500/10">
+      <button onClick={onSeeAll} className="mt-3 w-full rounded-xl py-2 text-xs font-medium text-[#0F9691] transition hover:bg-[#16B8B1]/10 dark:text-[#16B8B1] dark:hover:bg-[#16B8B1]/10">
         Ouvrir l'agenda →
       </button>
     </section>
@@ -193,7 +193,7 @@ export default function AgendaPanel({ events, now }) {
                     : `${inMonth ? "text-slate-700 dark:text-slate-200" : "text-slate-300 dark:text-slate-600"} ${avail ? "bg-sky-50/80 dark:bg-sky-500/5" : ""} hover:bg-slate-50 dark:hover:bg-white/5`
                 }`}
               >
-                <span className={`flex h-6 w-6 items-center justify-center rounded-full ${isToday && !isSel ? "bg-teal-100 font-semibold text-teal-700 dark:bg-teal-500/20 dark:text-teal-300" : ""}`}>
+                <span className={`flex h-6 w-6 items-center justify-center rounded-full ${isToday && !isSel ? "bg-[#16B8B1]/20 font-semibold text-[#0F9691] dark:bg-[#16B8B1]/30 dark:text-[#16B8B1]" : ""}`}>
                   {d.getDate()}
                 </span>
                 <span className="flex gap-0.5">

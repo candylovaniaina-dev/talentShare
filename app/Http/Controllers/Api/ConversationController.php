@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Conversation;
+use App\Models\Message;
 use App\Models\User;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
@@ -14,8 +15,8 @@ class ConversationController extends Controller
     {
         $userId = $request->user()->id;
 
-        // 1. On récupère les conversations
-        $conversations = $request->user()->conversations()
+        $conversations = $request->user()
+            ->conversations()
             ->wherePivot('is_archived', false)
             ->with([
                 'participants:id,name,email,avatar_path,role',
@@ -24,38 +25,37 @@ class ConversationController extends Controller
             ->latest('conversations.updated_at')
             ->get();
 
-        // 2. On filtre les conversations pour ne garder que celles avec au moins 1 message
-        $conversations = $conversations->filter(function ($conv) use ($userId) {
-            $lastMessage = \App\Models\Message::where('conversation_id', $conv->id)
+        $conversations->each(function ($conv) use ($userId) {
+            
+            // On récupère le dernier message (sauf le placeholder)
+            $lastMessage = Message::where('conversation_id', $conv->id)
+                ->whereRaw("LOWER(TRIM(body)) <> ?", ['nouvelle conversation'])
                 ->with([
                     'sender:id,name,email,avatar_path,role',
                     'sender.professionalProfile:id,user_id,avatar_path',
                 ])
-                ->orderBy('id', 'desc')
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
                 ->first();
 
-            // Si aucun message, on ignore cette conversation
-            if (!$lastMessage) {
-                return false;
-            }
-
-            // On attache le dernier message
-            $conv->setRelation('messages', collect([$lastMessage]));
+            $conv->setRelation('messages', $lastMessage ? collect([$lastMessage]) : collect());
 
             // Calcul des non-lus
             $lastReadAt = $conv->pivot->last_read_at ?? null;
-            $conv->unread_count = \App\Models\Message::where('conversation_id', $conv->id)
+            $unreadQuery = Message::where('conversation_id', $conv->id)
                 ->where('sender_id', '!=', $userId)
-                ->when($lastReadAt, fn ($q) => $q->where('created_at', '>', $lastReadAt))
-                ->count();
+                ->whereRaw("LOWER(TRIM(body)) <> ?", ['nouvelle conversation']);
 
+            if ($lastReadAt) {
+                $unreadQuery->where('created_at', '>', $lastReadAt);
+            }
+
+            $conv->unread_count = $unreadQuery->count();
             $conv->is_group = $conv->participants->count() > 2 || !empty($conv->title);
             $conv->group_title = $conv->title;
+        });
 
-            return true;
-        })->values();
-
-        return $conversations;
+        return response()->json($conversations->values());
     }
 
     public function show(Request $request, Conversation $conversation)
@@ -74,13 +74,19 @@ class ConversationController extends Controller
     public function createDirect(Request $request)
     {
         $data = $request->validate([
-            'user_id' => ['required', 'exists:users,id', 'not_in:' . $request->user()->id],
+            'user_id' => ['required', 'exists:users,id'],
         ]);
 
-        $me = $request->user()->id;
+        $me = (int) $request->user()->id;
         $other = (int) $data['user_id'];
 
-        $existing = Conversation::whereHas('participants', fn ($q) => $q->where('users.id', $me))
+        if ($me === $other) {
+            return response()->json(['message' => 'Vous ne pouvez pas discuter avec vous-même.'], 422);
+        }
+
+        // Chercher une conversation existante
+        $existing = Conversation::whereNull('title')
+            ->whereHas('participants', fn ($q) => $q->where('users.id', $me))
             ->whereHas('participants', fn ($q) => $q->where('users.id', $other))
             ->has('participants', '=', 2)
             ->with([
@@ -96,6 +102,7 @@ class ConversationController extends Controller
             ]);
         }
 
+        // Sinon, on la crée (sans message)
         $conversation = Conversation::create(['title' => null]);
         $conversation->participants()->attach([$me, $other]);
 
@@ -155,7 +162,7 @@ class ConversationController extends Controller
         $payload = [
             'sender_id' => $request->user()->id,
             'body'      => $data['body'] ?? '',
-            'type'      => 'text', // ✅ Initialisation du type
+            'type'      => 'text',
         ];
 
         if ($request->hasFile('attachment')) {
@@ -171,7 +178,6 @@ class ConversationController extends Controller
         foreach (array_diff($participantIds, [$request->user()->id]) as $userId) {
             $recipient = User::find($userId);
             if (!$recipient) continue;
-
             $notifications->notify(
                 $recipient,
                 'new_message',
@@ -206,10 +212,13 @@ class ConversationController extends Controller
         );
 
         return $conversation->messages()
+            ->whereRaw("LOWER(TRIM(body)) <> ?", ['nouvelle conversation'])
             ->with([
                 'sender:id,name,email,avatar_path,role',
                 'sender.professionalProfile:id,user_id,avatar_path,headline',
             ])
+            ->orderBy('created_at')
+            ->orderBy('id')
             ->get();
     }
 
@@ -232,7 +241,7 @@ class ConversationController extends Controller
         $payload = [
             'sender_id' => $request->user()->id,
             'body'      => $data['body'] ?? '',
-            'type'      => 'text', // ✅ Initialisation du type
+            'type'      => 'text',
         ];
 
         if ($request->hasFile('attachment')) {
@@ -284,8 +293,9 @@ class ConversationController extends Controller
 
         foreach ($conversations as $conv) {
             $lastReadAt = $conv->pivot->last_read_at ?? null;
-            $total += \App\Models\Message::where('conversation_id', $conv->id)
+            $total += Message::where('conversation_id', $conv->id)
                 ->where('sender_id', '!=', $userId)
+                ->whereRaw("LOWER(TRIM(body)) <> ?", ['nouvelle conversation'])
                 ->when($lastReadAt, fn ($q) => $q->where('created_at', '>', $lastReadAt))
                 ->count();
         }
@@ -318,21 +328,16 @@ class ConversationController extends Controller
             return response()->json(['message' => 'Déjà membre'], 409);
         }
 
-        // 1. Ajouter le participant
         $conversation->participants()->attach($data['user_id']);
-        
-        // 2. Récupérer les noms pour le message
         $newUser = User::find($data['user_id']);
         $adminName = $request->user()->name;
 
-        // 3. Créer un message SYSTÈME
         $conversation->messages()->create([
             'sender_id' => $request->user()->id,
             'body' => "{$adminName} a ajouté {$newUser->name} au groupe.",
-            'type' => 'system', // ✅ Type système
+            'type' => 'system',
         ]);
 
-        // 4. Mettre à jour la date de la conversation pour qu'elle remonte en haut
         $conversation->touch();
 
         return response()->json([
@@ -353,7 +358,6 @@ class ConversationController extends Controller
         
         $conversation->participants()->detach($userId);
 
-        // Créer un message système pour le retrait
         if ($removedUser) {
             $conversation->messages()->create([
                 'sender_id' => $request->user()->id,
@@ -378,7 +382,6 @@ class ConversationController extends Controller
         
         $userName = $request->user()->name;
         
-        // Créer le message système avant de quitter
         $conversation->messages()->create([
             'sender_id' => $request->user()->id,
             'body' => "{$userName} a quitté le groupe.",
@@ -401,7 +404,6 @@ class ConversationController extends Controller
         $data = $request->validate(['title' => ['required', 'string', 'max:180']]);
         $conversation->update(['title' => $data['title']]);
 
-        // Optionnel : Créer un message système pour le changement de nom
         $conversation->messages()->create([
             'sender_id' => $request->user()->id,
             'body' => "{$request->user()->name} a renommé le groupe en \"{$data['title']}\".",

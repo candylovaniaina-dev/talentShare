@@ -320,6 +320,14 @@ function Dashboard() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
+  // ✅ FORCER LE MODE CLAIR À L'OUVERTURE DU DASHBOARD
+  useEffect(() => {
+    document.documentElement.classList.remove("dark");
+    document.documentElement.classList.add("light");
+    localStorage.setItem("theme", "light");
+    document.documentElement.setAttribute("data-theme", "light");
+  }, []);
+
   const [dashboard, setDashboard] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);

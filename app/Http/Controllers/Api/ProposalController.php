@@ -9,6 +9,7 @@ use App\Models\ResourceRequest;
 use App\Models\ResourceOffer;
 use App\Models\Conversation;
 use App\Models\Message;
+use App\Models\Document; 
 use App\Services\MatchingService;
 use App\Services\NotificationService;
 use App\Services\ContractService;
@@ -150,8 +151,14 @@ class ProposalController extends Controller
         if (!empty($data['resource_request_id'])) {
             $scoreResult = $matching->score($resourceRequest, $profile);
             $score = $scoreResult['total'];
-            $overlap = Mission::where('professional_profile_id', $profile->id)->whereIn('status', ['planned', 'active'])
-                ->where('start_at', '<=', $resourceRequest->end_at)->where('end_at', '>=', $resourceRequest->start_at)->exists();
+            
+            $overlap = Mission::where('professional_profile_id', $profile->id)
+                ->whereIn('status', ['pending_employee', 'planned', 'active', 'trial'])
+                ->whereNotNull('supplying_company_id') 
+                ->where('start_at', '<=', $resourceRequest->end_at)
+                ->where('end_at', '>=', $resourceRequest->start_at)
+                ->exists();
+                
             if ($overlap && $data['status'] === 'sent') return response()->json(['message' => 'Ce talent a déjà une mission sur cette période.', 'code' => 'mission_overlap'], 409);
         }
 
@@ -263,28 +270,36 @@ class ProposalController extends Controller
         $isInternship = in_array($jobType, ['internship', 'stage']);
         $initialStatus = $isInternship ? 'planned' : 'pending_employee';
 
-        $mission = Mission::create([
-            'proposal_id' => $proposal->id, 'requesting_company_id' => $proposal->to_company_id ?? $resourceRequest?->company_id,
-            'supplying_company_id' => null, 'professional_profile_id' => $proposal->professional_profile_id,
-            'start_at' => $startAt, 'end_at' => $isInternship ? $endAt : now()->addMonth(),
-            'workload_percent' => 100, 'remote' => false, 'status' => $initialStatus,
-        ]);
+        $mission = DB::transaction(function () use ($proposal, $resourceRequest, $startAt, $endAt, $isInternship, $initialStatus, $notifications) {
+            $mission = Mission::create([
+                'proposal_id' => $proposal->id, 'requesting_company_id' => $proposal->to_company_id ?? $resourceRequest?->company_id,
+                'supplying_company_id' => null, 'professional_profile_id' => $proposal->professional_profile_id,
+                'start_at' => $startAt, 'end_at' => $isInternship ? $endAt : now()->addMonth(),
+                'workload_percent' => 100, 'remote' => false, 'status' => $initialStatus,
+            ]);
 
-        // ✅ NOUVELLE LOGIQUE
-        if ($resourceRequest) {
-            $missionsCount = Mission::whereHas('proposal', function ($q) use ($resourceRequest) {
-                $q->where('resource_request_id', $resourceRequest->id);
-            })->whereIn('status', ['pending_employee', 'planned', 'active', 'trial'])->count();
+            Document::where('documentable_type', Proposal::class)
+                ->where('documentable_id', $proposal->id)
+                ->update([
+                    'documentable_type' => Mission::class,
+                    'documentable_id'   => $mission->id,
+                ]);
 
-            if ($missionsCount >= $resourceRequest->positions_count) {
-                $resourceRequest->update(['status' => 'filled']);
-            } else {
-                $resourceRequest->update(['status' => 'published']);
+            if ($resourceRequest) {
+                $missionsCount = Mission::whereHas('proposal', function ($q) use ($resourceRequest) {
+                    $q->where('resource_request_id', $resourceRequest->id);
+                })->whereIn('status', ['pending_employee', 'planned', 'active', 'trial'])->count();
+
+                if ($missionsCount >= $resourceRequest->positions_count) {
+                    $resourceRequest->update(['status' => 'filled']);
+                } else {
+                    $resourceRequest->update(['status' => 'published']);
+                }
+                
+                $this->handleCollaborationGroup($resourceRequest, $mission, $notifications);
             }
-            
-            // ✅ APPEL DE LA FONCTION POUR LE GROUPE ET LES NOTIFS
-            $this->handleCollaborationGroup($resourceRequest, $mission, $notifications);
-        }
+            return $mission;
+        });
 
         try {
             $talent = $proposal->profile->user;
@@ -373,8 +388,8 @@ class ProposalController extends Controller
         $requestingCompanyId = $isApplication ? ($proposal->to_company_id ?? $resourceRequest?->company_id) : $proposal->proposed_by_company_id;
         $status = $isJob ? 'trial' : (Carbon::parse($contract['start_at'])->lte(now()->endOfDay()) ? 'active' : 'planned');
 
-             $mission = DB::transaction(function () use (
-            $proposal, $resourceRequest, $contract, $isJob, $isApplication, $requestingCompanyId, $status, $kind, $notifications // ✅ Ajout de $notifications
+        $mission = DB::transaction(function () use (
+            $proposal, $resourceRequest, $contract, $isJob, $isApplication, $requestingCompanyId, $status, $kind, $notifications
         ) {
             $mission = Mission::create([
                 'proposal_id' => $proposal->id, 'title' => $resourceRequest?->title,
@@ -386,12 +401,18 @@ class ProposalController extends Controller
                 'remote' => (bool) ($proposal->remote || $resourceRequest?->remote), 'status' => $status,
             ]);
 
+            Document::where('documentable_type', Proposal::class)
+                ->where('documentable_id', $proposal->id)
+                ->update([
+                    'documentable_type' => Mission::class,
+                    'documentable_id'   => $mission->id,
+                ]);
+
             $proposal->update(array_filter([
                 'contract_kind' => $kind, 'interview_status' => 'validated', 'interview_validated_at' => now(),
                 'status' => $isApplication ? 'accepted' : null, 'responded_at' => $isApplication ? now() : null,
             ], fn ($v) => $v !== null));
 
-            // ✅ NOUVELLE LOGIQUE
             if ($resourceRequest) {
                 $missionsCount = Mission::whereHas('proposal', function ($q) use ($resourceRequest) {
                     $q->where('resource_request_id', $resourceRequest->id);
@@ -403,7 +424,6 @@ class ProposalController extends Controller
                     $resourceRequest->update(['status' => 'published']);
                 }
                 
-                // ✅ APPEL DE LA FONCTION POUR LE GROUPE ET LES NOTIFS
                 $this->handleCollaborationGroup($resourceRequest, $mission, $notifications);
             }
             return $mission;
@@ -603,33 +623,41 @@ class ProposalController extends Controller
         try {
             $applicant = $proposal->profile?->user;
             if (!$applicant || !$mission->requesting_company_id) return;
-            \App\Models\Employee::updateOrCreate(
+            
+            // ✅ CORRIGÉ : On utilise jobOffer->title en priorité, puis le titre de la mission
+            $position = $proposal->jobOffer?->title
+                ?? $proposal->resourceRequest?->title
+                ?? $mission->title
+                ?? 'Salarié';
+
+            // ✅ CORRIGÉ : withTrashed() pour récupérer un salarié supprimé et le restaurer
+            \App\Models\Employee::withTrashed()->updateOrCreate(
                 ['company_id' => $mission->requesting_company_id, 'user_id' => $applicant->id],
                 [
-                    'position' => $proposal->resourceRequest?->title ?? $proposal->profile?->headline ?? 'Salarié',
-                    'status' => $contract['is_trial'] ? 'trial' : 'active', 'contract_type' => $contract['contract_type'],
-                    'start_date' => $contract['start_at'], 'end_date' => $contract['end_at'],
-                    'has_account' => true, 'first_name' => $applicant->first_name ?? explode(' ', $applicant->name)[0] ?? '',
+                    'position' => $position,
+                    'status' => $contract['is_trial'] ? 'trial' : 'active', 
+                    'contract_type' => $contract['contract_type'],
+                    'start_date' => $contract['start_at'], 
+                    'end_date' => $contract['end_at'],
+                    'has_account' => true, 
+                    'first_name' => $applicant->first_name ?? explode(' ', $applicant->name)[0] ?? '',
                     'last_name' => $applicant->last_name ?? explode(' ', $applicant->name)[1] ?? '',
-                    'email' => $applicant->email, 'phone' => $applicant->phone,
+                    'email' => $applicant->email, 
+                    'phone' => $applicant->phone,
+                    'deleted_at' => null, // ✅ Restaure si supprimé
                 ]
             );
         } catch (\Exception $e) { \Log::error('Erreur création employé (proposition) : ' . $e->getMessage()); }
     }
 
-    /**
-     * ✅ Gère le groupe de discussion et les notifications pour les collaborateurs multiples
-     */
     private function handleCollaborationGroup(ResourceRequest $resourceRequest, Mission $mission, NotificationService $notifications): void
     {
-        // 1. Récupérer toutes les missions actives pour cette demande
         $activeMissions = Mission::whereHas('proposal', function ($q) use ($resourceRequest) {
             $q->where('resource_request_id', $resourceRequest->id);
         })->whereIn('status', ['pending_employee', 'planned', 'active', 'trial'])
           ->with('profile.user')
           ->get();
 
-        // 2. Récupérer les utilisateurs concernés (Talents + Owner de l'entreprise)
         $talentUsers = $activeMissions->pluck('profile.user')->filter();
         $companyOwner = $resourceRequest->company?->owner;
         
@@ -639,14 +667,11 @@ class ProposalController extends Controller
         }
         $participantIds = array_unique(array_filter($participantIds));
 
-        // 3. Notification pour les autres talents (s'il y en a)
         if ($talentUsers->count() > 1) {
             foreach ($talentUsers as $talent) {
-                // On ne notifie pas le talent qui vient d'être accepté (le nouveau)
                 if ($talent->id === $mission->profile->user_id) continue;
 
                 try {
-                    // ✅ On cherche LA mission du collaborateur qui reçoit la notification
                     $collaboratorMission = Mission::where('professional_profile_id', $talent->professionalProfile->id)
                         ->where('proposal_id', $mission->proposal_id)
                         ->first();
@@ -654,12 +679,12 @@ class ProposalController extends Controller
                     $targetMissionId = $collaboratorMission ? $collaboratorMission->id : $mission->id;
 
                     $notifications->notify(
-                        $talent, // ✅ C'est $talent (l'utilisateur), pas $newUser
+                        $talent,
                         'new_collaborator',
                         '👥 Nouveau collaborateur',
                         "Un nouveau membre a rejoint la mission « {$mission->title} ».",
                         $collaboratorMission ?? $mission,
-                        ['url' => "/missions/{$targetMissionId}"] // ✅ Pointe vers SA mission
+                        ['url' => "/missions/{$targetMissionId}"]
                     );
                 } catch (\Exception $e) {
                     \Log::warning('Notif nouveau collaborateur failed: ' . $e->getMessage());
@@ -667,21 +692,15 @@ class ProposalController extends Controller
             }
         }
 
-        // 4. Création ou mise à jour du groupe de discussion
         if (count($participantIds) >= 2) {
             $title = "Mission : " . $resourceRequest->title;
-            
-            // On cherche si le groupe existe déjà
             $conversation = \App\Models\Conversation::where('title', $title)->first();
             $newTalent = $mission->profile?->user;
             $companyName = $resourceRequest->company?->name ?? "L'entreprise";
 
             if ($conversation) {
-                // ✅ LE GROUPE EXISTE DÉJÀ (2ème candidat ou plus)
-                // On ajoute le nouveau participant s'il n'y est pas
                 $conversation->participants()->syncWithoutDetaching($participantIds);
 
-                // ✅ On envoie juste un petit message système
                 if ($newTalent) {
                     \App\Models\Message::create([
                         'conversation_id' => $conversation->id,
@@ -690,12 +709,9 @@ class ProposalController extends Controller
                     ]);
                 }
             } else {
-                // ✅ LE GROUPE N'EXISTE PAS (1er candidat)
-                // On crée la conversation
                 $conversation = \App\Models\Conversation::create(['title' => $title]);
                 $conversation->participants()->attach($participantIds);
 
-                // ✅ Message d'accueil complet avec les consignes
                 \App\Models\Message::create([
                     'conversation_id' => $conversation->id,
                     'sender_id' => $companyOwner ? $companyOwner->id : $resourceRequest->created_by,

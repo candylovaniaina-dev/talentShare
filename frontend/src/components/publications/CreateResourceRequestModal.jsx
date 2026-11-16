@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
+import { cities } from "../../utils/cities"; // ✅ IMPORT DES VILLES
 
 const STEPS = [
   { label: "Le besoin", icon: BriefcaseBusiness },
@@ -35,6 +36,13 @@ const asArray = (data) => (Array.isArray(data) ? data : Array.isArray(data?.data
 const normalize = (s = "") => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 const fmt = (d) =>
   d ? new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) : "—";
+
+// ✅ FONCTION DE FORMATAGE POUR L'ARIARY (ESPACES)
+const formatMoney = (val) => {
+  if (!val) return "";
+  const numeric = String(val).replace(/\D/g, "");
+  return numeric.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+};
 
 export default function CreateResourceRequestModal({ requestId, onClose, onSuccess }) {
   const { user } = useAuth();
@@ -111,8 +119,9 @@ export default function CreateResourceRequestModal({ requestId, onClose, onSucce
           country: r.country || "Madagascar",
           city: r.city || "",
           expires_at: r.expires_at?.slice(0, 10) || "",
-          budget_min: r.budget_min ?? "",
-          budget_max: r.budget_max ?? "",
+          // ✅ On formate les nombres venant du backend
+          budget_min: r.budget_min ? formatMoney(r.budget_min) : "",
+          budget_max: r.budget_max ? formatMoney(r.budget_max) : "",
           positions_count: r.positions_count || 1,
           urgency: r.urgency || "normal",
           tags: Array.isArray(r.tags) ? r.tags : [],
@@ -192,6 +201,10 @@ export default function CreateResourceRequestModal({ requestId, onClose, onSucce
 
     setSubmitting(true);
     try {
+      // ✅ On retire les espaces avant d'envoyer au backend
+      const cleanBudgetMin = form.budget_min ? Number(String(form.budget_min).replace(/\s/g, "")) : null;
+      const cleanBudgetMax = form.budget_max ? Number(String(form.budget_max).replace(/\s/g, "")) : null;
+
       const payload = {
         company_id: company.id,
         title: form.title,
@@ -205,8 +218,8 @@ export default function CreateResourceRequestModal({ requestId, onClose, onSucce
         city: form.city || null,
         status,
         expires_at: form.expires_at || null,
-        budget_min: form.budget_min === "" ? null : Number(form.budget_min),
-        budget_max: form.budget_max === "" ? null : Number(form.budget_max),
+        budget_min: cleanBudgetMin,
+        budget_max: cleanBudgetMax,
         positions_count: Number(form.positions_count) || 1,
         urgency: form.urgency,
         tags: form.tags,
@@ -230,10 +243,12 @@ export default function CreateResourceRequestModal({ requestId, onClose, onSucce
 
   const isLast = step === STEPS.length - 1;
   const missionLabel = MISSION_TYPES.find((t) => t.value === form.mission_type)?.label || "Autre besoin";
+  
+  // ✅ Affichage du budget formaté dans l'aperçu
   const budgetText =
-    form.budget_min !== "" && form.budget_max !== "" ? `${form.budget_min} – ${form.budget_max} €/jour`
-    : form.budget_min !== "" ? `dès ${form.budget_min} €/jour`
-    : form.budget_max !== "" ? `jusqu’à ${form.budget_max} €/jour`
+    form.budget_min !== "" && form.budget_max !== "" ? `${form.budget_min} – ${form.budget_max} Ar/jour`
+    : form.budget_min !== "" ? `dès ${form.budget_min} Ar/jour`
+    : form.budget_max !== "" ? `jusqu’à ${form.budget_max} Ar/jour`
     : null;
 
   const content = (
@@ -449,7 +464,19 @@ export default function CreateResourceRequestModal({ requestId, onClose, onSucce
                       <Field label="Ville">
                         <div className="relative">
                           <MapPin size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                          <input value={form.city} onChange={(e) => update("city", e.target.value)} placeholder="Ex. Antananarivo" className={`${inputCls} pl-10`} />
+                          {/* ✅ Ajout de la liste des villes */}
+                          <input
+                            list="cities-list-request"
+                            value={form.city}
+                            onChange={(e) => update("city", e.target.value)}
+                            placeholder="Ex. Antananarivo"
+                            className={`${inputCls} pl-10`}
+                          />
+                          <datalist id="cities-list-request">
+                            {cities.map((c) => (
+                              <option key={c} value={c} />
+                            ))}
+                          </datalist>
                         </div>
                       </Field>
                     </div>
@@ -459,11 +486,24 @@ export default function CreateResourceRequestModal({ requestId, onClose, onSucce
                         <Wallet size={17} className="text-slate-400" /> Budget journalier <span className="text-xs font-normal text-slate-400">(optionnel)</span>
                       </p>
                       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <Field label="Minimum (€ / jour)">
-                          <input type="number" min="0" value={form.budget_min} onChange={(e) => update("budget_min", e.target.value)} placeholder="300" className={inputCls} />
+                        {/* ✅ Modification pour l'Ariary + Formatage */}
+                        <Field label="Minimum (Ar / jour)">
+                          <input
+                            type="text"
+                            value={form.budget_min}
+                            onChange={(e) => update("budget_min", formatMoney(e.target.value))}
+                            placeholder="300 000"
+                            className={inputCls}
+                          />
                         </Field>
-                        <Field label="Maximum (€ / jour)">
-                          <input type="number" min="0" value={form.budget_max} onChange={(e) => update("budget_max", e.target.value)} placeholder="500" className={inputCls} />
+                        <Field label="Maximum (Ar / jour)">
+                          <input
+                            type="text"
+                            value={form.budget_max}
+                            onChange={(e) => update("budget_max", formatMoney(e.target.value))}
+                            placeholder="500 000"
+                            className={inputCls}
+                          />
                         </Field>
                       </div>
                     </div>

@@ -52,7 +52,7 @@ class ProfessionalProfileController extends Controller
         $profileQuery = ProfessionalProfile::query()
             ->whereIn('visibility', ['public', 'network', 'private'])
             ->with([
-                'user:id,name,first_name,last_name,country,phone,email',
+                'user:id,name,first_name,last_name,country,phone,email,avatar_path',
                 'skills.category.parent',
                 'skills.category',
                 'availabilityWindows' => fn ($q) => $q
@@ -329,18 +329,19 @@ class ProfessionalProfileController extends Controller
                 ->first();
             if ($employee) {
                 $profile->update(['avatar_path' => $employee->photo_path]);
+                $user->update(['avatar_path' => $employee->photo_path]); // ✅ Synchro User aussi
             }
         }
 
        $profile->load([
-    'user',
-    'skills.category.parent', // ✅ Charge la catégorie ET la sous-catégorie
-    'skills.category',        // ✅ Charge la catégorie directe
-    'experiences',
-    'educations',
-    'certifications',
-    'languages',
-]);
+            'user',
+            'skills.category.parent', // ✅ Charge la catégorie ET la sous-catégorie
+            'skills.category',        // ✅ Charge la catégorie directe
+            'experiences',
+            'educations',
+            'certifications',
+            'languages',
+        ]);
 
         $profile->availability_windows = $profile->availabilityWindows()
             ->where('end_at', '>=', now()->startOfDay())
@@ -380,6 +381,7 @@ class ProfessionalProfileController extends Controller
                 'email' => $profile->user->email,
                 'phone' => $profile->user->phone,
                 'country' => $profile->user->country,
+                'avatar_path' => $profile->user->avatar_path, // ✅ Ajouté
             ] : null,
 
             // Relations
@@ -449,12 +451,6 @@ class ProfessionalProfileController extends Controller
     /**
      * ✅ Liste publique (legacy)
      */
-    /**
- * ✅ Liste publique (legacy)
- */
-/**
- * ✅ Liste publique (legacy)
- */
 public function index(Request $request)
 {
     $query = ProfessionalProfile::query()
@@ -565,7 +561,12 @@ public function index(Request $request)
             }
 
             $path = $request->file('avatar')->store('avatars', 'public');
+            
+            // ✅ 1. On met à jour le profil
             $profile->update(['avatar_path' => $path]);
+
+            // ✅ 2. On met à jour l'utilisateur (pour que l'entreprise le voie)
+            $user->update(['avatar_path' => $path]);
 
             return response()->json([
                 'message' => 'Avatar mis à jour avec succès ✅',

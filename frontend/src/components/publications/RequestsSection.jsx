@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import {
   Plus, MapPin, CalendarDays, Pencil, Trash2, FileText, Clock,
-  Pause, Play, Send, Users, Building2, X,
+  Pause, Play, Send, Users, Building2, X, CheckCircle, Loader2,
 } from "lucide-react";
 import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
@@ -44,6 +44,9 @@ export default function RequestsSection({ onStats }) {
   const [notice, setNotice] = useState("");
   
   const [selectedRequest, setSelectedRequest] = useState(null);
+
+  // ✅ STATE POUR L'ÉCRAN DE SUCCÈS
+  const [showSuccess, setShowSuccess] = useState(false);
   
   const closeNotice = useCallback(() => setNotice(""), []);
 
@@ -57,7 +60,10 @@ export default function RequestsSection({ onStats }) {
 
   const load = useCallback(() => {
     setLoading(true);
-    api.get("/resource-requests", { params: { my: 1 } }).then((res) => setRequests(asArray(res.data))).catch((err) => { console.error("Erreur de chargement des demandes :", err); setRequests([]); }).finally(() => setLoading(false));
+    api.get("/resource-requests", { params: { my: 1 } })
+      .then((res) => setRequests(asArray(res.data)))
+      .catch((err) => { console.error("Erreur de chargement des demandes :", err); setRequests([]); })
+      .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => { if (company) load(); }, [company, load]);
@@ -93,7 +99,8 @@ export default function RequestsSection({ onStats }) {
       if (filter === "urgent" && r.urgency !== "urgent") return false;
       if (filter === "expired" && r.display_status !== "expired") return false;
       if (!q) return true;
-      return [r.title, r.description, r.city, ...(r.skills || []).map((s) => s.name)].filter(Boolean).some((v) => String(v).toLowerCase().includes(q));
+      return [r.title, r.description, r.city, ...(r.skills || []).map((s) => s.name)]
+        .filter(Boolean).some((v) => String(v).toLowerCase().includes(q));
     });
   }, [requests, filter, query]);
 
@@ -114,7 +121,9 @@ export default function RequestsSection({ onStats }) {
           <ViewToggle value={view} onChange={setView} />
           <SearchInput value={query} onChange={setQuery} placeholder="Titre, ville, compétence…" />
         </div>
-        <p className="text-xs text-slate-500 sm:ml-2">{filtered.length} sur {requests.length} demande{requests.length > 1 ? "s" : ""}</p>
+        <p className="text-xs text-slate-500 sm:ml-2">
+          {filtered.length} sur {requests.length} demande{requests.length > 1 ? "s" : ""}
+        </p>
         <Button variant="primary" size="md" icon={Plus} onClick={openCreate} className="sm:ml-auto">Nouvelle demande</Button>
       </div>
 
@@ -141,10 +150,30 @@ export default function RequestsSection({ onStats }) {
       )}
 
       {showCreateModal && (
-        <CreateResourceRequestModal requestId={editRequestId} onClose={closeModal} onSuccess={() => { closeModal(); load(); }} />
+        <CreateResourceRequestModal 
+          requestId={editRequestId} 
+          onClose={closeModal} 
+          onSuccess={() => { 
+            closeModal(); 
+            setShowSuccess(true);
+
+            // Attend 2,5s avant de recharger et masquer le succès
+            setTimeout(() => {
+              setShowSuccess(false);
+              load(); 
+            }, 2500);
+          }} 
+        />
       )}
+
       {pendingDelete && (
-        <ConfirmDialog title="Supprimer cette demande ?" message={`« ${pendingDelete.title} » et les propositions associées ne seront plus accessibles.`} fallbackError="Impossible de supprimer cette demande." onConfirm={confirmDelete} onCancel={() => setPendingDelete(null)} />
+        <ConfirmDialog 
+          title="Supprimer cette demande ?" 
+          message={`« ${pendingDelete.title} » et les propositions associées ne seront plus accessibles.`} 
+          fallbackError="Impossible de supprimer cette demande." 
+          onConfirm={confirmDelete} 
+          onCancel={() => setPendingDelete(null)} 
+        />
       )}
       
       {selectedRequest && (
@@ -156,6 +185,26 @@ export default function RequestsSection({ onStats }) {
       )}
       
       <Notice message={notice} onClose={closeNotice} />
+
+      {/* ✅ ÉCRAN DE SUCCÈS TÉLÉPORTÉ DANS LE BODY */}
+      {showSuccess && createPortal(
+        <div className="fixed inset-0 z-[10000] flex flex-col items-center justify-center bg-slate-900/80 p-6 backdrop-blur-md font-['Plus_Jakarta_Sans',sans-serif]">
+          <div className="relative flex w-full max-w-md flex-col items-center text-center animate-in zoom-in duration-300">
+            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-teal-50 shadow-sm dark:bg-teal-500/20">
+              <CheckCircle size={48} className="text-teal-500 animate-bounce" />
+            </div>
+            <h2 className="mt-8 text-2xl font-bold text-white">Demande publiée !</h2>
+            <p className="mt-3 text-sm font-medium leading-6 text-slate-300">
+              Votre demande a bien été publiée. Elle est maintenant visible par tous les talents du réseau.
+            </p>
+            <div className="mt-8 flex items-center gap-2 text-sm text-teal-400">
+              <Loader2 size={16} className="animate-spin" />
+              Redirection vers vos demandes...
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
@@ -167,7 +216,6 @@ function RequestCard({ request, grid, onAction, onDelete, onEdit, onOpen }) {
   const isUrgent = request.urgency === "urgent";
   const proposals = request.proposals_count || 0;
   
-  // ✅ Utilisation du nombre de postes restants calculé par le Back-end
   const positions = request.remaining_positions !== undefined 
     ? request.remaining_positions 
     : (request.positions_count || 1);
@@ -251,7 +299,6 @@ function RequestCard({ request, grid, onAction, onDelete, onEdit, onOpen }) {
   );
 }
 
-/* ✅ MODALE DE DÉTAILS (Avec en-tête bleu) */
 function InfoCell({ label, children }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-[#F3F6FC]/60 px-3 py-2.5 dark:border-white/10 dark:bg-[#0A1230]">
@@ -291,17 +338,35 @@ function RequestDetailModal({ request, onClose, onEdit }) {
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-6">
-          <div className="mb-5 grid gap-2.5 sm:grid-cols-2">
-            {request.city && <InfoCell label="Lieu">{request.city}</InfoCell>}
-            {(request.start_at || request.end_at) && (
-              <InfoCell label="Période">
-                {fmtDate(request.start_at)} {request.end_at && `– ${fmtDate(request.end_at)}`}
-              </InfoCell>
-            )}
-            <InfoCell label="Candidatures">{request.proposals_count || 0}</InfoCell>
-            {request.budget_min && <InfoCell label="Budget">{request.budget_min} € - {request.budget_max || request.budget_min} € / jour</InfoCell>}
-          </div>
+        <div className="mb-5 grid gap-2.5 sm:grid-cols-2">
+          {request.city && <InfoCell label="Lieu">{request.city}</InfoCell>}
+          {(request.start_at || request.end_at) && (
+            <InfoCell label="Période">
+              {fmtDate(request.start_at)} {request.end_at && `– ${fmtDate(request.end_at)}`}
+            </InfoCell>
+          )}
+          
+          <InfoCell label="Candidatures">{request.proposals_count || 0}</InfoCell>
+          
+          <InfoCell label="Postes restants">
+            {(() => {
+              const total = request.positions_count || 1;
+              const remaining = request.remaining_positions !== undefined 
+                ? request.remaining_positions 
+                : total;
 
+              if (remaining === 0) {
+                return <span className="text-rose-600">Aucun (mission pourvue)</span>;
+              }
+
+              return (
+                <span className={remaining === 1 ? "text-amber-600" : "text-teal-600"}>
+                  {remaining} sur {total}
+                </span>
+              );
+            })()}
+          </InfoCell>
+        </div>
           <h4 className="mb-2 text-[13px] font-bold text-[#0B1F33] dark:text-white">Description complète</h4>
           <div className="rounded-xl border border-slate-200 bg-[#F3F6FC]/60 p-4 dark:border-white/10 dark:bg-[#0A1230]">
             <p className="whitespace-pre-line text-sm leading-7 text-slate-700 dark:text-slate-300">{request.description || "Aucune description fournie."}</p>

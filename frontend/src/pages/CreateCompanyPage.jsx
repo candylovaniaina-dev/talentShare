@@ -47,13 +47,32 @@ const COMPANY_SIZES = [
 ];
 
 const inputCls =
-  "block w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-[#18352E] outline-none transition duration-200 placeholder:text-slate-400 hover:border-slate-300 focus:border-[#0C947C] focus:ring-4 focus:ring-emerald-500/[0.09] disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-[#10251E] dark:text-white dark:placeholder:text-slate-500 dark:hover:border-white/20 dark:focus:border-emerald-400";
+  "block w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-[#0B1F33] outline-none transition duration-200 placeholder:text-slate-400 hover:border-slate-300 focus:border-[#16B8B1] focus:ring-4 focus:ring-[#16B8B1]/20 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-[#0A1230] dark:text-white dark:placeholder:text-slate-500 dark:hover:border-white/20 dark:focus:border-[#16B8B1] font-['Plus_Jakarta_Sans',sans-serif]";
 
 const labelCls =
-  "mb-2 block text-[13px] font-semibold text-[#29473D] dark:text-slate-200";
+  "mb-2 block text-[13px] font-semibold text-[#0B1F33] dark:text-slate-200 font-['Plus_Jakarta_Sans',sans-serif]";
 
 const cardCls =
-  "rounded-2xl border border-slate-200/80 bg-white shadow-[0_4px_24px_-16px_rgba(15,45,35,0.16)] dark:border-white/[0.09] dark:bg-[#0D1F18]";
+  "rounded-2xl border border-slate-200/80 bg-white shadow-sm dark:border-white/[0.09] dark:bg-[#131E47] font-['Plus_Jakarta_Sans',sans-serif]";
+
+// ✅ Nouvelle fonction de formatage : 1 - 2 - 2 - 3 - 2 (Ex: 0 34 46 824 29)
+const formatPhoneNumber = (value) => {
+  // 1. On garde uniquement les chiffres
+  const numbers = value.replace(/\D/g, "");
+  
+  // 2. On limite à 10 chiffres
+  const truncated = numbers.slice(0, 10);
+
+  // 3. On découpe selon le format demandé
+  const p1 = truncated.slice(0, 1);   // 0
+  const p2 = truncated.slice(1, 3);   // 34
+  const p3 = truncated.slice(3, 5);   // 46
+  const p4 = truncated.slice(5, 8);   // 824
+  const p5 = truncated.slice(8, 10);  // 29
+
+  // 4. On assemble avec les espaces, en ne gardant que ce qui existe
+  return [p1, p2, p3, p4, p5].filter(Boolean).join(" ");
+};
 
 function Field({
   label,
@@ -68,7 +87,7 @@ function Field({
       <label className={labelCls}>
         {label}
         {required && (
-          <span className="ml-1 text-emerald-600 dark:text-emerald-400">
+          <span className="ml-1 text-[#16B8B1]">
             *
           </span>
         )}
@@ -77,12 +96,12 @@ function Field({
       {children}
 
       {error ? (
-        <p className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-rose-500">
+        <p className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-rose-500 font-['Plus_Jakarta_Sans',sans-serif]">
           <AlertCircle size={13} />
           {error}
         </p>
       ) : hint ? (
-        <p className="mt-1.5 text-xs leading-5 text-slate-500 dark:text-slate-400">
+        <p className="mt-1.5 text-xs leading-5 text-slate-500 dark:text-slate-400 font-['Plus_Jakarta_Sans',sans-serif]">
           {hint}
         </p>
       ) : null}
@@ -98,12 +117,12 @@ function SectionHeader({
   completed,
 }) {
   return (
-    <div className="mb-5 flex items-start gap-3.5">
+    <div className="mb-5 flex items-start gap-3.5 font-['Plus_Jakarta_Sans',sans-serif]">
       <div
         className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition ${
           completed
-            ? "bg-emerald-500 text-white"
-            : "border border-emerald-100 bg-emerald-50 text-emerald-700 dark:border-emerald-400/15 dark:bg-emerald-400/[0.08] dark:text-emerald-300"
+            ? "bg-[#16B8B1] text-white"
+            : "border border-[#16B8B1]/20 bg-[#16B8B1]/10 text-[#0F9691] dark:border-[#16B8B1]/30 dark:bg-[#16B8B1]/20 dark:text-[#16B8B1]"
         }`}
       >
         {completed ? (
@@ -115,12 +134,12 @@ function SectionHeader({
 
       <div className="min-w-0 flex-1 pt-0.5">
         <div className="flex flex-wrap items-center gap-2">
-          <h2 className="text-[15px] font-bold tracking-tight text-[#17382D] dark:text-white">
+          <h2 className="text-[15px] font-bold tracking-tight text-[#0B1F33] dark:text-white">
             {title}
           </h2>
 
           {completed && (
-            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300">
+            <span className="rounded-full bg-[#16B8B1]/10 px-2 py-0.5 text-[10px] font-semibold text-[#0F9691] dark:bg-[#16B8B1]/20 dark:text-[#16B8B1]">
               Complété
             </span>
           )}
@@ -144,10 +163,10 @@ function SectorButton({ active, onClick, children }) {
       type="button"
       aria-pressed={active}
       onClick={onClick}
-      className={`inline-flex items-center gap-2 rounded-lg border px-3.5 py-2.5 text-[13px] font-medium transition duration-200 ${
+      className={`inline-flex items-center gap-2 rounded-lg border px-3.5 py-2.5 text-[13px] font-medium transition duration-200 font-['Plus_Jakarta_Sans',sans-serif] ${
         active
-          ? "border-emerald-600 bg-emerald-50 text-emerald-800 shadow-sm dark:border-emerald-400/50 dark:bg-emerald-400/10 dark:text-emerald-300"
-          : "border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:bg-emerald-50/50 dark:border-white/10 dark:bg-white/[0.02] dark:text-slate-300 dark:hover:border-emerald-400/30 dark:hover:bg-emerald-400/[0.04]"
+          ? "border-[#16B8B1] bg-[#16B8B1]/10 text-[#0F9691] shadow-sm dark:border-[#16B8B1]/50 dark:bg-[#16B8B1]/20 dark:text-[#16B8B1]"
+          : "border-slate-200 bg-white text-slate-600 hover:border-[#16B8B1]/50 hover:bg-[#16B8B1]/5 dark:border-white/10 dark:bg-white/[0.02] dark:text-slate-300 dark:hover:border-[#16B8B1]/30 dark:hover:bg-[#16B8B1]/10"
       }`}
     >
       {active && (
@@ -164,17 +183,17 @@ function SizeOption({ active, onClick, option }) {
       type="button"
       aria-pressed={active}
       onClick={onClick}
-      className={`group flex min-h-[77px] items-center gap-3 rounded-xl border p-3 text-left transition duration-200 ${
+      className={`group flex min-h-[77px] items-center gap-3 rounded-xl border p-3 text-left transition duration-200 font-['Plus_Jakarta_Sans',sans-serif] ${
         active
-          ? "border-emerald-500 bg-emerald-50/80 ring-1 ring-emerald-500/20 dark:border-emerald-400/50 dark:bg-emerald-400/[0.08]"
-          : "border-slate-200 bg-white hover:border-emerald-300 hover:bg-slate-50/70 dark:border-white/10 dark:bg-white/[0.02] dark:hover:border-emerald-400/30"
+          ? "border-[#16B8B1] bg-[#16B8B1]/10 ring-1 ring-[#16B8B1]/30 dark:border-[#16B8B1]/50 dark:bg-[#16B8B1]/20"
+          : "border-slate-200 bg-white hover:border-[#16B8B1]/50 hover:bg-slate-50/70 dark:border-white/10 dark:bg-white/[0.02] dark:hover:border-[#16B8B1]/30"
       }`}
     >
       <span
         className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition ${
           active
-            ? "bg-emerald-600 text-white dark:bg-emerald-400 dark:text-[#10251E]"
-            : "bg-slate-100 text-slate-500 group-hover:bg-emerald-50 group-hover:text-emerald-700 dark:bg-white/[0.06] dark:text-slate-400"
+            ? "bg-[#16B8B1] text-white dark:bg-[#16B8B1] dark:text-[#0B1F33]"
+            : "bg-slate-100 text-slate-500 group-hover:bg-[#16B8B1]/10 group-hover:text-[#0F9691] dark:bg-white/[0.06] dark:text-slate-400"
         }`}
       >
         <Users size={17} />
@@ -184,8 +203,8 @@ function SizeOption({ active, onClick, option }) {
         <span
           className={`block text-sm font-bold ${
             active
-              ? "text-emerald-800 dark:text-emerald-300"
-              : "text-[#244237] dark:text-slate-200"
+              ? "text-[#0F9691] dark:text-[#16B8B1]"
+              : "text-[#0B1F33] dark:text-slate-200"
           }`}
         >
           {option.label}
@@ -199,7 +218,7 @@ function SizeOption({ active, onClick, option }) {
       <span
         className={`flex h-[17px] w-[17px] shrink-0 items-center justify-center rounded-full border transition ${
           active
-            ? "border-emerald-600 bg-emerald-600 text-white dark:border-emerald-400 dark:bg-emerald-400 dark:text-[#10251E]"
+            ? "border-[#16B8B1] bg-[#16B8B1] text-white dark:border-[#16B8B1] dark:bg-[#16B8B1] dark:text-[#0B1F33]"
             : "border-slate-300 dark:border-white/20"
         }`}
       >
@@ -211,11 +230,11 @@ function SizeOption({ active, onClick, option }) {
 
 function CompletionRow({ label, completed }) {
   return (
-    <div className="flex items-center gap-2.5">
+    <div className="flex items-center gap-2.5 font-['Plus_Jakarta_Sans',sans-serif]">
       <span
         className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border transition ${
           completed
-            ? "border-emerald-600 bg-emerald-600 text-white dark:border-emerald-400 dark:bg-emerald-400 dark:text-[#10251E]"
+            ? "border-[#16B8B1] bg-[#16B8B1] text-white dark:border-[#16B8B1] dark:bg-[#16B8B1] dark:text-[#0B1F33]"
             : "border-slate-300 text-transparent dark:border-white/20"
         }`}
       >
@@ -225,7 +244,7 @@ function CompletionRow({ label, completed }) {
       <span
         className={`text-xs ${
           completed
-            ? "font-medium text-[#29473D] dark:text-slate-200"
+            ? "font-medium text-[#0B1F33] dark:text-slate-200"
             : "text-slate-500 dark:text-slate-400"
         }`}
       >
@@ -263,6 +282,15 @@ export default function CompanyOnboarding({ onCreated }) {
     setForm((current) => ({
       ...current,
       [key]: value,
+    }));
+  };
+
+  // ✅ Gestion spéciale pour le Téléphone
+  const handlePhoneChange = (e) => {
+    const formatted = formatPhoneNumber(e.target.value);
+    setForm((current) => ({
+      ...current,
+      phone: formatted,
     }));
   };
 
@@ -387,11 +415,18 @@ export default function CompanyOnboarding({ onCreated }) {
 
     const payload = { ...form };
 
-    if (
-      payload.website &&
-      !/^https?:\/\//i.test(payload.website.trim())
-    ) {
-      payload.website = `https://${payload.website.trim()}`;
+    // ✅ Nettoyage du site web (Ajout du https:// si absent)
+    if (payload.website && payload.website.trim()) {
+      let url = payload.website.trim();
+      if (!/^https?:\/\//i.test(url)) {
+        url = `https://${url}`;
+      }
+      payload.website = url;
+    }
+
+    // ✅ Nettoyage du téléphone (on enlève les espaces pour la BDD)
+    if (payload.phone) {
+      payload.phone = payload.phone.replace(/\s/g, "");
     }
 
     Object.keys(payload).forEach((key) => {
@@ -491,7 +526,7 @@ export default function CompanyOnboarding({ onCreated }) {
   ];
 
   return (
-    <div className="relative min-h-full overflow-hidden bg-[#F5F8F6] px-4 py-5 transition-colors duration-300 dark:bg-[#091710] sm:px-6 sm:py-7 lg:px-8">
+    <div className="relative min-h-full overflow-hidden bg-[#F8FAFC] px-4 py-5 transition-colors duration-300 dark:bg-transparent sm:px-6 sm:py-7 lg:px-8 font-['Plus_Jakarta_Sans',sans-serif] antialiased">
       <style>{`
         @keyframes companyFadeUp {
           from {
@@ -534,9 +569,9 @@ export default function CompanyOnboarding({ onCreated }) {
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 overflow-hidden"
       >
-        <div className="company-glow absolute -right-40 -top-40 h-[420px] w-[420px] rounded-full bg-emerald-300/15 blur-[110px] dark:bg-emerald-500/[0.06]" />
+        <div className="company-glow absolute -right-40 -top-40 h-[420px] w-[420px] rounded-full bg-[#16B8B1]/10 blur-[110px] dark:bg-[#16B8B1]/[0.05]" />
 
-        <div className="absolute -bottom-48 -left-32 h-[400px] w-[400px] rounded-full bg-teal-300/10 blur-[110px] dark:bg-teal-500/[0.04]" />
+        <div className="absolute -bottom-48 -left-32 h-[400px] w-[400px] rounded-full bg-[#16B8B1]/5 blur-[110px] dark:bg-[#16B8B1]/[0.03]" />
       </div>
 
       <div className="company-enter relative mx-auto max-w-[1240px]">
@@ -544,9 +579,9 @@ export default function CompanyOnboarding({ onCreated }) {
         <header className="mb-6 flex flex-col justify-between gap-5 sm:mb-7 sm:flex-row sm:items-end">
           <div className="min-w-0">
            
-            <h1 className="max-w-3xl text-[27px] font-extrabold leading-tight tracking-[-0.04em] text-[#17382D] dark:text-white sm:text-3xl lg:text-[38px]">
+            <h1 className="max-w-3xl text-[27px] font-extrabold leading-tight tracking-[-0.04em] text-[#0B1F33] dark:text-white sm:text-3xl lg:text-[38px]">
               Donnez vie à votre
-              <span className="text-emerald-700 dark:text-emerald-400">
+              <span className="text-[#0F9691] dark:text-[#16B8B1]">
                 {" "}espace professionnel.
               </span>
             </h1>
@@ -558,12 +593,12 @@ export default function CompanyOnboarding({ onCreated }) {
           </div>
 
           <div className="flex shrink-0 items-center gap-3 rounded-xl border border-slate-200/80 bg-white/80 px-4 py-3 dark:border-white/10 dark:bg-white/[0.03] sm:min-w-[205px]">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#16B8B1]/10 text-[#0F9691] dark:bg-[#16B8B1]/20 dark:text-[#16B8B1]">
               <ShieldCheck size={21} />
             </div>
 
             <div>
-              <p className="text-xs font-bold text-[#234438] dark:text-white">
+              <p className="text-xs font-bold text-[#0B1F33] dark:text-white">
                 Configuration guidée
               </p>
               <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
@@ -577,12 +612,12 @@ export default function CompanyOnboarding({ onCreated }) {
         <div className={`${cardCls} mb-5 p-4 sm:p-5`}>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
-             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300">
-  <CircleDashed size={19} />
-</div>
+             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#16B8B1]/10 text-[#0F9691] dark:bg-[#16B8B1]/20 dark:text-[#16B8B1]">
+                <CircleDashed size={19} />
+              </div>
 
               <div>
-                <p className="text-sm font-bold text-[#203E33] dark:text-white">
+                <p className="text-sm font-bold text-[#0B1F33] dark:text-white">
                   Complétez votre profil
                 </p>
                 <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
@@ -597,7 +632,7 @@ export default function CompanyOnboarding({ onCreated }) {
                   Progression du profil
                 </span>
 
-                <span className="text-sm font-extrabold tabular-nums text-emerald-700 dark:text-emerald-400">
+                <span className="text-sm font-extrabold tabular-nums text-[#0F9691] dark:text-[#16B8B1]">
                   {progress}%
                 </span>
               </div>
@@ -611,7 +646,7 @@ export default function CompanyOnboarding({ onCreated }) {
                 aria-valuenow={progress}
               >
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-teal-400 transition-all duration-500"
+                  className="h-full rounded-full bg-gradient-to-r from-[#0B1F33] to-[#16B8B1] transition-all duration-500"
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -641,7 +676,7 @@ export default function CompanyOnboarding({ onCreated }) {
                       type="button"
                       onClick={() => fileRef.current?.click()}
                       aria-label="Choisir le logo de l'entreprise"
-                      className="group relative flex h-[88px] w-[88px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:border-emerald-400 dark:border-white/10 dark:bg-[#10251E]"
+                      className="group relative flex h-[88px] w-[88px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:border-[#16B8B1] dark:border-white/10 dark:bg-[#0A1230]"
                     >
                       {logoPreview ? (
                         <>
@@ -651,12 +686,12 @@ export default function CompanyOnboarding({ onCreated }) {
                             className="h-full w-full object-contain p-1.5"
                           />
 
-                          <span className="absolute inset-0 flex items-center justify-center bg-[#10251E]/60 text-white opacity-0 transition group-hover:opacity-100">
+                          <span className="absolute inset-0 flex items-center justify-center bg-[#0B1F33]/60 text-white opacity-0 transition group-hover:opacity-100">
                             <Camera size={22} />
                           </span>
                         </>
                       ) : (
-                        <span className="flex flex-col items-center gap-1.5 text-slate-400 transition group-hover:text-emerald-600 dark:text-slate-500 dark:group-hover:text-emerald-300">
+                        <span className="flex flex-col items-center gap-1.5 text-slate-400 transition group-hover:text-[#0F9691] dark:text-slate-500 dark:group-hover:text-[#16B8B1]">
                           <ImagePlus size={25} strokeWidth={1.5} />
                           <span className="text-[9px] font-semibold">
                             Ajouter
@@ -666,7 +701,7 @@ export default function CompanyOnboarding({ onCreated }) {
                     </button>
 
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-bold text-[#244237] dark:text-white">
+                      <p className="text-sm font-bold text-[#0B1F33] dark:text-white">
                         Logo de votre entreprise
                         <span className="ml-1.5 text-[10px] font-medium text-slate-400">
                           Facultatif
@@ -682,7 +717,7 @@ export default function CompanyOnboarding({ onCreated }) {
                         <button
                           type="button"
                           onClick={() => fileRef.current?.click()}
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-800 dark:bg-emerald-500 dark:text-[#10251E] dark:hover:bg-emerald-400"
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-[#0B1F33] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#16324F] dark:bg-[#16B8B1] dark:text-[#0B1F33] dark:hover:bg-[#0F9691]"
                         >
                           <Camera size={14} />
                           {logoPreview ? "Changer le logo" : "Importer un logo"}
@@ -939,23 +974,24 @@ export default function CompanyOnboarding({ onCreated }) {
                     </div>
                   </Field>
 
-                  <Field label="Téléphone professionnel">
-                    <div className="relative">
-                      <Phone
-                        size={16}
-                        className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-                      />
+                 <Field label="Téléphone professionnel">
+  <div className="relative">
+    <Phone
+      size={16}
+      className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+    />
 
-                      <input
-                        type="tel"
-                        value={form.phone}
-                        onChange={update("phone")}
-                        placeholder="+261 ..."
-                        autoComplete="tel"
-                        className={`${inputCls} pl-10`}
-                      />
-                    </div>
-                  </Field>
+    <input
+      type="tel"
+      value={form.phone}
+      onChange={handlePhoneChange}
+      placeholder="0 34 46 824 29"
+      maxLength={14} 
+      autoComplete="tel"
+      className={`${inputCls} pl-10`}
+    />
+  </div>
+</Field>
                 </div>
               </section>
 
@@ -964,7 +1000,7 @@ export default function CompanyOnboarding({ onCreated }) {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex w-full items-center justify-center gap-2.5 rounded-xl bg-emerald-700 px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-900/10 transition hover:bg-emerald-800 focus:outline-none focus:ring-4 focus:ring-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-emerald-500 dark:text-[#10251E] dark:hover:bg-emerald-400"
+                  className="flex w-full items-center justify-center gap-2.5 rounded-xl bg-[#0B1F33] px-5 py-3.5 text-sm font-bold text-white shadow-lg transition hover:bg-[#16324F] focus:outline-none focus:ring-4 focus:ring-[#16B8B1]/20 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#16B8B1] dark:text-[#0B1F33] dark:hover:bg-[#0F9691]"
                 >
                   {saving ? (
                     <>
@@ -991,7 +1027,7 @@ export default function CompanyOnboarding({ onCreated }) {
               <section className={`${cardCls} overflow-hidden`}>
                 <div className="flex items-center justify-between px-4 py-4">
                   <div>
-                    <p className="text-sm font-bold text-[#203E33] dark:text-white">
+                    <p className="text-sm font-bold text-[#0B1F33] dark:text-white">
                       Aperçu du profil
                     </p>
                     <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
@@ -999,14 +1035,14 @@ export default function CompanyOnboarding({ onCreated }) {
                     </p>
                   </div>
 
-                  <span className="flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700 dark:border-emerald-400/15 dark:bg-emerald-400/[0.08] dark:text-emerald-300">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  <span className="flex items-center gap-1.5 rounded-full border border-[#16B8B1]/20 bg-[#16B8B1]/10 px-2.5 py-1 text-[10px] font-semibold text-[#0F9691] dark:border-[#16B8B1]/30 dark:bg-[#16B8B1]/20 dark:text-[#16B8B1]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#16B8B1]" />
                     Aperçu
                   </span>
                 </div>
 
                 {/* Bannière */}
-                <div className="relative h-[100px] overflow-hidden bg-gradient-to-br from-[#124D3D] via-[#087F70] to-[#41B99A]">
+                <div className="relative h-[100px] overflow-hidden bg-gradient-to-br from-[#0B1F33] via-[#16324F] to-[#16B8B1]">
                   <div
                     aria-hidden="true"
                     className="absolute -right-8 -top-16 h-44 w-44 rounded-full border border-white/15"
@@ -1034,7 +1070,7 @@ export default function CompanyOnboarding({ onCreated }) {
                   {/* ✅ LOGO CORRIGÉ : z-10 pour passer au-dessus de la bannière */}
                   <div className="relative z-10 -mt-9 flex items-end justify-between">
                     {logoPreview ? (
-                      <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border-4 border-white bg-white shadow-md dark:border-[#0D1F18] dark:bg-[#10251E]">
+                      <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border-4 border-white bg-white shadow-md dark:border-[#131E47] dark:bg-[#0A1230]">
                         <img
                           src={logoPreview}
                           alt="Logo de l'entreprise"
@@ -1042,13 +1078,13 @@ export default function CompanyOnboarding({ onCreated }) {
                         />
                       </div>
                     ) : (
-                      <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-2xl border-4 border-white bg-gradient-to-br from-emerald-500 to-teal-700 text-2xl font-extrabold text-white shadow-md dark:border-[#0D1F18]">
+                      <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-2xl border-4 border-white bg-gradient-to-br from-[#0B1F33] to-[#16B8B1] text-2xl font-extrabold text-white shadow-md dark:border-[#131E47]">
                         {initial || <Building2 size={27} />}
                       </div>
                     )}
 
                     {form.size && (
-                      <span className="mb-1 shrink-0 rounded-lg border border-slate-200 bg-white/90 px-2 py-1 text-[10px] font-semibold text-slate-600 shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-[#10251E]/90 dark:text-slate-300">
+                      <span className="mb-1 shrink-0 rounded-lg border border-slate-200 bg-white/90 px-2 py-1 text-[10px] font-semibold text-slate-600 shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-[#0A1230]/90 dark:text-slate-300">
                         <Users size={11} className="mr-1 inline" />
                         {form.size} employés
                       </span>
@@ -1060,14 +1096,14 @@ export default function CompanyOnboarding({ onCreated }) {
                     <h2
                       className={`break-words text-lg font-extrabold leading-snug tracking-tight ${
                         form.name
-                          ? "text-[#18382D] dark:text-white"
+                          ? "text-[#0B1F33] dark:text-white"
                           : "text-slate-400 dark:text-slate-500"
                       }`}
                     >
                       {form.name || "Nom de votre entreprise"}
                     </h2>
 
-                    <p className="mt-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                    <p className="mt-1 text-xs font-medium text-[#0F9691] dark:text-[#16B8B1]">
                       {form.industry || "Secteur d'activité"}
                     </p>
                   </div>
@@ -1099,7 +1135,7 @@ export default function CompanyOnboarding({ onCreated }) {
                         <p className="text-[10px] text-slate-400">
                           Localisation
                         </p>
-                        <p className="mt-0.5 break-words text-xs font-medium text-[#29473D] dark:text-slate-200">
+                        <p className="mt-0.5 break-words text-xs font-medium text-[#0B1F33] dark:text-slate-200">
                           {location || "Ville et pays"}
                         </p>
                       </div>
@@ -1132,7 +1168,7 @@ export default function CompanyOnboarding({ onCreated }) {
                           <p className="text-[10px] text-slate-400">
                             Site web
                           </p>
-                          <p className="mt-0.5 break-all text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                          <p className="mt-0.5 break-all text-xs font-medium text-[#0F9691] dark:text-[#16B8B1]">
                             {form.website}
                           </p>
                         </div>
@@ -1149,7 +1185,7 @@ export default function CompanyOnboarding({ onCreated }) {
                           <p className="text-[10px] text-slate-400">
                             Téléphone
                           </p>
-                          <p className="mt-0.5 break-words text-xs font-medium text-[#29473D] dark:text-slate-200">
+                          <p className="mt-0.5 break-words text-xs font-medium text-[#0B1F33] dark:text-slate-200">
                             {form.phone}
                           </p>
                         </div>
@@ -1157,13 +1193,13 @@ export default function CompanyOnboarding({ onCreated }) {
                     )}
                   </div>
 
-                  <div className="mt-5 flex items-start gap-2.5 rounded-xl border border-emerald-100 bg-emerald-50/70 p-3 dark:border-emerald-400/10 dark:bg-emerald-400/[0.05]">
+                  <div className="mt-5 flex items-start gap-2.5 rounded-xl border border-[#16B8B1]/20 bg-[#16B8B1]/5 p-3 dark:border-[#16B8B1]/20 dark:bg-[#16B8B1]/10">
                     <ShieldCheck
                       size={16}
-                      className="mt-0.5 shrink-0 text-emerald-700 dark:text-emerald-300"
+                      className="mt-0.5 shrink-0 text-[#0F9691] dark:text-[#16B8B1]"
                     />
 
-                    <p className="text-[11px] leading-5 text-emerald-900/80 dark:text-emerald-200/80">
+                    <p className="text-[11px] leading-5 text-[#0B1F33]/80 dark:text-[#16B8B1]/80">
                       Votre profil pourra être enrichi après sa création.
                     </p>
                   </div>
@@ -1173,11 +1209,11 @@ export default function CompanyOnboarding({ onCreated }) {
               {/* Checklist */}
               <section className={`${cardCls} p-4`}>
                 <div className="mb-4 flex items-center justify-between gap-3">
-                  <h3 className="text-sm font-bold text-[#203E33] dark:text-white">
+                  <h3 className="text-sm font-bold text-[#0B1F33] dark:text-white">
                     Informations essentielles
                   </h3>
 
-                  <span className="text-xs font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
+                  <span className="text-xs font-bold tabular-nums text-[#0F9691] dark:text-[#16B8B1]">
                     {checklist.filter((item) => item.completed).length}/3
                   </span>
                 </div>
@@ -1210,7 +1246,7 @@ export default function CompanyOnboarding({ onCreated }) {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="group flex w-full items-center justify-center gap-2.5 rounded-xl bg-emerald-700 px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-900/[0.10] transition duration-200 hover:-translate-y-0.5 hover:bg-emerald-800 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 dark:bg-emerald-500 dark:text-[#10251E] dark:hover:bg-emerald-400"
+                  className="group flex w-full items-center justify-center gap-2.5 rounded-xl bg-[#0B1F33] px-5 py-3.5 text-sm font-bold text-white shadow-lg transition duration-200 hover:-translate-y-0.5 hover:bg-[#16324F] hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-[#16B8B1]/20 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 dark:bg-[#16B8B1] dark:text-[#0B1F33] dark:hover:bg-[#0F9691]"
                 >
                   {saving ? (
                     <>
@@ -1246,7 +1282,7 @@ export default function CompanyOnboarding({ onCreated }) {
           </p>
 
           <p className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
-            <ShieldCheck size={13} className="text-emerald-600 dark:text-emerald-400" />
+            <ShieldCheck size={13} className="text-[#0F9691] dark:text-[#16B8B1]" />
             Espace professionnel
           </p>
         </footer>

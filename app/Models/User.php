@@ -2,166 +2,156 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens,HasFactory, Notifiable,SoftDeletes;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
-  protected $fillable = [
-    'name',
-    'email',
-    'password',
-    'role',
-    'phone',
-    'avatar_path',
-    'status',
-    'first_name',
-    'last_name',
-    'country',
-    'theme_preference',
-    'font_size',
-    'high_contrast',
-    'reduce_motion',
-    'provider',
-    'provider_id',
-    'last_login_at',
-    'proposals_last_seen_at',           // ✅ AJOUT
-    'resource_requests_last_seen_at',   // ✅ AJOUT
-    'job_offers_last_seen_at',          // ✅ AJOUT (pour les offres)
-];
+    protected $fillable = [
+        'name', 'email', 'password', 'role', 'phone', 'avatar_path', 'status',
+        'first_name', 'last_name', 'country', 'theme_preference', 'font_size',
+        'high_contrast', 'reduce_motion', 'provider', 'provider_id', 'last_login_at',
+        'proposals_last_seen_at', 'resource_requests_last_seen_at', 'job_offers_last_seen_at',
+    ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-protected function casts(): array
-{
-    return [
-        'email_verified_at' => 'datetime',
-        'password' => 'hashed',
-        'high_contrast' => 'boolean',
-        'reduce_motion' => 'boolean',
-    ];
-}
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+            'high_contrast' => 'boolean',
+            'reduce_motion' => 'boolean',
+        ];
+    }
 
     // ==================== RELATIONS ====================
 
     /**
-     * Relation avec les entreprises (pour un propriétaire d'entreprise)
+     * ✅ Entreprises dont l'utilisateur est le PROPRIÉTAIRE (via owner_user_id).
+     * Utilise une vraie relation HasMany pour que le eager loading fonctionne.
      */
-    public function companies()
+    public function ownedCompanies(): HasMany
     {
         return $this->hasMany(Company::class, 'owner_user_id');
     }
-public function company()
-{
-    // Puisque tu es le propriétaire (owner_user_id), on récupère la première entreprise
-    return $this->hasOne(Company::class, 'owner_user_id');
-}
 
     /**
-     * Relation avec les universités (pour un propriétaire d'université)
+     * ✅ Entreprises dont l'utilisateur est MEMBRE (via la table company_members).
      */
+    public function memberCompanies(): BelongsToMany
+    {
+        return $this->belongsToMany(Company::class, 'company_members')
+            ->withPivot('role', 'status')
+            ->withTimestamps()
+            ->wherePivot('status', 'active');
+    }
+
+    /**
+     * ✅ Récupérer TOUTES les entreprises (Propriétaire + Membre) en une seule liste.
+     * C'est cette méthode que le frontend et le contrôleur doivent utiliser.
+     */
+    public function getAllCompaniesAttribute()
+    {
+        return $this->ownedCompanies->merge($this->memberCompanies);
+    }
+
+    /**
+     * ✅ On garde la méthode companies() pour compatibilité, mais on lui dit
+     * de renvoyer une vraie collection (via une méthode magique ou un accessor).
+     */
+    public function companies()
+    {
+        // Renvoie une HasMany classique pour le propriétaire.
+        // Pour les membres, le frontend appellera /companies/my/all
+        return $this->hasMany(Company::class, 'owner_user_id');
+    }
+
+    public function company()
+    {
+        return $this->hasOne(Company::class, 'owner_user_id');
+    }
+
     public function universities()
     {
         return $this->hasMany(University::class, 'owner_user_id');
     }
 
-    /**
-     * Relation avec le profil professionnel (pour les talents)
-     */
-    public function professionalProfile()
+      public function professionalProfile(): HasOne
     {
         return $this->hasOne(ProfessionalProfile::class);
     }
 
+    // ✅ NOUVELLE RELATION : L'employé lié à cet utilisateur
+    public function employee(): HasOne
+    {
+        return $this->hasOne(Employee::class, 'user_id', 'id');
+    }
+
     // ==================== MÉTHODES UTILITAIRES ====================
 
-    /**
-     * Vérifier si l'utilisateur est une entreprise
-     */
     public function isCompany(): bool
     {
         return $this->role === 'company';
     }
 
-    /**
-     * Vérifier si l'utilisateur est un talent (salarié/étudiant)
-     */
-   public function isTalent(): bool
-{
-    return $this->role === 'employee' || $this->role === 'student';
-}
+    public function isTalent(): bool
+    {
+        return $this->role === 'employee' || $this->role === 'student';
+    }
 
-    /**
-     * Vérifier si l'utilisateur est une université
-     */
     public function isUniversity(): bool
     {
         return $this->role === 'university';
     }
 
-    /**
-     * Vérifier si l'utilisateur est un administrateur
-     */
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
     }
 
-    /**
-     * Vérifier si le compte est actif
-     */
     public function isActive(): bool
     {
         return $this->status === 'active';
     }
+
     public function notifications()
-{
-    return $this->hasMany(Notification::class);
-}
+    {
+        return $this->hasMany(Notification::class);
+    }
 
-public function conversations()
-{
-    return $this->belongsToMany(Conversation::class, 'conversation_participants')
-                 ->withPivot('last_read_at')->withTimestamps();
-}
-public function savedSearches()
-{
-    return $this->hasMany(SavedSearch::class);
-}
+    public function conversations()
+    {
+        return $this->belongsToMany(Conversation::class, 'conversation_participants')
+                     ->withPivot('last_read_at')->withTimestamps();
+    }
 
-public function matchInteractions()
-{
-    return $this->hasMany(MatchInteraction::class);
-}
+    public function savedSearches()
+    {
+        return $this->hasMany(SavedSearch::class);
+    }
 
-public function matchWeights()
-{
-    return $this->hasOne(MatchWeight::class);
-}
+    public function matchInteractions()
+    {
+        return $this->hasMany(MatchInteraction::class);
+    }
+
+    public function matchWeights()
+    {
+        return $this->hasOne(MatchWeight::class);
+    }
 }

@@ -7,6 +7,26 @@ export const fileUrl = (p) => (!p ? null : /^https?:/.test(p) ? p : `${BASE_URL}
 export const asArray = (d) => (Array.isArray(d) ? d : d && Array.isArray(d.data) ? d.data : []);
 export const formatShortDate = (d) => (d ? new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "long" }) : "");
 
+// ✅ CORRECTION DU DÉCALAGE DE DATE (fuseau horaire)
+export const toInputDate = (value) => {
+  if (!value) return "";
+  // Si c'est déjà une date propre YYYY-MM-DD
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return value;
+  }
+  // Si c'est une chaîne ISO (ex: 2026-11-30T00:00:00Z), on garde juste les 10 premiers caractères
+  if (typeof value === 'string') {
+    return value.substring(0, 10);
+  }
+  // Si c'est un objet Date
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return "";
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export function timeAgo(d) {
   if (!d) return "";
   const diff = (Date.now() - new Date(d).getTime()) / 1000;

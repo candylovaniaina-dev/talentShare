@@ -12,13 +12,14 @@ use App\Models\Application;
 use App\Models\Notification;
 use App\Models\Employee;
 use App\Models\Mission;
+use App\Models\Document; // ✅ Ajouté
 use App\Models\Conversation;
 use App\Models\Message;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
-use Carbon\Carbon; // ✅ Import de Carbon pour le fuseau horaire
+use Carbon\Carbon;
 use App\Services\ContractService;
 
 class ApplicationController extends Controller
@@ -177,7 +178,7 @@ class ApplicationController extends Controller
         $previousStatus = $application->status;
         $createdMission = null;
 
-           if ($data['status'] === 'accepted' && $previousStatus !== 'accepted') {
+        if ($data['status'] === 'accepted' && $previousStatus !== 'accepted') {
             $applicant = $application->profile->user;
 
             try {
@@ -194,21 +195,33 @@ class ApplicationController extends Controller
             $company   = $offer->company;
             $recruiter = $company->owner;
 
-            // ✅ Contrat calculé automatiquement selon le type de recrutement
             $contract = ContractService::build($offer);
-
             try {
+                $jobTitle = !empty($offer->title) ? $offer->title : 'Poste non spécifié';
+                
+                $firstName = $applicant->first_name;
+                if (empty($firstName)) {
+                    $nameParts = explode(' ', trim($applicant->name));
+                    $firstName = $nameParts[0] ?? 'Talent';
+                }
+
+                $lastName = $applicant->last_name;
+                if (empty($lastName)) {
+                    $nameParts = explode(' ', trim($applicant->name));
+                    $lastName = $nameParts[1] ?? '';
+                }
+
                 Employee::updateOrCreate(
                     ['company_id' => $company->id, 'user_id' => $applicant->id],
                     [
-                        'position'      => $offer->title,
-                        'status'        => $contract['is_trial'] ? 'trial' : 'active',
+                        'position'      => $jobTitle,
+                        'status'        => $contract['is_trial'] ? 'trial' : 'pending',
                         'contract_type' => $contract['contract_type'],
                         'start_date'    => $contract['start_at'],
                         'end_date'      => $contract['end_at'],
                         'has_account'   => true,
-                        'first_name'    => $applicant->first_name ?? explode(' ', $applicant->name)[0] ?? '',
-                        'last_name'     => $applicant->last_name ?? explode(' ', $applicant->name)[1] ?? '',
+                        'first_name'    => $firstName,
+                        'last_name'     => $lastName,
                         'email'         => $applicant->email,
                         'phone'         => $applicant->phone,
                     ]
@@ -227,20 +240,26 @@ class ApplicationController extends Controller
                     'professional_profile_id' => $application->professional_profile_id,
                     'contract_type'           => $contract['contract_type'],
                     'start_at'                => $contract['start_at'],
-                    'end_at'                  => $contract['end_at'],          // null seulement pour un CDI
+                    'started_at'              => null,
+                    'end_at'                  => $contract['end_at'],
                     'is_trial'                => $contract['is_trial'],
                     'trial_ends_at'           => $contract['trial_ends_at'],
                     'workload_percent'        => 100,
                     'remote'                  => $offer->remote ?? false,
-                    // Stage / CDD : démarre aujourd'hui. CDI avec essai : statut "trial".
-                    'status'                  => $contract['is_trial'] ? 'trial' : 'active',
+                    'status'                  => $contract['is_trial'] ? 'trial' : 'planned',
                 ]);
+
+                // ✅ TRANSFERT DES DOCUMENTS
+                Document::where('documentable_type', Application::class)
+                    ->where('documentable_id', $application->id)
+                    ->update([
+                        'documentable_type' => Mission::class,
+                        'documentable_id'   => $createdMission->id,
+                    ]);
             } catch (\Exception $e) {
                 \Log::error('Erreur création mission: ' . $e->getMessage());
             }
 
-            // ✅ On récupère les autres candidats AVANT de les passer en "refusé"
-            //    (sinon les anciens refusés recevaient un 2e email de refus)
             $otherApps = collect();
             try {
                 $otherApps = Application::where('job_offer_id', $offer->id)
@@ -274,13 +293,32 @@ class ApplicationController extends Controller
                     $conversation->participants()->attach([$recruiter->id, $applicant->id]);
                 }
 
+                $contractType = $contract['contract_type'];
+                $welcomeMessage = "";
+
+                if (in_array($contractType, ['internship', 'apprenticeship'])) {
+                    $welcomeMessage = "Bienvenue chez nous ! 🎓\n\n"
+                        . "Nous sommes ravis de vous accueillir pour votre " . ($contractType === 'internship' ? 'stage' : 'alternance') . " en tant que « {$offer->title} ».\n\n"
+                        . "Nous avons hâte de vous intégrer à l'équipe. N'hésitez pas à nous poser des questions sur votre arrivée, vos missions ou vos horaires.\n\n"
+                        . "À très vite !";
+
+                } elseif (in_array($contractType, ['fixed_term', 'permanent'])) {
+                    $welcomeMessage = "Bienvenue dans l'équipe ! 🎉\n\n"
+                        . "Nous sommes très heureux de vous compter parmi nous en tant que « {$offer->title} » (" . ($contractType === 'fixed_term' ? 'CDD' : 'CDI') . ").\n\n"
+                        . "Nous sommes convaincus que vos compétences seront un véritable atout pour notre entreprise. N'hésitez pas à nous contacter ici pour discuter des détails de votre prise de poste.\n\n"
+                        . "Excellente journée à vous !";
+
+                } else {
+                    $welcomeMessage = "Bienvenue ! 🚀\n\n"
+                        . "Nous sommes ravis de collaborer avec vous sur le projet « {$offer->title} ».\n\n"
+                        . "Restons en contact ici pour coordonner nos prochaines étapes.\n\n"
+                        . "À bientôt !";
+                }
+
                 Message::create([
                     'conversation_id' => $conversation->id,
                     'sender_id'       => $recruiter->id,
-                    'body'            => "Bienvenue dans l'équipe ! 🎉\n\n"
-                        . "Nous sommes ravis de vous compter parmi nous pour le poste de « {$offer->title} ».\n\n"
-                        . "N'hésitez pas à nous contacter ici pour discuter des détails pratiques (date de début, matériel, etc.).\n\n"
-                        . "À très vite !",
+                    'body'            => $welcomeMessage,
                 ]);
             } catch (\Exception $e) {
                 \Log::error('Erreur création conversation: ' . $e->getMessage());
@@ -360,7 +398,9 @@ class ApplicationController extends Controller
         }
 
         return response()->json([
-            'message' => $data['status'] === 'accepted' ? 'Candidature acceptée. Le talent a été ajouté à votre équipe et la mission a été créée.' : 'Statut mis à jour.',
+            'message' => $data['status'] === 'accepted'
+                ? 'Candidature acceptée. Le talent a été ajouté à votre équipe et la mission a été créée (en attente de démarrage).'
+                : 'Statut mis à jour.',
             'application' => $application->fresh(),
             'mission_id' => $createdMission?->id ?? null,
         ]);
@@ -423,22 +463,21 @@ class ApplicationController extends Controller
 
         $emailNotVerified = !$applicant->email_verified_at;
 
-      // ✅ NOUVEAU : On génère un ID de salle propre
-$candidateName = Str::slug($applicant->name);
-$offerTitle = Str::slug($application->jobOffer->title);
-$roomId = "TalentShare-Entretien-{$candidateName}-{$offerTitle}";
+        $roomId = "TalentShare-Entretien-{$application->id}";
 
-// ✅ On génère le lien vers TA page React (et non Jitsi direct)
-$frontendUrl = rtrim(env('FRONTEND_URL', 'http://localhost:5173'), '/');
-$meetLink = "{$frontendUrl}/interview/{$roomId}?name=" . urlencode($applicant->name) . "&email=" . urlencode($applicant->email);
+        $frontendUrl = rtrim(env('FRONTEND_URL', 'http://localhost:5173'), '/');
 
-        // ✅ On force la date dans le fuseau de Madagascar
+        $candidateLink = "{$frontendUrl}/interview/{$roomId}?name=" . urlencode($applicant->name) . "&email=" . urlencode($applicant->email) . "&role=candidate";
+
+        $recruiter = $application->jobOffer->company->owner;
+        $recruiterLink = "{$frontendUrl}/interview/{$roomId}?name=" . urlencode($recruiter->name) . "&email=" . urlencode($recruiter->email) . "&role=recruiter";
+
         $interviewDate = Carbon::parse($data['interview_at'], 'Indian/Antananarivo');
 
         $application->update([
             'status' => 'interview',
-            'interview_at' => $interviewDate, 
-            'interview_link' => $meetLink,
+            'interview_at' => $interviewDate,
+            'interview_link' => $candidateLink,
         ]);
 
         $emailSent = false;
@@ -476,7 +515,7 @@ $meetLink = "{$frontendUrl}/interview/{$roomId}?name=" . urlencode($applicant->n
                 $smsMessage = "🎉 Félicitations {$applicant->name} ! "
                     . "Votre entretien avec {$application->jobOffer->company?->name} "
                     . "est prévu le {$interviewDate}. "
-                    . "Lien visio : {$meetLink}";
+                    . "Lien visio : {$candidateLink}";
 
                 $smsSent = \App\Services\SmsService::send($applicant->phone, $smsMessage);
             } catch (\Exception $e) {
@@ -489,9 +528,15 @@ $meetLink = "{$frontendUrl}/interview/{$roomId}?name=" . urlencode($applicant->n
             if ($company && $company->owner_user_id) {
                 $recruiter = \App\Models\User::find($company->owner_user_id);
                 if ($recruiter) {
+                    $application->interview_link = $recruiterLink;
+                    $application->save();
+
                     Mail::to($recruiter->email)->send(
                         new \App\Mail\InterviewScheduledRecruiter($application->fresh(), $recruiter->name)
                     );
+
+                    $application->interview_link = $candidateLink;
+                    $application->save();
                 }
             }
         } catch (\Exception $e) {
@@ -509,7 +554,7 @@ $meetLink = "{$frontendUrl}/interview/{$roomId}?name=" . urlencode($applicant->n
                 'data' => [
                     'url' => "/applications/{$application->id}",
                     'interview_at' => $application->interview_at,
-                    'interview_link' => $meetLink,
+                    'interview_link' => $candidateLink,
                 ],
             ]);
         } catch (\Exception $e) {

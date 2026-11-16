@@ -532,7 +532,7 @@ export default function Collaborations() {
   const [missions, setMissions] = useState([]);
   const [received, setReceived] = useState([]);
   const [sent, setSent] = useState([]);
-  const [myRequests, setMyRequests] = useState([]); // ✅ Stocke les demandes de l'entreprise
+  const [myRequests, setMyRequests] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -542,8 +542,6 @@ export default function Collaborations() {
   const [stage, setStage] = useState("all");
   const [contractFilter, setContractFilter] = useState("all");
   const [search, setSearch] = useState("");
-  
-  // ✅ Filtre par demande spécifique
   const [requestFilter, setRequestFilter] = useState("all");
 
   // ✅ Vue par défaut : "list" pour les étudiants, "board" pour les entreprises
@@ -551,7 +549,6 @@ export default function Collaborations() {
 
   const rawTab = params.get("tab") || "missions";
 
-  // ✅ Les étudiants n'ont accès qu'à l'onglet "missions"
   const allowedTabs = isCompany
     ? ["missions", "received", "sent"]
     : ["missions"];
@@ -563,7 +560,7 @@ export default function Collaborations() {
     setStage("all");
     setSearch("");
     setContractFilter("all");
-    setRequestFilter("all"); // ✅ Réinitialise le filtre
+    setRequestFilter("all");
   };
 
   /* =====================================================
@@ -582,7 +579,7 @@ export default function Collaborations() {
           calls.push(
             api.get("/proposals/received"),
             api.get("/proposals/sent"),
-            api.get("/resource-requests?my=1") // ✅ Récupère les demandes
+            api.get("/resource-requests?my=1")
           );
         }
 
@@ -593,15 +590,12 @@ export default function Collaborations() {
         if (isCompany) {
           setReceived(asArray(r));
           setSent(asArray(s));
-          setMyRequests(asArray(reqs)); // ✅ Stocke les demandes
+          setMyRequests(asArray(reqs));
         }
 
         setError(null);
       } catch (err) {
-        console.error(
-          "Erreur collaborations:",
-          err.response?.data || err.message
-        );
+        console.error("Erreur collaborations:", err.response?.data || err.message);
 
         setError(
           "Impossible de charger vos collaborations. Vérifiez votre connexion puis réessayez."
@@ -641,21 +635,11 @@ export default function Collaborations() {
   };
 
   const acceptMission = (id) =>
-    runAction(
-      id,
-      () => api.post(`/missions/${id}/accept`),
-      "Mission acceptée."
-    );
+    runAction(id, () => api.post(`/missions/${id}/accept`), "Mission acceptée.");
 
   const declineMission = (id) => {
     if (!window.confirm("Refuser cette mission ?")) return;
-
-    runAction(
-      id,
-      () => api.post(`/missions/${id}/decline`),
-      "Mission refusée.",
-      "info"
-    );
+    runAction(id, () => api.post(`/missions/${id}/decline`), "Mission refusée.", "info");
   };
 
   const updateStatus = (id, status) =>
@@ -692,14 +676,8 @@ export default function Collaborations() {
           Boolean(myProfileId) &&
           Number(m.professional_profile_id) === Number(myProfileId);
 
-        const isSupplier = myCompanyIds.includes(
-          Number(m.supplying_company_id)
-        );
-
-        const isRequesting = myCompanyIds.includes(
-          Number(m.requesting_company_id)
-        );
-
+        const isSupplier = myCompanyIds.includes(Number(m.supplying_company_id));
+        const isRequesting = myCompanyIds.includes(Number(m.requesting_company_id));
         const isDirectHire = !m.supplying_company_id;
 
         const talent = m.profile?.user?.name;
@@ -723,47 +701,28 @@ export default function Collaborations() {
           title: getMissionTitle(m),
           company: isStudent ? (talent || "") : company,
           tag: contract?.label,
-          period: `${fmt(m.start_at, {
-            day: "2-digit",
-            month: "short",
-          })} → ${
+          period: `${fmt(m.start_at, { day: "2-digit", month: "short" })} → ${
             m.end_at
-              ? fmt(m.end_at, {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                })
+              ? fmt(m.end_at, { day: "2-digit", month: "short", year: "numeric" })
               : type === "permanent"
                 ? "CDI"
                 : "À définir"
           }`,
           hint: `${m.workload_percent ?? 100}% du temps`,
           tone: cfg.tone,
-          statusLabel:
-            m.status === "active" && contract
-              ? activeLabel(type)
-              : cfg.label,
+          statusLabel: m.status === "active" && contract ? activeLabel(type) : cfg.label,
           flow: MISSION_FLOW,
           flowIndex: MISSION_INDEX[m.status] ?? 0,
           failed: m.status === "cancelled",
           progress: ["planned", "active", "trial"].includes(m.status)
             ? computeProgress(m.start_at, m.end_at)
             : null,
-          indefinite:
-            m.status === "active" && type === "permanent" && !m.end_at,
-          haystack: normalized(
-            [getMissionTitle(m), talent, company, m.id].join(" ")
-          ),
-          flags: {
-            isEmployee,
-            isSupplier,
-            isRequesting,
-            isDirectHire,
-          },
+          indefinite: m.status === "active" && type === "permanent" && !m.end_at,
+          haystack: normalized([getMissionTitle(m), talent, company, m.id].join(" ")),
+          flags: { isEmployee, isSupplier, isRequesting, isDirectHire },
           status: m.status,
         };
       }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [missions, myProfileId, myCompanyIds.join(","), isStudent]
   );
 
@@ -771,85 +730,72 @@ export default function Collaborations() {
      NORMALISATION PROPOSITIONS
   ===================================================== */
 
- const proposalRows = (list, kind) =>
-  list
-    .filter((p) => {
-      // ✅ Filtre par demande spécifique (uniquement sur l'onglet "Reçues")
-      if (kind === "received" && requestFilter !== "all") {
-        return String(p.resource_request_id) === String(requestFilter);
-      }
-      return true;
-    })
-    .map((p) => {
-      const st = p.display_status || p.status;
-      const cfg = PROPOSAL_STATUS[st] || PROPOSAL_STATUS.sent;
+  const proposalRows = (list, kind) =>
+    list
+      .filter((p) => {
+        if (kind === "received" && requestFilter !== "all") {
+          return String(p.resource_request_id) === String(requestFilter);
+        }
+        return true;
+      })
+      .map((p) => {
+        const st = p.display_status || p.status;
+        const cfg = PROPOSAL_STATUS[st] || PROPOSAL_STATUS.sent;
 
-      const isApplication = kind === "received" && !p.proposed_by_company_id;
-      const other = kind === "received" ? p.proposing_company : p.to_company;
+        const isApplication = kind === "received" && !p.proposed_by_company_id;
+        const other = kind === "received" ? p.proposing_company : p.to_company;
 
-      const title =
-        p.resource_offer?.title ||
-        p.resource_request?.title ||
-        "Proposition directe";
+        const title = p.resource_offer?.title || p.resource_request?.title || "Proposition directe";
+        const talent = p.profile?.user?.name || "Salarié";
+        const pending = ["sent", "viewed"].includes(st);
 
-      const talent = p.profile?.user?.name || "Salarié";
-      const pending = ["sent", "viewed"].includes(st);
-
-      return {
-        key: `p-${kind}-${p.id}`,
-        id: p.id,
-        href: `/proposals/${p.id}`,
-        stage: st === "cancelled" ? "expired" : st,
-        avatarName: talent,
-        avatarPath: p.profile?.avatar_path,
-        name: talent,
-        title,
-        company: isApplication
-          ? "Candidature talent"
-          : other?.name || (kind === "sent" ? "Demande d'un talent" : "Entreprise"),
-        direction: isApplication ? null : kind,
-        tag: p.interview_status === "scheduled" ? "Entretien planifié" : null,
-        period: p.start_at
-          ? `${fmt(p.start_at, { day: "2-digit", month: "short" })} · ${
-              durationText(p.start_at, p.end_at) || "Durée libre"
-            }`
-          : "Dates à définir",
-        hint: `${p.workload_percent || 100}% du temps`,
-        tone: cfg.tone,
-        statusLabel: cfg.label,
-        flow: PROPOSAL_FLOW,
-        flowIndex: PROPOSAL_INDEX[st] ?? 0,
-        failed: ["declined", "expired", "cancelled"].includes(st),
-        progress: null,
-        indefinite: false,
-        unread: kind === "received" && p.status === "sent",
-        deadline:
-          pending && p.days_until_expiry != null
-            ? `${p.days_until_expiry} j restants`
-            : null,
-        urgent: pending && p.days_until_expiry != null && p.days_until_expiry <= 3,
-        haystack: normalized([title, talent, other?.name, p.id].join(" ")),
-        status: st,
-      };
-    });
+        return {
+          key: `p-${kind}-${p.id}`,
+          id: p.id,
+          href: `/proposals/${p.id}`,
+          stage: st === "cancelled" ? "expired" : st,
+          avatarName: talent,
+          avatarPath: p.profile?.avatar_path,
+          name: talent,
+          title,
+          company: isApplication
+            ? "Candidature talent"
+            : other?.name || (kind === "sent" ? "Demande d'un talent" : "Entreprise"),
+          direction: isApplication ? null : kind,
+          tag: p.interview_status === "scheduled" ? "Entretien planifié" : null,
+          period: p.start_at
+            ? `${fmt(p.start_at, { day: "2-digit", month: "short" })} · ${
+                durationText(p.start_at, p.end_at) || "Durée libre"
+              }`
+            : "Dates à définir",
+          hint: `${p.workload_percent || 100}% du temps`,
+          tone: cfg.tone,
+          statusLabel: cfg.label,
+          flow: PROPOSAL_FLOW,
+          flowIndex: PROPOSAL_INDEX[st] ?? 0,
+          failed: ["declined", "expired", "cancelled"].includes(st),
+          progress: null,
+          indefinite: false,
+          unread: kind === "received" && p.status === "sent",
+          deadline: pending && p.days_until_expiry != null ? `${p.days_until_expiry} j restants` : null,
+          urgent: pending && p.days_until_expiry != null && p.days_until_expiry <= 3,
+          haystack: normalized([title, talent, other?.name, p.id].join(" ")),
+          status: st,
+        };
+      });
 
   const sentRows = useMemo(() => proposalRows(sent, "sent"), [sent]);
 
   const receivedRows = useMemo(
     () => proposalRows(received, "received"),
-    [received, requestFilter] // ✅ Dépendance ajoutée
+    [received, requestFilter]
   );
 
   /* =====================================================
      FILTRES
   ===================================================== */
 
-  const allRows =
-    tab === "missions"
-      ? missionRows
-      : tab === "received"
-        ? receivedRows
-        : sentRows;
+  const allRows = tab === "missions" ? missionRows : tab === "received" ? receivedRows : sentRows;
 
   const stages =
     tab === "missions"
@@ -860,34 +806,25 @@ export default function Collaborations() {
     const q = normalized(search.trim());
 
     return allRows.filter((r) => {
-      if (
-        tab === "missions" &&
-        contractFilter !== "all" &&
-        r.type !== contractFilter
-      ) {
+      if (tab === "missions" && contractFilter !== "all" && r.type !== contractFilter) {
         return false;
       }
-
       return !q || r.haystack.includes(q);
     });
   }, [allRows, search, contractFilter, tab]);
 
   const visibleRows = useMemo(
-    () =>
-      stage === "all" ? baseRows : baseRows.filter((r) => r.stage === stage),
+    () => (stage === "all" ? baseRows : baseRows.filter((r) => r.stage === stage)),
     [baseRows, stage]
   );
 
   const countOf = (id) => baseRows.filter((r) => r.stage === id).length;
-
   const total = baseRows.length;
 
-  const railOf = (r) =>
-    STAGE_COLORS[stages.find((s) => s.id === r.stage)?.tone] ||
-    "bg-slate-300";
+  const railOf = (r) => STAGE_COLORS[stages.find((s) => s.id === r.stage)?.tone] || "bg-slate-300";
 
   /* =====================================================
-     ELEMENTS A TRAITER (déduits des vraies données)
+     ELEMENTS A TRAITER
   ===================================================== */
 
   const focusItems = useMemo(() => {
@@ -895,21 +832,9 @@ export default function Collaborations() {
 
     missionRows.forEach((r) => {
       if (r.flags.isEmployee && r.status === "pending_employee") {
-        items.push({
-          key: r.key,
-          href: r.href,
-          kind: "Réponse attendue",
-          text: r.title,
-          tone: "amber",
-        });
+        items.push({ key: r.key, href: r.href, kind: "Réponse attendue", text: r.title, tone: "amber" });
       } else if (canStartMission(r.flags, r.status)) {
-        items.push({
-          key: r.key,
-          href: r.href,
-          kind: "Prête à démarrer",
-          text: r.title,
-          tone: "blue",
-        });
+        items.push({ key: r.key, href: r.href, kind: "Prête à démarrer", text: r.title, tone: "blue" });
       }
     });
 
@@ -927,13 +852,7 @@ export default function Collaborations() {
 
     sentRows.forEach((r) => {
       if (r.urgent) {
-        items.push({
-          key: r.key,
-          href: r.href,
-          kind: "Expire bientôt",
-          text: `${r.name} · ${r.company}`,
-          tone: "rose",
-        });
+        items.push({ key: r.key, href: r.href, kind: "Expire bientôt", text: `${r.name} · ${r.company}`, tone: "rose" });
       }
     });
 
@@ -941,11 +860,7 @@ export default function Collaborations() {
   }, [missionRows, receivedRows, sentRows]);
 
   const tabsMeta = [
-    {
-      id: "missions",
-      label: "Mes missions",
-      count: missionRows.length,
-    },
+    { id: "missions", label: "Mes missions", count: missionRows.length },
     ...(isCompany
       ? [
           {
@@ -954,11 +869,7 @@ export default function Collaborations() {
             count: receivedRows.length,
             alert: receivedRows.filter((r) => r.unread).length,
           },
-          {
-            id: "sent",
-            label: "Propositions envoyées",
-            count: sentRows.length,
-          },
+          { id: "sent", label: "Propositions envoyées", count: sentRows.length },
         ]
       : []),
   ];
@@ -967,21 +878,19 @@ export default function Collaborations() {
     setSearch("");
     setStage("all");
     setContractFilter("all");
-    setRequestFilter("all"); // ✅ Réinitialise le filtre par demande
+    setRequestFilter("all");
   };
 
-  const hasFilters =
-    search.trim() !== "" || stage !== "all" || contractFilter !== "all" || requestFilter !== "all";
+  const hasFilters = search.trim() !== "" || stage !== "all" || contractFilter !== "all" || requestFilter !== "all";
 
   /* =====================================================
-     ACTIONS MISSIONS (masquées pour les étudiants)
+     ACTIONS MISSIONS
   ===================================================== */
 
   const renderMissionActions = (r) => {
     if (isStudent) return [];
 
     const { isEmployee, isSupplier, isRequesting } = r.flags;
-
     const busy = actionLoading === r.id;
     const out = [];
 
@@ -994,14 +903,8 @@ export default function Collaborations() {
           onClick={() => acceptMission(r.id)}
           className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-teal-50 px-3 text-[11px] font-medium text-teal-600 transition hover:bg-teal-100 disabled:opacity-50"
         >
-          {busy ? (
-            <Loader2 size={13} className="animate-spin" />
-          ) : (
-            <Check size={13} />
-          )}
-          Accepter
+          {busy ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />} Accepter
         </button>,
-
         <button
           key="decline"
           type="button"
@@ -1023,12 +926,7 @@ export default function Collaborations() {
           onClick={() => updateStatus(r.id, "active")}
           className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-blue-50 px-3 text-[11px] font-medium text-blue-600 transition hover:bg-blue-100 disabled:opacity-50"
         >
-          {busy ? (
-            <Loader2 size={13} className="animate-spin" />
-          ) : (
-            <Play size={12} />
-          )}
-          Démarrer
+          {busy ? <Loader2 size={13} className="animate-spin" /> : <Play size={12} />} Démarrer
         </button>
       );
     }
@@ -1042,12 +940,7 @@ export default function Collaborations() {
           onClick={() => updateStatus(r.id, "completed")}
           className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-medium text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
         >
-          {busy ? (
-            <Loader2 size={13} className="animate-spin" />
-          ) : (
-            <Flag size={12} />
-          )}
-          {r.type === "permanent" ? "Mettre fin" : "Terminer"}
+          {busy ? <Loader2 size={13} className="animate-spin" /> : <Flag size={12} />} {r.type === "permanent" ? "Mettre fin" : "Terminer"}
         </button>
       );
     }
@@ -1061,33 +954,20 @@ export default function Collaborations() {
      LOADING
   ===================================================== */
 
-  if (
-    loading &&
-    missions.length === 0 &&
-    received.length === 0 &&
-    sent.length === 0
-  ) {
+  if (loading && missions.length === 0 && received.length === 0 && sent.length === 0) {
     return (
       <AppShell>
         <main className="min-h-screen bg-[#F5F7FB] px-4 py-7 font-['Plus_Jakarta_Sans',sans-serif] sm:px-7">
           <div className="mx-auto max-w-[1450px] space-y-5">
             <div className="h-16 animate-pulse rounded-xl bg-white" />
-            
             <div className="flex gap-2">
               {[1, 2, 3, 4, 5].map((i) => (
-                <div
-                  key={i}
-                  className="h-[74px] flex-1 animate-pulse rounded-lg bg-white"
-                />
+                <div key={i} className="h-[74px] flex-1 animate-pulse rounded-lg bg-white" />
               ))}
             </div>
-
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {[1, 2, 3, 4].map((i) => (
-                <div
-                  key={i}
-                  className="h-64 animate-pulse rounded-xl bg-white"
-                />
+                <div key={i} className="h-64 animate-pulse rounded-xl bg-white" />
               ))}
             </div>
           </div>
@@ -1101,10 +981,7 @@ export default function Collaborations() {
   ===================================================== */
 
   const boardStages = stages.filter(
-    (s) =>
-      countOf(s.id) > 0 ||
-      stage === s.id ||
-      !["cancelled", "expired"].includes(s.id)
+    (s) => countOf(s.id) > 0 || stage === s.id || !["cancelled", "expired"].includes(s.id)
   );
 
   const subtitle =
@@ -1122,60 +999,32 @@ export default function Collaborations() {
             from { opacity: 0; transform: translateY(6px); }
             to { opacity: 1; transform: translateY(0); }
           }
-
           .collab-scroll::-webkit-scrollbar { height: 4px; }
           .collab-scroll::-webkit-scrollbar-thumb { background: #D7E0EB; border-radius: 20px; }
-
           .collab-view { animation: collabIn .3s ease both; }
-
           @media (prefers-reduced-motion: reduce) {
             .collab-view { animation: none; }
           }
         `}</style>
 
         <div className="mx-auto max-w-[1450px] space-y-4">
-          {/* ELEMENTS PRIORITAIRES (Design adouci) */}
           <FocusStrip items={focusItems} />
 
-          {/* ERREUR API */}
           {error && (
-            <div
-              role="alert"
-              className="flex flex-col justify-between gap-3 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-[12px] font-medium text-rose-700 sm:flex-row sm:items-center"
-            >
-              <div className="flex items-center gap-2">
-                <CircleDot size={15} />
-                {error}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => load()}
-                className="self-start rounded-lg border border-rose-200 bg-white px-3 py-2 text-[11px] font-medium hover:bg-rose-100 sm:self-auto"
-              >
+            <div role="alert" className="flex flex-col justify-between gap-3 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-[12px] font-medium text-rose-700 sm:flex-row sm:items-center">
+              <div className="flex items-center gap-2"><CircleDot size={15} />{error}</div>
+              <button type="button" onClick={() => load()} className="self-start rounded-lg border border-rose-200 bg-white px-3 py-2 text-[11px] font-medium hover:bg-rose-100 sm:self-auto">
                 Réessayer
               </button>
             </div>
           )}
 
-          {/* PIPELINE = FILTRE PAR ETAPE */}
-          <PipelineNav
-            stages={stages}
-            stage={stage}
-            setStage={setStage}
-            countOf={countOf}
-            total={total}
-          />
+          <PipelineNav stages={stages} stage={stage} setStage={setStage} countOf={countOf} total={total} />
 
-          {/* BARRE D'OUTILS */}
           <section className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-2.5 xl:flex-row xl:items-center xl:justify-between">
-            <nav
-              className="collab-scroll flex min-w-0 items-center gap-1 overflow-x-auto rounded-lg bg-slate-50 p-1"
-              aria-label="Sections des collaborations"
-            >
+            <nav className="collab-scroll flex min-w-0 items-center gap-1 overflow-x-auto rounded-lg bg-slate-50 p-1" aria-label="Sections des collaborations">
               {tabsMeta.map((item) => {
                 const active = tab === item.id;
-
                 return (
                   <button
                     key={item.id}
@@ -1183,26 +1032,14 @@ export default function Collaborations() {
                     onClick={() => changeTab(item.id)}
                     aria-current={active ? "page" : undefined}
                     className={`relative inline-flex shrink-0 items-center gap-2 rounded-md px-3.5 py-1.5 text-[12px] font-medium transition ${
-                      active
-                        ? "bg-white text-slate-800 shadow-sm"
-                        : "text-slate-500 hover:bg-white hover:text-slate-700"
+                      active ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:bg-white hover:text-slate-700"
                     }`}
                   >
                     {item.label}
-
-                    <span
-                      className={`flex min-w-[20px] items-center justify-center rounded px-1.5 py-0.5 text-[10px] font-semibold ${
-                        active
-                          ? "bg-slate-100 text-slate-600"
-                          : "bg-slate-200/50 text-slate-400"
-                      }`}
-                    >
+                    <span className={`flex min-w-[20px] items-center justify-center rounded px-1.5 py-0.5 text-[10px] font-semibold ${active ? "bg-slate-100 text-slate-600" : "bg-slate-200/50 text-slate-400"}`}>
                       {item.count}
                     </span>
-
-                    {item.alert > 0 && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-[#16B8B1]" />
-                    )}
+                    {item.alert > 0 && <span className="h-1.5 w-1.5 rounded-full bg-[#16B8B1]" />}
                   </button>
                 );
               })}
@@ -1210,7 +1047,6 @@ export default function Collaborations() {
 
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
               
-              {/* ✅ NOUVEAU : Filtre par demande spécifique */}
               {tab === "received" && myRequests.length > 0 && (
                 <div className="relative">
                   <select
@@ -1221,35 +1057,21 @@ export default function Collaborations() {
                   >
                     <option value="all">Toutes les demandes</option>
                     {myRequests.map((req) => (
-                      <option key={req.id} value={req.id}>
-                        {req.title}
-                      </option>
+                      <option key={req.id} value={req.id}>{req.title}</option>
                     ))}
                   </select>
-
-                  <ChevronDown
-                    size={13}
-                    className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400"
-                  />
+                  <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 </div>
               )}
 
               <label className="relative block w-full sm:w-[260px] lg:w-[300px]">
-                <Search
-                  size={15}
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-                />
-
+                <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   type="search"
                   aria-label="Rechercher une collaboration"
-                  placeholder={
-                    tab === "missions"
-                      ? "Rechercher une mission..."
-                      : "Entreprise, ressource, personne..."
-                  }
+                  placeholder={tab === "missions" ? "Rechercher une mission..." : "Entreprise, ressource, personne..."}
                   className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-[12px] font-medium text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-slate-300 focus:bg-white focus:ring-2 focus:ring-slate-100"
                 />
               </label>
@@ -1263,53 +1085,39 @@ export default function Collaborations() {
                     className="h-9 w-full appearance-none rounded-lg border border-slate-200 bg-white py-1 pl-3 pr-8 text-[12px] font-medium text-slate-600 outline-none transition hover:border-slate-300 focus:border-slate-300 sm:w-[185px]"
                   >
                     {CONTRACT_FILTERS.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.label}
-                      </option>
+                      <option key={c.id} value={c.id}>{c.label}</option>
                     ))}
                   </select>
-
-                  <ChevronDown
-                    size={13}
-                    className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400"
-                  />
+                  <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 </div>
               )}
 
-              {/* ✅ SÉLECTEUR DE VUE : masqué pour les étudiants */}
-              {!isStudent && (
-                <div
-                  className="flex h-9 items-center gap-0.5 rounded-lg border border-slate-200 bg-slate-50 p-1"
-                  role="group"
-                  aria-label="Mode d'affichage"
-                >
-                  {[
-                    { id: "board", label: "Pipeline", icon: LayoutGrid },
-                    { id: "list", label: "Liste", icon: List },
-                  ].map((v) => {
-                    const Icon = v.icon;
-                    const active = view === v.id;
+              {/* ✅ SÉLECTEUR DE VUE : Visible pour tout le monde */}
+              <div className="flex h-9 items-center gap-0.5 rounded-lg border border-slate-200 bg-slate-50 p-1" role="group" aria-label="Mode d'affichage">
+                {[
+                  { id: "board", label: "Pipeline", icon: LayoutGrid },
+                  { id: "list", label: "Liste", icon: List },
+                ].map((v) => {
+                  const Icon = v.icon;
+                  const active = view === v.id;
 
-                    return (
-                      <button
-                        key={v.id}
-                        type="button"
-                        onClick={() => setView(v.id)}
-                        aria-pressed={active}
-                        title={v.label}
-                        className={`inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-[11px] font-medium transition ${
-                          active
-                            ? "bg-white text-slate-700 shadow-sm"
-                            : "text-slate-500 hover:text-slate-700"
-                        }`}
-                      >
-                        <Icon size={13} />
-                        <span className="hidden lg:inline">{v.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+                  return (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => setView(v.id)}
+                      aria-pressed={active}
+                      title={v.label}
+                      className={`inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-[11px] font-medium transition ${
+                        active ? "bg-white text-slate-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                      }`}
+                    >
+                      <Icon size={13} />
+                      <span className="hidden lg:inline">{v.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
 
               {hasFilters && (
                 <button
@@ -1318,41 +1126,31 @@ export default function Collaborations() {
                   title="Réinitialiser les filtres"
                   className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-medium text-slate-500 transition hover:bg-slate-50"
                 >
-                  <RotateCcw size={12} />
-                  Effacer
+                  <RotateCcw size={12} /> Effacer
                 </button>
               )}
             </div>
           </section>
 
-          {/* COMPTEUR + ACTUALISATION */}
           <div className="flex items-center justify-between gap-3 px-1">
             <div className="flex items-center gap-2">
               <Inbox size={14} className="text-slate-400" />
               <span className="text-[12px] font-semibold text-slate-700">
                 {visibleRows.length} résultat{visibleRows.length > 1 ? "s" : ""}
               </span>
-              <span className="hidden text-[11px] font-medium text-slate-400 sm:inline">
-                {subtitle}
-              </span>
+              <span className="hidden text-[11px] font-medium text-slate-400 sm:inline">{subtitle}</span>
             </div>
 
             <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-400">
-              {refreshing ? (
-                <Loader2 size={12} className="animate-spin text-[#16B8B1]" />
-              ) : (
-                <span className="h-1.5 w-1.5 rounded-full bg-[#16B8B1]" />
-              )}
+              {refreshing ? <Loader2 size={12} className="animate-spin text-[#16B8B1]" /> : <span className="h-1.5 w-1.5 rounded-full bg-[#16B8B1]" />}
               {refreshing ? "Actualisation…" : "Synchronisé"}
             </span>
           </div>
 
-          {/* CONTENU */}
           {visibleRows.length === 0 ? (
             <section className="rounded-xl border border-dashed border-slate-200 bg-white px-5 py-14 text-center">
               <div className="relative mx-auto flex h-[68px] w-[68px] items-center justify-center rounded-xl bg-slate-50 text-slate-400">
                 <FileSearch size={27} strokeWidth={1.5} />
-
                 <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-slate-200 text-white">
                   <Search size={10} />
                 </span>
@@ -1377,18 +1175,13 @@ export default function Collaborations() {
               </p>
 
               {hasFilters && (
-                <button
-                  type="button"
-                  onClick={resetFilters}
-                  className="mt-5 inline-flex h-9 items-center gap-2 rounded-lg bg-slate-100 px-4 text-[12px] font-medium text-slate-600 transition hover:bg-slate-200"
-                >
-                  <RotateCcw size={13} />
-                  Réinitialiser
+                <button type="button" onClick={resetFilters} className="mt-5 inline-flex h-9 items-center gap-2 rounded-lg bg-slate-100 px-4 text-[12px] font-medium text-slate-600 transition hover:bg-slate-200">
+                  <RotateCcw size={13} /> Réinitialiser
                 </button>
               )}
             </section>
-          ) : view === "board" && !isStudent ? (
-            /* ✅ VUE BOARD : uniquement pour les entreprises */
+          ) : view === "board" ? (
+            /* ✅ VUE BOARD (Pipeline) - Accessible à tous */
             <section
               key={`board-${tab}`}
               className="collab-view collab-scroll grid auto-cols-[minmax(272px,1fr)] grid-flow-col gap-3 overflow-x-auto pb-3"
@@ -1398,18 +1191,12 @@ export default function Collaborations() {
                 const dim = stage !== "all" && stage !== s.id;
 
                 return (
-                  <div
-                    key={s.id}
-                    className="flex min-w-0 flex-col rounded-xl border border-slate-200 bg-slate-50/50 p-2"
-                  >
+                  <div key={s.id} className="flex min-w-0 flex-col rounded-xl border border-slate-200 bg-slate-50/50 p-2">
                     <div className="mb-2 flex items-center justify-between px-2 pt-1">
                       <span className="flex items-center gap-2 text-[12px] font-semibold text-slate-700">
-                        <span
-                          className={`h-2 w-2 rounded-full ${STAGE_COLORS[s.tone]}`}
-                        />
+                        <span className={`h-2 w-2 rounded-full ${STAGE_COLORS[s.tone]}`} />
                         {s.label}
                       </span>
-
                       <span className="rounded bg-white px-1.5 py-0.5 text-[10px] font-semibold text-slate-400">
                         {col.length}
                       </span>
@@ -1422,13 +1209,7 @@ export default function Collaborations() {
                         </div>
                       ) : (
                         col.map((r) => (
-                          <CollabCard
-                            key={r.key}
-                            r={r}
-                            actions={actionsOf(r)}
-                            rail={railOf(r)}
-                            dim={dim}
-                          />
+                          <CollabCard key={r.key} r={r} actions={actionsOf(r)} rail={railOf(r)} dim={dim} />
                         ))
                       )}
                     </div>
@@ -1437,34 +1218,23 @@ export default function Collaborations() {
               })}
             </section>
           ) : (
-            /* ✅ VUE LISTE : par défaut pour les étudiants */
+            /* ✅ VUE LISTE - Accessible à tous */
             <section key={`list-${tab}`} className="collab-view">
               <ul className="space-y-2.5">
                 {visibleRows.map((r) => (
-                  <CollabRow
-                    key={r.key}
-                    r={r}
-                    actions={actionsOf(r)}
-                    rail={railOf(r)}
-                  />
+                  <CollabRow key={r.key} r={r} actions={actionsOf(r)} rail={railOf(r)} />
                 ))}
               </ul>
-
               <div className="mt-3 px-1 text-[11px] font-medium text-slate-400">
-                Affichage de {visibleRows.length} élément
-                {visibleRows.length > 1 ? "s" : ""}
-                {hasFilters ? " après filtrage" : ""}
+                Affichage de {visibleRows.length} élément{visibleRows.length > 1 ? "s" : ""}{hasFilters ? " après filtrage" : ""}
               </div>
             </section>
           )}
 
-          {/* FOOTER */}
           <footer className="flex flex-col items-center justify-between gap-2 py-3 text-center sm:flex-row sm:text-left">
             <p className="text-[11px] font-medium text-slate-400">
-              © {new Date().getFullYear()} TalentShare · Ensemble, créons des
-              opportunités.
+              © {new Date().getFullYear()} TalentShare · Ensemble, créons des opportunités.
             </p>
-
             <div className="flex items-center gap-2 text-[11px] font-medium text-slate-400">
               <span className="h-1.5 w-1.5 rounded-full bg-[#16B8B1]" />
               Espace collaboratif opérationnel
@@ -1473,13 +1243,7 @@ export default function Collaborations() {
         </div>
       </main>
 
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={closeToast}
-        />
-      )}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={closeToast} />}
     </AppShell>
   );
 }

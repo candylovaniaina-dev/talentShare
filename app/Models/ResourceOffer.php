@@ -18,9 +18,9 @@ class ResourceOffer extends Model
         'conditions', 'daily_rate', 'hourly_rate',
     ];
 
-    protected $casts = [
-        'start_at' => 'date',
-        'end_at'   => 'date',
+      protected $casts = [
+        'start_at' => 'date:Y-m-d', // ✅ Force le format texte pour éviter le décalage UTC
+        'end_at'   => 'date:Y-m-d', // ✅ Force le format texte
         'remote'   => 'boolean',
     ];
 
@@ -89,4 +89,8 @@ class ResourceOffer extends Model
 {
     return $this->hasMany(Proposal::class);
 }
+    public function waitlists()
+    {
+        return $this->hasMany(ResourceOfferWaitlist::class);
+    }
 }

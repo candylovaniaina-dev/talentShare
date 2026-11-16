@@ -1,7 +1,9 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useParams, useLocation } from "react-router-dom";
 import { LoaderCircle } from "lucide-react";
 import { useAuth } from "./context/AuthContext";
+import { useEffect, useState } from "react";
+import api from "./services/api";
 
 import Landing from "./pages/Landing";
 import Login from "./pages/auth/Login";
@@ -47,16 +49,16 @@ import ActivityHistoryPage from "./pages/ActivityHistoryPage";
 import Explorer from "./pages/Explorer";
 import CreateCompanyPage from "./pages/CreateCompanyPage";
 
-// ✅ P0-7 / P0-11 : Nouveaux imports
 import ResourceOfferForm from "./pages/ResourceOfferForm";
 import ResourceProposals from "./pages/ResourceProposals";
 import ProposalRouter from "./pages/ProposalRouter";
 import CompanyPublicProfile from "./pages/CompanyPublicProfile";
 import InterviewRoom from "./pages/InterviewRoom";
 import Collaborations from "./pages/Collaborations";
+import TalentMarket from "./pages/TalentMarket";
 
 /* ============================================================
-    GUARDS
+    GUARDS & LOADING
 ============================================================ */
 
 function RouteLoading() {
@@ -86,6 +88,61 @@ function RequireCompany({ children }) {
   return children;
 }
 
+/* ============================================================
+    ✅ COMPANY GUARD — Redirection post-inscription
+============================================================ */
+
+function CompanyGuard({ children }) {
+  const { user, loading: authLoading } = useAuth();
+  const location = useLocation();
+  const [hasCompany, setHasCompany] = useState(null);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const checkCompany = async () => {
+      if (user?.role !== "company") {
+        if (isMounted) setChecking(false);
+        return;
+      }
+
+      if (location.pathname === "/company" || location.pathname === "/company/create") {
+        if (isMounted) setChecking(false);
+        return;
+      }
+
+      try {
+        await api.get("/companies/me");
+        if (isMounted) setHasCompany(true);
+      } catch (err) {
+        if (err.response?.status === 404) {
+          if (isMounted) setHasCompany(false);
+        } else {
+          if (isMounted) setHasCompany(true);
+        }
+      } finally {
+        if (isMounted) setChecking(false);
+      }
+    };
+
+    if (!authLoading) {
+      checkCompany();
+    }
+
+    return () => { isMounted = false; };
+  }, [user, authLoading, location.pathname]);
+
+  if (authLoading || checking) return <RouteLoading />;
+  if (!user) return <Navigate to="/login" replace />;
+
+  if (user.role === "company" && hasCompany === false && location.pathname !== "/company") {
+    return <Navigate to="/company" replace />;
+  }
+
+  return children;
+}
+
 function CandidatesRedirect() {
   const { id } = useParams();
   return <Navigate to={`/resource-requests/${id}`} replace />;
@@ -94,6 +151,7 @@ function CandidatesRedirect() {
 /* ============================================================
     APP
 ============================================================ */
+
 function App() {
   return (
     <Router>
@@ -113,8 +171,15 @@ function App() {
         <Route path="/talents/:id" element={<TalentProfile />} />
         <Route path="/portfolio/:slug" element={<PublicPortfolio />} />
 
-        {/* ✅ Routes publiques de partage d'offres */}
-        <Route path="/resource-offers/browse" element={<BrowseResourceOffers />} />
+        <Route 
+          path="/resource-offers/browse" 
+          element={
+            <ProtectedRoute>
+              <TalentMarket />
+            </ProtectedRoute>
+          } 
+        />
+        
         <Route path="/resource-offers/:id" element={<ResourceOfferDetail />} />
 
         <Route path="/browse-requests" element={<BrowseResourceRequests />} />
@@ -125,17 +190,36 @@ function App() {
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/explore-dashboard" element={<ProtectedRoute><ExploreDashboard /></ProtectedRoute>} />
         <Route path="/my-activity" element={<ProtectedRoute><MyActivity /></ProtectedRoute>} />
-        <Route path="/interview/:roomId" element={<ProtectedRoute><InterviewRoom /></ProtectedRoute>} />
 
-        {/* ✅ NOUVELLE ROUTE COLLABORATIONS */}
+        {/* ✅ ROUTE MODIFIÉE : Plus de ProtectedRoute pour permettre l'accès via le lien de l'email */}
+        <Route path="/interview/:roomId" element={<InterviewRoom />} />
+
         <Route path="/collaborations" element={<ProtectedRoute><Collaborations /></ProtectedRoute>} />
 
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/profile/view" element={<Navigate to="/profile" replace />} />
         <Route path="/account-settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
 
-        <Route path="/company" element={<ProtectedRoute><CompanyProfile /></ProtectedRoute>} />
-        <Route path="/company/create" element={<ProtectedRoute><CreateCompanyPage /></ProtectedRoute>} />
+        <Route 
+          path="/company" 
+          element={
+            <ProtectedRoute>
+              <CompanyGuard>
+                <CompanyProfile />
+              </CompanyGuard>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/company/create" 
+          element={
+            <ProtectedRoute>
+              <CompanyGuard>
+                <CreateCompanyPage />
+              </CompanyGuard>
+            </ProtectedRoute>
+          } 
+        />
 
         <Route path="/opportunites" element={<ProtectedRoute><Opportunities /></ProtectedRoute>} />
         <Route path="/opportunites/:id" element={<ProtectedRoute><Opportunities /></ProtectedRoute>} />
@@ -178,13 +262,11 @@ function App() {
           }
         />
 
-        {/* ✅ P0-11 : ProposalRouter remplace ProposalDetail */}
         <Route path="/proposals/:id" element={<ProtectedRoute><ProposalRouter /></ProtectedRoute>} />
 
         <Route path="/job-offers/:id/applications" element={<ProtectedRoute><OfferApplications /></ProtectedRoute>} />
         <Route path="/applications/:id" element={<ProtectedRoute><ApplicationDetail /></ProtectedRoute>} />
 
-        {/* ⚠️ On garde /missions/:id pour le détail d'une mission */}
         <Route path="/missions/:id" element={<ProtectedRoute><MissionDetail /></ProtectedRoute>} />
 
         <Route path="/job-offers" element={<ProtectedRoute><JobOffers /></ProtectedRoute>} />
@@ -199,16 +281,11 @@ function App() {
         <Route path="/history" element={<ProtectedRoute><ActivityHistoryPage /></ProtectedRoute>} />
         <Route path="/confidentialite" element={<ProtectedRoute><Confidentialite /></ProtectedRoute>} />
 
-        {/* ✅ P0-7 : Page d'accueil des offres (mes offres) */}
         <Route path="/resource-offers" element={<ProtectedRoute><ResourceOffers /></ProtectedRoute>} />
-        {/* ✅ P0-7 : Création & édition d'offres */}
         <Route path="/resource-offers/new" element={<ProtectedRoute><ResourceOfferForm /></ProtectedRoute>} />
         <Route path="/resource-offers/:id/edit" element={<ProtectedRoute><ResourceOfferForm /></ProtectedRoute>} />
 
-        {/* ✅ P0-11 : Liste des propositions entreprises (redirection vers Collaborations) */}
         <Route path="/resource-proposals" element={<Navigate to="/collaborations?tab=received" replace />} />
-
-        {/* ✅ Redirection : les anciennes URLs /missions ouvrent Collaborations */}
         <Route path="/missions" element={<Navigate to="/collaborations?tab=missions" replace />} />
 
         <Route path="/appearance" element={<Appearance />} />

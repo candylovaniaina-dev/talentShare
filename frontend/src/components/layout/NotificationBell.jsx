@@ -55,6 +55,9 @@ const ICONS = {
   offer_commented: { icon: MessageCircle, color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-500" },
   request_liked: { icon: Heart, color: "text-rose-600 dark:text-rose-400", bg: "bg-rose-500" },
   request_commented: { icon: MessageCircle, color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-500" },
+  // ✅ AJOUTS ICI
+  talent_waitlist_joined: { icon: Clock, color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-500" },
+  talent_unavailable: { icon: AlertCircle, color: "text-rose-600 dark:text-rose-400", bg: "bg-rose-500" },
   default: { icon: Bell, color: "text-slate-600 dark:text-slate-400", bg: "bg-slate-500" },
 };
 
@@ -83,7 +86,6 @@ function getNotificationData(payload) {
 /*   Quelle publication est visée par la notification ? (offre ou demande)    */
 /* -------------------------------------------------------------------------- */
 
-// Notifications qui concernent MA propre publication (like, commentaire, candidature...)
 const OWN_POST_TYPES = new Set([
   "offer_liked", "offer_commented", "offer_viewed", "offer_contacted",
   "new_application",
@@ -101,7 +103,6 @@ function getPostTarget(notification) {
     kind = "offer";
     id = d.job_offer_id ?? d.offer_id ?? subjectId;
   } else if (type === "new_application" || type.startsWith("application_")) {
-    // Le subject est souvent la candidature : on ne prend que l'ID de l'offre
     kind = "offer";
     id = d.job_offer_id ?? d.offer_id ?? null;
   } else if (type.startsWith("request_") || type.startsWith("resource_request_")) {
@@ -251,16 +252,12 @@ export default function NotificationBell() {
     // 1) Publication précise (offre / demande)
     if (target) {
       if (isCompany) {
-        // La page entreprise retrouve la publication (Mon entreprise ou Actualité),
-        // bascule sur le bon onglet, scrolle dessus et la met en surbrillance.
         navigate(`/company?highlight=${target.id}&kind=${target.kind}`);
         return true;
       }
 
-      // Talent / étudiant
       if (target.kind === "request") {
         if (target.own) {
-          // Ma propre demande → MyActivity (onglet "Mon espace") la retrouve via location.state
           navigate("/my-activity?tab=profile", { state: { scrollToRequestId: target.id, nonce: Date.now() } });
         } else {
           navigate(`/resource-requests/${target.id}`);
@@ -276,6 +273,12 @@ export default function NotificationBell() {
     // 2) Lien fourni par le backend (messages, missions, candidatures...)
     if (notification.action_url) {
       navigate(notification.action_url);
+      return true;
+    }
+
+    // ✅ NOUVEAU : Redirection pour le marché des talents (liste d'attente, indisponibilité)
+    if (type.startsWith("talent_")) {
+      navigate(notification.data?.url || "/resource-offers/browse");
       return true;
     }
 
@@ -301,7 +304,8 @@ export default function NotificationBell() {
       Boolean(getPostTarget(notification)) ||
       (type.startsWith("proposal_") && Boolean(notification.subject_id)) ||
       (type.startsWith("mission_") && Boolean(notification.subject_id)) ||
-      type === "new_message"
+      type === "new_message" ||
+      type.startsWith("talent_") // ✅ AJOUTÉ ICI
     );
   };
 
