@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use App\Models\User;
 use App\Observers\UserObserver;
@@ -19,10 +20,15 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Bootstrap any application services.
      */
-  public function boot(): void
-{
-    // ✅ Active la surveillance de la création des utilisateurs
-    User::observe(UserObserver::class);
-    \App\Models\Mission::observe(\App\Observers\MissionObserver::class);
-}
+    public function boot(): void
+    {
+        // ✅ Active la surveillance de la création des utilisateurs
+        User::observe(UserObserver::class);
+        \App\Models\Mission::observe(\App\Observers\MissionObserver::class);
+
+        if (config('app.url')) {
+            URL::forceRootUrl(config('app.url'));
+            URL::forceScheme('https');
+        }
+    }
 }

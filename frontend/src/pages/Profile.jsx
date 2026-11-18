@@ -8,6 +8,8 @@ import MapPicker from "../components/MapPicker";
 import api from "../services/api";
 import { useToast } from "../context/ToastContext";
 import PublicPortfolio from "./PublicPortfolio";
+import StudentUniversityLink from "../components/university/StudentUniversityLink";
+import VerifiedBadge from "../components/university/VerifiedBadge";
 
 /* ============================================================
    CONSTANTES & HELPERS
@@ -485,6 +487,7 @@ export default function Profile() {
                       <h2 className="truncate text-xl font-bold tracking-tight text-[#0B2236] sm:text-2xl">{getDisplayName(profile.user)}</h2>
                       {profile.is_verified && <Chip tone="emerald">Vérifié</Chip>}
                       {profile.is_young_talent && <Chip tone="emerald">Young Talent</Chip>}
+                      <VerifiedBadge userId={profile.user_id || profile.user?.id} />
                     </div>
                     <p className="mt-1 truncate text-sm font-medium text-[#16B8B1]">
                       {profile.headline || "Ajoutez un titre professionnel pour vous présenter"}
@@ -651,7 +654,7 @@ export default function Profile() {
                 </div>
                 <p className="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-[11px] leading-5 text-slate-500">Vos coordonnées personnelles restent protégées.</p>
               </Panel>
-
+{profile.profile_type === "student" && <StudentUniversityLink />}
               <Panel title="Liens professionnels">
                 {links.length === 0 ? <EmptyBlock text="Ajoutez vos liens LinkedIn, GitHub ou portfolio." compact /> : <ul className="space-y-2">{links.map(({ key, label }) => <li key={key}><a href={profile[key]} target="_blank" rel="noreferrer" className="group flex items-center gap-3 rounded-xl border border-slate-100 p-3 transition hover:border-[#16B8B1] hover:bg-[#E6F7F6]"><PlatformIcon platform={key} /><span className="min-w-0 flex-1"><span className="block text-xs font-bold text-slate-700">{label}</span><span className="mt-0.5 block truncate text-[10px] text-slate-400">{prettyUrl(profile[key])}</span></span><span className="text-slate-300 transition group-hover:text-[#16B8B1]">↗</span></a></li>)}</ul>}
                 <button type="button" onClick={() => openModal("info")} className="mt-3 w-full rounded-xl border border-dashed border-slate-300 px-3 py-2.5 text-xs font-semibold text-slate-500 transition hover:border-[#16B8B1] hover:bg-[#E6F7F6] hover:text-[#0B2236]">＋ Ajouter ou modifier un lien</button>

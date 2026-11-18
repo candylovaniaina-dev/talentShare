@@ -156,7 +156,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/profile/avatar', [ProfessionalProfileController::class, 'uploadAvatar']);
     Route::post('/profile/cv', [ProfessionalProfileController::class, 'uploadCv']);
     Route::post('/profile/cover', [ProfessionalProfileController::class, 'uploadCover']);
-Route::get('/companies/{company}/borrowed', [CompanyController::class, 'borrowed']);
+    Route::get('/companies/{company}/borrowed', [CompanyController::class, 'borrowed']);
+
     // === Expériences / Formations / Certifs / Langues ===
     Route::post('/experiences', [ProfileSectionController::class, 'storeExperience']);
     Route::patch('/experiences/{experience}', [ProfileSectionController::class, 'updateExperience']);
@@ -391,6 +392,93 @@ Route::get('/companies/{company}/borrowed', [CompanyController::class, 'borrowed
 
     // === Educations (API Resource) ===
     Route::apiResource('educations', EducationController::class);
+
+    /* =========================================================================
+     |  MODULE UNIVERSITÉ v2 — Nouveau bloc de routes
+     | ========================================================================= */
+
+    Route::prefix('university')->group(function () {
+        Route::get('me', [\App\Http\Controllers\University\AccountController::class, 'me']);
+        Route::post('onboarding', [\App\Http\Controllers\University\AccountController::class, 'store']);
+
+        Route::middleware('university')->group(function () {
+            Route::get('overview', [\App\Http\Controllers\University\OverviewController::class, 'show']);
+            Route::get('dashboard', [\App\Http\Controllers\University\DashboardController::class, 'show']);
+
+            Route::put('profile', [\App\Http\Controllers\University\AccountController::class, 'update']);
+            Route::post('profile/logo', [\App\Http\Controllers\University\AccountController::class, 'uploadLogo']);
+
+            Route::get('team', [\App\Http\Controllers\University\AccountController::class, 'team']);
+            Route::post('team', [\App\Http\Controllers\University\AccountController::class, 'addMember']);
+            Route::put('team/{id}', [\App\Http\Controllers\University\AccountController::class, 'updateMember']);
+            Route::delete('team/{id}', [\App\Http\Controllers\University\AccountController::class, 'removeMember']);
+
+            Route::get('academic', [\App\Http\Controllers\University\AcademicController::class, 'index']);
+            Route::post('departments', [\App\Http\Controllers\University\AcademicController::class, 'storeDepartment']);
+            Route::put('departments/{id}', [\App\Http\Controllers\University\AcademicController::class, 'updateDepartment']);
+            Route::delete('departments/{id}', [\App\Http\Controllers\University\AcademicController::class, 'destroyDepartment']);
+            Route::post('programs', [\App\Http\Controllers\University\AcademicController::class, 'storeProgram']);
+            Route::put('programs/{id}', [\App\Http\Controllers\University\AcademicController::class, 'updateProgram']);
+            Route::delete('programs/{id}', [\App\Http\Controllers\University\AcademicController::class, 'destroyProgram']);
+
+            Route::get('students', [\App\Http\Controllers\University\StudentController::class, 'index']);
+            Route::post('students', [\App\Http\Controllers\University\StudentController::class, 'store']);
+            Route::post('students/import', [\App\Http\Controllers\University\StudentController::class, 'import']);
+            Route::get('students/{id}', [\App\Http\Controllers\University\StudentController::class, 'show']);
+            Route::put('students/{id}', [\App\Http\Controllers\University\StudentController::class, 'update']);
+            Route::delete('students/{id}', [\App\Http\Controllers\University\StudentController::class, 'destroy']);
+            Route::post('students/{id}/verify', [\App\Http\Controllers\University\StudentController::class, 'verify']);
+            Route::post('students/{id}/reject', [\App\Http\Controllers\University\StudentController::class, 'reject']);
+            Route::put('students/{id}/placement', [\App\Http\Controllers\University\StudentController::class, 'placement']);
+
+            Route::get('resources', [\App\Http\Controllers\University\ResourceController::class, 'index']);
+            Route::post('resources', [\App\Http\Controllers\University\ResourceController::class, 'store']);
+            Route::get('resources/needs', [\App\Http\Controllers\University\ResourceController::class, 'needs']);
+            Route::get('resources/requests', [\App\Http\Controllers\University\ResourceController::class, 'requests']);
+            Route::put('resources/requests/{id}', [\App\Http\Controllers\University\ResourceController::class, 'respond']);
+            Route::put('resources/{id}', [\App\Http\Controllers\University\ResourceController::class, 'update']);
+            Route::delete('resources/{id}', [\App\Http\Controllers\University\ResourceController::class, 'destroy']);
+
+            Route::get('partnerships', [\App\Http\Controllers\University\PartnershipController::class, 'index']);
+            Route::get('partnerships/companies', [\App\Http\Controllers\University\PartnershipController::class, 'searchCompanies']);
+            Route::post('partnerships', [\App\Http\Controllers\University\PartnershipController::class, 'store']);
+            Route::put('partnerships/{id}', [\App\Http\Controllers\University\PartnershipController::class, 'update']);
+
+            Route::get('opportunities', [\App\Http\Controllers\University\OpportunityController::class, 'index']);
+            Route::get('opportunities/candidates', [\App\Http\Controllers\University\OpportunityController::class, 'candidates']);
+            Route::post('opportunities', [\App\Http\Controllers\University\OpportunityController::class, 'store']);
+            Route::put('opportunities/{id}', [\App\Http\Controllers\University\OpportunityController::class, 'update']);
+            Route::delete('opportunities/{id}', [\App\Http\Controllers\University\OpportunityController::class, 'destroy']);
+
+            Route::get('conventions', [\App\Http\Controllers\University\ConventionController::class, 'index']);
+            Route::post('conventions', [\App\Http\Controllers\University\ConventionController::class, 'store']);
+            Route::put('conventions/{id}', [\App\Http\Controllers\University\ConventionController::class, 'update']);
+            Route::put('conventions/{id}/status', [\App\Http\Controllers\University\ConventionController::class, 'setStatus']);
+            Route::post('conventions/{id}/document', [\App\Http\Controllers\University\ConventionController::class, 'upload']);
+            Route::delete('conventions/{id}', [\App\Http\Controllers\University\ConventionController::class, 'destroy']);
+
+            // ✅ AJOUT : Routes pour les diffusions (Broadcasts)
+            Route::get('broadcasts', [\App\Http\Controllers\University\BroadcastController::class, 'index']);
+            Route::post('broadcasts', [\App\Http\Controllers\University\BroadcastController::class, 'store']);
+        });
+    });
+
+    Route::get('academic/directory', [\App\Http\Controllers\University\DirectoryController::class, 'index']);
+    Route::get('academic/directory/{id}', [\App\Http\Controllers\University\DirectoryController::class, 'show']);
+
+    Route::get('company/university-partnerships', [\App\Http\Controllers\University\DirectoryController::class, 'companyPartnerships']);
+    Route::post('company/university-partnerships', [\App\Http\Controllers\University\DirectoryController::class, 'companyRequest']);
+    Route::put('company/university-partnerships/{id}', [\App\Http\Controllers\University\DirectoryController::class, 'companyRespond']);
+    Route::get('company/university-resources', [\App\Http\Controllers\University\ResourceController::class, 'companyBrowse']);
+    Route::post('company/university-resources/{id}/interest', [\App\Http\Controllers\University\ResourceController::class, 'companyInterest']);
+    Route::delete('company/university-resources/{id}/interest', [\App\Http\Controllers\University\ResourceController::class, 'companyWithdraw']);
+
+    Route::get('student/university', [\App\Http\Controllers\University\StudentSelfController::class, 'mine']);
+    Route::post('student/university/request', [\App\Http\Controllers\University\StudentSelfController::class, 'request']);
+    Route::delete('student/university/{id}', [\App\Http\Controllers\University\StudentSelfController::class, 'cancel']);
+    Route::get('student/university-opportunities', [\App\Http\Controllers\University\StudentSelfController::class, 'opportunities']);
+    Route::get('talents/{userId}/academic-badge', [\App\Http\Controllers\University\StudentSelfController::class, 'badge'])->whereNumber('userId');
+
 });
 
 // =============================================
@@ -399,7 +487,7 @@ Route::get('/companies/{company}/borrowed', [CompanyController::class, 'borrowed
 
 Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
     Route::get('/verification-requests', [AdminVerificationController::class, 'index']);
-    Route::patch('/verification-requests/{verificationRequest}/review', [AdminVerificationController::class, 'review']);
+    Route::patch('/verification-requests/{adminVerificationRequest}/review', [AdminVerificationController::class, 'review']);
 });
 
 // =============================================

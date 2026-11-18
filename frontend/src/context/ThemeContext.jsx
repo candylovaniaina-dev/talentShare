@@ -9,6 +9,13 @@ import api from "../services/api";
 
 const ThemeContext = createContext(null);
 
+/**
+ * false : le thème vient uniquement du navigateur (localStorage). Le serveur le reçoit mais ne l'impose plus.
+ * true  : le thème du serveur (user.theme_preference) écrase le thème local à chaque /me.
+ * À repasser à true seulement quand le défaut de la colonne users.theme_preference sera 'light'.
+ */
+const SYNC_THEME_FROM_SERVER = false;
+
 const getStoredValue = (key, fallback) => {
   try {
     return localStorage.getItem(key) ?? fallback;
@@ -22,27 +29,19 @@ const getStoredBoolean = (key) => getStoredValue(key, "false") === "true";
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
     const stored = getStoredValue("theme", null);
-    if (stored === "dark" || stored === "light") {
-      return stored;
-    }
-    return "light"; // ✅ Par défaut, on force le mode clair
+    return stored === "dark" || stored === "light" ? stored : "light"; // défaut : clair
   });
 
-  const [fontSize, setFontSize] = useState(() =>
-    getStoredValue("font_size", "normal")
-  );
-  const [highContrast, setHighContrast] = useState(() =>
-    getStoredBoolean("high_contrast")
-  );
-  const [reduceMotion, setReduceMotion] = useState(() =>
-    getStoredBoolean("reduce_motion")
-  );
+  const [fontSize, setFontSize] = useState(() => getStoredValue("font_size", "normal"));
+  const [highContrast, setHighContrast] = useState(() => getStoredBoolean("high_contrast"));
+  const [reduceMotion, setReduceMotion] = useState(() => getStoredBoolean("reduce_motion"));
 
   useEffect(() => {
     const root = document.documentElement;
 
     root.classList.toggle("dark", theme === "dark");
     root.classList.toggle("light", theme === "light");
+    root.setAttribute("data-theme", theme);
     root.style.colorScheme = theme;
 
     root.classList.remove("font-small", "font-normal", "font-large");
@@ -64,20 +63,17 @@ export const ThemeProvider = ({ children }) => {
   const syncFromUser = useCallback((user) => {
     if (!user) return;
 
-    if (user.theme_preference === "dark" || user.theme_preference === "light") {
-      setTheme(user.theme_preference);
-    } else {
-      setTheme("light"); // ✅ Si pas de préférence, on force le mode clair
+    // Le thème du serveur n'est appliqué que si on l'autorise explicitement.
+    if (SYNC_THEME_FROM_SERVER) {
+      setTheme(user.theme_preference === "dark" ? "dark" : "light");
     }
 
     if (["small", "normal", "large"].includes(user.font_size)) {
       setFontSize(user.font_size);
     }
-
     if (typeof user.high_contrast === "boolean") {
       setHighContrast(user.high_contrast);
     }
-
     if (typeof user.reduce_motion === "boolean") {
       setReduceMotion(user.reduce_motion);
     }
@@ -85,7 +81,7 @@ export const ThemeProvider = ({ children }) => {
 
   const updatePreference = useCallback(async (key, value) => {
     const setters = {
-      theme_preference: setTheme,
+      theme_preference: (v) => setTheme(v === "dark" ? "dark" : "light"), // "system" → clair
       font_size: setFontSize,
       high_contrast: setHighContrast,
       reduce_motion: setReduceMotion,
@@ -103,8 +99,10 @@ export const ThemeProvider = ({ children }) => {
       return;
     }
 
+    // 1) Appliqué tout de suite en local (source de vérité)
     setters[key](value);
 
+    // 2) Copie envoyée au serveur ; une erreur ici ne change jamais l'affichage
     let token = null;
     try {
       token = localStorage.getItem("token");
@@ -115,14 +113,13 @@ export const ThemeProvider = ({ children }) => {
       try {
         await api.patch("/account/preferences", { [key]: value });
       } catch (error) {
-        console.error("Erreur sauvegarde préférence :", error);
+        console.warn("Préférence non synchronisée avec le serveur :", error?.response?.status);
       }
     }
   }, []);
 
   const toggleTheme = useCallback(() => {
-    const nextTheme = theme === "dark" ? "light" : "dark";
-    updatePreference("theme_preference", nextTheme);
+    updatePreference("theme_preference", theme === "dark" ? "light" : "dark");
   }, [theme, updatePreference]);
 
   return (
@@ -145,9 +142,7 @@ export const ThemeProvider = ({ children }) => {
 export const useTheme = () => {
   const context = useContext(ThemeContext);
   if (!context) {
-    throw new Error(
-      "useTheme doit être utilisé dans un composant enveloppé par ThemeProvider."
-    );
+    throw new Error("useTheme doit être utilisé dans un composant enveloppé par ThemeProvider.");
   }
   return context;
 };

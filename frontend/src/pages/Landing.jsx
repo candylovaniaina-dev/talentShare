@@ -12,12 +12,13 @@ import {
   TrendingUp,
   BriefcaseBusiness,
   ArrowRight,
-  Layers,
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
 
 import PublicNavbar from "../components/layout/PublicNavbar";
+import Logo, { Slogan, BRAND_FONT, useBrandFont } from "../components/layout/Logo";
+import { useTheme } from "../context/ThemeContext";
 import trust1 from "../assets/images/trust1.jpg";
 import trust2 from "../assets/images/trust2.avif";
 
@@ -36,6 +37,9 @@ const MUTED = "text-[color:var(--ts-muted)]";
 const ACCENT = "text-[color:var(--ts-accent)]";
 
 const MINT_GRADIENT = "bg-gradient-to-br from-[#8DF0DC] to-[#5EDCC4]";
+
+/* Police de marque pour les titres (retirer le style pour revenir à Plus Jakarta Sans) */
+const HEADING_STYLE = { fontFamily: BRAND_FONT };
 
 const BTN_PRIMARY =
   `inline-flex min-h-12 items-center justify-center gap-2 rounded-full ${MINT_GRADIENT} px-6 text-sm font-bold text-[#0A1230] ` +
@@ -147,7 +151,10 @@ function SectionTitle({ eyebrow, title, description }) {
         <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--ts-accent)]" />
         {eyebrow}
       </p>
-      <h2 className={`mt-5 text-3xl font-extrabold leading-[1.12] tracking-[-0.035em] sm:text-4xl lg:text-[42px] ${INK}`}>
+      <h2
+        style={HEADING_STYLE}
+        className={`mt-5 text-2xl font-bold leading-[1.2] tracking-[-0.01em] sm:text-3xl lg:text-[34px] ${INK}`}
+      >
         {title}
       </h2>
       {description && (
@@ -160,7 +167,7 @@ function SectionTitle({ eyebrow, title, description }) {
 }
 
 function NetworkPreview() {
-  // ✅ CARTES STYLE "GLASSMORPHISM" (Fond transparent + bordure)
+  // Cartes style "glassmorphism"
   const badge =
     "absolute z-20 flex items-center gap-3 rounded-2xl border border-white/10 bg-[#1A2B4C]/80 p-3.5 shadow-2xl backdrop-blur-md";
   const badgeIcon =
@@ -194,7 +201,10 @@ function NetworkPreview() {
         className={`relative z-10 flex h-[130px] w-[130px] flex-col items-center justify-center gap-2 rounded-[36px] border border-white/30 ${MINT_GRADIENT} text-[#0A1230] shadow-[0_20px_50px_-10px_rgba(94,220,196,0.55)] sm:h-[150px] sm:w-[150px]`}
       >
         <Sparkles size={26} strokeWidth={1.8} />
-        <span className="text-center text-[11px] font-extrabold uppercase leading-[1.3] tracking-[0.15em]">
+        <span
+          style={HEADING_STYLE}
+          className="text-center text-[11px] font-bold leading-[1.35] tracking-[0.06em]"
+        >
           Share
           <br />
           Connect
@@ -243,6 +253,9 @@ function NetworkPreview() {
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
 export default function Landing() {
+  const { theme } = useTheme();
+  useBrandFont();
+
   return (
     <div
       className={`ts-landing relative min-h-screen overflow-x-clip ${SECTION_LIGHT} ${INK}`}
@@ -334,7 +347,7 @@ export default function Landing() {
 
       <PublicNavbar />
 
-      {/* ============================ HERO (FIXÉ EN BLEU MARINE) ============================ */}
+      {/* ============================ HERO ============================ */}
       <section className="relative isolate overflow-hidden bg-gradient-to-b from-[#0A1230] via-[#0C1538] to-[#0E1740]">
         <div className="ts-grid pointer-events-none absolute inset-0 -z-10 opacity-30" />
         <div className="pointer-events-none absolute -right-32 -top-40 -z-10 h-[520px] w-[520px] rounded-full bg-indigo-500/25 blur-[120px]" />
@@ -350,7 +363,10 @@ export default function Landing() {
               Le réseau professionnel nouvelle génération
             </p>
 
-            <h1 className="mt-7 text-[40px] font-extrabold leading-[1.06] tracking-[-0.045em] text-white sm:text-5xl lg:text-[60px]">
+            <h1
+              style={HEADING_STYLE}
+              className="mt-7 text-[30px] font-bold leading-[1.15] tracking-[-0.01em] text-white sm:text-4xl lg:text-[46px]"
+            >
               Le talent existe.
               <br />
               <span className="bg-gradient-to-r from-[#7BE9D3] to-[#5EDCC4] bg-clip-text text-transparent">
@@ -462,7 +478,10 @@ export default function Landing() {
                   <p className={`relative mt-7 text-sm font-semibold ${deep ? "text-[#7BE9D3]" : ACCENT}`}>
                     {tag}
                   </p>
-                  <h3 className="relative mt-2 text-[22px] font-extrabold leading-[1.2] tracking-[-0.03em]">
+                  <h3
+                    style={HEADING_STYLE}
+                    className="relative mt-2 text-[18px] font-bold leading-[1.3] tracking-[-0.005em]"
+                  >
                     {title}
                   </h3>
                   <p className={`relative mt-3 flex-1 text-sm leading-6 ${deep ? "text-[#B7C2E0]" : MUTED}`}>
@@ -526,7 +545,10 @@ export default function Landing() {
                 key={step.title}
                 className={`relative flex gap-4 rounded-2xl p-5 sm:gap-5 sm:p-6 ${SURFACE}`}
               >
-                <span className={`relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${MINT_GRADIENT} text-sm font-extrabold text-[#0A1230]`}>
+                <span
+                  style={HEADING_STYLE}
+                  className={`relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${MINT_GRADIENT} text-sm font-bold text-[#0A1230]`}
+                >
                   {index + 1}
                 </span>
                 <div className="pt-0.5">
@@ -584,7 +606,10 @@ export default function Landing() {
                 <div className="absolute inset-0 bg-indigo-900/10 transition duration-500 group-hover:bg-transparent" />
                 <div className="relative">
                   <p className="text-xs font-semibold text-[#7BE9D3]">{tag}</p>
-                  <h3 className="mt-3 max-w-md text-2xl font-extrabold leading-tight tracking-[-0.03em] text-white sm:text-3xl">
+                  <h3
+                    style={HEADING_STYLE}
+                    className="mt-3 max-w-md text-xl font-bold leading-snug tracking-[-0.005em] text-white sm:text-2xl"
+                  >
                     {title}
                   </h3>
                 </div>
@@ -618,10 +643,11 @@ export default function Landing() {
 
           <div className="relative flex flex-col items-start justify-between gap-8 lg:flex-row lg:items-center">
             <div className="max-w-2xl">
-              <p className="text-sm font-semibold text-[#7BE9D3]">
-                Votre prochaine étape commence ici
-              </p>
-              <h2 className="mt-3 text-3xl font-extrabold leading-tight tracking-[-0.04em] sm:text-4xl lg:text-[44px]">
+              <Slogan onDark className="text-[12px]" />
+              <h2
+                style={HEADING_STYLE}
+                className="mt-4 text-2xl font-bold leading-tight tracking-[-0.01em] sm:text-3xl lg:text-[36px]"
+              >
                 Les bonnes connexions changent les perspectives.
               </h2>
               <p className="mt-4 max-w-xl text-sm leading-7 text-[#B7C2E0] sm:text-base">
@@ -649,15 +675,7 @@ export default function Landing() {
       {/* ============================= FOOTER ============================= */}
       <footer className={`border-t border-[color:var(--ts-border)] px-5 py-8 sm:px-8 ${SECTION_LIGHT}`}>
         <div className="mx-auto flex max-w-[1200px] flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${MINT_GRADIENT} text-[#0A1230]`}>
-              <Layers size={20} strokeWidth={2.2} />
-            </span>
-            <div>
-              <p className={`text-sm font-extrabold tracking-tight ${INK}`}>TalentShare</p>
-              <p className={`mt-0.5 text-[11px] ${MUTED}`}>Share. Connect. Grow.</p>
-            </div>
-          </div>
+          <Logo size={40} onDark={theme === "dark"} />
 
           <p className={`text-xs leading-5 ${MUTED}`}>
             © {new Date().getFullYear()} TalentShare · Madagascar

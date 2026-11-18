@@ -12,19 +12,27 @@ import {
   LockKeyhole,
   Mail,
   ShieldCheck,
-  Sparkles,
   Users,
-    Star,
+  Star,
   X,
   LoaderCircle,
   RotateCcw,
-  Layers,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { useTheme } from "../../context/ThemeContext";
+import Logo, {
+  LogoMark,
+  Slogan,
+  BRAND_FONT,
+  useBrandFont,
+} from "../../components/layout/Logo";
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 
 const MINT_GRADIENT = "bg-gradient-to-br from-[#8DF0DC] to-[#5EDCC4]";
+
+/* Police de marque pour les titres (vider l'objet pour revenir à Plus Jakarta Sans) */
+const HEADING_STYLE = { fontFamily: BRAND_FONT };
 
 const FIELD_BASE =
   "flex items-center rounded-xl border bg-[color:var(--a-field)] transition-all duration-200";
@@ -39,6 +47,10 @@ const SOCIAL_BTN =
 export default function Login() {
   const navigate = useNavigate();
   const { login, getLastUser, clearLastUser } = useAuth();
+  const { theme } = useTheme();
+  useBrandFont();
+
+  const isDark = theme === "dark";
 
   const [form, setForm] = useState({ email: "", password: "" });
   const [lastUser, setLastUser] = useState(null);
@@ -154,6 +166,7 @@ export default function Login() {
         <button
           type="button"
           onClick={() => setShowPassword((value) => !value)}
+          aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
           className="mr-1.5 flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--a-faint)] transition hover:bg-[color:var(--a-accent-soft)] hover:text-[color:var(--a-accent)]"
         >
           {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -273,18 +286,12 @@ export default function Login() {
           <div className="absolute -bottom-36 -right-20 h-[480px] w-[480px] rounded-full bg-indigo-500/20 blur-[110px]" />
         </div>
 
-        <Link to="/" className="relative z-10 inline-flex w-fit items-center gap-3">
-          <span className={`flex h-11 w-11 items-center justify-center rounded-2xl border border-white/20 ${MINT_GRADIENT} text-[#0A1230] shadow-lg shadow-[#5EDCC4]/20`}>
-            <Layers size={22} strokeWidth={2.2} />
-          </span>
-          <span>
-            <span className="block text-lg font-extrabold tracking-tight text-white">
-              Talent<span className="text-[#7BE9D3]">Share</span>
-            </span>
-            <span className="mt-0.5 block text-[9px] font-semibold tracking-[0.18em] text-white/50">
-              Connecter les talents
-            </span>
-          </span>
+        <Link
+          to="/"
+          aria-label="TalentShare, accueil"
+          className="relative z-10 inline-flex w-fit rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7BE9D3]"
+        >
+          <Logo size={48} onDark />
         </Link>
 
         <div className="relative z-10 my-8 max-w-xl">
@@ -293,9 +300,12 @@ export default function Login() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#5EDCC4] opacity-50" />
               <span className="relative h-1.5 w-1.5 rounded-full bg-[#5EDCC4]" />
             </span>
-            LE RÉSEAU PROFESSIONNEL NOUVELLE GÉNÉRATION
+            Le réseau professionnel nouvelle génération
           </div>
-          <h1 className="text-4xl font-extrabold leading-[1.08] tracking-[-0.045em] xl:text-5xl">
+          <h1
+            style={HEADING_STYLE}
+            className="text-3xl font-bold leading-[1.18] tracking-[-0.01em] xl:text-[38px]"
+          >
             Le talent existe.
             <br />
             <span className="bg-gradient-to-r from-[#7BE9D3] via-[#5EDCC4] to-[#9AF2E2] bg-clip-text text-transparent">
@@ -339,23 +349,19 @@ export default function Login() {
         </div>
         <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-4 text-[10px] text-[#7C89AD]">
           <span>© {new Date().getFullYear()} TalentShare · Madagascar</span>
-          <span className="flex items-center gap-1.5"><span className="h-1 w-1 rounded-full bg-[#7BE9D3]" />Connecter les talents. Créer de la valeur.</span>
+          <Slogan onDark className="text-[10px]" />
         </div>
       </section>
 
       {/* PANNEAU DROIT (Formulaire) */}
       <section className="relative flex min-h-screen flex-col bg-[color:var(--a-panel)] px-5 py-4 sm:px-10 lg:px-12 xl:px-16">
         <header className="flex items-center justify-between">
-          <Link to="/" className="inline-flex items-center gap-2 lg:hidden">
-            <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${MINT_GRADIENT} text-[#0A1230]`}>
-              <Layers size={19} />
-            </span>
-            <span>
-              <span className="block text-sm font-extrabold tracking-tight text-[color:var(--a-ink)]">
-                Talent<span className="text-[color:var(--a-accent)]">Share</span>
-              </span>
-              <span className="block text-[8px] font-semibold tracking-[0.13em] text-[color:var(--a-faint)]">Connecter les talents</span>
-            </span>
+          <Link
+            to="/"
+            aria-label="TalentShare, accueil"
+            className="inline-flex rounded-2xl lg:hidden"
+          >
+            <Logo size={38} onDark={isDark} />
           </Link>
           <div className="hidden lg:block" />
           <Link to="/" className="inline-flex items-center gap-1.5 text-xs font-medium text-[color:var(--a-muted)] transition hover:text-[color:var(--a-accent)]">
@@ -371,10 +377,13 @@ export default function Login() {
               <div className="mb-3 hidden h-11 w-11 items-center justify-center rounded-xl border border-[color:var(--a-accent-border)] bg-[color:var(--a-accent-soft)] text-[color:var(--a-accent)] shadow-sm lg:flex">
                 <Fingerprint size={22} strokeWidth={1.7} />
               </div>
-              <p className="mb-2 hidden text-[10px] font-bold uppercase tracking-[0.16em] text-[color:var(--a-accent)] lg:block">
-                VOTRE ESPACE PROFESSIONNEL
+              <p className="mb-2 hidden text-[11px] font-semibold text-[color:var(--a-accent)] lg:block">
+                Votre espace professionnel
               </p>
-              <h2 className="text-2xl font-extrabold tracking-[-0.03em] text-[color:var(--a-ink)]">
+              <h2
+                style={HEADING_STYLE}
+                className="text-xl font-bold tracking-[-0.01em] text-[color:var(--a-ink)] sm:text-2xl"
+              >
                 {showFullForm ? "Bon retour parmi nous." : "Heureux de vous revoir."}
               </h2>
               <p className="mt-2 text-xs leading-5 text-[color:var(--a-muted)]">
@@ -418,6 +427,7 @@ export default function Login() {
                     type="button"
                     onClick={handleSwitchUser}
                     title="Ce n'est pas vous ?"
+                    aria-label="Ce n'est pas vous ?"
                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[color:var(--a-faint)] transition hover:bg-[color:var(--a-accent-soft)] hover:text-[color:var(--a-accent)]"
                   >
                     <RotateCcw size={14} />
@@ -499,8 +509,10 @@ export default function Login() {
               </button>
             )}
 
-            <div className="mt-5 flex items-center justify-center gap-2 text-[8px] font-semibold uppercase tracking-[0.17em] text-[color:var(--a-faint)]">
-              <span className="h-px w-5 bg-[color:var(--a-border)]" /> Share. Connect. Grow. <span className="h-px w-5 bg-[color:var(--a-border)]" />
+            <div className="mt-5 flex items-center justify-center gap-3">
+              <span className="h-px w-5 bg-[color:var(--a-border)]" />
+              <Slogan onDark={isDark} className="text-[9px]" />
+              <span className="h-px w-5 bg-[color:var(--a-border)]" />
             </div>
           </div>
         </div>
@@ -531,20 +543,25 @@ export default function Login() {
             <div className="relative flex h-36 w-36 items-center justify-center">
               <div className="absolute inset-0 rounded-[34px] border border-[#7BE9D3]/30" />
               <div className="absolute -inset-2 rounded-[38px] border border-[#7BE9D3]/15" />
-              <div className={`flex h-20 w-20 items-center justify-center rounded-[24px] ${MINT_GRADIENT} text-[#0A1230] shadow-[0_0_40px_rgba(94,220,196,.35)]`}>
-                <Layers size={32} strokeWidth={1.8} />
-              </div>
-             <div className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-xl border border-white/15 bg-[#131E47] text-[#7BE9D3]"><Star size={15} /></div>
+              <LogoMark size={88} className="drop-shadow-[0_0_30px_rgba(94,220,196,.35)]" />
+              <div className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-xl border border-white/15 bg-[#131E47] text-[#7BE9D3]"><Star size={15} /></div>
               <div className="absolute -bottom-2 -left-2 flex h-8 w-8 items-center justify-center rounded-xl border border-white/15 bg-[#131E47] text-[#7BE9D3]"><Check size={15} /></div>
             </div>
-            <div className="mt-6 flex items-center gap-1.5 text-sm font-extrabold tracking-tight">
-              Talent<span className="text-[#7BE9D3]">Share</span>
+            <div
+              className="mt-6 text-base font-bold tracking-[0.02em]"
+              style={{ fontFamily: BRAND_FONT }}
+            >
+              <span className="text-[#16B8B1]">T</span>alent
+              <span className="text-[#16B8B1]">S</span>hare
             </div>
-            <div className="mt-0.5 text-[8px] font-semibold tracking-[0.25em] text-white/40">SHARE. CONNECT. GROW.</div>
+            <Slogan onDark className="mt-1.5 text-[9px]" />
             <div className="mt-8 inline-flex items-center gap-2 rounded-full border border-[#7BE9D3]/15 bg-[#7BE9D3]/[0.07] px-3.5 py-1.5 text-[10px] font-semibold tracking-wide text-[#7BE9D3]">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#7BE9D3]" /> ACCÈS SÉCURISÉ
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#7BE9D3]" /> Accès sécurisé
             </div>
-            <h2 className="mt-4 text-2xl font-extrabold tracking-[-0.04em] sm:text-3xl">
+            <h2
+              style={HEADING_STYLE}
+              className="mt-4 text-xl font-bold tracking-[-0.01em] sm:text-2xl"
+            >
               {welcome ? "Bienvenue dans votre" : "Votre réseau."}
               <span className="mt-1 block bg-gradient-to-r from-[#7BE9D3] via-[#5EDCC4] to-white bg-clip-text text-transparent">
                 {welcome ? "nouvel espace." : "Vos opportunités."}

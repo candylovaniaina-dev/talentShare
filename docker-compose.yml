@@ -1,0 +1,44 @@
+services:
+  backend:
+    build:
+      context: .
+    container_name: talentshare-backend
+    restart: unless-stopped
+    volumes:
+      - .:/var/www/html
+      - backend_vendor:/var/www/html/vendor
+    environment:
+      DB_CONNECTION: pgsql
+      DB_HOST: host.docker.internal
+      DB_PORT: 5433
+      DB_DATABASE: talentshare
+      DB_USERNAME: postgres
+      DB_PASSWORD: root
+      APP_URL: https://talentshare.mg
+      FRONTEND_URL: https://talentshare.mg
+      PHP_CLI_SERVER_WORKERS: 4
+    ports:
+      - "8001:8001"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: talentshare-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - mkcert_certs:/root/.vite-plugin-mkcert
+    ports:
+      - "443:443"
+    environment:
+      VITE_API_TARGET: http://backend:8001
+      NODE_ENV: development
+
+volumes:
+  backend_vendor:
+  mkcert_certs:

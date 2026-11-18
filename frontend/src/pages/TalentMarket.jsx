@@ -1093,9 +1093,10 @@ function OfferDrawer({ id, companies, onClose, onChanged, show, celebrate }) {
   const myCompanyIds = companies.map((c) => Number(c.id));
   const alreadyProposed = !data?.is_owner && o?.proposed_company_ids?.some(id => myCompanyIds.includes(Number(id)));
   
-  // ✅ NOUVEAU : On vérifie si on est déjà dans la liste d'attente
-  const myWaitingEntry = data?.my_waiting?.[0];
-  const isFirstInWaitlist = myWaitingEntry?.position === 1;
+ const isFirst = data?.my_priority === "first";
+const othersWaiting = data?.others_waiting_count ?? 0;
+const aheadCount = data?.ahead_count ?? 0;
+const queueBlocked = !!data?.queue_blocked;
 
   useEffect(() => {
     if (o && o.state !== "available" && !data.is_owner) {
@@ -1222,7 +1223,13 @@ function OfferDrawer({ id, companies, onClose, onChanged, show, celebrate }) {
 
               <div className="flex flex-wrap items-center gap-2">
                 <StateBadge state={o.state} availableFrom={o.available_from} indefinite={o.indefinite} />
-                {o.waitlist_count > 0 && <span className="rounded-full border border-violet-100 bg-violet-50 px-2.5 py-1 text-[10px] font-bold text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-300">{o.waitlist_count} entreprise(s) en attente</span>}
+               {(data.is_owner ? o.waitlist_count : othersWaiting) > 0 && (
+  <span className="rounded-full border border-violet-100 bg-violet-50 px-2.5 py-1 text-[10px] font-bold text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-300">
+    {data.is_owner
+      ? `${o.waitlist_count} entreprise(s) en attente`
+      : `${othersWaiting} autre${othersWaiting > 1 ? "s" : ""} entreprise${othersWaiting > 1 ? "s" : ""} en attente`}
+  </span>
+)}
               </div>
 
               <section className={`${panel} p-5`}>
@@ -1295,88 +1302,90 @@ function OfferDrawer({ id, companies, onClose, onChanged, show, celebrate }) {
                 </section>
               )}
 
-              {/* ✅ LOGIQUE CORRIGÉE POUR L'ACTION */}
-              {!data.is_owner && (
-                <section className={`${panel} space-y-4 p-4`}>
-                  {o.state === "available" ? (
-                    // ✅ Si je suis 1er sur la liste d'attente, je dois pouvoir emprunter !
-                    (data.can_propose || isFirstInWaitlist) && !alreadyProposed ? (
-                      <>
-                        <div>
-                          <p className="text-[13px] font-bold text-slate-900 dark:text-white">
-                            {isFirstInWaitlist ? "Vous êtes prioritaire !" : "Ce talent est disponible"}
-                          </p>
-                          <p className="mt-1.5 text-[11px] leading-5 text-slate-500 dark:text-slate-400">
-                            {isFirstInWaitlist 
-                              ? `Vous étiez n°1 sur la liste d'attente. Envoyez votre proposition à ${o.company.name} avant les autres.` 
-                              : `Envoyez une proposition de collaboration à ${o.company.name}.`}
-                          </p>
-                        </div>
-                        <button onClick={openPropose} className={`${btnPrimary} w-full justify-center`}>
-                          Emprunter ce talent
-                        </button>
-                      </>
-                    ) : alreadyProposed ? (
-                      <p className="text-[11px] text-slate-500">Vous avez déjà envoyé une proposition pour ce talent.</p>
-                    ) : (
-                      <p className="text-[11px] text-slate-500">Seule une entreprise peut emprunter un talent.</p>
-                    )
-                  ) : (
-                    <>
-                      <div>
-                        <p className="text-[13px] font-bold text-slate-900 dark:text-white">
-                          {o.state === "reserved" ? "Talent actuellement réservé" : "Talent actuellement en mission"}
-                        </p>
-                        <p className="mt-1.5 text-[11px] leading-5 text-slate-500 dark:text-slate-400">
-                          {o.indefinite ? "Sa date de libération n'est pas connue." : o.available_from ? `Il sera libre à partir du ${fmtDate(o.available_from)}.` : ""}
-                        </p>
-                      </div>
+           {!data.is_owner && (
+  <section className={`${panel} space-y-4 p-4`}>
+    {o.state === "available" && !queueBlocked ? (
+      alreadyProposed ? (
+        <p className="text-[11px] text-slate-500">Vous avez déjà envoyé une proposition pour ce talent.</p>
+      ) : data.can_propose ? (
+        <>
+          <div>
+            <p className="text-[13px] font-bold text-slate-900 dark:text-white">
+              {isFirst ? "Ce talent s'est libéré pour vous" : "Ce talent est disponible"}
+            </p>
+            <p className="mt-1.5 text-[11px] leading-5 text-slate-500 dark:text-slate-400">
+              {isFirst
+                ? `Vous étiez en tête de la liste d'attente : vous avez la priorité pour envoyer votre proposition à ${o.company.name}.${othersWaiting > 0 ? ` ${othersWaiting} autre${othersWaiting > 1 ? "s" : ""} entreprise${othersWaiting > 1 ? "s attendent" : " attend"} derrière vous.` : ""}`
+                : `Envoyez une proposition de collaboration à ${o.company.name}.`}
+            </p>
+          </div>
+          <button onClick={openPropose} className={`${btnPrimary} w-full justify-center`}>
+            Emprunter ce talent
+          </button>
+        </>
+      ) : (
+        <p className="text-[11px] text-slate-500">Seule une entreprise peut emprunter un talent.</p>
+      )
+    ) : (
+      <>
+        <div>
+          <p className="text-[13px] font-bold text-slate-900 dark:text-white">
+            {queueBlocked
+              ? "Talent libre, mais des entreprises sont prioritaires"
+              : o.state === "reserved" ? "Talent actuellement réservé" : "Talent actuellement en mission"}
+          </p>
+          <p className="mt-1.5 text-[11px] leading-5 text-slate-500 dark:text-slate-400">
+            {queueBlocked
+              ? `${aheadCount} entreprise${aheadCount > 1 ? "s passent" : " passe"} avant vous. Vous pourrez proposer quand ce sera votre tour.`
+              : o.indefinite ? "Sa date de libération n'est pas connue." : o.available_from ? `Il sera libre à partir du ${fmtDate(o.available_from)}.` : ""}
+          </p>
+        </div>
 
-                      {o.state === "on_mission" && o.available_from && eligible.length > 0 && (
-                        <div>
-                          <button onClick={openPropose} className={`${btnGhost} w-full justify-center`}>
-                            Proposer une mission après le {fmtDate(o.available_from)}
-                          </button>
-                          <p className="mt-2 text-[10px] leading-5 text-slate-400">Choisissez une date de début postérieure à sa libération : le système refuse les périodes qui chevauchent sa mission.</p>
-                        </div>
-                      )}
+        {o.state === "on_mission" && o.available_from && eligible.length > 0 && (
+          <div>
+            <button onClick={openPropose} className={`${btnGhost} w-full justify-center`}>
+              Proposer une mission après le {fmtDate(o.available_from)}
+            </button>
+            <p className="mt-2 text-[10px] leading-5 text-slate-400">Choisissez une date de début postérieure à sa libération : le système refuse les périodes qui chevauchent sa mission.</p>
+          </div>
+        )}
 
-                      {data.my_waiting.map((w) => {
-                        const co = companies.find((c) => Number(c.id) === w.company_id);
-                        return (
-                          <div key={w.company_id} className="flex items-center justify-between gap-3 rounded-xl border border-violet-100 bg-violet-50 px-3.5 py-3 text-[11px] dark:border-violet-500/20 dark:bg-violet-500/[0.08]">
-                            <span className="text-violet-800 dark:text-violet-200">
-                              <strong>{co?.name || "Votre entreprise"}</strong>, n°{w.position} sur la liste
-                            </span>
-                            <button disabled={busy} onClick={() => leave(w.company_id)} className="shrink-0 text-[10px] font-bold text-violet-700 hover:underline dark:text-violet-300">Quitter</button>
-                          </div>
-                        );
-                      })}
+        {data.my_waiting.map((w) => {
+          const co = companies.find((c) => Number(c.id) === w.company_id);
+          return (
+            <div key={w.company_id} className="flex items-center justify-between gap-3 rounded-xl border border-violet-100 bg-violet-50 px-3.5 py-3 text-[11px] dark:border-violet-500/20 dark:bg-violet-500/[0.08]">
+              <span className="text-violet-800 dark:text-violet-200">
+                <strong>{co?.name || "Votre entreprise"}</strong>, n°{w.position} sur la liste
+              </span>
+              <button disabled={busy} onClick={() => leave(w.company_id)} className="shrink-0 text-[10px] font-bold text-violet-700 hover:underline dark:text-violet-300">Quitter</button>
+            </div>
+          );
+        })}
 
-                      {waitable.length > 0 && (
-                        <div className="space-y-3 border-t border-slate-100 pt-4 dark:border-white/[0.07]">
-                          <p className="text-[12px] font-bold text-slate-800 dark:text-slate-100">Rejoindre la liste d'attente</p>
-                          {waitable.length > 1 && (
-                            <select className={inputCls} value={wl.company_id} onChange={(e) => setWl((w) => ({ ...w, company_id: e.target.value }))}>
-                              {waitable.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                            </select>
-                          )}
-                          <div>
-                            <label className="mb-1.5 block text-[10px] font-semibold text-slate-500">Date de début souhaitée</label>
-                            <input type="date" className={inputCls} value={wl.desired_start_at} min={o.available_from || undefined} onChange={(e) => setWl((w) => ({ ...w, desired_start_at: e.target.value }))} />
-                          </div>
-                          <textarea rows={3} className={`${inputCls} resize-y`} placeholder="Message pour l'entreprise (optionnel) : contexte du besoin..." value={wl.message} onChange={(e) => setWl((w) => ({ ...w, message: e.target.value }))} />
-                          <button disabled={busy} onClick={join} className={`${btnPrimary} w-full justify-center`}>
-                            {busy && <Loader2 size={14} className="animate-spin" />}
-                            Attendre ce talent
-                          </button>
-                          <p className="text-[10px] leading-5 text-slate-400">Vous serez notifié dès que le talent sera libre. L'entreprise est informée de votre intérêt.</p>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </section>
-              )}
+        {waitable.length > 0 && (
+          <div className="space-y-3 border-t border-slate-100 pt-4 dark:border-white/[0.07]">
+            <p className="text-[12px] font-bold text-slate-800 dark:text-slate-100">Rejoindre la liste d'attente</p>
+            {waitable.length > 1 && (
+              <select className={inputCls} value={wl.company_id} onChange={(e) => setWl((w) => ({ ...w, company_id: e.target.value }))}>
+                {waitable.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            )}
+            <div>
+              <label className="mb-1.5 block text-[10px] font-semibold text-slate-500">Date de début souhaitée</label>
+              <input type="date" className={inputCls} value={wl.desired_start_at} min={o.available_from || undefined} onChange={(e) => setWl((w) => ({ ...w, desired_start_at: e.target.value }))} />
+            </div>
+            <textarea rows={3} className={`${inputCls} resize-y`} placeholder="Message pour l'entreprise (optionnel) : contexte du besoin..." value={wl.message} onChange={(e) => setWl((w) => ({ ...w, message: e.target.value }))} />
+            <button disabled={busy} onClick={join} className={`${btnPrimary} w-full justify-center`}>
+              {busy && <Loader2 size={14} className="animate-spin" />}
+              Attendre ce talent
+            </button>
+            <p className="text-[10px] leading-5 text-slate-400">Vous serez notifié dès que le talent sera libre. L'entreprise est informée de votre intérêt.</p>
+          </div>
+        )}
+      </>
+    )}
+  </section>
+)}
 
               {alts.length > 0 && (
                 <section className="space-y-3">

@@ -28,7 +28,7 @@ Route::get('/email/verify/{id}/{hash}', function (Request $request, $id, $hash) 
 
     // Redirige vers le frontend avec un message de succès
     return redirect('http://localhost:5173/email/verify?status=success&message=' . urlencode('Email vérifié avec succès !'));
-})->middleware(['signed'])->name('verification.verify');
+})->middleware(['signed'])->name('web.verification.verify');
 
 // Fallback : si quelqu'un visite /email/verify sans paramètres
 Route::get('/email/verify', function () {

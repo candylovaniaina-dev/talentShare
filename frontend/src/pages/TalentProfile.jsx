@@ -11,6 +11,8 @@ import AppShell from "../components/layout/AppShell";
 import PublicNavbar from "../components/layout/PublicNavbar";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
+// ✅ IMPORT DU BADGE UNIVERSITÉ
+import VerifiedBadge from "../components/university/VerifiedBadge";
 
 const LEVEL_LABEL = {
   beginner: "Débutant", intermediate: "Intermédiaire",
@@ -483,6 +485,10 @@ export default function TalentProfile() {
                     Vérifié
                   </span>
                 )}
+
+                {/* ✅ AJOUT DU BADGE UNIVERSITÉ ICI */}
+                <VerifiedBadge userId={profile.user_id} />
+
                 <span className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
                   {isStudent ? "Jeune talent" : "Talent"}
                 </span>
@@ -581,7 +587,6 @@ export default function TalentProfile() {
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-[#131E47] dark:shadow-none">
             <h2 className="text-lg font-bold text-[#0B1437] dark:text-white">Intro</h2>
             <ul className="mt-4 space-y-3">
-   
               {location && <IntroRow icon={MapPin}>{location}</IntroRow>}
               {nextAvailLabel && (
                 <IntroRow icon={Calendar} green>

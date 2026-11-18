@@ -1,18 +1,22 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
-  Building2, Users, GraduationCap, Sparkles, Eye, EyeOff, ArrowLeft, ArrowRight, X, Mail, UserRound, LockKeyhole, CheckCircle2, BriefcaseBusiness, ShieldCheck, Check, Layers,
+  Building2, Users, GraduationCap, Eye, EyeOff, ArrowLeft, ArrowRight, X, Mail, UserRound, LockKeyhole, CheckCircle2, BriefcaseBusiness, ShieldCheck, Check, School,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { useTheme } from "../../context/ThemeContext"; // ✅ Ajout
+import { useTheme } from "../../context/ThemeContext";
+import Logo, { Slogan, BRAND_FONT, useBrandFont } from "../../components/layout/Logo";
 
 const MINT_GRADIENT = "bg-gradient-to-br from-[#8DF0DC] to-[#5EDCC4]";
+
+/* Police de marque pour les titres (vider l'objet pour revenir à Plus Jakarta Sans) */
+const HEADING_STYLE = { fontFamily: BRAND_FONT };
 
 const roles = [
   { value: "company", icon: Building2, title: "Entreprise", subtitle: "Mobiliser des compétences" },
   { value: "employee", icon: Users, title: "Talent / salarié", subtitle: "Partager mon expertise" },
   { value: "student", icon: GraduationCap, title: "Étudiant / diplômé", subtitle: "Lancer mon parcours" },
-  { value: "university", icon: Sparkles, title: "Université", subtitle: "Connecter les filières" },
+  { value: "university", icon: School, title: "Université", subtitle: "Connecter les filières" },
 ];
 
 const getStrength = (password) => {
@@ -40,7 +44,10 @@ const eyeBtn =
 
 export default function Register() {
   const [params] = useSearchParams();
-  const { updatePreference } = useTheme(); // ✅ Ajout
+  const { theme, updatePreference } = useTheme();
+  useBrandFont();
+
+  const isDark = theme === "dark";
 
   const [role, setRole] = useState(() => {
     const requestedRole = params.get("role");
@@ -74,7 +81,7 @@ export default function Register() {
 
     setError(null);
 
-    // ✅ VÉRIFICATION STRICTE DU DOMAINE GMAIL
+    // Vérification stricte du domaine Gmail
     const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
     if (!emailRegex.test(form.email)) {
       setError("L'adresse e-mail doit obligatoirement être une adresse @gmail.com.");
@@ -92,19 +99,26 @@ export default function Register() {
 
     try {
       await register({ ...form, role });
-      
-      // ✅ On force le mode clair en local
+
+      // 1. On force le mode clair en local immédiatement
       localStorage.setItem("theme", "light");
+      localStorage.setItem("talentshare_theme", "light");
       document.documentElement.classList.remove("dark");
       document.documentElement.classList.add("light");
       document.documentElement.setAttribute("data-theme", "light");
-      
-      // ✅ On met à jour le contexte
-      await updatePreference("theme_preference", "light");
 
-      // ✅ On force le rechargement complet pour être sûr
+      // 2. On tente la mise à jour API en isolant l'erreur
+      try {
+        await updatePreference("theme_preference", "light");
+      } catch (themeError) {
+        console.warn("L'API de thème a échoué, mais le mode clair est forcé en local.", themeError);
+      }
+
+      // 3. On force la redirection (le navigateur rechargera la page et lira le localStorage)
       if (role === "company") {
-        window.location.href = "/company"; 
+        window.location.href = "/company";
+      } else if (role === "university") {
+        window.location.href = "/university?tab=profile";
       } else {
         window.location.href = "/dashboard";
       }
@@ -178,15 +192,9 @@ export default function Register() {
       `}</style>
 
       <header className="relative z-10 border-b border-[color:var(--a-border)] bg-[color:var(--a-panel)] backdrop-blur-xl">
-        <div className="mx-auto flex h-[56px] max-w-[1300px] items-center justify-between px-4 sm:px-6">
-          <Link to="/" className="group flex items-center gap-2.5">
-            <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${MINT_GRADIENT} text-[#0A1230] shadow-sm transition group-hover:scale-105`}>
-              <Layers size={18} strokeWidth={2.2} />
-            </span>
-            <span>
-              <span className="block text-[15px] font-bold tracking-tight text-[color:var(--a-ink)]">TalentShare</span>
-              <span className="block text-[8px] font-semibold uppercase tracking-[0.2em] text-[color:var(--a-faint)]">Connecter les talents</span>
-            </span>
+        <div className="mx-auto flex h-[64px] max-w-[1300px] items-center justify-between px-4 sm:px-6">
+          <Link to="/" aria-label="TalentShare, accueil" className="rounded-2xl">
+            <Logo size={40} onDark={isDark} />
           </Link>
 
           <Link to="/" className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium text-[color:var(--a-muted)] transition hover:bg-[color:var(--a-accent-soft)] hover:text-[color:var(--a-accent)]">
@@ -208,7 +216,10 @@ export default function Register() {
               <span className="h-1 w-1 rounded-full bg-[#7BE9D3]" />
               L’avenir du partage des compétences
             </span>
-            <h1 className="mt-6 max-w-lg text-4xl font-extrabold leading-[1.12] tracking-[-0.04em] xl:text-[42px]">
+            <h1
+              style={HEADING_STYLE}
+              className="mt-6 max-w-lg text-3xl font-bold leading-[1.2] tracking-[-0.01em] xl:text-[34px]"
+            >
               Les bonnes compétences.
               <span className="mt-2 block text-[#7BE9D3]">Au bon moment.</span>
             </h1>
@@ -241,22 +252,28 @@ export default function Register() {
             </div>
           </div>
 
-          <div className="relative z-10 mt-auto flex items-center gap-3 border-t border-white/10 pt-5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full border border-[#7BE9D3]/20 bg-[#7BE9D3]/10 text-[#7BE9D3]"><ShieldCheck size={18} /></span>
-            <span>
-              <span className="block text-sm font-medium text-white">Un espace pensé pour vous</span>
-              <span className="mt-0.5 block text-xs text-[#9DAACB]">Votre parcours commence ici.</span>
+          <div className="relative z-10 mt-auto flex items-center justify-between gap-3 border-t border-white/10 pt-5">
+            <span className="flex items-center gap-3">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full border border-[#7BE9D3]/20 bg-[#7BE9D3]/10 text-[#7BE9D3]"><ShieldCheck size={18} /></span>
+              <span>
+                <span className="block text-sm font-medium text-white">Un espace pensé pour vous</span>
+                <span className="mt-0.5 block text-xs text-[#9DAACB]">Votre parcours commence ici.</span>
+              </span>
             </span>
+            <Slogan onDark className="hidden text-[10px] xl:inline-flex" />
           </div>
         </section>
 
         <section className="mx-auto w-full max-w-[640px] lg:mx-0 lg:ml-auto">
           <div className="rounded-[24px] border border-[color:var(--a-border)] bg-[color:var(--a-panel)] p-6 shadow-[0_12px_40px_rgba(11,20,55,0.06)] dark:shadow-none sm:p-8 xl:p-10">
             <div className="mb-6">
-              <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-[color:var(--a-accent)]">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[color:var(--a-accent)]">
                 <span className="h-1 w-1 rounded-full bg-[color:var(--a-accent)]" /> Créer mon accès
               </span>
-              <h2 className="mt-2 text-2xl font-extrabold tracking-[-0.03em] text-[color:var(--a-ink)] sm:text-3xl">
+              <h2
+                style={HEADING_STYLE}
+                className="mt-2 text-xl font-bold tracking-[-0.01em] text-[color:var(--a-ink)] sm:text-2xl"
+              >
                 Bienvenue dans TalentShare
               </h2>
               <p className="mt-1.5 text-sm leading-5 text-[color:var(--a-muted)]">
@@ -326,16 +343,16 @@ export default function Register() {
                 <label htmlFor="register-email" className={labelClass}>Adresse e-mail</label>
                 <div className="relative">
                   <Mail size={16} className={iconLeft} />
-                  <input 
-                    id="register-email" 
-                    type="email" 
-                    required 
+                  <input
+                    id="register-email"
+                    type="email"
+                    required
                     pattern="[a-zA-Z0-9._%+-]+@gmail\.com"
                     title="L'adresse doit se terminer par @gmail.com"
-                    placeholder="vous@gmail.com" 
-                    className={inputClass} 
-                    value={form.email} 
-                    onChange={(e) => updateField("email", e.target.value)} 
+                    placeholder="vous@gmail.com"
+                    className={inputClass}
+                    value={form.email}
+                    onChange={(e) => updateField("email", e.target.value)}
                   />
                 </div>
               </div>
@@ -346,7 +363,12 @@ export default function Register() {
                   <div className="relative">
                     <LockKeyhole size={16} className={iconLeft} />
                     <input id="register-password" type={showPassword ? "text" : "password"} required placeholder="8 car. min" className={`${inputClass} pr-9`} value={form.password} onChange={(e) => updateField("password", e.target.value)} />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className={eyeBtn}>
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                      className={eyeBtn}
+                    >
                       {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                     </button>
                   </div>
@@ -365,7 +387,12 @@ export default function Register() {
                       value={form.password_confirmation}
                       onChange={(e) => updateField("password_confirmation", e.target.value)}
                     />
-                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className={eyeBtn}>
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      aria-label={showConfirmPassword ? "Masquer la confirmation" : "Afficher la confirmation"}
+                      className={eyeBtn}
+                    >
                       {showConfirmPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                     </button>
                   </div>
@@ -432,9 +459,12 @@ export default function Register() {
             </p>
           </div>
 
-          <p className="mt-4 text-center text-[10px] text-[color:var(--a-faint)]">
-            © {new Date().getFullYear()} TalentShare · Share. Connect. Grow.
-          </p>
+          <div className="mt-4 flex flex-col items-center gap-1.5">
+            <Slogan onDark={isDark} className="text-[9px]" />
+            <p className="text-center text-[10px] text-[color:var(--a-faint)]">
+              © {new Date().getFullYear()} TalentShare · Madagascar
+            </p>
+          </div>
         </section>
       </main>
     </div>

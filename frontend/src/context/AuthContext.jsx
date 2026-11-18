@@ -58,12 +58,14 @@ export const AuthProvider = ({ children }) => {
       setUser(response.data);
       syncFromUser(response.data);
       return response.data;
-    } catch (error) {
+       } catch (error) {
       if (currentRequest === requestId.current) {
         console.error("Erreur fetch user:", error);
-        localStorage.removeItem("token");
-        setToken(null);
-        setUser(null);
+        if (error.response?.status === 401) {
+          localStorage.removeItem("token");
+          setToken(null);
+          setUser(null);
+        }
       }
       return null;
     } finally {

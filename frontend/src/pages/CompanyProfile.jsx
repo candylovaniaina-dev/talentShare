@@ -11,6 +11,7 @@ import SuggestedTalentsSection from "../components/talents/SuggestedTalentsSecti
 import CompanyOnboarding from "./CreateCompanyPage";
 import ProposeTalentModal from "../components/resource-sharing/ProposeTalentModal";
 import CreateOfferModal from "../components/publications/CreateJobOfferModal";
+import CompanyUniversityRequests from "../components/university/CompanyUniversityRequests";
 
 import {
   Building2, MapPin, Globe, Phone, Users, Edit, Camera, X, Plus,
@@ -1438,7 +1439,13 @@ export default function CompanyProfile() {
                       Explorer l'actualité <ArrowRight size={14} />
                     </button>
                   </section>
+                                    {/* ✅ NOUVEAU BOUTON RESSOURCES UNIVERSITÉS */}
+                  <Link to="/resource-offers/universities" className="ts-company-btn ts-company-secondary w-full">
+                    <GraduationCap size={14} /> Ressources des universités
+                  </Link>
 
+                  <CompanyUniversityRequests />
+<CompanyUniversityRequests />
                   <SuggestedTalentsSection />
                 </aside>
               </div>

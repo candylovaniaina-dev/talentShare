@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Layers, Menu, Moon, Sun, X } from "lucide-react";
+import { Menu, Moon, Sun, X } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { useAuth } from "../../context/AuthContext";
+import Logo from "./Logo";
 
 const NAV_ITEMS = [
   { label: "Comment ça marche", anchor: "#comment-ca-marche" },
@@ -73,9 +74,8 @@ export default function PublicNavbar({ variant } = {}) {
     }
   };
 
-  /* ---------- Styles forcés ---------- */
-  
-  // Fond de la navbar : Blanc en clair, Bleu marine en sombre
+  /* ---------- Styles ---------- */
+
   const shell =
     "border-slate-200/80 bg-white/90 text-[#102A43] shadow-[0_10px_40px_-12px_rgba(11,34,41,0.18)] backdrop-blur-xl " +
     "dark:border-white/10 dark:bg-[#0A1230]/80 dark:text-white dark:shadow-[0_10px_40px_-12px_rgba(0,0,0,0.6)]";
@@ -95,7 +95,6 @@ export default function PublicNavbar({ variant } = {}) {
     "rounded-full px-3.5 py-2 text-[13px] font-semibold text-slate-600 transition-colors hover:bg-slate-900/5 hover:text-[#102A43] " +
     "dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white";
 
-  // ✅ LE BOUTON REJOINDRE EST BLEU MARINE (pas noir)
   const primaryLink =
     "rounded-full bg-[#102A43] px-4 py-2 text-[13px] font-bold text-white shadow-[0_8px_22px_-8px_rgba(16,42,67,0.7)] transition hover:bg-[#1B3A59] " +
     "dark:bg-[#7BE9D3] dark:text-[#0A1230] dark:hover:bg-[#5EDCC4]";
@@ -199,19 +198,9 @@ export default function PublicNavbar({ variant } = {}) {
               setActiveAnchor("");
             }}
             aria-label="TalentShare, accueil"
-            className="group flex shrink-0 items-center gap-3"
+            className="group shrink-0 rounded-2xl transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60"
           >
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#102A43] text-white transition-transform group-hover:scale-105 dark:bg-[#7BE9D3] dark:text-[#0A1230]">
-              <Layers size={20} strokeWidth={2.2} />
-            </span>
-            <span className="block leading-none">
-              <span className="block text-[17px] font-extrabold tracking-[-0.03em]">
-                TalentShare
-              </span>
-              <span className="mt-1 block text-[10px] font-medium text-slate-500 dark:text-[#7BE9D3]">
-                Connecter les talents
-              </span>
-            </span>
+            <Logo size={42} onDark={theme === "dark"} />
           </Link>
 
           {/* Navigation */}

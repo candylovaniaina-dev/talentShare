@@ -1,100 +1,211 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\University;
 
-use App\Http\Controllers\Controller;
+use App\Models\University;
+use App\Models\UniversityMember;
+use App\Models\User;
+use App\Services\UniversityContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules\Password as PasswordRule;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
-class AccountController extends Controller
+/** P0-1 (compte & équipe) + P0-16 (fiche établissement) */
+class AccountController extends BaseUniversityController
 {
-    public function update(Request $request)
+    private const TYPES = ['public', 'prive', 'institut', 'ecole', 'centre_formation'];
+
+    // Téléphone malgache : +261 34 56 789 00 (mobiles 32/33/34/37/38 ou fixe 20)
+    private const PHONE_REGEX = '/^\+261 (3[23478]|20) \d{2} \d{3} \d{2}$/';
+
+    private function rules(bool $create): array
     {
-        $data = $request->validate([
-            'name' => ['sometimes', 'string', 'max:150'],
-            'phone' => ['sometimes', 'nullable', 'string', 'max:30'],
-        ]);
+        $req = $create ? 'required' : 'sometimes';
 
-        $request->user()->update($data);
-
-        return $request->user()->fresh();
+        return [
+            'name'          => [$req, 'string', 'min:2', 'max:160'],
+            'type'          => [$req, Rule::in(self::TYPES)],
+            'description'   => ['nullable', 'string', 'max:3000'],
+            'address'       => ['nullable', 'string', 'max:255'],
+            'city'          => [$req, 'string', 'max:120'],
+            'region'        => [$req, 'string', 'max:120'],
+            'country'       => ['nullable', 'string', 'max:80'],
+            'latitude'      => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude'     => ['nullable', 'numeric', 'between:-180,180'],
+            'phone'         => ['nullable', 'string', 'max:40', 'regex:' . self::PHONE_REGEX],
+            'contact_email' => ['nullable', 'email:rfc', 'max:255'],
+            'website'       => ['nullable', 'url:http,https', 'max:255'],
+            'founded_year'  => ['nullable', 'integer', 'between:1800,' . date('Y')],
+            'accreditation' => ['nullable', 'string', 'max:255'],
+        ];
     }
 
-    public function changePassword(Request $request)
+    private function messages(): array
     {
-        $data = $request->validate([
-            'current_password' => ['required'],
-            'password' => ['required', 'confirmed', PasswordRule::min(8)->mixedCase()->numbers()],
-        ]);
+        return [
+            'name.required'        => "Le nom de l'établissement est obligatoire.",
+            'name.min'             => "Le nom de l'établissement est trop court.",
+            'type.required'        => "Choisissez le type d'établissement.",
+            'type.in'              => "Type d'établissement invalide.",
+            'city.required'        => 'La ville est obligatoire.',
+            'region.required'      => 'La région est obligatoire.',
+            'phone.regex'          => 'Format de téléphone attendu : +261 34 56 789 00.',
+            'contact_email.email'  => 'Adresse e-mail invalide.',
+            'website.url'          => 'Entrez un lien valide, ex. https://universite.mg.',
+            'founded_year.between' => "Année de création invalide.",
+        ];
+    }
 
-        if (! Hash::check($data['current_password'], $request->user()->password)) {
-            throw ValidationException::withMessages(['current_password' => ['Mot de passe actuel incorrect.']]);
+    public function me(Request $r)
+    {
+        abort_unless($r->user()->role === 'university', 403, 'Accès réservé aux comptes établissement.');
+        $ctx = UniversityContext::resolve($r->user());
+        if (! $ctx) {
+            return response()->json(['message' => "Aucun établissement associé.", 'code' => 'NO_UNIVERSITY'], 404);
+        }
+        return ['university' => $ctx['university'], 'role' => $ctx['role']];
+    }
+
+    public function store(Request $r)
+    {
+        abort_unless(
+            $r->user()->role === 'university',
+            403,
+            'Accès réservé aux comptes établissement.'
+        );
+
+        if (UniversityContext::resolve($r->user())) {
+            return response()->json([
+                'message' => 'Un établissement est déjà associé à ce compte.'
+            ], 409);
         }
 
-        $request->user()->update(['password' => Hash::make($data['password'])]);
+        $data = $r->validate($this->rules(true), $this->messages());
 
-        // Révoque tous les autres tokens par sécurité, garde uniquement la session courante
-        $request->user()->tokens()->where('id', '!=', $request->user()->currentAccessToken()->id)->delete();
-
-        return response()->json(['message' => 'Mot de passe modifié avec succès.']);
-    }
-
-    public function deactivate(Request $request)
-    {
-        $request->user()->update(['status' => 'inactive']);
-        $request->user()->tokens()->delete();
-
-        return response()->json(['message' => 'Compte désactivé. Contactez le support pour le réactiver.']);
-    }
-
-    public function destroy(Request $request)
-    {
-        $request->validate(['password' => ['required']]);
-
-        if (! Hash::check($request->password, $request->user()->password)) {
-            throw ValidationException::withMessages(['password' => ['Mot de passe incorrect.']]);
+        // Génération du slug unique
+        $slug = Str::slug($data['name']) ?: 'universite';
+        $originalSlug = $slug;
+        $count = 1;
+        while (University::where('slug', $slug)->exists()) {
+            $slug = $originalSlug . '-' . $count++;
         }
 
-        $request->user()->tokens()->delete();
-        $request->user()->delete(); // soft delete
+        $uni = University::create([
+            ...$data,
+            'slug'          => $slug,
+            'owner_user_id' => $r->user()->id,
+            'user_id'       => $r->user()->id,
+        ]);
 
-        return response()->json(['message' => 'Compte supprimé.']);
-    }
-    public function updateProfile(Request $request)
-{
-    $data = $request->validate([
-        'first_name' => ['nullable', 'string', 'max:100'],
-        'last_name'  => ['nullable', 'string', 'max:100'],
-        'country'    => ['nullable', 'string', 'max:100'],
-        'phone'      => ['nullable', 'string', 'max:30'],
-    ]);
-
-    $user = $request->user();
-    $user->update($data);
-
-    // Sync name = "First Last"
-    if (!empty($data['first_name']) && !empty($data['last_name'])) {
-        $user->update(['name' => trim("{$data['first_name']} {$data['last_name']}")]);
-    } elseif (!empty($data['first_name'])) {
-        $user->update(['name' => $data['first_name']]);
+        return response()->json([
+            'university' => $uni,
+            'role'       => 'owner',
+        ], 201);
     }
 
-    return response()->json($user->fresh());
-}
+    public function update(Request $r)
+    {
+        $this->requireAdmin($r);
+        $uni = $this->uni($r);
+        $uni->update($r->validate($this->rules(false), $this->messages()));
+        return ['university' => $uni->fresh()];
+    }
 
-public function updatePreferences(Request $request)
-{
-    $data = $request->validate([
-        'theme_preference' => ['sometimes', 'in:light,dark,system'],
-        'font_size'        => ['sometimes', 'in:small,normal,large'],
-        'high_contrast'    => ['sometimes', 'boolean'],
-        'reduce_motion'    => ['sometimes', 'boolean'],
-    ]);
+    public function uploadLogo(Request $r)
+    {
+        $this->requireAdmin($r);
+        $r->validate(['logo' => ['required', 'image', 'max:3072']]);
+        $uni = $this->uni($r);
+        if ($uni->logo_path) {
+            Storage::disk('public')->delete($uni->logo_path);
+        }
+        $uni->update(['logo_path' => $r->file('logo')->store('universities/logos', 'public')]);
+        return ['university' => $uni->fresh()];
+    }
 
-    $request->user()->update($data);
+    /* ---------------- Équipe ---------------- */
 
-    return response()->json($request->user()->fresh());
-}
+    public function team(Request $r)
+    {
+        $uni = $this->uni($r);
+        $owner = $uni->owner;
+        return [
+            'owner'   => $owner ? ['id' => $owner->id, 'name' => $owner->name, 'email' => $owner->email] : null,
+            'members' => UniversityMember::where('university_id', $uni->id)->orderBy('created_at')->get(),
+            'my_role' => $this->role($r),
+        ];
+    }
+
+    public function addMember(Request $r)
+    {
+        $this->requireAdmin($r);
+        $uni = $this->uni($r);
+        $data = $r->validate([
+            'name'  => ['required', 'string', 'max:160'],
+            'email' => ['required', 'email', 'max:255'],
+            'role'  => ['required', Rule::in(['admin', 'internship_office', 'teacher', 'viewer'])],
+        ]);
+        $email = Str::lower($data['email']);
+
+        if (UniversityMember::where('university_id', $uni->id)->where('email', $email)->exists()) {
+            return response()->json(['message' => 'Cette personne fait déjà partie de votre équipe.'], 422);
+        }
+
+        $user = User::where('email', $email)->first();
+        $temporary = null;
+
+        if ($user) {
+            if ($user->role !== 'university') {
+                return response()->json(['message' => "Cet e-mail correspond à un compte d'un autre type (entreprise, talent, étudiant)."], 422);
+            }
+        } else {
+            $temporary = Str::password(12, symbols: false);
+            $user = new User();
+            $user->forceFill([
+                'name'              => $data['name'],
+                'email'             => $email,
+                'password'          => Hash::make($temporary),
+                'role'              => 'university',
+                'email_verified_at' => now(),
+            ])->save();
+            try {
+                Password::sendResetLink(['email' => $email]);
+            } catch (\Throwable $e) {
+                // L'envoi de mail n'est pas bloquant : le mot de passe temporaire est affiché une fois.
+            }
+        }
+
+        $member = UniversityMember::create([
+            'university_id' => $uni->id,
+            'user_id'       => $user->id,
+            'name'          => $data['name'],
+            'email'         => $email,
+            'role'          => $data['role'],
+            'status'        => 'active',
+        ]);
+
+        return response()->json(['member' => $member, 'temporary_password' => $temporary], 201);
+    }
+
+    public function updateMember(Request $r, int $id)
+    {
+        $this->requireAdmin($r);
+        $member = UniversityMember::where('university_id', $this->uni($r)->id)->findOrFail($id);
+        $member->update($r->validate([
+            'role'   => ['sometimes', Rule::in(['admin', 'internship_office', 'teacher', 'viewer'])],
+            'status' => ['sometimes', Rule::in(['active', 'revoked'])],
+            'name'   => ['sometimes', 'string', 'max:160'],
+        ]));
+        return ['member' => $member->fresh()];
+    }
+
+    public function removeMember(Request $r, int $id)
+    {
+        $this->requireAdmin($r);
+        UniversityMember::where('university_id', $this->uni($r)->id)->findOrFail($id)->delete();
+        return response()->noContent();
+    }
 }

@@ -91,44 +91,71 @@ class TalentMarketController extends Controller
         ]);
     }
 
-    public function show(Request $request, ResourceOffer $offer)
-    {
-        $myIds   = $this->getAllMyCompanyIds($request);
-        $isOwner = in_array($offer->company_id, $myIds);
+  public function show(Request $request, ResourceOffer $offer)
+{
+    $myIds   = $this->getAllMyCompanyIds($request);
+    $isOwner = in_array($offer->company_id, $myIds);
 
-        if (!$isOwner && ($offer->status !== 'published' || !in_array($offer->visibility, TalentMarketService::VISIBLE, true))) {
-            abort(404);
-        }
-
-        $offer->load([
-            self::COMPANY_COLS, 
-            'profile.user:id,name,first_name,last_name', 
-            'profile.portfolio',
-            'skills'
-        ]);
-        
-        $ctx  = $this->context(collect([$offer]), $myIds);
-        $item = $this->present($offer, $ctx, true);
-
-        $eligible = array_values(array_map('intval', array_diff($myIds, [$offer->company_id], $item['proposed_company_ids'])));
-
-        $myWaiting = ResourceOfferWaitlist::where('resource_offer_id', $offer->id)
-            ->whereIn('company_id', $myIds)->whereIn('status', ResourceOfferWaitlist::ACTIVE)->get()
-            ->map(fn ($e) => [
-                'company_id' => (int) $e->company_id,
-                'status'     => $e->status,
-                'position'   => $this->position($e),
-            ])->values();
-
-        return response()->json([
-            'offer'                => $item,
-            'is_owner'             => $isOwner,
-            'eligible_company_ids' => $eligible,
-            'can_propose'          => !$isOwner && $item['state'] === 'available' && !empty($eligible),
-            'my_waiting'           => $myWaiting,
-            'waiting_companies'    => $isOwner ? $this->waitingCompanies($offer) : [],
-        ]);
+    if (!$isOwner && ($offer->status !== 'published' || !in_array($offer->visibility, TalentMarketService::VISIBLE, true))) {
+        abort(404);
     }
+
+    $offer->load([
+        self::COMPANY_COLS,
+        'profile.user:id,name,first_name,last_name',
+        'profile.portfolio',
+        'skills'
+    ]);
+
+    $ctx  = $this->context(collect([$offer]), $myIds);
+    $item = $this->present($offer, $ctx, true);
+
+    $eligible = array_values(array_map('intval', array_diff($myIds, [$offer->company_id], $item['proposed_company_ids'])));
+
+    // File d'attente active, par ordre d'arrivée (le premier = prioritaire)
+    $queue = ResourceOfferWaitlist::where('resource_offer_id', $offer->id)
+        ->whereIn('status', ResourceOfferWaitlist::ACTIVE)
+        ->oldest()->get(['id', 'company_id', 'status', 'created_at']);
+
+    $isMine         = fn ($e) => in_array((int) $e->company_id, $myIds, true);
+    $myBest         = $queue->first($isMine);
+    $myPosition     = $myBest ? $queue->search(fn ($e) => $e->id === $myBest->id) + 1 : null;
+    $firstCompanyId = (int) ($queue->first()?->company_id ?? 0);
+    $iAmFirst       = $queue->isNotEmpty() && in_array($firstCompanyId, $myIds, true);
+    $othersWaiting  = $queue->reject($isMine)->count();
+    $aheadCount     = $myPosition ? $myPosition - 1 : $queue->count();
+    $isAvailable    = $item['state'] === 'available';
+
+    // Talent libre + file d'attente : seule l'entreprise en tête peut proposer
+    $queueBlocked = false;
+    if (!$isOwner && $isAvailable && $queue->isNotEmpty()) {
+        $eligible     = array_values(array_intersect($eligible, [$firstCompanyId]));
+        $queueBlocked = !$iAmFirst;
+    }
+
+    $myWaiting = ResourceOfferWaitlist::where('resource_offer_id', $offer->id)
+        ->whereIn('company_id', $myIds)->whereIn('status', ResourceOfferWaitlist::ACTIVE)->get()
+        ->map(fn ($e) => [
+            'company_id' => (int) $e->company_id,
+            'status'     => $e->status,
+            'position'   => $this->position($e),
+        ])->values();
+
+    return response()->json([
+        'offer'                => $item,
+        'is_owner'             => $isOwner,
+        'eligible_company_ids' => $eligible,
+        'can_propose'          => !$isOwner && $isAvailable && !empty($eligible),
+        'my_waiting'           => $myWaiting,
+        'waiting_companies'    => $isOwner ? $this->waitingCompanies($offer) : [],
+        // Priorité de la file d'attente
+        'my_priority'          => $iAmFirst ? 'first' : ($myBest ? 'queued' : null),
+        'my_position'          => $myPosition,
+        'ahead_count'          => $aheadCount,
+        'others_waiting_count' => $othersWaiting,
+        'queue_blocked'        => $queueBlocked,
+    ]);
+}
 
     public function alternatives(Request $request, ResourceOffer $offer)
     {
@@ -161,8 +188,10 @@ class TalentMarketController extends Controller
             return response()->json(['message' => "Ce talent n'est plus proposé sur le marché.", 'code' => 'offer_closed'], 409);
         }
 
-        $info = $this->market->stateFor($offer);
-        if ($info['state'] === 'available') {
+     $info     = $this->market->stateFor($offer);
+$hasQueue = ResourceOfferWaitlist::where('resource_offer_id', $offer->id)
+    ->whereIn('status', ResourceOfferWaitlist::ACTIVE)->exists();
+if ($info['state'] === 'available' && !$hasQueue) {
             return response()->json(['message' => 'Ce talent est disponible : vous pouvez le proposer directement.', 'code' => 'talent_available'], 409);
         }
 

@@ -1,0 +1,15 @@
+
+node_modules
+vendor
+.env
+.git
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+database/database.sqlite
+public/storage
+frontend
+storage/app/public
+backup_talentshare.sql
+mkcert-rootCA.pem

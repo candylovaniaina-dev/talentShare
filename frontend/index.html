@@ -2,12 +2,29 @@
 <html lang="fr" translate="no">
   <head>
     <meta charset="UTF-8" />
+    
     <meta name="google" content="notranslate">
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TalentShare</title>
+
+    <!-- ✅ SCRIPT ANTI-FLASH : Applique le thème AVANT que React ne se charge -->
+    <script>
+      (function() {
+        try {
+          var theme = localStorage.getItem("theme") || localStorage.getItem("talentshare_theme");
+          if (theme === "dark") {
+            document.documentElement.classList.add("dark");
+            document.documentElement.classList.remove("light");
+            document.documentElement.style.colorScheme = "dark";
+          } else {
+            document.documentElement.classList.remove("dark");
+            document.documentElement.classList.add("light");
+            document.documentElement.style.colorScheme = "light";
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

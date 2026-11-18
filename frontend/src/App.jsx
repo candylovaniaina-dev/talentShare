@@ -1,10 +1,21 @@
-import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate, useParams, useLocation } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useParams,
+  useLocation,
+} from "react-router-dom";
 import { LoaderCircle } from "lucide-react";
+
 import { useAuth } from "./context/AuthContext";
-import { useEffect, useState } from "react";
 import api from "./services/api";
 
+// Layout
+import AppShell from "./components/layout/AppShell";
+
+// Pages publiques et authentification
 import Landing from "./pages/Landing";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
@@ -12,6 +23,8 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 import VerifyEmail from "./pages/auth/VerifyEmail";
 import OAuthCallback from "./pages/auth/OAuthCallback";
+
+// Pages principales
 import Dashboard from "./pages/dashboard/Dashboard";
 import Profile from "./pages/Profile";
 import AccountSettings from "./pages/dashboard/AccountSettings";
@@ -29,10 +42,10 @@ import Explore from "./pages/Explore";
 import ExploreDashboard from "./pages/ExploreDashboard";
 import MyActivity from "./pages/MyActivity";
 import TalentProfile from "./pages/TalentProfile";
-import Help from './pages/Help';
-import Guide from './pages/Guide';
-import Cgu from './pages/Cgu';
-import Confidentialite from './pages/Confidentialite';
+import Help from "./pages/Help";
+import Guide from "./pages/Guide";
+import Cgu from "./pages/Cgu";
+import Confidentialite from "./pages/Confidentialite";
 import PublicPortfolio from "./pages/PublicPortfolio";
 import ResourceOffers from "./pages/ResourceOffers";
 import BrowseResourceOffers from "./pages/BrowseResourceOffers";
@@ -48,7 +61,6 @@ import JobOfferDetail from "./pages/JobOfferDetail";
 import ActivityHistoryPage from "./pages/ActivityHistoryPage";
 import Explorer from "./pages/Explorer";
 import CreateCompanyPage from "./pages/CreateCompanyPage";
-
 import ResourceOfferForm from "./pages/ResourceOfferForm";
 import ResourceProposals from "./pages/ResourceProposals";
 import ProposalRouter from "./pages/ProposalRouter";
@@ -57,16 +69,35 @@ import InterviewRoom from "./pages/InterviewRoom";
 import Collaborations from "./pages/Collaborations";
 import TalentMarket from "./pages/TalentMarket";
 
+// ==========================================
+// 📥 NOUVEAUX IMPORTS MODULE UNIVERSITÉ v2
+// ==========================================
+import UniversityHub from "./pages/university/UniversityHub";
+import UniversityDashboard from "./pages/university/UniversityDashboard";
+import UniversityResources from "./pages/university/UniversityResources";
+import UniversityCollaborations from "./pages/university/UniversityCollaborations";
+import CompanyUniversityResources from "./components/university/CompanyUniversityResources";
+
 /* ============================================================
-    GUARDS & LOADING
+   GUARDS & LOADING
 ============================================================ */
 
 function RouteLoading() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#F5F8FA] px-4 text-[#102A43]" role="status" aria-live="polite">
+    <div
+      className="flex min-h-screen items-center justify-center bg-[#F5F8FA] px-4 text-[#102A43]"
+      role="status"
+      aria-live="polite"
+    >
       <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
-        <LoaderCircle size={20} className="animate-spin text-[#0F9691]" aria-hidden="true" />
-        <span className="text-sm font-semibold">Chargement de votre espace…</span>
+        <LoaderCircle
+          size={20}
+          className="animate-spin text-[#0F9691]"
+          aria-hidden="true"
+        />
+        <span className="text-sm font-semibold">
+          Chargement de votre espace…
+        </span>
       </div>
     </div>
   );
@@ -74,27 +105,32 @@ function RouteLoading() {
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
+
   if (loading) return <RouteLoading />;
-  return user ? children : <Navigate to="/login" />;
+
+  return user ? children : <Navigate to="/login" replace />;
 };
 
 function RequireCompany({ children }) {
   const { user, loading } = useAuth();
+
   if (loading) return <RouteLoading />;
 
   if (user?.role !== "company") {
     return <Navigate to="/my-activity" replace />;
   }
+
   return children;
 }
 
 /* ============================================================
-    ✅ COMPANY GUARD — Redirection post-inscription
+   COMPANY GUARD — Redirection post-inscription
 ============================================================ */
 
 function CompanyGuard({ children }) {
   const { user, loading: authLoading } = useAuth();
   const location = useLocation();
+
   const [hasCompany, setHasCompany] = useState(null);
   const [checking, setChecking] = useState(true);
 
@@ -107,13 +143,17 @@ function CompanyGuard({ children }) {
         return;
       }
 
-      if (location.pathname === "/company" || location.pathname === "/company/create") {
+      if (
+        location.pathname === "/company" ||
+        location.pathname === "/company/create"
+      ) {
         if (isMounted) setChecking(false);
         return;
       }
 
       try {
         await api.get("/companies/me");
+
         if (isMounted) setHasCompany(true);
       } catch (err) {
         if (err.response?.status === 404) {
@@ -130,26 +170,94 @@ function CompanyGuard({ children }) {
       checkCompany();
     }
 
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, [user, authLoading, location.pathname]);
 
   if (authLoading || checking) return <RouteLoading />;
+
   if (!user) return <Navigate to="/login" replace />;
 
-  if (user.role === "company" && hasCompany === false && location.pathname !== "/company") {
+  if (
+    user.role === "company" &&
+    hasCompany === false &&
+    location.pathname !== "/company"
+  ) {
     return <Navigate to="/company" replace />;
   }
 
   return children;
 }
 
+/* ============================================================
+   UNIVERSITY GUARD (v2 - Modifié)
+============================================================ */
+
+function UniversityGuard({ children }) {
+  const { user, loading } = useAuth();
+  const [state, setState] = useState("checking");
+
+  useEffect(() => {
+    if (loading) return;
+    if (user?.role !== "university") { setState("forbidden"); return; }
+    api.get("/university/me")
+      .then(() => setState("ok"))
+      .catch((e) => setState(e.response?.status === 404 ? "missing" : "ok"));
+  }, [user, loading]);
+
+  if (loading || state === "checking") return <RouteLoading />;
+  if (state === "forbidden") return <Navigate to="/dashboard" replace />;
+  if (state === "missing") return <Navigate to="/university?tab=profile" replace />;
+  return children;
+}
+
+function UniversityRoleOnly({ children }) {
+  const { user, loading } = useAuth();
+  if (loading) return <RouteLoading />;
+  return user?.role === "university" ? children : <Navigate to="/dashboard" replace />;
+}
+
+/* ============================================================
+   UNIVERSITY LAYOUT (v2 - Modifié)
+============================================================ */
+
+const UniPage = ({ children }) => (
+  <ProtectedRoute><UniversityGuard><AppShell>{children}</AppShell></UniversityGuard></ProtectedRoute>
+);
+
+const UniHubPage = ({ children }) => (
+  <ProtectedRoute><UniversityRoleOnly><AppShell>{children}</AppShell></UniversityRoleOnly></ProtectedRoute>
+);
+
+/* ============================================================
+   DASHBOARD SWITCH
+============================================================ */
+
+function DashboardSwitch() {
+  const { user } = useAuth();
+
+  return user?.role === "university" ? (
+    <UniPage>
+      <UniversityDashboard />
+    </UniPage>
+  ) : (
+    <Dashboard />
+  );
+}
+
+/* ============================================================
+   OTHER REDIRECTIONS
+============================================================ */
+
 function CandidatesRedirect() {
   const { id } = useParams();
+
   return <Navigate to={`/resource-requests/${id}`} replace />;
 }
 
 /* ============================================================
-    APP
+   APP
 ============================================================ */
 
 function App() {
@@ -157,6 +265,7 @@ function App() {
     <Router>
       <Routes>
         {/* ============ ROUTES PUBLIQUES ============ */}
+
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -171,63 +280,189 @@ function App() {
         <Route path="/talents/:id" element={<TalentProfile />} />
         <Route path="/portfolio/:slug" element={<PublicPortfolio />} />
 
-        <Route 
-          path="/resource-offers/browse" 
+        <Route
+          path="/resource-offers/browse"
           element={
             <ProtectedRoute>
               <TalentMarket />
             </ProtectedRoute>
-          } 
+          }
         />
-        
-        <Route path="/resource-offers/:id" element={<ResourceOfferDetail />} />
 
-        <Route path="/browse-requests" element={<BrowseResourceRequests />} />
+        <Route
+          path="/resource-offers/:id"
+          element={<ResourceOfferDetail />}
+        />
+
+        <Route
+          path="/browse-requests"
+          element={<BrowseResourceRequests />}
+        />
 
         {/* ============ ROUTES PROTÉGÉES ============ */}
-        <Route path="/accueil" element={<ProtectedRoute><Accueil /></ProtectedRoute>} />
-        <Route path="/actualite" element={<ProtectedRoute><Actualite /></ProtectedRoute>} />
-        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/explore-dashboard" element={<ProtectedRoute><ExploreDashboard /></ProtectedRoute>} />
-        <Route path="/my-activity" element={<ProtectedRoute><MyActivity /></ProtectedRoute>} />
 
-        {/* ✅ ROUTE MODIFIÉE : Plus de ProtectedRoute pour permettre l'accès via le lien de l'email */}
+        <Route
+          path="/accueil"
+          element={
+            <ProtectedRoute>
+              <Accueil />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/actualite"
+          element={
+            <ProtectedRoute>
+              <Actualite />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Dashboard selon le rôle */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <DashboardSwitch />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/explore-dashboard"
+          element={
+            <ProtectedRoute>
+              <ExploreDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/my-activity"
+          element={
+            <ProtectedRoute>
+              <MyActivity />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ============ MODULE UNIVERSITÉ v2 ============ */}
+
+        <Route path="/university" element={<UniHubPage><UniversityHub /></UniHubPage>} />
+        <Route path="/university/resources" element={<UniPage><UniversityResources /></UniPage>} />
+        <Route path="/university/collaborations" element={<UniPage><UniversityCollaborations /></UniPage>} />
+
+        {/* anciennes URLs */}
+        <Route path="/university/create" element={<Navigate to="/university?tab=profile" replace />} />
+        <Route path="/university/profile" element={<Navigate to="/university?tab=profile" replace />} />
+        <Route path="/university/students" element={<Navigate to="/university?tab=profile&section=students" replace />} />
+        <Route path="/university/partners" element={<Navigate to="/university/collaborations?tab=partners" replace />} />
+        <Route path="/university/opportunities" element={<Navigate to="/university/collaborations?tab=offers" replace />} />
+        <Route path="/university/conventions" element={<Navigate to="/university/collaborations?tab=conventions" replace />} />
+
+        {/* entreprise : ressources des universités */}
+        <Route path="/resource-offers/universities" element={<ProtectedRoute><AppShell><CompanyUniversityResources /></AppShell></ProtectedRoute>} />
+
+        {/* ================================================== */}
+
+        {/* Accès à la salle d'entretien depuis un lien email */}
         <Route path="/interview/:roomId" element={<InterviewRoom />} />
 
-        <Route path="/collaborations" element={<ProtectedRoute><Collaborations /></ProtectedRoute>} />
+        <Route
+          path="/collaborations"
+          element={
+            <ProtectedRoute>
+              <Collaborations />
+            </ProtectedRoute>
+          }
+        />
 
-        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-        <Route path="/profile/view" element={<Navigate to="/profile" replace />} />
-        <Route path="/account-settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
 
-        <Route 
-          path="/company" 
+        <Route
+          path="/profile/view"
+          element={<Navigate to="/profile" replace />}
+        />
+
+        <Route
+          path="/account-settings"
+          element={
+            <ProtectedRoute>
+              <AccountSettings />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/company"
           element={
             <ProtectedRoute>
               <CompanyGuard>
                 <CompanyProfile />
               </CompanyGuard>
             </ProtectedRoute>
-          } 
+          }
         />
-        <Route 
-          path="/company/create" 
+
+        <Route
+          path="/company/create"
           element={
             <ProtectedRoute>
               <CompanyGuard>
                 <CreateCompanyPage />
               </CompanyGuard>
             </ProtectedRoute>
-          } 
+          }
         />
 
-        <Route path="/opportunites" element={<ProtectedRoute><Opportunities /></ProtectedRoute>} />
-        <Route path="/opportunites/:id" element={<ProtectedRoute><Opportunities /></ProtectedRoute>} />
+        <Route
+          path="/opportunites"
+          element={
+            <ProtectedRoute>
+              <Opportunities />
+            </ProtectedRoute>
+          }
+        />
 
-        <Route path="/my-publications" element={<ProtectedRoute><MyPublications /></ProtectedRoute>} />
-        <Route path="/explorer" element={<ProtectedRoute><Explorer /></ProtectedRoute>} />
+        <Route
+          path="/opportunites/:id"
+          element={
+            <ProtectedRoute>
+              <Opportunities />
+            </ProtectedRoute>
+          }
+        />
 
-        <Route path="/my-offers" element={<Navigate to="/my-publications" replace />} />
+        <Route
+          path="/my-publications"
+          element={
+            <ProtectedRoute>
+              <MyPublications />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/explorer"
+          element={
+            <ProtectedRoute>
+              <Explorer />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/my-offers"
+          element={<Navigate to="/my-publications" replace />}
+        />
 
         <Route
           path="/resource-requests/new"
@@ -238,7 +473,10 @@ function App() {
           }
         />
 
-        <Route path="/resource-requests/:id/candidates" element={<CandidatesRedirect />} />
+        <Route
+          path="/resource-requests/:id/candidates"
+          element={<CandidatesRedirect />}
+        />
 
         <Route
           path="/resource-requests/:id"
@@ -249,7 +487,10 @@ function App() {
           }
         />
 
-        <Route path="/resource-requests" element={<Navigate to="/my-publications" replace />} />
+        <Route
+          path="/resource-requests"
+          element={<Navigate to="/my-publications" replace />}
+        />
 
         <Route
           path="/proposals/new"
@@ -262,34 +503,173 @@ function App() {
           }
         />
 
-        <Route path="/proposals/:id" element={<ProtectedRoute><ProposalRouter /></ProtectedRoute>} />
+        <Route
+          path="/proposals/:id"
+          element={
+            <ProtectedRoute>
+              <ProposalRouter />
+            </ProtectedRoute>
+          }
+        />
 
-        <Route path="/job-offers/:id/applications" element={<ProtectedRoute><OfferApplications /></ProtectedRoute>} />
-        <Route path="/applications/:id" element={<ProtectedRoute><ApplicationDetail /></ProtectedRoute>} />
+        <Route
+          path="/job-offers/:id/applications"
+          element={
+            <ProtectedRoute>
+              <OfferApplications />
+            </ProtectedRoute>
+          }
+        />
 
-        <Route path="/missions/:id" element={<ProtectedRoute><MissionDetail /></ProtectedRoute>} />
+        <Route
+          path="/applications/:id"
+          element={
+            <ProtectedRoute>
+              <ApplicationDetail />
+            </ProtectedRoute>
+          }
+        />
 
-        <Route path="/job-offers" element={<ProtectedRoute><JobOffers /></ProtectedRoute>} />
-        <Route path="/job-offers/:id" element={<ProtectedRoute><JobOfferDetail /></ProtectedRoute>} />
-        <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+        <Route
+          path="/missions/:id"
+          element={
+            <ProtectedRoute>
+              <MissionDetail />
+            </ProtectedRoute>
+          }
+        />
 
-        <Route path="/admin/verifications" element={<ProtectedRoute><AdminVerifications /></ProtectedRoute>} />
+        <Route
+          path="/job-offers"
+          element={
+            <ProtectedRoute>
+              <JobOffers />
+            </ProtectedRoute>
+          }
+        />
 
-        <Route path="/help" element={<ProtectedRoute><Help /></ProtectedRoute>} />
-        <Route path="/guide" element={<ProtectedRoute><Guide /></ProtectedRoute>} />
-        <Route path="/cgu" element={<ProtectedRoute><Cgu /></ProtectedRoute>} />
-        <Route path="/history" element={<ProtectedRoute><ActivityHistoryPage /></ProtectedRoute>} />
-        <Route path="/confidentialite" element={<ProtectedRoute><Confidentialite /></ProtectedRoute>} />
+        <Route
+          path="/job-offers/:id"
+          element={
+            <ProtectedRoute>
+              <JobOfferDetail />
+            </ProtectedRoute>
+          }
+        />
 
-        <Route path="/resource-offers" element={<ProtectedRoute><ResourceOffers /></ProtectedRoute>} />
-        <Route path="/resource-offers/new" element={<ProtectedRoute><ResourceOfferForm /></ProtectedRoute>} />
-        <Route path="/resource-offers/:id/edit" element={<ProtectedRoute><ResourceOfferForm /></ProtectedRoute>} />
+        <Route
+          path="/messages"
+          element={
+            <ProtectedRoute>
+              <Messages />
+            </ProtectedRoute>
+          }
+        />
 
-        <Route path="/resource-proposals" element={<Navigate to="/collaborations?tab=received" replace />} />
-        <Route path="/missions" element={<Navigate to="/collaborations?tab=missions" replace />} />
+        <Route
+          path="/admin/verifications"
+          element={
+            <ProtectedRoute>
+              <AdminVerifications />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/help"
+          element={
+            <ProtectedRoute>
+              <Help />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/guide"
+          element={
+            <ProtectedRoute>
+              <Guide />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/cgu"
+          element={
+            <ProtectedRoute>
+              <Cgu />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/history"
+          element={
+            <ProtectedRoute>
+              <ActivityHistoryPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/confidentialite"
+          element={
+            <ProtectedRoute>
+              <Confidentialite />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/resource-offers"
+          element={
+            <ProtectedRoute>
+              <ResourceOffers />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/resource-offers/new"
+          element={
+            <ProtectedRoute>
+              <ResourceOfferForm />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/resource-offers/:id/edit"
+          element={
+            <ProtectedRoute>
+              <ResourceOfferForm />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/resource-proposals"
+          element={
+            <Navigate
+              to="/collaborations?tab=received"
+              replace
+            />
+          }
+        />
+
+        <Route
+          path="/missions"
+          element={
+            <Navigate
+              to="/collaborations?tab=missions"
+              replace
+            />
+          }
+        />
 
         <Route path="/appearance" element={<Appearance />} />
 
+        {/* Route inconnue */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
